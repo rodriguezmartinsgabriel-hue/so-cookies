@@ -1,0 +1,136 @@
+import Dexie, { type EntityTable } from "dexie"
+
+export interface LocalOrder {
+  id: string
+  channel: string
+  customer: string
+  total: number
+  status: string
+  notes?: string
+  createdAt: string
+  updatedAt: string
+  _synced: boolean
+  _updatedAt: string
+}
+
+export interface LocalOrderItem {
+  id: string
+  orderId: string
+  productId: string
+  qty: number
+  price: number
+  _synced: boolean
+}
+
+export interface LocalSale {
+  id: string
+  channelId: string
+  total: number
+  userId?: string
+  createdAt: string
+  _synced: boolean
+  _updatedAt: string
+}
+
+export interface LocalSaleItem {
+  id: string
+  saleId: string
+  productId: string
+  qty: number
+  price: number
+  _synced: boolean
+}
+
+export interface LocalCashFlow {
+  id: string
+  type: "ENTRADA" | "SAIDA"
+  category: string
+  description: string
+  amount: number
+  userId?: string
+  date: string
+  _synced: boolean
+  _updatedAt: string
+}
+
+export interface LocalProduction {
+  id: string
+  batchCode: string
+  productId: string
+  qty: number
+  startTime: string
+  endTime?: string
+  status: string
+  notes?: string
+  _synced: boolean
+  _updatedAt: string
+}
+
+export interface LocalProduct {
+  id: string
+  name: string
+  sku: string
+  category: string
+  price: number
+  cost: number
+  margin: number
+  unit: string
+  active: boolean
+  _synced: boolean
+}
+
+export interface SyncQueueItem {
+  id?: number
+  action: "create" | "update" | "delete"
+  entity: string
+  data: Record<string, unknown>
+  tempId?: string
+  createdAt: string
+}
+
+const db = new Dexie("SoManagerDB") as Dexie & {
+  orders: EntityTable<LocalOrder, "id">
+  orderItems: EntityTable<LocalOrderItem, "id">
+  sales: EntityTable<LocalSale, "id">
+  saleItems: EntityTable<LocalSaleItem, "id">
+  cashFlow: EntityTable<LocalCashFlow, "id">
+  productions: EntityTable<LocalProduction, "id">
+  products: EntityTable<LocalProduct, "id">
+  syncQueue: EntityTable<SyncQueueItem, "id">
+  syncMeta: EntityTable<{ key: string; value: string }, "key">
+}
+
+db.version(1).stores({
+  orders: "id, status, _synced, createdAt",
+  orderItems: "id, orderId, _synced",
+  sales: "id, _synced, createdAt",
+  saleItems: "id, saleId, _synced",
+  cashFlow: "id, _synced, date",
+  productions: "id, _synced, startTime",
+  products: "id, _synced",
+  syncQueue: "++id, entity, createdAt",
+  syncMeta: "key",
+})
+
+export { db }
+
+export async function getLastSyncTime(): Promise<string> {
+  const meta = await db.syncMeta.get("lastPullAt")
+  return meta?.value || "1970-01-01T00:00:00.000Z"
+}
+
+export async function setLastSyncTime(time: string) {
+  await db.syncMeta.put({ key: "lastPullAt", value: time })
+}
+
+export async function addToSyncQueue(item: Omit<SyncQueueItem, "id">) {
+  await db.syncQueue.add(item)
+}
+
+export async function clearSyncQueue() {
+  await db.syncQueue.clear()
+}
+
+export async function getPendingSyncCount(): Promise<number> {
+  return db.syncQueue.count()
+}

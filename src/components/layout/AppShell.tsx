@@ -6,6 +6,7 @@ import { useEffect } from "react";
 import { Sidebar } from "./Sidebar";
 import { BottomNav } from "./BottomNav";
 import { Header } from "./Header";
+import { OfflineBanner } from "@/components/pwa/OfflineBanner";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { data: session, status } = useSession();
@@ -37,6 +38,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="h-screen flex overflow-hidden bg-paper">
+      <OfflineBanner />
       <Sidebar />
       <div className="flex-1 flex flex-col min-w-0">
         <Header user={session?.user} onLogout={handleLogout} />

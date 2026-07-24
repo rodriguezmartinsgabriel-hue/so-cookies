@@ -41,10 +41,8 @@ export async function getIngredients() {
 }
 
 export async function getLowStock() {
-  return prisma.ingredient.findMany({
-    where: { stockKg: { lte: prisma.ingredient.fields.minStockKg } },
-    orderBy: { stockKg: "asc" },
-  });
+  const ingredients = await prisma.ingredient.findMany({ orderBy: { stockKg: "asc" } });
+  return ingredients.filter((i) => i.stockKg <= i.minStockKg);
 }
 
 export async function getOrders() {

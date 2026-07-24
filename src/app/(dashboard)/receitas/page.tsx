@@ -1,13 +1,27 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { AppShell } from "@/components/layout/AppShell";
-import { recipes, ingredients } from "@/lib/mock-data";
-import { ChevronDown, ChevronUp, Edit, Plus, X } from "lucide-react";
+import { ChevronDown, ChevronUp, Plus, X } from "lucide-react";
 
 export default function ReceitasPage() {
   const [expanded, setExpanded] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
+  const [recipes, setRecipes] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadRecipes();
+  }, []);
+
+  async function loadRecipes() {
+    setLoading(true);
+    try {
+      const resp = await fetch("/api/recipes");
+      if (resp.ok) setRecipes(await resp.json());
+    } catch {}
+    setLoading(false);
+  }
 
   return (
     <AppShell>
@@ -28,81 +42,78 @@ export default function ReceitasPage() {
           </button>
         </div>
 
-        {/* Recipes */}
-        <div className="space-y-2">
-          {recipes.map((recipe) => (
-            <div
-              key={recipe.id}
-              className="border border-line rounded-lg bg-paper shadow-card overflow-hidden"
-            >
-              <button
-                onClick={() =>
-                  setExpanded(expanded === recipe.id ? null : recipe.id)
-                }
-                className="w-full flex items-center justify-between p-4 hover:bg-cream/50 transition-colors"
+        {loading ? (
+          <div className="text-center py-8 text-muted">Carregando...</div>
+        ) : (
+          <div className="space-y-2">
+            {recipes.map((recipe: any) => (
+              <div
+                key={recipe.id}
+                className="border border-line rounded-lg bg-paper shadow-card overflow-hidden"
               >
-                <div className="text-left">
-                  <p className="text-sm font-semibold text-ink">
-                    {recipe.name}
-                  </p>
-                  <p className="text-xs text-muted">
-                    Rende {recipe.yield} {recipe.yieldUnit} · Custo unitário: R${" "}
-                    {recipe.totalCost.toFixed(2)}
-                  </p>
-                </div>
-                {expanded === recipe.id ? (
-                  <ChevronUp className="w-5 h-5 text-muted" />
-                ) : (
-                  <ChevronDown className="w-5 h-5 text-muted" />
-                )}
-              </button>
+                <button
+                  onClick={() =>
+                    setExpanded(expanded === recipe.id ? null : recipe.id)
+                  }
+                  className="w-full flex items-center justify-between p-4 hover:bg-cream/50 transition-colors"
+                >
+                  <div className="text-left">
+                    <p className="text-sm font-semibold text-ink">
+                      {recipe.name}
+                    </p>
+                    <p className="text-xs text-muted">
+                      Rende {recipe.yield} {recipe.yieldUnit} · Custo unitário: R${" "}
+                      {recipe.totalCost.toFixed(2)}
+                    </p>
+                  </div>
+                  {expanded === recipe.id ? (
+                    <ChevronUp className="w-5 h-5 text-muted" />
+                  ) : (
+                    <ChevronDown className="w-5 h-5 text-muted" />
+                  )}
+                </button>
 
-              {expanded === recipe.id && (
-                <div className="border-t border-line p-4 space-y-3">
-                  <p className="text-xs font-semibold text-muted uppercase tracking-wide">
-                    Ingredientes
-                  </p>
-                  <div className="space-y-2">
-                    {recipe.ingredients.map((ing, i) => {
-                      const ingredient = ingredients.find(
-                        (x) => x.name === ing.name
-                      );
-                      const cost = ingredient
-                        ? ingredient.costPerKg * ing.qty
-                        : 0;
-                      return (
-                        <div
-                          key={i}
-                          className="flex items-center justify-between text-sm"
-                        >
-                          <span className="text-ink">{ing.name}</span>
-                          <div className="flex items-center gap-4">
-                            <span className="text-muted">
-                              {ing.qty} {ing.unit}
-                            </span>
-                            <span className="text-muted font-mono">
-                              R$ {cost.toFixed(2)}
-                            </span>
+                {expanded === recipe.id && (
+                  <div className="border-t border-line p-4 space-y-3">
+                    <p className="text-xs font-semibold text-muted uppercase tracking-wide">
+                      Ingredientes
+                    </p>
+                    <div className="space-y-2">
+                      {(recipe.ingredients || []).map((ing: any, i: number) => {
+                        const cost = (ing.ingredient?.costPerKg || 0) * ing.qty;
+                        return (
+                          <div
+                            key={i}
+                            className="flex items-center justify-between text-sm"
+                          >
+                            <span className="text-ink">{ing.ingredient?.name || ing.name}</span>
+                            <div className="flex items-center gap-4">
+                              <span className="text-muted">
+                                {ing.qty} {ing.unit}
+                              </span>
+                              <span className="text-muted font-mono">
+                                R$ {cost.toFixed(2)}
+                              </span>
+                            </div>
                           </div>
-                        </div>
-                      );
-                    })}
+                        );
+                      })}
+                    </div>
+                    <div className="border-t border-line pt-3 flex items-center justify-between">
+                      <span className="text-sm font-semibold text-ink">
+                        Custo Total
+                      </span>
+                      <span className="text-sm font-bold text-ink">
+                        R$ {recipe.totalCost.toFixed(2)}
+                      </span>
+                    </div>
                   </div>
-                  <div className="border-t border-line pt-3 flex items-center justify-between">
-                    <span className="text-sm font-semibold text-ink">
-                      Custo Total
-                    </span>
-                    <span className="text-sm font-bold text-ink">
-                      R$ {recipe.totalCost.toFixed(2)}
-                    </span>
-                  </div>
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
 
-        {/* New Recipe Modal */}
         {showModal && (
           <div className="fixed inset-0 z-50 bg-ink/30 flex items-center justify-center p-4">
             <div className="bg-paper rounded-xl border border-line shadow-lg w-full max-w-md max-h-[80vh] overflow-y-auto">

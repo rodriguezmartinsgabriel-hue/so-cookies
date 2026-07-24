@@ -14,12 +14,12 @@ async function main() {
   const adminHash = await bcrypt.hash("admin123", 10);
   const operacionalHash = await bcrypt.hash("operacional123", 10);
 
-  const admin = await prisma.user.upsert({
+  await prisma.user.upsert({
     where: { email: "admin@socookies.com" },
     update: {},
     create: { name: "Admin", email: "admin@socookies.com", password: adminHash, role: "ADMIN" },
   });
-  const operacional = await prisma.user.upsert({
+  await prisma.user.upsert({
     where: { email: "operacional@socookies.com" },
     update: {},
     create: { name: "Ana", email: "operacional@socookies.com", password: operacionalHash, role: "OPERACIONAL" },
@@ -32,155 +32,254 @@ async function main() {
   console.log("  ✅ Users (3)");
 
   // ─── Sale Channels ──────────────────────────────────────────
-  const channels = await Promise.all([
-    prisma.saleChannel.upsert({ where: { id: "whatsapp" }, update: {}, create: { id: "whatsapp", name: "WhatsApp", commission: 0 } }),
-    prisma.saleChannel.upsert({ where: { id: "ifood" }, update: {}, create: { id: "ifood", name: "iFood", commission: 0.23 } }),
-    prisma.saleChannel.upsert({ where: { id: "rappi" }, update: {}, create: { id: "rappi", name: "Rappi", commission: 0.20 } }),
-    prisma.saleChannel.upsert({ where: { id: "direto" }, update: {}, create: { id: "direto", name: "Direto", commission: 0 } }),
-  ]);
+  const wpp = await prisma.saleChannel.upsert({ where: { id: "whatsapp" }, update: {}, create: { id: "whatsapp", name: "WhatsApp", commission: 0 } });
+  const ifood = await prisma.saleChannel.upsert({ where: { id: "ifood" }, update: {}, create: { id: "ifood", name: "iFood", commission: 0.23 } });
+  const rappi = await prisma.saleChannel.upsert({ where: { id: "rappi" }, update: {}, create: { id: "rappi", name: "Rappi", commission: 0.20 } });
+  const direto = await prisma.saleChannel.upsert({ where: { id: "direto" }, update: {}, create: { id: "direto", name: "Direto", commission: 0 } });
   console.log("  ✅ Sale Channels (4)");
 
   // ─── Products ───────────────────────────────────────────────
-  const productsData = [
-    { id: "ck001", name: "Cookie Clássico", sku: "CK-001", category: "Cookie", price: 12, cost: 3.50, margin: 70.8 },
-    { id: "ck002", name: "Cookie Chocolate Belga", sku: "CK-002", category: "Cookie", price: 14, cost: 4.20, margin: 70.0 },
-    { id: "ck003", name: "Cookie Red Velvet", sku: "CK-003", category: "Cookie", price: 15, cost: 4.80, margin: 68.0 },
-    { id: "ck004", name: "Cookie Nutella", sku: "CK-004", category: "Cookie", price: 16, cost: 5.50, margin: 65.6 },
-    { id: "ck005", name: "Cookie Vegano", sku: "CK-005", category: "Cookie", price: 14, cost: 4.00, margin: 71.4 },
-    { id: "br001", name: "Brownie Clássico", sku: "BR-001", category: "Brownie", price: 10, cost: 2.80, margin: 72.0 },
-    { id: "br002", name: "Brownie Cremoso", sku: "BR-002", category: "Brownie", price: 12, cost: 3.60, margin: 70.0 },
-    { id: "cb001", name: "Combo Cookie + Café", sku: "CB-001", category: "Cookie", price: 18, cost: 5.00, margin: 72.2, unit: "combo" },
-    { id: "cf001", name: "Café Expresso", sku: "CF-001", category: "Café", price: 6, cost: 0.80, margin: 86.7 },
-    { id: "cf002", name: "Café com Leite", sku: "CF-002", category: "Café", price: 8, cost: 1.50, margin: 81.3 },
-    { id: "cf003", name: "Cold Brew", sku: "CF-003", category: "Bebida", price: 12, cost: 2.00, margin: 83.3 },
+  // Cost values from Ficha Técnica: custo por unidade
+  const prodClassico = await prisma.product.upsert({
+    where: { sku: "CK-CLASSICO" },
+    update: {},
+    create: { id: "ck-classico", name: "Cookie Clássico", sku: "CK-CLASSICO", category: "Cookie", price: 15, cost: 1.547, margin: 0.8969, unit: "un" },
+  });
+  const prodNino = await prisma.product.upsert({
+    where: { sku: "CK-NINO" },
+    update: {},
+    create: { id: "ck-nino", name: "Cookie Niño", sku: "CK-NINO", category: "Cookie", price: 15, cost: 1.078, margin: 0.9281, unit: "un" },
+  });
+  const prod3Choc = await prisma.product.upsert({
+    where: { sku: "CK-3CHOC" },
+    update: {},
+    create: { id: "ck-3choc", name: "Cookie 3 Chocolates", sku: "CK-3CHOC", category: "Cookie", price: 15, cost: 1.168, margin: 0.9221, unit: "un" },
+  });
+  console.log("  ✅ Products (3)");
+
+  // ─── Price Tiers ─────────────────────────────────────────────
+  // From Tabela de Preços: same tiers for all products
+  const tierDefs = [
+    { name: "Assado 1un", minQty: 1, maxQty: 2, price: 15 },
+    { name: "Assado 3un", minQty: 3, maxQty: 9, price: 13 },
+    { name: "Assado 10un", minQty: 10, maxQty: null, price: 10 },
+    { name: "Congelado 4un", minQty: 4, maxQty: 4, price: 10 },
+    { name: "Congelado 6un", minQty: 6, maxQty: 6, price: 9 },
+    { name: "Congelado 8un", minQty: 8, maxQty: 8, price: 8.75 },
   ];
-
-  const products = await Promise.all(
-    productsData.map((p) =>
-      prisma.product.upsert({ where: { sku: p.sku }, update: {}, create: p })
-    )
-  );
-  console.log(`  ✅ Products (${products.length})`);
-
-  // ─── Ingredients ─────────────────────────────────────────────
-  const ingredientsData = [
-    { id: "ing01", name: "Farinha de Trigo", stockKg: 15, minStockKg: 5, costPerKg: 6.50, supplier: "Forno & Cia" },
-    { id: "ing02", name: "Manteiga", stockKg: 8, minStockKg: 3, costPerKg: 28.00, supplier: "Laticínios Sul" },
-    { id: "ing03", name: "Açúcar Cristal", stockKg: 12, minStockKg: 4, costPerKg: 5.20, supplier: "Açúcar Bom" },
-    { id: "ing04", name: "Chocolate em Pó", stockKg: 4, minStockKg: 2, costPerKg: 22.00, supplier: "Cacau Show" },
-    { id: "ing05", name: "Chocolate Belga", stockKg: 3, minStockKg: 2, costPerKg: 55.00, supplier: "Callebaut" },
-    { id: "ing06", name: "Ovos", stockKg: 6, minStockKg: 3, costPerKg: 18.00, supplier: "Granja Modelo" },
-    { id: "ing07", name: "Nutella", stockKg: 2, minStockKg: 1, costPerKg: 60.00, supplier: "Ferrero" },
-    { id: "ing08", name: "Café em Grãos", stockKg: 5, minStockKg: 2, costPerKg: 45.00, supplier: "Café do Campo" },
-    { id: "ing09", name: "Leite", stockKg: 10, minStockKg: 5, costPerKg: 5.50, supplier: "Laticínios Sul" },
-    { id: "ing10", name: "Fermento", stockKg: 1, minStockKg: 0.5, costPerKg: 15.00, supplier: "Forno & Cia" },
-    { id: "ing11", name: "Aveia", stockKg: 3, minStockKg: 1, costPerKg: 12.00, supplier: "Natural Way" },
-  ];
-
-  const ingredients = await Promise.all(
-    ingredientsData.map((i) =>
-      prisma.ingredient.upsert({ where: { id: i.id }, update: {}, create: i })
-    )
-  );
-  console.log(`  ✅ Ingredients (${ingredients.length})`);
-
-  // ─── Recipes ─────────────────────────────────────────────────
-  const recipesData = [
-    {
-      id: "rec01", name: "Cookie Clássico", yield: 12, yieldUnit: "un", productId: "ck001",
-      items: [
-        { ingredientId: "ing01", qty: 0.25, unit: "kg" },
-        { ingredientId: "ing02", qty: 0.125, unit: "kg" },
-        { ingredientId: "ing03", qty: 0.1, unit: "kg" },
-        { ingredientId: "ing06", qty: 0.05, unit: "kg" },
-        { ingredientId: "ing10", qty: 0.01, unit: "kg" },
-      ],
-      totalCost: 3.50,
-    },
-    {
-      id: "rec02", name: "Cookie Chocolate Belga", yield: 12, yieldUnit: "un", productId: "ck002",
-      items: [
-        { ingredientId: "ing01", qty: 0.22, unit: "kg" },
-        { ingredientId: "ing02", qty: 0.12, unit: "kg" },
-        { ingredientId: "ing03", qty: 0.09, unit: "kg" },
-        { ingredientId: "ing05", qty: 0.05, unit: "kg" },
-        { ingredientId: "ing06", qty: 0.05, unit: "kg" },
-        { ingredientId: "ing10", qty: 0.01, unit: "kg" },
-      ],
-      totalCost: 4.20,
-    },
-    {
-      id: "rec03", name: "Brownie Clássico", yield: 16, yieldUnit: "un", productId: "br001",
-      items: [
-        { ingredientId: "ing04", qty: 0.2, unit: "kg" },
-        { ingredientId: "ing02", qty: 0.15, unit: "kg" },
-        { ingredientId: "ing03", qty: 0.2, unit: "kg" },
-        { ingredientId: "ing06", qty: 0.15, unit: "kg" },
-        { ingredientId: "ing01", qty: 0.1, unit: "kg" },
-      ],
-      totalCost: 2.80,
-    },
-  ];
-
-  for (const r of recipesData) {
-    const { items, ...recipeData } = r;
-    await prisma.recipe.upsert({
-      where: { id: recipeData.id },
-      update: {},
-      create: {
-        ...recipeData,
-        ingredients: {
-          create: items.map((item) => ({
-            ingredientId: item.ingredientId,
-            qty: item.qty,
-            unit: item.unit,
-          })),
+  const productIds = [prodClassico.id, prodNino.id, prod3Choc.id];
+  let tierCount = 0;
+  for (const pid of productIds) {
+    for (const t of tierDefs) {
+      await prisma.priceTier.upsert({
+        where: { id: `${pid}-${t.name.replace(/\s/g, "").toLowerCase()}` },
+        update: {},
+        create: {
+          id: `${pid}-${t.name.replace(/\s/g, "").toLowerCase()}`,
+          productId: pid,
+          name: t.name,
+          minQty: t.minQty,
+          maxQty: t.maxQty,
+          price: t.price,
         },
-      },
+      });
+      tierCount++;
+    }
+  }
+  console.log(`  ✅ Price Tiers (${tierCount})`);
+
+  // ─── Ingredients (from Ficha Técnica + Estoque de Insumos) ──
+  const ingData = [
+    // id, name, stockKg, minStockKg, costPerKg, supplier
+    // stock from Estoque de Insumos sheet (converted g→kg)
+    ["ing-farinha", "Farinha de trigo", 5, 1, 8, "Distribuidora Local"],
+    ["ing-manteiga", "Manteiga", 1.5, 1.5, 40, "Atacado Central"],
+    ["ing-acucar-ref", "Açúcar refinado", 2, 0.5, 6, "Distribuidora Local"],
+    ["ing-acucar-masc", "Açúcar mascavo", 2, 0.5, 10, "Distribuidora Local"],
+    ["ing-ovos", "Ovos", 1, 0.5, 16, "Granja Modelo"],
+    ["ing-choc-meio", "Chocolate meio amargo", 2.4, 1, 110, "Fornecedor Chocolates"],
+    ["ing-sal", "Sal", 0.5, 0.2, 20, "Distribuidora Local"],
+    ["ing-leite-ninho", "Leite Ninho em pó", 0.5, 0.3, 60, "Distribuidora Local"],
+    ["ing-choc-branco", "Chocolate branco", 0.8, 0.3, 50, "Fornecedor Chocolates"],
+    ["ing-choc-mix", "Mix chocolate branco/meio amargo/ao leite", 0.8, 0.3, 47, "Fornecedor Chocolates"],
+    ["ing-choc-cobertura", "Chocolate meio amargo (cobertura)", 0.5, 0.2, 45, "Fornecedor Chocolates"],
+  ];
+  for (const row of ingData) {
+    const [id, name, stock, minStock, cost, supplier] = row as [string, string, number, number, number, string];
+    await prisma.ingredient.upsert({
+      where: { id },
+      update: {},
+      create: { id, name, stockKg: stock, minStockKg: minStock, costPerKg: cost, supplier },
     });
   }
+  console.log("  ✅ Ingredients (11)");
+
+  // ─── Recipes (from Ficha Técnica) ──────────────────────────
+  // Cookie Clássico — yield 20un, total cost R$30.94, cost/un R$1.547
+  const recClassico = await prisma.recipe.upsert({
+    where: { id: "rec-classico" },
+    update: {},
+    create: {
+      id: "rec-classico", name: "Cookie Clássico", yield: 20, yieldUnit: "un",
+      productId: prodClassico.id, totalCost: 30.94,
+      ingredients: {
+        create: [
+          { ingredientId: "ing-farinha", qty: 0.210, unit: "kg" },
+          { ingredientId: "ing-manteiga", qty: 0.100, unit: "kg" },
+          { ingredientId: "ing-acucar-ref", qty: 0.060, unit: "kg" },
+          { ingredientId: "ing-acucar-masc", qty: 0.120, unit: "kg" },
+          { ingredientId: "ing-ovos", qty: 2, unit: "un" },
+          { ingredientId: "ing-choc-meio", qty: 0.200, unit: "kg" },
+          { ingredientId: "ing-sal", qty: 0.005, unit: "kg" },
+        ],
+      },
+    },
+  });
+  // Cookie Niño — yield 18un, total cost R$19.40, cost/un R$1.078
+  const recNino = await prisma.recipe.upsert({
+    where: { id: "rec-nino" },
+    update: {},
+    create: {
+      id: "rec-nino", name: "Cookie Niño", yield: 18, yieldUnit: "un",
+      productId: prodNino.id, totalCost: 19.40,
+      ingredients: {
+        create: [
+          { ingredientId: "ing-farinha", qty: 0.100, unit: "kg" },
+          { ingredientId: "ing-manteiga", qty: 0.100, unit: "kg" },
+          { ingredientId: "ing-leite-ninho", qty: 0.100, unit: "kg" },
+          { ingredientId: "ing-acucar-ref", qty: 0.050, unit: "kg" },
+          { ingredientId: "ing-ovos", qty: 1, unit: "un" },
+          { ingredientId: "ing-choc-branco", qty: 0.150, unit: "kg" },
+        ],
+      },
+    },
+  });
+  // Cookie 3 Chocolates — yield 18un, total cost R$21.03, cost/un R$1.168
+  const rec3Choc = await prisma.recipe.upsert({
+    where: { id: "rec-3choc" },
+    update: {},
+    create: {
+      id: "rec-3choc", name: "Cookie 3 Chocolates", yield: 18, yieldUnit: "un",
+      productId: prod3Choc.id, totalCost: 21.03,
+      ingredients: {
+        create: [
+          { ingredientId: "ing-farinha", qty: 0.220, unit: "kg" },
+          { ingredientId: "ing-manteiga", qty: 0.150, unit: "kg" },
+          { ingredientId: "ing-acucar-masc", qty: 0.080, unit: "kg" },
+          { ingredientId: "ing-ovos", qty: 1, unit: "un" },
+          { ingredientId: "ing-choc-mix", qty: 0.210, unit: "kg" },
+          { ingredientId: "ing-choc-cobertura", qty: 0.040, unit: "kg" },
+        ],
+      },
+    },
+  });
   console.log("  ✅ Recipes (3)");
 
-  // ─── Sample Orders ───────────────────────────────────────────
-  const ordersData = [
-    { id: "ord001", channel: "iFood", customer: "Maria Silva", total: 68, status: "PENDENTE" as const, createdAt: new Date("2026-07-24T10:30:00"), items: [{ productId: "ck002", qty: 4, price: 14 }, { productId: "cf001", qty: 2, price: 6 }] },
-    { id: "ord002", channel: "WhatsApp", customer: "João Santos", total: 102, status: "CONFIRMADO" as const, createdAt: new Date("2026-07-24T10:45:00"), items: [{ productId: "ck001", qty: 6, price: 12 }, { productId: "br001", qty: 3, price: 10 }] },
-    { id: "ord003", channel: "Rappi", customer: "Ana Costa", total: 48, status: "PRODUCAO" as const, createdAt: new Date("2026-07-24T11:00:00"), items: [{ productId: "cb001", qty: 2, price: 18 }, { productId: "cf003", qty: 1, price: 12 }] },
-    { id: "ord004", channel: "Direto", customer: "Pedro Lima", total: 192, status: "PRONTO" as const, createdAt: new Date("2026-07-24T09:30:00"), items: [{ productId: "ck004", qty: 12, price: 16 }] },
-    { id: "ord005", channel: "iFood", customer: "Lucia Ferreira", total: 58, status: "ENTREGA" as const, createdAt: new Date("2026-07-24T11:15:00"), items: [{ productId: "ck005", qty: 3, price: 14 }, { productId: "cf002", qty: 2, price: 8 }] },
-    { id: "ord006", channel: "WhatsApp", customer: "Carlos Souza", total: 60, status: "CONCLUIDO" as const, createdAt: new Date("2026-07-24T08:00:00"), items: [{ productId: "br002", qty: 5, price: 12 }] },
-    { id: "ord007", channel: "Direto", customer: "Fernanda Alves", total: 120, status: "CONCLUIDO" as const, createdAt: new Date("2026-07-24T08:30:00"), items: [{ productId: "ck003", qty: 8, price: 15 }] },
-  ];
-
-  for (const o of ordersData) {
-    const { items, ...orderData } = o;
-    await prisma.order.upsert({
-      where: { id: orderData.id },
-      update: {},
-      create: {
-        ...orderData,
-        items: { create: items },
+  // ─── Sales (from Vendas sheet) ─────────────────────────────
+  // All sales on 2026-07-24, channel WhatsApp, total R$419
+  const saleDate = new Date("2026-07-24T10:00:00-03:00");
+  await prisma.sale.upsert({
+    where: { id: "venda-julho" },
+    update: {},
+    create: {
+      id: "venda-julho",
+      total: 419,
+      createdAt: saleDate,
+      channelId: wpp.id,
+      items: {
+        create: [
+          { productId: prodClassico.id, qty: 6, price: 13 },
+          { productId: prodClassico.id, qty: 1, price: 10 }, // congelado
+          { productId: prodNino.id, qty: 7, price: 13 },
+          { productId: prodNino.id, qty: 1, price: 10 }, // congelado
+          { productId: prod3Choc.id, qty: 14, price: 15 },
+          { productId: prod3Choc.id, qty: 2, price: 10 }, // congelado
+        ],
       },
-    });
-  }
-  console.log("  ✅ Orders (7)");
+    },
+  });
+  console.log("  ✅ Sales (1 venda com 6 itens, total R$419)");
 
-  // ─── Sample Cash Flow ────────────────────────────────────────
-  const cashFlowData = [
-    { type: "ENTRADA" as const, category: "Venda Direta", description: "Pedido #004 - Pedro Lima", amount: 192, userId: admin.id },
-    { type: "ENTRADA" as const, category: "Venda iFood", description: "3 pedidos iFood", amount: 156, userId: admin.id },
-    { type: "ENTRADA" as const, category: "Venda Rappi", description: "1 pedido Rappi", amount: 48, userId: admin.id },
-    { type: "SAIDA" as const, category: "Compra Ingrediente", description: "Chocolate Belga - Callebaut", amount: -165, userId: admin.id },
-    { type: "SAIDA" as const, category: "Frete", description: "Entrega Rappi", amount: -25, userId: admin.id },
-    { type: "ENTRADA" as const, category: "Venda WhatsApp", description: "2 pedidos WhatsApp", amount: 204, userId: admin.id },
-    { type: "SAIDA" as const, category: "Comissão iFood", description: "Comissão sobre vendas", amount: -72.50, userId: admin.id },
-    { type: "SAIDA" as const, category: "Compra Ingrediente", description: "Farinha + Manteiga", amount: -98, userId: admin.id },
-  ];
+  // ─── Orders (2 from Vendas channels) ─────────────────────────
+  await prisma.order.upsert({
+    where: { id: "ord-wpp-julho" },
+    update: {},
+    create: {
+      id: "ord-wpp-julho",
+      channel: "WhatsApp",
+      customer: "Cliente WhatsApp",
+      total: 419,
+      status: "CONCLUIDO",
+      createdAt: saleDate,
+      items: {
+        create: [
+          { productId: prodClassico.id, qty: 6, price: 13 },
+          { productId: prodClassico.id, qty: 1, price: 10 },
+          { productId: prodNino.id, qty: 7, price: 13 },
+          { productId: prodNino.id, qty: 1, price: 10 },
+          { productId: prod3Choc.id, qty: 14, price: 15 },
+          { productId: prod3Choc.id, qty: 2, price: 10 },
+        ],
+      },
+    },
+  });
+  await prisma.order.upsert({
+    where: { id: "ord-ifood-julho" },
+    update: {},
+    create: {
+      id: "ord-ifood-julho",
+      channel: "iFood",
+      customer: "Cliente iFood",
+      total: 78,
+      status: "CONCLUIDO",
+      createdAt: new Date("2026-07-20T12:00:00-03:00"),
+      items: {
+        create: [
+          { productId: prodClassico.id, qty: 6, price: 13 },
+        ],
+      },
+    },
+  });
+  console.log("  ✅ Orders (2)");
 
-  for (const cf of cashFlowData) {
-    await prisma.cashFlow.create({ data: cf });
-  }
-  console.log("  ✅ Cash Flow (8 lançamentos)\n");
+  // ─── Cash Flow (from Fluxo de Caixa sheet) ──────────────────
+  await prisma.cashFlow.create({
+    data: {
+      id: "cf-saida-insumos",
+      type: "SAIDA",
+      category: "Insumos",
+      description: "Compra de farinha, manteiga e chocolate",
+      amount: 320,
+      date: new Date("2026-07-01"),
+    },
+  });
+  await prisma.cashFlow.create({
+    data: {
+      id: "cf-entrada-vendas",
+      type: "ENTRADA",
+      category: "Vendas",
+      description: "Vendas da semana (iFood + direto)",
+      amount: 450,
+      date: new Date("2026-07-20"),
+    },
+  });
+  console.log("  ✅ Cash Flow (2 lançamentos)");
+
+  // ─── Production (from Produção e Perdas sheet) ─────────────
+  await prisma.production.upsert({
+    where: { batchCode: "LOTE-20260719-NINO" },
+    update: {},
+    create: {
+      batchCode: "LOTE-20260719-NINO",
+      productId: prodNino.id,
+      qty: 20,
+      startTime: new Date("2026-07-19T06:00:00-03:00"),
+      endTime: new Date("2026-07-19T08:00:00-03:00"),
+      status: "concluido",
+      notes: "Forno com temperatura irregular — 1 unidade perdida",
+    },
+  });
+  console.log("  ✅ Production (1 lote)\n");
 
   console.log("🎉 Seed completo!");
 }

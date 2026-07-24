@@ -1,36 +1,33 @@
-import { AppShell } from "@/components/layout/AppShell";
-import { TodaySummary } from "@/components/dashboard/TodaySummary";
-import { RecentActivity } from "@/components/dashboard/RecentActivity";
-import { QuickActions } from "@/components/dashboard/QuickActions";
-import { LowStock } from "@/components/dashboard/LowStock";
-import { getDashboardKpis, getOrders, getLowStock as getLowStockDb } from "@/lib/db";
+import { auth } from "@/lib/auth"
+import { redirect } from "next/navigation"
+import Link from "next/link"
+import { InstallBanner } from "@/components/pwa/InstallBanner"
 
-export default async function DashboardPage() {
-  const [kpis, orders, lowStockItems] = await Promise.all([
-    getDashboardKpis(),
-    getOrders(),
-    getLowStockDb(),
-  ]);
+export default async function HomePage() {
+  const session = await auth()
+  if (session) redirect("/pedidos")
 
   return (
-    <AppShell>
-      <div className="space-y-6">
-        <div>
-          <h1 className="font-brand text-3xl text-ink">bom dia, time</h1>
-          <p className="text-muted text-sm mt-1">
-            Aqui está o resumo do seu negócio hoje.
+    <main className="flex min-h-screen flex-col items-center justify-center bg-cream px-6">
+      <div className="space-y-8 text-center">
+        <div className="space-y-2">
+          <h1 className="font-brand text-6xl text-ink">Só Manager</h1>
+          <p className="text-muted text-lg">
+            Gestão completa do seu negócio de cookies.
           </p>
         </div>
 
-        <TodaySummary kpis={kpis} />
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <RecentActivity orders={orders} />
-          <LowStock items={lowStockItems} />
+        <div className="space-y-3">
+          <Link
+            href="/login"
+            className="inline-block rounded-lg bg-ink px-8 py-3 font-semibold text-paper transition-colors hover:bg-ink/80"
+          >
+            Entrar
+          </Link>
         </div>
-
-        <QuickActions />
       </div>
-    </AppShell>
-  );
+
+      <InstallBanner />
+    </main>
+  )
 }

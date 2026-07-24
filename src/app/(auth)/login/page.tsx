@@ -28,7 +28,7 @@ export default function LoginPage() {
       setError("Email ou senha inválidos");
       setLoading(false);
     } else {
-      router.push("/");
+      router.push("/pedidos");
       router.refresh();
     }
   }

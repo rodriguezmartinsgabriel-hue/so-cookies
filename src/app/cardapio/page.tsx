@@ -1,9 +1,8 @@
 "use client";
 
 import { AppShell } from "@/components/layout/AppShell";
-import { products } from "@/lib/mock-data";
 import { ShoppingCart, Plus, Minus } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 const categoryIcons: Record<string, string> = {
   Cookie: "🍪",
@@ -13,11 +12,26 @@ const categoryIcons: Record<string, string> = {
 };
 
 export default function CardapioPage() {
+  const [products, setProducts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [cart, setCart] = useState<
     { id: string; name: string; price: number; qty: number }[]
   >([]);
 
-  const addToCart = (product: (typeof products)[0]) => {
+  useEffect(() => {
+    loadProducts();
+  }, []);
+
+  async function loadProducts() {
+    setLoading(true);
+    try {
+      const resp = await fetch("/api/products");
+      if (resp.ok) setProducts(await resp.json());
+    } catch {}
+    setLoading(false);
+  }
+
+  const addToCart = (product: any) => {
     setCart((prev) => {
       const existing = prev.find((item) => item.id === product.id);
       if (existing) {
@@ -51,16 +65,23 @@ export default function CardapioPage() {
 
   const total = cart.reduce((sum, item) => sum + item.price * item.qty, 0);
 
-  const grouped = products
-    .filter((p) => p.active)
+  const grouped: Record<string, any[]> = products
     .reduce(
       (acc, p) => {
         if (!acc[p.category]) acc[p.category] = [];
         acc[p.category].push(p);
         return acc;
       },
-      {} as Record<string, (typeof products)[0][]>
+      {} as Record<string, any[]>
     );
+
+  if (loading) {
+    return (
+      <AppShell>
+        <div className="text-center py-8 text-muted">Carregando cardápio...</div>
+      </AppShell>
+    );
+  }
 
   return (
     <AppShell>
