@@ -1,72 +1,76 @@
 import {
   TrendingUp,
-  TrendingDown,
   DollarSign,
   ShoppingBag,
-  Package,
   AlertTriangle,
 } from "lucide-react";
 
-const kpis = [
-  {
-    label: "Faturamento Mês",
-    value: "R$ 1.250",
-    trend: 12,
-    icon: DollarSign,
-  },
-  {
-    label: "Lucro Líquido",
-    value: "R$ 380",
-    trend: 8,
-    icon: TrendingUp,
-  },
-  {
-    label: "Margem",
-    value: "30,4%",
-    trend: 2,
-    icon: TrendingUp,
-  },
-  {
-    label: "Pedidos Hoje",
-    value: "8",
-    subtitle: "2 pendentes",
-    icon: ShoppingBag,
-  },
-];
+type Kpis = {
+  revenue: number;
+  profit: number;
+  margin: number;
+  ordersToday: number;
+  pendingOrders: number;
+  todayIn: number;
+  todayOut: number;
+  todayBalance: number;
+};
 
-export function TodaySummary() {
+export function TodaySummary({ kpis }: { kpis: Kpis }) {
+  const cards = [
+    {
+      label: "Faturamento Mês",
+      value: `R$ ${kpis.revenue.toFixed(0)}`,
+      icon: DollarSign,
+      trend: 12,
+    },
+    {
+      label: "Lucro Líquido",
+      value: `R$ ${kpis.profit.toFixed(0)}`,
+      icon: TrendingUp,
+      trend: 8,
+    },
+    {
+      label: "Margem",
+      value: `${kpis.margin.toFixed(1)}%`,
+      icon: TrendingUp,
+      trend: 2,
+    },
+    {
+      label: "Pedidos Hoje",
+      value: `${kpis.ordersToday}`,
+      icon: ShoppingBag,
+      subtitle: `${kpis.pendingOrders} pendentes`,
+    },
+  ];
+
   return (
     <section>
       <h2 className="text-sm font-semibold text-ink uppercase tracking-wide mb-3">
         Hoje
       </h2>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        {kpis.map((kpi) => (
+        {cards.map((card) => (
           <div
-            key={kpi.label}
+            key={card.label}
             className="border border-line rounded-lg bg-paper p-4 shadow-card"
           >
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-medium text-muted uppercase tracking-wide">
-                {kpi.label}
+                {card.label}
               </span>
-              <kpi.icon className="w-4 h-4 text-muted" strokeWidth={1.5} />
+              <card.icon className="w-4 h-4 text-muted" strokeWidth={1.5} />
             </div>
-            <p className="text-2xl font-bold text-ink">{kpi.value}</p>
-            {kpi.trend !== undefined && (
-              <p
-                className={`text-xs mt-1 ${
-                  kpi.trend >= 0 ? "text-success" : "text-danger"
-                }`}
-              >
-                {kpi.trend >= 0 ? "↑" : "↓"} {Math.abs(kpi.trend)}% vs mês
-                anterior
+            <p className="text-2xl font-bold text-ink">{card.value}</p>
+            {card.trend !== undefined && (
+              <p className="text-xs text-success mt-1">
+                ↑ {card.trend}% vs mês anterior
               </p>
             )}
-            {kpi.subtitle && (
+            {card.subtitle && (
               <p className="text-xs text-warning mt-1 flex items-center gap-1">
                 <AlertTriangle className="w-3 h-3" />
-                {kpi.subtitle}
+                {card.subtitle}
               </p>
             )}
           </div>

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { AuthProvider } from "@/components/layout/AuthProvider";
 
 export const metadata: Metadata = {
   title: "Só Cookies",
@@ -13,7 +14,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt-BR" className="h-full antialiased">
-      <body className="h-full font-ui">{children}</body>
+      <body className="h-full font-ui">
+        <AuthProvider>{children}</AuthProvider>
+      </body>
     </html>
   );
 }

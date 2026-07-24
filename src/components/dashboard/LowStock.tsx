@@ -1,12 +1,15 @@
 import { AlertTriangle } from "lucide-react";
-import { ingredients } from "@/lib/mock-data";
 
-export function LowStock() {
-  const lowStockItems = ingredients.filter(
-    (i) => i.stockKg <= i.minStockKg * 1.5
-  );
+type Ingredient = {
+  id: string;
+  name: string;
+  stockKg: number;
+  minStockKg: number;
+  supplier: string;
+};
 
-  if (lowStockItems.length === 0) return null;
+export function LowStock({ items }: { items: Ingredient[] }) {
+  if (items.length === 0) return null;
 
   return (
     <section>
@@ -15,13 +18,11 @@ export function LowStock() {
         Estoque Baixo
       </h2>
       <div className="border border-line rounded-lg bg-paper shadow-card divide-y divide-line">
-        {lowStockItems.map((item) => (
+        {items.map((item) => (
           <div key={item.id} className="flex items-center gap-3 p-3">
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-ink">{item.name}</p>
-              <p className="text-xs text-muted">
-                Fornecedor: {item.supplier}
-              </p>
+              <p className="text-xs text-muted">Fornecedor: {item.supplier}</p>
             </div>
             <div className="text-right shrink-0">
               <p

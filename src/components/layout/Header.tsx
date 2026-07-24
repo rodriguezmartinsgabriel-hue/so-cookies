@@ -1,10 +1,22 @@
 "use client";
 
-import { Bell, User } from "lucide-react";
+import { Bell, User, LogOut } from "lucide-react";
 
-export function Header() {
+type User = {
+  name?: string | null;
+  email?: string | null;
+  role?: string;
+};
+
+export function Header({
+  user,
+  onLogout,
+}: {
+  user?: User;
+  onLogout: () => void;
+}) {
   return (
-    <header className="h-14 border-b border-line bg-paper flex items-center justify-between px-4 lg:px-6">
+    <header className="h-14 border-b border-line bg-paper flex items-center justify-between px-4 lg:px-6 shrink-0">
       <div className="lg:hidden">
         <span className="font-brand text-xl text-ink">só</span>
       </div>
@@ -25,8 +37,15 @@ export function Header() {
             <User className="w-4 h-4 text-paper" strokeWidth={1.5} />
           </div>
           <span className="hidden sm:block text-sm font-medium text-ink">
-            Admin
+            {user?.name || "Usuário"}
           </span>
+          <button
+            onClick={onLogout}
+            className="p-1.5 rounded-md hover:bg-cream text-muted transition-colors ml-1"
+            title="Sair"
+          >
+            <LogOut className="w-4 h-4" strokeWidth={1.5} />
+          </button>
         </div>
       </div>
     </header>

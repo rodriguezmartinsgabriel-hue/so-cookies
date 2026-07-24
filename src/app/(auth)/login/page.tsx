@@ -1,15 +1,47 @@
+"use client";
+
+import { signIn } from "next-auth/react";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+
 export default function LoginPage() {
+  const router = useRouter();
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+
+    const form = new FormData(e.currentTarget);
+    const email = form.get("email") as string;
+    const password = form.get("password") as string;
+
+    const result = await signIn("credentials", {
+      email,
+      password,
+      redirect: false,
+    });
+
+    if (result?.error) {
+      setError("Email ou senha inválidos");
+      setLoading(false);
+    } else {
+      router.push("/");
+      router.refresh();
+    }
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-paper p-4">
       <div className="w-full max-w-sm space-y-8">
-        {/* Logo */}
         <div className="text-center">
           <h1 className="font-brand text-6xl text-ink mb-2">só</h1>
           <p className="text-muted text-sm">cookies & café</p>
         </div>
 
-        {/* Form */}
-        <form className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label
               htmlFor="email"
@@ -19,9 +51,11 @@ export default function LoginPage() {
             </label>
             <input
               id="email"
+              name="email"
               type="email"
               placeholder="seu@email.com"
-              className="w-full px-3 py-2.5 border border-line rounded-md text-sm text-ink placeholder:text-kraft focus:outline-none focus:border-ink transition-colors"
+              required
+              className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink placeholder:text-kraft focus:outline-none focus:border-ink transition-colors"
             />
           </div>
 
@@ -34,17 +68,24 @@ export default function LoginPage() {
             </label>
             <input
               id="password"
+              name="password"
               type="password"
               placeholder="••••••••"
-              className="w-full px-3 py-2.5 border border-line rounded-md text-sm text-ink placeholder:text-kraft focus:outline-none focus:border-ink transition-colors"
+              required
+              className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink placeholder:text-kraft focus:outline-none focus:border-ink transition-colors"
             />
           </div>
 
+          {error && (
+            <p className="text-sm text-danger text-center">{error}</p>
+          )}
+
           <button
             type="submit"
-            className="w-full h-12 bg-ink text-paper font-medium rounded-lg hover:bg-ink/90 transition-colors active:scale-[0.98]"
+            disabled={loading}
+            className="w-full h-12 bg-ink text-paper font-medium rounded-lg hover:bg-ink/90 transition-colors active:scale-[0.98] disabled:opacity-50"
           >
-            Entrar
+            {loading ? "Entrando..." : "Entrar"}
           </button>
         </form>
 

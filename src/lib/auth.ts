@@ -1,5 +1,8 @@
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
+import { compare } from "bcryptjs";
+import { PrismaPg } from "@prisma/adapter-pg";
+import { PrismaClient } from "@/generated/prisma/client";
 
 declare module "next-auth" {
   interface User {
@@ -24,20 +27,30 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        // TODO: Replace with real DB lookup + bcrypt compare
-        // Mock admin user for development
-        if (
-          credentials?.email === "admin@socookies.com" &&
-          credentials?.password === "admin123"
-        ) {
-          return {
-            id: "1",
-            name: "Admin",
-            email: "admin@socookies.com",
-            role: "ADMIN",
-          };
-        }
-        return null;
+        if (!credentials?.email || !credentials?.password) return null;
+
+        const adapter = new PrismaPg({
+          connectionString: process.env.DATABASE_URL!,
+        });
+        const prisma = new PrismaClient({ adapter });
+
+        const user = await prisma.user.findUnique({
+          where: { email: credentials.email as string },
+        });
+
+        await prisma.$disconnect();
+
+        if (!user) return null;
+
+        const valid = await compare(credentials.password as string, user.password);
+        if (!valid) return null;
+
+        return {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+        };
       },
     }),
   ],
@@ -57,6 +70,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     async session({ session, token }) {
       if (session.user) {
         session.user.role = token.role as string;
+        session.user.id = token.sub as string;
       }
       return session;
     },

@@ -3,8 +3,15 @@ import { TodaySummary } from "@/components/dashboard/TodaySummary";
 import { RecentActivity } from "@/components/dashboard/RecentActivity";
 import { QuickActions } from "@/components/dashboard/QuickActions";
 import { LowStock } from "@/components/dashboard/LowStock";
+import { getDashboardKpis, getOrders, getLowStock as getLowStockDb } from "@/lib/db";
 
-export default function DashboardPage() {
+export default async function DashboardPage() {
+  const [kpis, orders, lowStockItems] = await Promise.all([
+    getDashboardKpis(),
+    getOrders(),
+    getLowStockDb(),
+  ]);
+
   return (
     <AppShell>
       <div className="space-y-6">
@@ -15,11 +22,11 @@ export default function DashboardPage() {
           </p>
         </div>
 
-        <TodaySummary />
+        <TodaySummary kpis={kpis} />
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <RecentActivity />
-          <LowStock />
+          <RecentActivity orders={orders} />
+          <LowStock items={lowStockItems} />
         </div>
 
         <QuickActions />
