@@ -1,0 +1,264 @@
+"use client";
+
+import { useState } from "react";
+import { AppShell } from "@/components/layout/AppShell";
+import { products } from "@/lib/mock-data";
+import {
+  Search,
+  Plus,
+  AlertTriangle,
+  Package,
+  Edit,
+  Trash2,
+  X,
+} from "lucide-react";
+
+const categoryColors: Record<string, string> = {
+  Cookie: "bg-ink/10 text-ink",
+  Brownie: "bg-kraft/50 text-ink",
+  Café: "bg-cream text-ink",
+  Bebida: "bg-info/10 text-info",
+  Outro: "bg-muted/10 text-muted",
+};
+
+export default function EstoquePage() {
+  const [search, setSearch] = useState("");
+  const [showModal, setShowModal] = useState(false);
+
+  const filtered = products.filter(
+    (p) =>
+      p.name.toLowerCase().includes(search.toLowerCase()) ||
+      p.sku.toLowerCase().includes(search.toLowerCase())
+  );
+
+  return (
+    <AppShell>
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-ink">Estoque</h1>
+            <p className="text-sm text-muted">
+              {products.filter((p) => p.active).length} produtos ativos
+            </p>
+          </div>
+          <button
+            onClick={() => setShowModal(true)}
+            className="flex items-center gap-2 h-10 px-4 bg-ink text-paper rounded-lg text-sm font-medium hover:bg-ink/90 transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            Novo Produto
+          </button>
+        </div>
+
+        {/* Search */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
+          <input
+            type="text"
+            placeholder="Buscar por nome ou SKU..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full h-10 pl-10 pr-4 border border-line rounded-lg text-sm text-ink placeholder:text-kraft focus:outline-none focus:border-ink transition-colors"
+          />
+        </div>
+
+        {/* Products Grid - Mobile */}
+        <div className="lg:hidden space-y-2">
+          {filtered.map((product) => (
+            <div
+              key={product.id}
+              className="border border-line rounded-lg bg-paper p-3 shadow-card"
+            >
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-sm font-semibold text-ink">{product.name}</p>
+                  <p className="text-xs text-muted">{product.sku}</p>
+                </div>
+                <span
+                  className={`text-xs font-medium px-2 py-0.5 rounded-full ${categoryColors[product.category]}`}
+                >
+                  {product.category}
+                </span>
+              </div>
+              <div className="flex items-center justify-between mt-2">
+                <div>
+                  <p className="text-xs text-muted">Preço</p>
+                  <p className="text-sm font-bold text-ink">
+                    R$ {product.price.toFixed(2)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted">Custo</p>
+                  <p className="text-sm text-ink">
+                    R$ {product.cost.toFixed(2)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted">Margem</p>
+                  <p className="text-sm text-success font-medium">
+                    {product.margin.toFixed(1)}%
+                  </p>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Products Table - Desktop */}
+        <div className="hidden lg:block border border-line rounded-lg bg-paper shadow-card overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-line bg-cream">
+                  <th className="text-left text-xs font-semibold text-muted uppercase tracking-wide px-4 py-3">
+                    SKU
+                  </th>
+                  <th className="text-left text-xs font-semibold text-muted uppercase tracking-wide px-4 py-3">
+                    Produto
+                  </th>
+                  <th className="text-left text-xs font-semibold text-muted uppercase tracking-wide px-4 py-3">
+                    Categoria
+                  </th>
+                  <th className="text-right text-xs font-semibold text-muted uppercase tracking-wide px-4 py-3">
+                    Custo
+                  </th>
+                  <th className="text-right text-xs font-semibold text-muted uppercase tracking-wide px-4 py-3">
+                    Preço
+                  </th>
+                  <th className="text-right text-xs font-semibold text-muted uppercase tracking-wide px-4 py-3">
+                    Margem
+                  </th>
+                  <th className="text-right text-xs font-semibold text-muted uppercase tracking-wide px-4 py-3">
+                    Ações
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-line">
+                {filtered.map((product) => (
+                  <tr
+                    key={product.id}
+                    className="hover:bg-cream/50 transition-colors"
+                  >
+                    <td className="px-4 py-3 text-xs text-muted font-mono">
+                      {product.sku}
+                    </td>
+                    <td className="px-4 py-3">
+                      <p className="text-sm font-medium text-ink">
+                        {product.name}
+                      </p>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span
+                        className={`text-xs font-medium px-2 py-0.5 rounded-full ${categoryColors[product.category]}`}
+                      >
+                        {product.category}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-sm text-muted text-right">
+                      R$ {product.cost.toFixed(2)}
+                    </td>
+                    <td className="px-4 py-3 text-sm font-semibold text-ink text-right">
+                      R$ {product.price.toFixed(2)}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-success text-right font-medium">
+                      {product.margin.toFixed(1)}%
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <button className="p-1.5 rounded-md hover:bg-cream text-muted">
+                        <Edit className="w-4 h-4" />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* New Product Modal */}
+        {showModal && (
+          <div className="fixed inset-0 z-50 bg-ink/30 flex items-center justify-center p-4">
+            <div className="bg-paper rounded-xl border border-line shadow-lg w-full max-w-md">
+              <div className="flex items-center justify-between p-4 border-b border-line">
+                <h3 className="text-lg font-bold text-ink">Novo Produto</h3>
+                <button
+                  onClick={() => setShowModal(false)}
+                  className="p-1.5 rounded-md hover:bg-cream text-muted"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <div className="p-4 space-y-4">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="col-span-2">
+                    <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">
+                      Nome
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Nome do produto"
+                      className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink placeholder:text-kraft focus:outline-none focus:border-ink transition-colors"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">
+                      SKU
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="CK-001"
+                      className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink placeholder:text-kraft focus:outline-none focus:border-ink transition-colors"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">
+                      Categoria
+                    </label>
+                    <select className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink focus:outline-none focus:border-ink transition-colors bg-paper">
+                      <option>Cookie</option>
+                      <option>Brownie</option>
+                      <option>Café</option>
+                      <option>Bebida</option>
+                      <option>Outro</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">
+                      Custo (R$)
+                    </label>
+                    <input
+                      type="number"
+                      placeholder="0.00"
+                      className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink placeholder:text-kraft focus:outline-none focus:border-ink transition-colors"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">
+                      Preço (R$)
+                    </label>
+                    <input
+                      type="number"
+                      placeholder="0.00"
+                      className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink placeholder:text-kraft focus:outline-none focus:border-ink transition-colors"
+                    />
+                  </div>
+                </div>
+              </div>
+              <div className="p-4 border-t border-line flex gap-2">
+                <button
+                  onClick={() => setShowModal(false)}
+                  className="flex-1 h-10 border border-line rounded-lg text-sm font-medium text-ink hover:bg-cream transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button className="flex-1 h-10 bg-ink text-paper rounded-lg text-sm font-medium hover:bg-ink/90 transition-colors">
+                  Salvar
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </AppShell>
+  );
+}
