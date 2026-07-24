@@ -115,8 +115,8 @@ export default function PrevisaoPage() {
                         <p className="text-xs text-muted">Fornecedor: {item.supplier}</p>
                       </div>
                       <div className="text-right">
-                        <p className="text-sm font-semibold text-danger">{item.stockKg} {item.unit || "g"}</p>
-                        <p className="text-xs text-muted">mín: {item.minStockKg}</p>
+                        <p className="text-sm font-semibold text-danger">{item.stockKg} kg</p>
+                        <p className="text-xs text-muted">mín: {item.minStockKg} kg</p>
                       </div>
                     </div>
                   ))}

@@ -14,7 +14,7 @@ export default function EstoquePage() {
   const [tab, setTab] = useState<"insumos" | "precos">("insumos");
 
   const [form, setForm] = useState({
-    name: "", brand: "", stockKg: "", minStockKg: "", costPerKg: "", supplier: "", unit: "g",
+    name: "", brand: "", stockKg: "", minStockKg: "", costPerKg: "", supplier: "",
     caloriesPer100g: "", proteinPer100g: "", carbsPer100g: "", fatPer100g: "",
   });
 
@@ -37,7 +37,7 @@ export default function EstoquePage() {
   useEffect(() => { loadIngredients(); }, [loadIngredients]);
 
   function resetForm() {
-    setForm({ name: "", brand: "", stockKg: "", minStockKg: "", costPerKg: "", supplier: "", unit: "g", caloriesPer100g: "", proteinPer100g: "", carbsPer100g: "", fatPer100g: "" });
+    setForm({ name: "", brand: "", stockKg: "", minStockKg: "", costPerKg: "", supplier: "", caloriesPer100g: "", proteinPer100g: "", carbsPer100g: "", fatPer100g: "" });
     setEditingItem(null);
   }
 
@@ -50,7 +50,6 @@ export default function EstoquePage() {
       minStockKg: String(item.minStockKg ?? ""),
       costPerKg: String(item.costPerKg ?? ""),
       supplier: item.supplier || "",
-      unit: item.unit || "g",
       caloriesPer100g: String(item.caloriesPer100g ?? ""),
       proteinPer100g: String(item.proteinPer100g ?? ""),
       carbsPer100g: String(item.carbsPer100g ?? ""),
@@ -68,7 +67,6 @@ export default function EstoquePage() {
       minStockKg: parseFloat(form.minStockKg) || 0,
       costPerKg: parseFloat(form.costPerKg) || 0,
       supplier: form.supplier || "Não informado",
-      unit: form.unit,
     };
     if (form.caloriesPer100g) payload.caloriesPer100g = parseFloat(form.caloriesPer100g);
     if (form.proteinPer100g) payload.proteinPer100g = parseFloat(form.proteinPer100g);
@@ -180,7 +178,7 @@ export default function EstoquePage() {
                       <div>
                         <span className="text-muted">Estoque</span>
                         <p className={`font-semibold ${(item.stockKg || 0) <= (item.minStockKg || 0) ? "text-danger" : "text-ink"}`}>
-                          {item.stockKg} {item.unit || "g"}
+                          {item.stockKg} kg
                         </p>
                       </div>
                       <div>
@@ -206,7 +204,7 @@ export default function EstoquePage() {
                         <th className="text-left text-xs font-semibold text-muted uppercase tracking-wide px-4 py-3">Fornecedor</th>
                         <th className="text-right text-xs font-semibold text-muted uppercase tracking-wide px-4 py-3">Estoque</th>
                         <th className="text-right text-xs font-semibold text-muted uppercase tracking-wide px-4 py-3">Mínimo</th>
-                        <th className="text-right text-xs font-semibold text-muted uppercase tracking-wide px-4 py-3">Custo/Unit</th>
+                        <th className="text-right text-xs font-semibold text-muted uppercase tracking-wide px-4 py-3">Custo/kg</th>
                         <th className="text-right text-xs font-semibold text-muted uppercase tracking-wide px-4 py-3">Valor Estoque</th>
                         <th className="text-center text-xs font-semibold text-muted uppercase tracking-wide px-4 py-3">Ações</th>
                       </tr>
@@ -221,10 +219,10 @@ export default function EstoquePage() {
                           <td className="px-4 py-3 text-sm text-muted">{item.supplier}</td>
                           <td className="px-4 py-3 text-sm text-right">
                             <span className={`font-semibold ${(item.stockKg || 0) <= (item.minStockKg || 0) ? "text-danger" : "text-ink"}`}>
-                              {item.stockKg} {item.unit || "g"}
+                              {item.stockKg} kg
                             </span>
                           </td>
-                          <td className="px-4 py-3 text-sm text-muted text-right">{item.minStockKg} {item.unit || "g"}</td>
+                          <td className="px-4 py-3 text-sm text-muted text-right">{item.minStockKg} kg</td>
                           <td className="px-4 py-3 text-sm text-right">R$ {(item.costPerKg || 0).toFixed(2)}</td>
                           <td className="px-4 py-3 text-sm font-semibold text-ink text-right">R$ {((item.stockKg || 0) * (item.costPerKg || 0)).toFixed(2)}</td>
                           <td className="px-4 py-3 text-center">
@@ -262,28 +260,18 @@ export default function EstoquePage() {
                     <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Marca</label>
                     <input type="text" placeholder="Ex: Dona Benta" value={form.brand} onChange={(e) => setForm({ ...form, brand: e.target.value })} className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink placeholder:text-kraft focus:outline-none focus:border-ink transition-colors" />
                   </div>
-                  <div>
-                    <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Unidade</label>
-                    <select value={form.unit} onChange={(e) => setForm({ ...form, unit: e.target.value })} className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink focus:outline-none focus:border-ink transition-colors bg-paper">
-                      <option value="g">g (gramas)</option>
-                      <option value="kg">kg (quilos)</option>
-                      <option value="un">un (unidades)</option>
-                      <option value="ml">ml (mililitros)</option>
-                      <option value="L">L (litros)</option>
-                    </select>
-                  </div>
                 </div>
                 <div className="grid grid-cols-3 gap-3">
                   <div>
-                    <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Estoque Atual</label>
-                    <input type="number" step="0.1" placeholder="0" value={form.stockKg} onChange={(e) => setForm({ ...form, stockKg: e.target.value })} className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink placeholder:text-kraft focus:outline-none focus:border-ink transition-colors" />
+                    <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Estoque Atual (kg)</label>
+                    <input type="number" step="0.01" placeholder="0" value={form.stockKg} onChange={(e) => setForm({ ...form, stockKg: e.target.value })} className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink placeholder:text-kraft focus:outline-none focus:border-ink transition-colors" />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Estoque Mínimo</label>
-                    <input type="number" step="0.1" placeholder="0" value={form.minStockKg} onChange={(e) => setForm({ ...form, minStockKg: e.target.value })} className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink placeholder:text-kraft focus:outline-none focus:border-ink transition-colors" />
+                    <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Estoque Mínimo (kg)</label>
+                    <input type="number" step="0.01" placeholder="0" value={form.minStockKg} onChange={(e) => setForm({ ...form, minStockKg: e.target.value })} className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink placeholder:text-kraft focus:outline-none focus:border-ink transition-colors" />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Custo/Unit (R$) *</label>
+                    <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Custo/kg (R$) *</label>
                     <input type="number" step="0.001" placeholder="0.00" value={form.costPerKg} onChange={(e) => setForm({ ...form, costPerKg: e.target.value })} className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink placeholder:text-kraft focus:outline-none focus:border-ink transition-colors" />
                   </div>
                 </div>
