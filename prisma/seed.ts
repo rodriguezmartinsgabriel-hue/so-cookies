@@ -243,8 +243,10 @@ async function main() {
   console.log("  ✅ Orders (2)");
 
   // ─── Cash Flow (from Fluxo de Caixa sheet) ──────────────────
-  await prisma.cashFlow.create({
-    data: {
+  await prisma.cashFlow.upsert({
+    where: { id: "cf-saida-insumos" },
+    update: {},
+    create: {
       id: "cf-saida-insumos",
       type: "SAIDA",
       category: "Insumos",
@@ -253,8 +255,10 @@ async function main() {
       date: new Date("2026-07-01"),
     },
   });
-  await prisma.cashFlow.create({
-    data: {
+  await prisma.cashFlow.upsert({
+    where: { id: "cf-entrada-vendas" },
+    update: {},
+    create: {
       id: "cf-entrada-vendas",
       type: "ENTRADA",
       category: "Vendas",

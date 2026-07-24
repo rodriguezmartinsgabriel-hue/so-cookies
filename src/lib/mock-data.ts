@@ -14,11 +14,25 @@ export type Product = {
 export type Ingredient = {
   id: string;
   name: string;
+  brand?: string;
   stockKg: number;
   minStockKg: number;
   costPerKg: number;
   supplier: string;
+  unit: string;
   lastPurchase?: string;
+  caloriesPer100g?: number;
+  proteinPer100g?: number;
+  carbsPer100g?: number;
+  fatPer100g?: number;
+};
+
+export type Supplier = {
+  id: string;
+  name: string;
+  contact?: string;
+  phone?: string;
+  email?: string;
 };
 
 export type SaleChannel = {
@@ -52,8 +66,9 @@ export type Recipe = {
   name: string;
   yield: number;
   yieldUnit: string;
-  ingredients: { name: string; qty: number; unit: string }[];
+  ingredients: { name: string; qty: number; unit: string; costPerUnit: number }[];
   totalCost: number;
+  costPerUnit: number;
 };
 
 export const channels: SaleChannel[] = [
@@ -64,114 +79,120 @@ export const channels: SaleChannel[] = [
 ];
 
 export const products: Product[] = [
-  { id: "1", name: "Cookie Clássico", sku: "CK-001", category: "Cookie", price: 12, cost: 3.50, margin: 70.8, unit: "un", active: true },
-  { id: "2", name: "Cookie Chocolate Belga", sku: "CK-002", category: "Cookie", price: 14, cost: 4.20, margin: 70.0, unit: "un", active: true },
-  { id: "3", name: "Cookie Red Velvet", sku: "CK-003", category: "Cookie", price: 15, cost: 4.80, margin: 68.0, unit: "un", active: true },
-  { id: "4", name: "Cookie Nutella", sku: "CK-004", category: "Cookie", price: 16, cost: 5.50, margin: 65.6, unit: "un", active: true },
-  { id: "5", name: "Cookie Vegano", sku: "CK-005", category: "Cookie", price: 14, cost: 4.00, margin: 71.4, unit: "un", active: true },
-  { id: "6", name: "Brownie Clássico", sku: "BR-001", category: "Brownie", price: 10, cost: 2.80, margin: 72.0, unit: "un", active: true },
-  { id: "7", name: "Brownie Cremoso", sku: "BR-002", category: "Brownie", price: 12, cost: 3.60, margin: 70.0, unit: "un", active: true },
-  { id: "8", name: "Combo Cookie + Café", sku: "CB-001", category: "Cookie", price: 18, cost: 5.00, margin: 72.2, unit: "combo", active: true },
-  { id: "9", name: "Café Expresso", sku: "CF-001", category: "Café", price: 6, cost: 0.80, margin: 86.7, unit: "un", active: true },
-  { id: "10", name: "Café com Leite", sku: "CF-002", category: "Café", price: 8, cost: 1.50, margin: 81.3, unit: "un", active: true },
-  { id: "11", name: "Cold Brew", sku: "CF-003", category: "Bebida", price: 12, cost: 2.00, margin: 83.3, unit: "un", active: true },
+  { id: "ck-classico", name: "Cookie Clássico", sku: "CK-CLASSICO", category: "Cookie", price: 15, cost: 1.547, margin: 89.7, unit: "un", active: true },
+  { id: "ck-nino", name: "Cookie Niño", sku: "CK-NINO", category: "Cookie", price: 15, cost: 1.078, margin: 92.8, unit: "un", active: true },
+  { id: "ck-3choc", name: "Cookie 3 Chocolates", sku: "CK-3CHOC", category: "Cookie", price: 15, cost: 1.168, margin: 92.2, unit: "un", active: true },
 ];
 
 export const ingredients: Ingredient[] = [
-  { id: "1", name: "Farinha de Trigo", stockKg: 15, minStockKg: 5, costPerKg: 6.50, supplier: "Forno & Cia" },
-  { id: "2", name: "Manteiga", stockKg: 8, minStockKg: 3, costPerKg: 28.00, supplier: "Laticínios Sul" },
-  { id: "3", name: "Açúcar Cristal", stockKg: 12, minStockKg: 4, costPerKg: 5.20, supplier: "Açúcar Bom" },
-  { id: "4", name: "Chocolate em Pó", stockKg: 4, minStockKg: 2, costPerKg: 22.00, supplier: "Cacau Show" },
-  { id: "5", name: "Chocolate Belga", stockKg: 3, minStockKg: 2, costPerKg: 55.00, supplier: "Callebaut" },
-  { id: "6", name: "Ovos", stockKg: 6, minStockKg: 3, costPerKg: 18.00, supplier: "Granja Modelo" },
-  { id: "7", name: "Nutella", stockKg: 2, minStockKg: 1, costPerKg: 60.00, supplier: "Ferrero" },
-  { id: "8", name: "Café em Grãos", stockKg: 5, minStockKg: 2, costPerKg: 45.00, supplier: "Café do Campo" },
-  { id: "9", name: "Leite", stockKg: 10, minStockKg: 5, costPerKg: 5.50, supplier: "Laticínios Sul" },
-  { id: "10", name: "Fermento", stockKg: 1, minStockKg: 0.5, costPerKg: 15.00, supplier: "Forno & Cia" },
-  { id: "11", name: "Aveia", stockKg: 3, minStockKg: 1, costPerKg: 12.00, supplier: "Natural Way" },
+  { id: "ing-farinha", name: "Farinha de trigo", brand: "Dona Benta", stockKg: 5, minStockKg: 1, costPerKg: 8, supplier: "Distribuidora Local", unit: "g" },
+  { id: "ing-manteiga", name: "Manteiga", brand: "Qualy", stockKg: 1.5, minStockKg: 1.5, costPerKg: 40, supplier: "Atacado Central", unit: "g" },
+  { id: "ing-acucar-ref", name: "Açúcar refinado", brand: "União", stockKg: 2, minStockKg: 0.5, costPerKg: 6, supplier: "Distribuidora Local", unit: "g" },
+  { id: "ing-acucar-masc", name: "Açúcar mascavo", brand: "Voquezal", stockKg: 2, minStockKg: 0.5, costPerKg: 10, supplier: "Distribuidora Local", unit: "g" },
+  { id: "ing-ovos", name: "Ovos", brand: "Granja Modelo", stockKg: 1, minStockKg: 0.5, costPerKg: 16, supplier: "Granja Modelo", unit: "un" },
+  { id: "ing-choc-meio", name: "Chocolate meio amargo (gotas)", brand: "Harald", stockKg: 2.4, minStockKg: 1, costPerKg: 110, supplier: "Fornecedor Chocolates", unit: "g" },
+  { id: "ing-sal", name: "Sal", brand: "Lebre", stockKg: 0.5, minStockKg: 0.2, costPerKg: 20, supplier: "Distribuidora Local", unit: "g" },
+  { id: "ing-leite-ninho", name: "Leite Ninho em pó", brand: "Nestlé", stockKg: 0.5, minStockKg: 0.3, costPerKg: 60, supplier: "Distribuidora Local", unit: "g" },
+  { id: "ing-choc-branco", name: "Chocolate branco (gotas)", brand: "Harald", stockKg: 0.8, minStockKg: 0.3, costPerKg: 50, supplier: "Fornecedor Chocolates", unit: "g" },
+  { id: "ing-choc-mix", name: "Mix chocolate branco/meio amargo/ao leite", brand: "Harald", stockKg: 0.8, minStockKg: 0.3, costPerKg: 47, supplier: "Fornecedor Chocolates", unit: "g" },
+  { id: "ing-choc-cobertura", name: "Chocolate meio amargo (cobertura)", brand: "Harald", stockKg: 0.5, minStockKg: 0.2, costPerKg: 45, supplier: "Fornecedor Chocolates", unit: "g" },
+];
+
+export const suppliers: Supplier[] = [
+  { id: "sup-1", name: "Distribuidora Local", phone: "(11) 99999-0001" },
+  { id: "sup-2", name: "Atacado Central", phone: "(11) 99999-0002" },
+  { id: "sup-3", name: "Fornecedor Chocolates", phone: "(11) 99999-0003" },
+  { id: "sup-4", name: "Granja Modelo", phone: "(11) 99999-0004" },
 ];
 
 export const orders: Order[] = [
-  { id: "001", channel: "iFood", customer: "Maria Silva", items: [{ product: "Cookie Chocolate Belga", qty: 4, price: 14 }, { product: "Café Expresso", qty: 2, price: 6 }], total: 68, status: "pendente", createdAt: "10:30" },
-  { id: "002", channel: "WhatsApp", customer: "João Santos", items: [{ product: "Cookie Clássico", qty: 6, price: 12 }, { product: "Brownie Clássico", qty: 3, price: 10 }], total: 102, status: "confirmado", createdAt: "10:45" },
-  { id: "003", channel: "Rappi", customer: "Ana Costa", items: [{ product: "Combo Cookie + Café", qty: 2, price: 18 }, { product: "Cold Brew", qty: 1, price: 12 }], total: 48, status: "producao", createdAt: "11:00" },
-  { id: "004", channel: "Direto", customer: "Pedro Lima", items: [{ product: "Cookie Nutella", qty: 12, price: 16 }], total: 192, status: "pronto", createdAt: "09:30" },
-  { id: "005", channel: "iFood", customer: "Lucia Ferreira", items: [{ product: "Cookie Vegano", qty: 3, price: 14 }, { product: "Café com Leite", qty: 2, price: 8 }], total: 58, status: "entrega", createdAt: "11:15" },
-  { id: "006", channel: "WhatsApp", customer: "Carlos Souza", items: [{ product: "Brownie Cremoso", qty: 5, price: 12 }], total: 60, status: "concluido", createdAt: "08:00" },
-  { id: "007", channel: "Direto", customer: "Fernanda Alves", items: [{ product: "Cookie Red Velvet", qty: 8, price: 15 }], total: 120, status: "concluido", createdAt: "08:30" },
+  { id: "001", channel: "iFood", customer: "Maria Silva", items: [{ product: "Cookie Clássico", qty: 6, price: 13 }, { product: "Cookie Niño", qty: 2, price: 13 }], total: 104, status: "pendente", createdAt: "10:30" },
+  { id: "002", channel: "WhatsApp", customer: "João Santos", items: [{ product: "Cookie 3 Chocolates", qty: 10, price: 10 }], total: 100, status: "confirmado", createdAt: "10:45" },
+  { id: "003", channel: "Direto", customer: "Ana Costa", items: [{ product: "Cookie Clássico", qty: 3, price: 13 }, { product: "Cookie Niño", qty: 3, price: 13 }], total: 78, status: "producao", createdAt: "11:00" },
+  { id: "004", channel: "WhatsApp", customer: "Pedro Lima", items: [{ product: "Cookie 3 Chocolates", qty: 4, price: 13 }], total: 52, status: "pronto", createdAt: "09:30" },
+  { id: "005", channel: "iFood", customer: "Lucia Ferreira", items: [{ product: "Cookie Clássico", qty: 1, price: 15 }], total: 15, status: "entrega", createdAt: "11:15" },
+  { id: "006", channel: "Direto", customer: "Carlos Souza", items: [{ product: "Cookie Niño", qty: 12, price: 10 }], total: 120, status: "concluido", createdAt: "08:00" },
 ];
 
 export const cashFlow: CashFlowEntry[] = [
-  { id: "1", type: "Entrada", category: "Venda Direta", description: "Pedido #004 - Pedro Lima", amount: 192, date: "Hoje" },
-  { id: "2", type: "Entrada", category: "Venda iFood", description: "3 pedidos iFood", amount: 156, date: "Hoje" },
-  { id: "3", type: "Entrada", category: "Venda Rappi", description: "1 pedido Rappi", amount: 48, date: "Hoje" },
-  { id: "4", type: "Saída", category: "Compra Ingrediente", description: "Chocolate Belga - Callebaut", amount: -165, date: "Hoje" },
-  { id: "5", type: "Saída", category: "Frete", description: "Entrega Rappi", amount: -25, date: "Hoje" },
-  { id: "6", type: "Entrada", category: "Venda WhatsApp", description: "2 pedidos WhatsApp", amount: 204, date: "Ontem" },
-  { id: "7", type: "Saída", category: "Comissão iFood", description: "Comissão sobre vendas", amount: -72.50, date: "Ontem" },
-  { id: "8", type: "Saída", category: "Compra Ingrediente", description: "Farinha + Manteiga", amount: -98, date: "Ontem" },
+  { id: "cf-1", type: "Saída", category: "Insumos", description: "Compra de farinha, manteiga e chocolate", amount: -320, date: "2026-07-01" },
+  { id: "cf-2", type: "Entrada", category: "Vendas", description: "Vendas da semana (iFood + direto)", amount: 450, date: "2026-07-20" },
 ];
 
 export const recipes: Recipe[] = [
   {
-    id: "1",
+    id: "rec-classico",
     name: "Cookie Clássico",
-    yield: 12,
+    yield: 20,
     yieldUnit: "un",
     ingredients: [
-      { name: "Farinha de Trigo", qty: 0.25, unit: "kg" },
-      { name: "Manteiga", qty: 0.125, unit: "kg" },
-      { name: "Açúcar Cristal", qty: 0.1, unit: "kg" },
-      { name: "Ovos", qty: 0.05, unit: "kg" },
-      { name: "Fermento", qty: 0.01, unit: "kg" },
+      { name: "Farinha de trigo", qty: 210, unit: "g", costPerUnit: 0.008 },
+      { name: "Manteiga", qty: 100, unit: "g", costPerUnit: 0.04 },
+      { name: "Açúcar refinado", qty: 60, unit: "g", costPerUnit: 0.006 },
+      { name: "Açúcar mascavo", qty: 120, unit: "g", costPerUnit: 0.01 },
+      { name: "Ovos", qty: 2, unit: "un", costPerUnit: 0.8 },
+      { name: "Chocolate meio amargo (gotas)", qty: 200, unit: "g", costPerUnit: 0.11 },
+      { name: "Sal", qty: 5, unit: "g", costPerUnit: 0.02 },
     ],
-    totalCost: 3.50,
+    totalCost: 30.94,
+    costPerUnit: 1.547,
   },
   {
-    id: "2",
-    name: "Cookie Chocolate Belga",
-    yield: 12,
+    id: "rec-nino",
+    name: "Cookie Niño",
+    yield: 18,
     yieldUnit: "un",
     ingredients: [
-      { name: "Farinha de Trigo", qty: 0.22, unit: "kg" },
-      { name: "Manteiga", qty: 0.12, unit: "kg" },
-      { name: "Açúcar Cristal", qty: 0.09, unit: "kg" },
-      { name: "Chocolate Belga", qty: 0.05, unit: "kg" },
-      { name: "Ovos", qty: 0.05, unit: "kg" },
-      { name: "Fermento", qty: 0.01, unit: "kg" },
+      { name: "Farinha de trigo", qty: 100, unit: "g", costPerUnit: 0.008 },
+      { name: "Manteiga", qty: 100, unit: "g", costPerUnit: 0.04 },
+      { name: "Leite Ninho em pó", qty: 100, unit: "g", costPerUnit: 0.06 },
+      { name: "Açúcar refinado", qty: 50, unit: "g", costPerUnit: 0.006 },
+      { name: "Ovos", qty: 1, unit: "un", costPerUnit: 0.8 },
+      { name: "Chocolate branco (gotas)", qty: 150, unit: "g", costPerUnit: 0.05 },
     ],
-    totalCost: 4.20,
+    totalCost: 19.40,
+    costPerUnit: 1.078,
   },
   {
-    id: "3",
-    name: "Brownie Clássico",
-    yield: 16,
+    id: "rec-3choc",
+    name: "Cookie 3 Chocolates",
+    yield: 18,
     yieldUnit: "un",
     ingredients: [
-      { name: "Chocolate em Pó", qty: 0.2, unit: "kg" },
-      { name: "Manteiga", qty: 0.15, unit: "kg" },
-      { name: "Açúcar Cristal", qty: 0.2, unit: "kg" },
-      { name: "Ovos", qty: 0.15, unit: "kg" },
-      { name: "Farinha de Trigo", qty: 0.1, unit: "kg" },
+      { name: "Farinha de trigo", qty: 220, unit: "g", costPerUnit: 0.008 },
+      { name: "Manteiga", qty: 150, unit: "g", costPerUnit: 0.04 },
+      { name: "Açúcar mascavo", qty: 80, unit: "g", costPerUnit: 0.01 },
+      { name: "Ovos", qty: 1, unit: "un", costPerUnit: 0.8 },
+      { name: "Mix chocolate branco/meio amargo/ao leite", qty: 210, unit: "g", costPerUnit: 0.047 },
+      { name: "Chocolate meio amargo (cobertura)", qty: 40, unit: "g", costPerUnit: 0.045 },
     ],
-    totalCost: 2.80,
+    totalCost: 21.03,
+    costPerUnit: 1.168,
   },
+];
+
+export const priceTiers = [
+  { id: "tier-1", name: "Assado 1un", minQty: 1, maxQty: 2, price: 15, type: "assado" },
+  { id: "tier-2", name: "Assado 3un", minQty: 3, maxQty: 9, price: 13, type: "assado" },
+  { id: "tier-3", name: "Assado 10un", minQty: 10, maxQty: null, price: 10, type: "assado" },
+  { id: "tier-4", name: "Congelado 4un", minQty: 4, maxQty: 4, price: 10, type: "congelado" },
+  { id: "tier-5", name: "Congelado 6un", minQty: 6, maxQty: 6, price: 9, type: "congelado" },
+  { id: "tier-6", name: "Congelado 8un", minQty: 8, maxQty: 8, price: 8.75, type: "congelado" },
 ];
 
 export const kpiData = {
-  revenue: { value: 1250, change: 12 },
-  profit: { value: 380, change: 8 },
-  margin: { value: 30.4, change: 2 },
-  ordersToday: { value: 8, pending: 2 },
+  revenue: { value: 450, change: 0 },
+  profit: { value: 130, change: 0 },
+  margin: { value: 28.9, change: 0 },
+  ordersToday: { value: 2, pending: 0 },
 };
 
 export const monthlyRevenue = [
-  { month: "Jul", revenue: 1250, cost: 870, profit: 380 },
+  { month: "Jul", revenue: 450, cost: 320, profit: 130 },
 ];
 
 export const channelDistribution = [
-  { name: "iFood", value: 35, color: "#C23B2E" },
-  { name: "Rappi", value: 25, color: "#E0A400" },
-  { name: "WhatsApp", value: 25, color: "#2F7A3E" },
-  { name: "Direto", value: 15, color: "#111111" },
+  { name: "WhatsApp", value: 50, color: "#2F7A3E" },
+  { name: "iFood", value: 30, color: "#C23B2E" },
+  { name: "Direto", value: 20, color: "#111111" },
 ];

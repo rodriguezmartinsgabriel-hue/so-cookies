@@ -2,13 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, ShoppingBag, PlusCircle, Package, BarChart3 } from "lucide-react";
+import { Home, ShoppingBag, Package, DollarSign, Factory, BarChart3 } from "lucide-react";
 
 const navItems = [
   { href: "/", label: "Home", icon: Home },
   { href: "/pedidos", label: "Pedidos", icon: ShoppingBag },
-  { href: "/vendas", label: "Vendas", icon: PlusCircle, isCenter: true },
-  { href: "/estoque", label: "Estoque", icon: Package },
+  { href: "/vendas", label: "Vendas", icon: DollarSign, isCenter: true },
+  { href: "/estoque", label: "Insumos", icon: Package },
   { href: "/relatorios", label: "Relat.", icon: BarChart3 },
 ];
 

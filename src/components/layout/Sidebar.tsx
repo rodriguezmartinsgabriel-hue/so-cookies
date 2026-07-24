@@ -12,22 +12,20 @@ import {
   Truck,
   Factory,
   BarChart3,
-  Settings,
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
 
 const navItems = [
-  { href: "/", label: "Home", icon: Home },
+  { href: "/", label: "Painel", icon: Home },
   { href: "/pedidos", label: "Pedidos", icon: ShoppingBag },
   { href: "/vendas", label: "Vendas", icon: Wallet },
-  { href: "/estoque", label: "Estoque", icon: Package },
+  { href: "/estoque", label: "Insumos", icon: Package },
   { href: "/receitas", label: "Receitas", icon: FileText },
   { href: "/caixa", label: "Caixa", icon: Wallet },
   { href: "/delivery", label: "Delivery", icon: Truck },
   { href: "/producao", label: "Produção", icon: Factory },
   { href: "/relatorios", label: "Relatórios", icon: BarChart3 },
-  { href: "/config", label: "Config", icon: Settings },
 ];
 
 export function Sidebar() {
@@ -40,7 +38,6 @@ export function Sidebar() {
         collapsed ? "w-[68px]" : "w-56"
       }`}
     >
-      {/* Logo */}
       <div className="flex items-center justify-between h-14 px-3 border-b border-line">
         {!collapsed && (
           <Link href="/" className="font-brand text-2xl text-ink leading-none">
@@ -52,18 +49,13 @@ export function Sidebar() {
           className="p-1.5 rounded-md hover:bg-kraft/50 text-muted transition-colors"
           aria-label={collapsed ? "Expandir sidebar" : "Recolher sidebar"}
         >
-          {collapsed ? (
-            <ChevronRight className="w-4 h-4" />
-          ) : (
-            <ChevronLeft className="w-4 h-4" />
-          )}
+          {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
         </button>
       </div>
 
-      {/* Navigation */}
       <nav className="flex-1 py-2 px-2 space-y-0.5 overflow-y-auto">
         {navItems.map((item) => {
-          const isActive = pathname === item.href;
+          const isActive = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href));
           return (
             <Link
               key={item.href}
@@ -82,7 +74,6 @@ export function Sidebar() {
         })}
       </nav>
 
-      {/* Footer */}
       {!collapsed && (
         <div className="p-3 border-t border-line">
           <p className="text-xs text-muted text-center">Só Cookies v0.1</p>

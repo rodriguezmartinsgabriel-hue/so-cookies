@@ -49,15 +49,19 @@ model Product {
 }
 
 model Ingredient {
-  id           String   @id @default(cuid())
-  name         String
-  stockKg      Float    @default(0)
-  minStockKg   Float    @default(0)
-  costPerKg    Float
-  supplier     String
-  lastPurchase DateTime?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id              String   @id @default(cuid())
+  name            String
+  stockKg         Float    @default(0)
+  minStockKg      Float    @default(0)
+  costPerKg       Float
+  supplier        String
+  lastPurchase    DateTime?
+  caloriesPer100g Float?
+  proteinPer100g  Float?
+  carbsPer100g    Float?
+  fatPer100g      Float?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   recipeItems RecipeItem[]
 }
