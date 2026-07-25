@@ -9,7 +9,7 @@ export async function getDashboardKpis() {
     prisma.sale.aggregate({ _sum: { total: true }, where: { createdAt: { gte: monthStart } } }),
     prisma.order.count({ where: { createdAt: { gte: dayStart } } }),
     prisma.cashFlow.findMany({ where: { date: { gte: dayStart } } }),
-    prisma.order.count({ where: { status: { in: ["PENDENTE", "CONFIRMADO"] } } }),
+    prisma.order.count({ where: { status: { in: ["PENDENTE"] } } }),
     prisma.sale.findMany({ where: { createdAt: { gte: monthStart } }, include: { items: { include: { product: true } } } }),
   ]);
 

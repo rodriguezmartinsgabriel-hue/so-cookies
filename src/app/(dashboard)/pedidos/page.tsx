@@ -3,11 +3,10 @@
 import { useState, useCallback, useEffect } from "react"
 import { AppShell } from "@/components/layout/AppShell"
 import { repository } from "@/lib/repository"
-import { Clock, CheckCircle, ChefHat, Package, Truck, X, Plus, Check, Edit, Trash2, Ban } from "lucide-react"
+import { Clock, ChefHat, Package, Truck, X, Plus, Check, Edit, Trash2, Ban } from "lucide-react"
 
 const columns = [
   { id: "PENDENTE", label: "Pendente", icon: Clock, color: "text-warning", bg: "bg-warning/10" },
-  { id: "CONFIRMADO", label: "Confirmado", icon: CheckCircle, color: "text-info", bg: "bg-info/10" },
   { id: "PRODUCAO", label: "Produção", icon: ChefHat, color: "text-ink", bg: "bg-ink/10" },
   { id: "PRONTO", label: "Pronto", icon: Package, color: "text-success", bg: "bg-success/10" },
   { id: "ENTREGA", label: "Entrega", icon: Truck, color: "text-muted", bg: "bg-cream" },
@@ -17,7 +16,6 @@ const columns = [
 
 const statusColors: Record<string, string> = {
   PENDENTE: "border-l-warning",
-  CONFIRMADO: "border-l-info",
   PRODUCAO: "border-l-ink",
   PRONTO: "border-l-success",
   ENTREGA: "border-l-muted",
@@ -26,18 +24,16 @@ const statusColors: Record<string, string> = {
 }
 
 const nextStatus: Record<string, string> = {
-  PENDENTE: "CONFIRMADO",
-  CONFIRMADO: "PRODUCAO",
+  PENDENTE: "PRODUCAO",
   PRODUCAO: "PRONTO",
   PRONTO: "ENTREGA",
   ENTREGA: "CONCLUIDO",
 }
 
 const nextStatusLabel: Record<string, string> = {
-  PENDENTE: "Confirmar",
-  CONFIRMADO: "Produção",
+  PENDENTE: "Produzir",
   PRODUCAO: "Pronto",
-  PRONTO: "Entrega",
+  PRONTO: "Entregar",
   ENTREGA: "Concluir",
 }
 
