@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect } from "react"
 import { AppShell } from "@/components/layout/AppShell"
 import { repository } from "@/lib/repository"
-import { Clock, ChefHat, Package, Truck, X, Plus, Check, Edit, Trash2, Ban } from "lucide-react"
+import { Clock, ChefHat, Package, Truck, X, Plus, Check, Edit, Trash2, Ban, ChevronDown, ChevronRight } from "lucide-react"
 
 const columns = [
   { id: "PENDENTE", label: "Pendente", icon: Clock, color: "text-warning", bg: "bg-warning/10" },
@@ -51,6 +51,7 @@ export default function PedidosPage() {
   const [showEditModal, setShowEditModal] = useState(false)
   const [editingOrder, setEditingOrder] = useState<any>(null)
   const [view, setView] = useState<"kanban" | "list">("kanban")
+  const [showCompleted, setShowCompleted] = useState(false)
 
   const [formChannel, setFormChannel] = useState("")
   const [formCustomer, setFormCustomer] = useState("")
@@ -173,7 +174,7 @@ export default function PedidosPage() {
           <div className="text-center py-8 text-muted">Carregando...</div>
         ) : view === "kanban" ? (
           <div className="space-y-4">
-            {columns.map((col) => {
+            {columns.filter((c) => c.id !== "CONCLUIDO" && c.id !== "CANCELADO").map((col) => {
               const colOrders = orders.filter((o: any) => o.status === col.id)
               return (
                 <div key={col.id} className="border border-line rounded-lg bg-paper shadow-card overflow-hidden">
@@ -207,6 +208,45 @@ export default function PedidosPage() {
                 </div>
               )
             })}
+
+            {(() => {
+              const concludedCount = orders.filter((o: any) => o.status === "CONCLUIDO").length
+              const cancelledCount = orders.filter((o: any) => o.status === "CANCELADO").length
+              if (concludedCount === 0 && cancelledCount === 0) return null
+              return (
+                <div className="border border-line rounded-lg bg-paper shadow-card overflow-hidden">
+                  <button
+                    onClick={() => setShowCompleted(!showCompleted)}
+                    className="w-full flex items-center gap-2 px-4 py-3 text-left hover:bg-cream/50 transition-colors"
+                  >
+                    {showCompleted ? <ChevronDown className="w-4 h-4 text-muted" /> : <ChevronRight className="w-4 h-4 text-muted" />}
+                    <span className="text-sm font-semibold text-muted">Arquivo</span>
+                    <span className="text-xs text-muted bg-cream px-2 py-0.5 rounded-full">{concludedCount + cancelledCount}</span>
+                  </button>
+                  {showCompleted && (
+                    <div className="border-t border-line p-2 space-y-2">
+                      {orders.filter((o: any) => o.status === "CONCLUIDO" || o.status === "CANCELADO").map((o: any) => (
+                        <button
+                          key={o.id}
+                          onClick={() => setSelectedOrder(o.id)}
+                          className={`w-full text-left p-3 border border-line rounded-lg bg-paper hover:bg-cream/50 transition-colors border-l-4 ${statusColors[o.status] || ""}`}
+                        >
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-xs font-medium text-muted">#{o.id.slice(0, 6)}</span>
+                            <span className="text-xs text-muted">{o.createdAt ? new Date(o.createdAt).toLocaleDateString("pt-BR") : ""}</span>
+                          </div>
+                          <p className="text-sm font-medium text-ink truncate">{o.customer}</p>
+                          <div className="flex items-center justify-between mt-2">
+                            <span className="text-xs text-muted">{o.channel} · R$ {o.total}</span>
+                            <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${o.status === "CANCELADO" ? "bg-danger/10 text-danger" : "bg-success/10 text-success"}`}>{o.status === "CANCELADO" ? "Cancelado" : "Concluído"}</span>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )
+            })()}
           </div>
         ) : (
           <div className="border border-line rounded-lg bg-paper shadow-card overflow-hidden">
