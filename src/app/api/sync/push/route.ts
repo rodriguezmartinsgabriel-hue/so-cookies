@@ -83,6 +83,37 @@ export async function POST(request: Request) {
           })
           break
         }
+        case "ingredient:create": {
+          const { tempId, ...ingredientData } = change.data
+          const created = await prisma.ingredient.create({
+            data: {
+              name: ingredientData.name,
+              brand: ingredientData.brand,
+              stockKg: ingredientData.stockKg ?? 0,
+              minStockKg: ingredientData.minStockKg ?? 0,
+              costPerKg: ingredientData.costPerKg,
+              supplier: ingredientData.supplier,
+              caloriesPer100g: ingredientData.caloriesPer100g,
+              proteinPer100g: ingredientData.proteinPer100g,
+              carbsPer100g: ingredientData.carbsPer100g,
+              fatPer100g: ingredientData.fatPer100g,
+            },
+          })
+          if (tempId) mappings[tempId] = created.id
+          break
+        }
+        case "ingredient:update": {
+          const { id, ...updateData } = change.data
+          await prisma.ingredient.update({
+            where: { id },
+            data: { ...updateData, updatedAt: new Date() },
+          })
+          break
+        }
+        case "ingredient:delete": {
+          await prisma.ingredient.delete({ where: { id: change.data.id } })
+          break
+        }
       }
     } catch (e) {
       console.error(`Sync error for ${change.entity}:${change.action}`, e)

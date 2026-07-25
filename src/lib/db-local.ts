@@ -82,6 +82,7 @@ export interface LocalProduct {
 export interface LocalIngredient {
   id: string
   name: string
+  brand?: string
   stockKg: number
   minStockKg: number
   costPerKg: number

@@ -27,7 +27,12 @@ export const repository = {
                 await db.orderItems.where("orderId").equals(local.id).delete()
               }
             }
-            await db.orders.bulkPut(data.map((o: any) => ({ ...o, _synced: true, _updatedAt: now() })))
+            const unsyncedLocal = await db.orders.where("_synced").equals(0).toArray()
+            const unsyncedIds = new Set(unsyncedLocal.map((o) => o.id))
+            const toUpsert = data
+              .filter((o: any) => !unsyncedIds.has(o.id))
+              .map((o: any) => ({ ...o, _synced: true, _updatedAt: now() }))
+            await db.orders.bulkPut(toUpsert)
           }
         } catch {}
       }
@@ -89,7 +94,8 @@ export const repository = {
                 await db.saleItems.where("saleId").equals(local.id).delete()
               }
             }
-            await db.sales.bulkPut(data.map((s: any) => ({ ...s, _synced: true, _updatedAt: now() })))
+            const unsyncedIds = new Set((await db.sales.where("_synced").equals(0).toArray()).map((s) => s.id))
+            await db.sales.bulkPut(data.filter((s: any) => !unsyncedIds.has(s.id)).map((s: any) => ({ ...s, _synced: true, _updatedAt: now() })))
           }
         } catch {}
       }
@@ -136,7 +142,8 @@ export const repository = {
                 await db.cashFlow.delete(local.id)
               }
             }
-            await db.cashFlow.bulkPut(data.map((e: any) => ({ ...e, _synced: true, _updatedAt: now() })))
+            const unsyncedIds = new Set((await db.cashFlow.where("_synced").equals(0).toArray()).map((e) => e.id))
+            await db.cashFlow.bulkPut(data.filter((e: any) => !unsyncedIds.has(e.id)).map((e: any) => ({ ...e, _synced: true, _updatedAt: now() })))
           }
         } catch {}
       }
@@ -182,7 +189,8 @@ export const repository = {
                 await db.productions.delete(local.id)
               }
             }
-            await db.productions.bulkPut(data.map((p: any) => ({ ...p, _synced: true, _updatedAt: now() })))
+            const unsyncedIds = new Set((await db.productions.where("_synced").equals(0).toArray()).map((p) => p.id))
+            await db.productions.bulkPut(data.filter((p: any) => !unsyncedIds.has(p.id)).map((p: any) => ({ ...p, _synced: true, _updatedAt: now() })))
           }
         } catch {}
       }
@@ -250,7 +258,8 @@ export const repository = {
                 await db.ingredients.delete(local.id)
               }
             }
-            await db.ingredients.bulkPut(data.map((i: any) => ({ ...i, _synced: true, _updatedAt: now() })))
+            const unsyncedIds = new Set((await db.ingredients.where("_synced").equals(0).toArray()).map((i) => i.id))
+            await db.ingredients.bulkPut(data.filter((i: any) => !unsyncedIds.has(i.id)).map((i: any) => ({ ...i, _synced: true, _updatedAt: now() })))
           }
         } catch {}
       }
@@ -268,7 +277,7 @@ export const repository = {
       return ingredient
     },
 
-    async update(id: string, data: { name?: string; stockKg?: number; minStockKg?: number; costPerKg?: number; supplier?: string; caloriesPer100g?: number; proteinPer100g?: number; carbsPer100g?: number; fatPer100g?: number }) {
+    async update(id: string, data: { name?: string; brand?: string; stockKg?: number; minStockKg?: number; costPerKg?: number; supplier?: string; caloriesPer100g?: number; proteinPer100g?: number; carbsPer100g?: number; fatPer100g?: number }) {
       const updatedAt = now()
       await db.ingredients.update(id, { ...data, _synced: false, _updatedAt: updatedAt })
       await addToSyncQueue({ action: "update", entity: "ingredient", data: { id, ...data }, createdAt: now() })
@@ -296,7 +305,8 @@ export const repository = {
                 await db.channels.delete(local.id)
               }
             }
-            await db.channels.bulkPut(data.map((c: any) => ({ ...c, _synced: true, _updatedAt: now() })))
+            const unsyncedIds = new Set((await db.channels.where("_synced").equals(0).toArray()).map((c) => c.id))
+            await db.channels.bulkPut(data.filter((c: any) => !unsyncedIds.has(c.id)).map((c: any) => ({ ...c, _synced: true, _updatedAt: now() })))
           }
         } catch {}
       }
@@ -342,7 +352,8 @@ export const repository = {
                 await db.priceTiers.delete(local.id)
               }
             }
-            await db.priceTiers.bulkPut(data.map((t: any) => ({ ...t, _synced: true, _updatedAt: now() })))
+            const unsyncedIds = new Set((await db.priceTiers.where("_synced").equals(0).toArray()).map((t) => t.id))
+            await db.priceTiers.bulkPut(data.filter((t: any) => !unsyncedIds.has(t.id)).map((t: any) => ({ ...t, _synced: true, _updatedAt: now() })))
           }
         } catch {}
       }

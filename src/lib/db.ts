@@ -62,11 +62,11 @@ export async function getIngredient(id: string) {
   return prisma.ingredient.findUnique({ where: { id } });
 }
 
-export async function createIngredient(data: { name: string; stockKg?: number; minStockKg?: number; costPerKg: number; supplier: string; caloriesPer100g?: number; proteinPer100g?: number; carbsPer100g?: number; fatPer100g?: number }) {
+export async function createIngredient(data: { name: string; brand?: string; stockKg?: number; minStockKg?: number; costPerKg: number; supplier: string; caloriesPer100g?: number; proteinPer100g?: number; carbsPer100g?: number; fatPer100g?: number }) {
   return prisma.ingredient.create({ data });
 }
 
-export async function updateIngredient(id: string, data: Partial<{ name: string; stockKg: number; minStockKg: number; costPerKg: number; supplier: string; caloriesPer100g: number; proteinPer100g: number; carbsPer100g: number; fatPer100g: number }>) {
+export async function updateIngredient(id: string, data: Partial<{ name: string; brand: string; stockKg: number; minStockKg: number; costPerKg: number; supplier: string; caloriesPer100g: number; proteinPer100g: number; carbsPer100g: number; fatPer100g: number }>) {
   return prisma.ingredient.update({ where: { id }, data });
 }
 

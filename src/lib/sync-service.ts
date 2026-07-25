@@ -57,8 +57,9 @@ export async function pullChanges() {
       if (data.sales) await db.sales.bulkPut(data.sales)
       if (data.cashFlow) await db.cashFlow.bulkPut(data.cashFlow)
       if (data.productions) await db.productions.bulkPut(data.productions)
+      if (data.ingredients) await db.ingredients.bulkPut(data.ingredients)
       await setLastSyncTime(new Date().toISOString())
-      return { pulled: (data.orders?.length || 0) + (data.sales?.length || 0) + (data.cashFlow?.length || 0) + (data.productions?.length || 0) }
+      return { pulled: (data.orders?.length || 0) + (data.sales?.length || 0) + (data.cashFlow?.length || 0) + (data.productions?.length || 0) + (data.ingredients?.length || 0) }
     }
   } catch {}
   return { pulled: 0 }

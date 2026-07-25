@@ -51,6 +51,7 @@ model Product {
 model Ingredient {
   id              String   @id @default(cuid())
   name            String
+  brand           String?
   stockKg         Float    @default(0)
   minStockKg      Float    @default(0)
   costPerKg       Float
