@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react"
 import { AppShell } from "@/components/layout/AppShell"
+import { repository } from "@/lib/repository"
 import { Plus, Edit, Trash2, X, Store } from "lucide-react"
 
 export default function CanaisPage() {
@@ -14,8 +15,8 @@ export default function CanaisPage() {
   const loadData = useCallback(async () => {
     setLoading(true)
     try {
-      const resp = await fetch("/api/channels")
-      if (resp.ok) setChannels(await resp.json())
+      const data = await repository.channels.getAll()
+      setChannels(data)
     } catch {}
     setLoading(false)
   }, [])
@@ -40,17 +41,9 @@ export default function CanaisPage() {
       commission: parseFloat(form.commission) || 0,
     }
     if (editingItem) {
-      await fetch(`/api/channels/${editingItem.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      })
+      await repository.channels.update(editingItem.id, payload)
     } else {
-      await fetch("/api/channels", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      })
+      await repository.channels.create(payload)
     }
     setShowModal(false)
     resetForm()
@@ -59,7 +52,7 @@ export default function CanaisPage() {
 
   async function handleDelete(id: string) {
     if (!confirm("Excluir este canal?")) return
-    await fetch(`/api/channels/${id}`, { method: "DELETE" })
+    await repository.channels.delete(id)
     await loadData()
   }
 
@@ -84,7 +77,7 @@ export default function CanaisPage() {
           <div className="text-center py-8 text-muted">Carregando...</div>
         ) : channels.length === 0 ? (
           <div className="text-center py-8 text-muted border border-dashed border-line rounded-lg">
-            Nenhum canal cadastrado. Clique em "Novo Canal" para começar.
+            Nenhum canal cadastrado. Clique em &quot;Novo Canal&quot; para começar.
           </div>
         ) : (
           <div className="border border-line rounded-lg bg-paper shadow-card overflow-hidden">

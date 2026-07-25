@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react"
 import { AppShell } from "@/components/layout/AppShell"
+import { repository } from "@/lib/repository"
 import { ChefHat, Clock, CheckCircle, Plus, X, Edit, Trash2 } from "lucide-react"
 
 const statusConfig: Record<string, { label: string; color: string; icon: typeof Clock }> = {
@@ -27,12 +28,12 @@ export default function ProducaoPage() {
   const loadData = useCallback(async () => {
     setLoading(true)
     try {
-      const [batchesResp, prodsResp] = await Promise.allSettled([
-        fetch("/api/productions"),
-        fetch("/api/products"),
+      const [batchesData, prodsResp] = await Promise.allSettled([
+        repository.productions.getAll(),
+        fetch("/api/products").then((r) => r.ok ? r.json() : []),
       ])
-      if (batchesResp.status === "fulfilled" && batchesResp.value.ok) setBatches(await batchesResp.value.json())
-      if (prodsResp.status === "fulfilled" && prodsResp.value.ok) setProducts(await prodsResp.value.json())
+      if (batchesData.status === "fulfilled") setBatches(batchesData.value)
+      if (prodsResp.status === "fulfilled") setProducts(prodsResp.value)
     } catch {}
     setLoading(false)
   }, [])
@@ -41,17 +42,13 @@ export default function ProducaoPage() {
 
   async function handleStatusChange(id: string, newStatus: string) {
     const endTime = newStatus === "concluido" ? new Date().toISOString() : undefined
-    await fetch(`/api/productions/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status: newStatus, endTime }),
-    })
+    await repository.productions.updateStatus(id, newStatus, endTime)
     await loadData()
   }
 
   async function handleDelete(id: string) {
     if (!confirm("Excluir este lote?")) return
-    await fetch(`/api/productions/${id}`, { method: "DELETE" })
+    await repository.productions.delete(id)
     await loadData()
   }
 
@@ -63,13 +60,9 @@ export default function ProducaoPage() {
 
   async function handleEditSave() {
     if (!editingBatch) return
-    await fetch(`/api/productions/${editingBatch.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        qty: parseInt(editForm.qty) || undefined,
-        notes: editForm.notes,
-      }),
+    await repository.productions.update(editingBatch.id, {
+      qty: parseInt(editForm.qty) || undefined,
+      notes: editForm.notes,
     })
     setShowEditModal(false)
     setEditingBatch(null)
@@ -78,16 +71,12 @@ export default function ProducaoPage() {
 
   async function handleCreateBatch() {
     if (!formProduct || !formQty || !formBatchCode) return
-    await fetch("/api/productions", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        batchCode: formBatchCode,
-        productId: formProduct,
-        qty: parseInt(formQty) || 1,
-        status: "pendente",
-        notes: formNotes || undefined,
-      }),
+    await repository.productions.create({
+      batchCode: formBatchCode,
+      productId: formProduct,
+      qty: parseInt(formQty) || 1,
+      status: "pendente",
+      notes: formNotes || undefined,
     })
     setShowCreateModal(false)
     setFormProduct("")

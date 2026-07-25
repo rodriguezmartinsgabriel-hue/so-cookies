@@ -24,9 +24,10 @@ export async function POST(request: Request) {
           break
         }
         case "order:update": {
+          const { id, ...updateData } = change.data
           await prisma.order.update({
-            where: { id: change.data.id },
-            data: { status: change.data.status, updatedAt: new Date() },
+            where: { id },
+            data: { ...updateData, updatedAt: new Date() },
           })
           break
         }

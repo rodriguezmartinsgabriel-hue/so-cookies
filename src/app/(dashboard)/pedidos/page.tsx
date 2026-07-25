@@ -2,7 +2,8 @@
 
 import { useState, useCallback, useEffect } from "react"
 import { AppShell } from "@/components/layout/AppShell"
-import { Clock, CheckCircle, ChefHat, Package, Truck, X, Plus, Check, Edit, Trash2 } from "lucide-react"
+import { repository } from "@/lib/repository"
+import { Clock, CheckCircle, ChefHat, Package, Truck, X, Plus, Check, Edit, Trash2, Ban } from "lucide-react"
 
 const columns = [
   { id: "PENDENTE", label: "Pendente", icon: Clock, color: "text-warning", bg: "bg-warning/10" },
@@ -11,6 +12,7 @@ const columns = [
   { id: "PRONTO", label: "Pronto", icon: Package, color: "text-success", bg: "bg-success/10" },
   { id: "ENTREGA", label: "Entrega", icon: Truck, color: "text-muted", bg: "bg-cream" },
   { id: "CONCLUIDO", label: "Concluído", icon: Check, color: "text-success", bg: "bg-success/5" },
+  { id: "CANCELADO", label: "Cancelado", icon: Ban, color: "text-danger", bg: "bg-danger/5" },
 ] as const
 
 const statusColors: Record<string, string> = {
@@ -20,6 +22,7 @@ const statusColors: Record<string, string> = {
   PRONTO: "border-l-success",
   ENTREGA: "border-l-muted",
   CONCLUIDO: "border-l-success/50",
+  CANCELADO: "border-l-danger",
 }
 
 const nextStatus: Record<string, string> = {
@@ -36,6 +39,10 @@ const nextStatusLabel: Record<string, string> = {
   PRODUCAO: "Pronto",
   PRONTO: "Entrega",
   ENTREGA: "Concluir",
+}
+
+function canCancel(status: string) {
+  return status !== "CONCLUIDO" && status !== "CANCELADO"
 }
 
 export default function PedidosPage() {
@@ -59,14 +66,14 @@ export default function PedidosPage() {
   const loadData = useCallback(async () => {
     setLoading(true)
     try {
-      const [ordersResp, prodsResp, channelsResp] = await Promise.allSettled([
-        fetch("/api/orders"),
-        fetch("/api/products"),
-        fetch("/api/channels"),
+      const [ordersData, prodsResp, channelsData] = await Promise.allSettled([
+        repository.orders.getAll(),
+        fetch("/api/products").then((r) => r.ok ? r.json() : []),
+        repository.channels.getAll(),
       ])
-      if (ordersResp.status === "fulfilled" && ordersResp.value.ok) setOrders(await ordersResp.value.json())
-      if (prodsResp.status === "fulfilled" && prodsResp.value.ok) setProducts(await prodsResp.value.json())
-      if (channelsResp.status === "fulfilled" && channelsResp.value.ok) setChannels(await channelsResp.value.json())
+      if (ordersData.status === "fulfilled") setOrders(ordersData.value)
+      if (prodsResp.status === "fulfilled") setProducts(prodsResp.value)
+      if (channelsData.status === "fulfilled") setChannels(channelsData.value)
     } catch {}
     setLoading(false)
   }, [])
@@ -76,18 +83,14 @@ export default function PedidosPage() {
   const order = orders.find((o: any) => o.id === selectedOrder)
 
   async function handleStatusChange(orderId: string, newStatus: string) {
-    await fetch(`/api/orders/${orderId}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status: newStatus }),
-    })
+    await repository.orders.updateStatus(orderId, newStatus)
     setSelectedOrder(null)
     await loadData()
   }
 
   async function handleDeleteOrder(id: string) {
     if (!confirm("Excluir este pedido?")) return
-    await fetch(`/api/orders/${id}`, { method: "DELETE" })
+    await repository.orders.delete(id)
     setSelectedOrder(null)
     await loadData()
   }
@@ -100,11 +103,7 @@ export default function PedidosPage() {
 
   async function handleEditSave() {
     if (!editingOrder) return
-    await fetch(`/api/orders/${editingOrder.id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(editForm),
-    })
+    await repository.orders.update(editingOrder.id, editForm)
     setShowEditModal(false)
     setEditingOrder(null)
     await loadData()
@@ -139,19 +138,15 @@ export default function PedidosPage() {
   async function handleCreateOrder() {
     if (!formChannel || !formCustomer || formItems.length === 0) return
     const channelName = channels.find((c: any) => c.id === formChannel)?.name || formChannel
-    await fetch("/api/orders", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        channel: channelName,
-        customer: formCustomer,
-        total: formTotal,
-        items: formItems.filter((i) => i.productId && i.qty).map((i) => ({
-          productId: i.productId,
-          qty: parseInt(i.qty) || 1,
-          price: parseFloat(i.price) || 0,
-        })),
-      }),
+    await repository.orders.create({
+      channel: channelName,
+      customer: formCustomer,
+      total: formTotal,
+      items: formItems.filter((i) => i.productId && i.qty).map((i) => ({
+        productId: i.productId,
+        qty: parseInt(i.qty) || 1,
+        price: parseFloat(i.price) || 0,
+      })),
     })
     setShowCreateModal(false)
     setFormChannel("")
@@ -244,6 +239,9 @@ export default function PedidosPage() {
                       <td className="px-4 py-3 text-center">
                         <div className="flex items-center justify-center gap-1">
                           <button onClick={() => openEditModal(o)} className="p-1.5 rounded-md hover:bg-cream text-muted"><Edit className="w-4 h-4" /></button>
+                          {canCancel(o.status) && (
+                            <button onClick={() => handleStatusChange(o.id, "CANCELADO")} className="p-1.5 rounded-md hover:bg-cream text-danger"><Ban className="w-4 h-4" /></button>
+                          )}
                           <button onClick={() => handleDeleteOrder(o.id)} className="p-1.5 rounded-md hover:bg-cream text-danger"><Trash2 className="w-4 h-4" /></button>
                           {nextStatus[o.status] && (
                             <button onClick={() => handleStatusChange(o.id, nextStatus[o.status])} className="text-xs px-3 py-1.5 bg-ink text-paper rounded-lg font-medium hover:bg-ink/90 transition-colors">
@@ -308,6 +306,11 @@ export default function PedidosPage() {
                 <button onClick={() => { setSelectedOrder(null); openEditModal(order); }} className="h-10 px-3 border border-line rounded-lg text-sm font-medium text-ink hover:bg-cream transition-colors">
                   <Edit className="w-4 h-4" />
                 </button>
+                {canCancel(order.status) && (
+                  <button onClick={() => handleStatusChange(order.id, "CANCELADO")} className="h-10 px-3 border border-danger/30 rounded-lg text-sm font-medium text-danger hover:bg-danger/5 transition-colors">
+                    <Ban className="w-4 h-4" />
+                  </button>
+                )}
                 <button onClick={() => setSelectedOrder(null)} className="flex-1 h-10 border border-line rounded-lg text-sm font-medium text-ink hover:bg-cream transition-colors">Fechar</button>
                 {nextStatus[order.status] && (
                   <button onClick={() => handleStatusChange(order.id, nextStatus[order.status])} className="flex-1 h-10 bg-ink text-paper rounded-lg text-sm font-medium transition-colors hover:bg-ink/90">

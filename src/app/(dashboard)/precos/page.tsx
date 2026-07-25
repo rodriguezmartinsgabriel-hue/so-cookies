@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react"
 import { AppShell } from "@/components/layout/AppShell"
+import { repository } from "@/lib/repository"
 import { Plus, Edit, Trash2, X, Tag } from "lucide-react"
 
 export default function PrecosPage() {
@@ -15,9 +16,12 @@ export default function PrecosPage() {
   const loadData = useCallback(async () => {
     setLoading(true)
     try {
-      const [tiersResp, prodsResp] = await Promise.all([fetch("/api/price-tiers"), fetch("/api/products")])
-      if (tiersResp.ok) setTiers(await tiersResp.json())
-      if (prodsResp.ok) setProducts(await prodsResp.json())
+      const [tiersData, prodsResp] = await Promise.allSettled([
+        repository.priceTiers.getAll(),
+        fetch("/api/products").then((r) => r.ok ? r.json() : []),
+      ])
+      if (tiersData.status === "fulfilled") setTiers(tiersData.value)
+      if (prodsResp.status === "fulfilled") setProducts(prodsResp.value)
     } catch {}
     setLoading(false)
   }, [])
@@ -46,22 +50,14 @@ export default function PrecosPage() {
     const payload = {
       name: form.name,
       minQty: parseInt(form.minQty) || 1,
-      maxQty: form.maxQty ? parseInt(form.maxQty) : null,
+      maxQty: form.maxQty ? parseInt(form.maxQty) : undefined,
       price: parseFloat(form.price) || 0,
       productId: form.productId || undefined,
     }
     if (editingTier) {
-      await fetch(`/api/price-tiers/${editingTier.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      })
+      await repository.priceTiers.update(editingTier.id, payload)
     } else {
-      await fetch("/api/price-tiers", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      })
+      await repository.priceTiers.create(payload)
     }
     setShowModal(false)
     resetForm()
@@ -70,7 +66,7 @@ export default function PrecosPage() {
 
   async function handleDelete(id: string) {
     if (!confirm("Excluir esta faixa de preço?")) return
-    await fetch(`/api/price-tiers/${id}`, { method: "DELETE" })
+    await repository.priceTiers.delete(id)
     await loadData()
   }
 

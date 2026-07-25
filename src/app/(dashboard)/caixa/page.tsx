@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react"
 import { AppShell } from "@/components/layout/AppShell"
+import { repository } from "@/lib/repository"
 import { Plus, ArrowUpRight, ArrowDownLeft, X, Trash2, Edit } from "lucide-react"
 
 export default function CaixaPage() {
@@ -25,12 +26,8 @@ export default function CaixaPage() {
   const loadEntries = useCallback(async () => {
     setLoading(true)
     try {
-      const resp = await fetch("/api/cashflow")
-      if (resp.ok) {
-        setEntries(await resp.json())
-        setLoading(false)
-        return
-      }
+      const data = await repository.cashFlow.getAll()
+      setEntries(data)
     } catch {}
     setLoading(false)
   }, [])
@@ -39,16 +36,12 @@ export default function CaixaPage() {
 
   async function handleSave() {
     if (!formCategory || !formAmount) return
-    await fetch("/api/cashflow", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        type: formType,
-        category: formCategory,
-        description: formDescription,
-        amount: parseFloat(formAmount),
-        date: formDate,
-      }),
+    await repository.cashFlow.create({
+      type: formType,
+      category: formCategory,
+      description: formDescription,
+      amount: parseFloat(formAmount),
+      date: formDate,
     })
     setShowModal(false)
     setFormCategory("")
@@ -70,16 +63,12 @@ export default function CaixaPage() {
 
   async function handleEditSave() {
     if (!editingEntry || !editCategory || !editAmount) return
-    await fetch(`/api/cashflow/${editingEntry.id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        type: editType,
-        category: editCategory,
-        description: editDescription,
-        amount: parseFloat(editAmount),
-        date: editDate,
-      }),
+    await repository.cashFlow.update(editingEntry.id, {
+      type: editType,
+      category: editCategory,
+      description: editDescription,
+      amount: parseFloat(editAmount),
+      date: editDate,
     })
     setShowEditModal(false)
     setEditingEntry(null)
@@ -88,7 +77,7 @@ export default function CaixaPage() {
 
   async function handleDelete(id: string) {
     if (!confirm("Excluir este lançamento?")) return
-    await fetch(`/api/cashflow/${id}`, { method: "DELETE" })
+    await repository.cashFlow.delete(id)
     await loadEntries()
   }
 

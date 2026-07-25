@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useEffect } from "react"
 import { AppShell } from "@/components/layout/AppShell"
+import { repository } from "@/lib/repository"
 import { Plus, Search, X, Trash2 } from "lucide-react"
 
 const channelColors: Record<string, string> = {
@@ -26,14 +27,14 @@ export default function VendasPage() {
   const loadData = useCallback(async () => {
     setLoading(true)
     try {
-      const [salesResp, prodsResp, channelsResp] = await Promise.allSettled([
-        fetch("/api/sales"),
-        fetch("/api/products"),
-        fetch("/api/channels"),
+      const [salesData, prodsResp, channelsData] = await Promise.allSettled([
+        repository.sales.getAll(),
+        fetch("/api/products").then((r) => r.ok ? r.json() : []),
+        repository.channels.getAll(),
       ])
-      if (salesResp.status === "fulfilled" && salesResp.value.ok) setSales(await salesResp.value.json())
-      if (prodsResp.status === "fulfilled" && prodsResp.value.ok) setProducts(await prodsResp.value.json())
-      if (channelsResp.status === "fulfilled" && channelsResp.value.ok) setChannels(await channelsResp.value.json())
+      if (salesData.status === "fulfilled") setSales(salesData.value)
+      if (prodsResp.status === "fulfilled") setProducts(prodsResp.value)
+      if (channelsData.status === "fulfilled") setChannels(channelsData.value)
     } catch {}
     setLoading(false)
   }, [])
@@ -79,17 +80,12 @@ export default function VendasPage() {
 
   async function handleSaveSale() {
     if (!formChannel || formItems.length === 0) return
-    const payload = {
+    await repository.sales.create({
       channelId: formChannel,
       total: formTotal,
       items: formItems
         .filter((i) => i.productId && i.qty)
         .map((i) => ({ productId: i.productId, qty: parseInt(i.qty) || 1, price: parseFloat(i.price) || 0 })),
-    }
-    await fetch("/api/sales", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
     })
     setShowModal(false)
     setFormChannel("")
@@ -100,7 +96,7 @@ export default function VendasPage() {
 
   async function handleDeleteSale(id: string) {
     if (!confirm("Excluir esta venda?")) return
-    await fetch(`/api/sales/${id}`, { method: "DELETE" })
+    await repository.sales.delete(id)
     await loadData()
   }
 

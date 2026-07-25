@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { AppShell } from "@/components/layout/AppShell";
-import { db } from "@/lib/db-local";
+import { repository } from "@/lib/repository";
 import { Plus, Search, Package, Edit, Trash2, X, AlertTriangle } from "lucide-react";
 
 export default function EstoquePage() {
@@ -21,16 +21,9 @@ export default function EstoquePage() {
   const loadIngredients = useCallback(async () => {
     setLoading(true);
     try {
-      const resp = await fetch("/api/ingredients");
-      if (resp.ok) {
-        const data = await resp.json();
-        setIngredients(data);
-        setLoading(false);
-        return;
-      }
+      const data = await repository.ingredients.getAll();
+      setIngredients(data);
     } catch {}
-    const local = await db.products.toArray();
-    setIngredients(local as any);
     setLoading(false);
   }, []);
 
@@ -74,17 +67,9 @@ export default function EstoquePage() {
     if (form.fatPer100g) payload.fatPer100g = parseFloat(form.fatPer100g);
 
     if (editingItem) {
-      await fetch(`/api/ingredients/${editingItem.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
+      await repository.ingredients.update(editingItem.id, payload);
     } else {
-      await fetch("/api/ingredients", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
+      await repository.ingredients.create(payload);
     }
     setShowModal(false);
     resetForm();
@@ -93,7 +78,7 @@ export default function EstoquePage() {
 
   async function handleDelete(id: string) {
     if (!confirm("Excluir este insumo?")) return;
-    await fetch(`/api/ingredients/${id}`, { method: "DELETE" });
+    await repository.ingredients.delete(id);
     await loadIngredients();
   }
 
@@ -327,9 +312,12 @@ function PriceTiersTab() {
     async function load() {
       setLoading(true);
       try {
-        const [tiersResp, prodsResp] = await Promise.all([fetch("/api/price-tiers"), fetch("/api/products")]);
-        if (tiersResp.ok) setTiers(await tiersResp.json());
-        if (prodsResp.ok) setProducts(await prodsResp.json());
+        const [tiersData, prodsResp] = await Promise.allSettled([
+          repository.priceTiers.getAll(),
+          fetch("/api/products").then((r) => r.ok ? r.json() : []),
+        ]);
+        if (tiersData.status === "fulfilled") setTiers(tiersData.value);
+        if (prodsResp.status === "fulfilled") setProducts(prodsResp.value);
       } catch {}
       setLoading(false);
     }
@@ -341,27 +329,27 @@ function PriceTiersTab() {
     const payload = {
       name: form.name,
       minQty: parseInt(form.minQty) || 1,
-      maxQty: form.maxQty ? parseInt(form.maxQty) : null,
+      maxQty: form.maxQty ? parseInt(form.maxQty) : undefined,
       price: parseFloat(form.price) || 0,
       productId: form.productId || undefined,
     };
     if (editingTier) {
-      await fetch(`/api/price-tiers/${editingTier.id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+      await repository.priceTiers.update(editingTier.id, payload);
     } else {
-      await fetch("/api/price-tiers", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+      await repository.priceTiers.create(payload);
     }
     setShowModal(false);
     setEditingTier(null);
     setForm({ name: "", minQty: "", maxQty: "", price: "", productId: "", type: "assado" });
-    const resp = await fetch("/api/price-tiers");
-    if (resp.ok) setTiers(await resp.json());
+    const data = await repository.priceTiers.getAll();
+    setTiers(data);
   }
 
   async function handleDelete(id: string) {
     if (!confirm("Excluir esta faixa de preço?")) return;
-    await fetch(`/api/price-tiers/${id}`, { method: "DELETE" });
-    const resp = await fetch("/api/price-tiers");
-    if (resp.ok) setTiers(await resp.json());
+    await repository.priceTiers.delete(id);
+    const data = await repository.priceTiers.getAll();
+    setTiers(data);
   }
 
   const assadoTiers = tiers.filter((t: any) => t.name?.toLowerCase().includes("assado"));

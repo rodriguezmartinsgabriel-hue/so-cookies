@@ -1,11 +1,26 @@
 import { db, getLastSyncTime, setLastSyncTime, clearSyncQueue } from "./db-local"
 
+let syncLock = false
+let pendingSync: ReturnType<typeof setTimeout> | null = null
+
+async function acquireLock(): Promise<boolean> {
+  if (syncLock) return false
+  syncLock = true
+  return true
+}
+
+function releaseLock() {
+  syncLock = false
+}
+
 export async function pushPendingChanges() {
   if (!navigator.onLine) return { pushed: 0 }
-  const pending = await db.syncQueue.toArray()
-  if (pending.length === 0) return { pushed: 0 }
+  if (!await acquireLock()) return { pushed: 0 }
 
   try {
+    const pending = await db.syncQueue.toArray()
+    if (pending.length === 0) return { pushed: 0 }
+
     const resp = await fetch("/api/sync/push", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -27,9 +42,10 @@ export async function pushPendingChanges() {
 
 export async function pullChanges() {
   if (!navigator.onLine) return { pulled: 0 }
-  const since = await getLastSyncTime()
+  if (!await acquireLock()) return { pulled: 0 }
 
   try {
+    const since = await getLastSyncTime()
     const resp = await fetch("/api/sync/pull", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -54,6 +70,15 @@ export async function syncAll() {
   return { pushed: pushed.pushed, pulled: pulled.pulled }
 }
 
+export function scheduleSync() {
+  if (!navigator.onLine) return
+  if (pendingSync) clearTimeout(pendingSync)
+  pendingSync = setTimeout(async () => {
+    pendingSync = null
+    await syncAll()
+  }, 500)
+}
+
 export function registerBackgroundSync() {
   if ("serviceWorker" in navigator && "sync" in window.ServiceWorkerRegistration.prototype) {
     navigator.serviceWorker.ready.then((reg) => {
@@ -61,22 +86,100 @@ export function registerBackgroundSync() {
     })
   }
 
-  if (navigator.onLine) {
-    window.addEventListener("online", () => { syncAll() })
-  }
+  window.addEventListener("online", () => { scheduleSync() })
+
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible" && navigator.onLine) {
+      scheduleSync()
+    }
+  })
+
+  window.addEventListener("focus", () => {
+    if (navigator.onLine) scheduleSync()
+  })
 }
 
 async function reconcileIds(tempId: string, realId: string) {
+  if (!tempId.startsWith("offline_")) return
+
   const order = await db.orders.get(tempId)
   if (order) {
-    await db.orders.delete(tempId)
-    await db.orderItems.where("orderId").equals(tempId).modify({ orderId: realId, _synced: true })
-    await db.orders.put({ ...order, id: realId, _synced: true })
+    const existingReal = await db.orders.get(realId)
+    if (existingReal) {
+      await db.orders.delete(tempId)
+      await db.orderItems.where("orderId").equals(tempId).delete()
+    } else {
+      await db.orders.delete(tempId)
+      await db.orderItems.where("orderId").equals(tempId).modify({ orderId: realId, _synced: true })
+      await db.orders.put({ ...order, id: realId, _synced: true })
+    }
   }
+
   const sale = await db.sales.get(tempId)
   if (sale) {
-    await db.sales.delete(tempId)
-    await db.saleItems.where("saleId").equals(tempId).modify({ saleId: realId, _synced: true })
-    await db.sales.put({ ...sale, id: realId, _synced: true })
+    const existingReal = await db.sales.get(realId)
+    if (existingReal) {
+      await db.sales.delete(tempId)
+      await db.saleItems.where("saleId").equals(tempId).delete()
+    } else {
+      await db.sales.delete(tempId)
+      await db.saleItems.where("saleId").equals(tempId).modify({ saleId: realId, _synced: true })
+      await db.sales.put({ ...sale, id: realId, _synced: true })
+    }
+  }
+
+  const cash = await db.cashFlow.get(tempId)
+  if (cash) {
+    const existingReal = await db.cashFlow.get(realId)
+    if (existingReal) {
+      await db.cashFlow.delete(tempId)
+    } else {
+      await db.cashFlow.delete(tempId)
+      await db.cashFlow.put({ ...cash, id: realId, _synced: true })
+    }
+  }
+
+  const prod = await db.productions.get(tempId)
+  if (prod) {
+    const existingReal = await db.productions.get(realId)
+    if (existingReal) {
+      await db.productions.delete(tempId)
+    } else {
+      await db.productions.delete(tempId)
+      await db.productions.put({ ...prod, id: realId, _synced: true })
+    }
+  }
+
+  const ingredient = await db.ingredients.get(tempId)
+  if (ingredient) {
+    const existingReal = await db.ingredients.get(realId)
+    if (existingReal) {
+      await db.ingredients.delete(tempId)
+    } else {
+      await db.ingredients.delete(tempId)
+      await db.ingredients.put({ ...ingredient, id: realId, _synced: true })
+    }
+  }
+
+  const channel = await db.channels.get(tempId)
+  if (channel) {
+    const existingReal = await db.channels.get(realId)
+    if (existingReal) {
+      await db.channels.delete(tempId)
+    } else {
+      await db.channels.delete(tempId)
+      await db.channels.put({ ...channel, id: realId, _synced: true })
+    }
+  }
+
+  const tier = await db.priceTiers.get(tempId)
+  if (tier) {
+    const existingReal = await db.priceTiers.get(realId)
+    if (existingReal) {
+      await db.priceTiers.delete(tempId)
+    } else {
+      await db.priceTiers.delete(tempId)
+      await db.priceTiers.put({ ...tier, id: realId, _synced: true })
+    }
   }
 }

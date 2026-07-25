@@ -79,6 +79,41 @@ export interface LocalProduct {
   _synced: boolean
 }
 
+export interface LocalIngredient {
+  id: string
+  name: string
+  stockKg: number
+  minStockKg: number
+  costPerKg: number
+  supplier: string
+  lastPurchase?: string
+  caloriesPer100g?: number
+  proteinPer100g?: number
+  carbsPer100g?: number
+  fatPer100g?: number
+  _synced: boolean
+  _updatedAt: string
+}
+
+export interface LocalChannel {
+  id: string
+  name: string
+  commission: number
+  _synced: boolean
+  _updatedAt: string
+}
+
+export interface LocalPriceTier {
+  id: string
+  name: string
+  minQty: number
+  maxQty?: number
+  price: number
+  productId?: string
+  _synced: boolean
+  _updatedAt: string
+}
+
 export interface SyncQueueItem {
   id?: number
   action: "create" | "update" | "delete"
@@ -96,6 +131,9 @@ const db = new Dexie("SoManagerDB") as Dexie & {
   cashFlow: EntityTable<LocalCashFlow, "id">
   productions: EntityTable<LocalProduction, "id">
   products: EntityTable<LocalProduct, "id">
+  ingredients: EntityTable<LocalIngredient, "id">
+  channels: EntityTable<LocalChannel, "id">
+  priceTiers: EntityTable<LocalPriceTier, "id">
   syncQueue: EntityTable<SyncQueueItem, "id">
   syncMeta: EntityTable<{ key: string; value: string }, "key">
 }
@@ -110,6 +148,12 @@ db.version(1).stores({
   products: "id, _synced",
   syncQueue: "++id, entity, createdAt",
   syncMeta: "key",
+})
+
+db.version(2).stores({
+  ingredients: "id, _synced",
+  channels: "id, _synced",
+  priceTiers: "id, _synced, productId",
 })
 
 export { db }
