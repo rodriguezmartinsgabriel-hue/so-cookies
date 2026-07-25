@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, ShoppingBag, Package, DollarSign, Factory, BarChart3 } from "lucide-react";
+import { Home, ShoppingBag, Package, DollarSign, Factory, BarChart3, BookOpen } from "lucide-react";
 
 const navItems = [
   { href: "/", label: "Home", icon: Home },

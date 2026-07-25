@@ -312,3 +312,46 @@ export async function updatePriceTier(id: string, data: Partial<{ name: string; 
 export async function deletePriceTier(id: string) {
   return prisma.priceTier.delete({ where: { id } });
 }
+
+export async function getDocuments(category?: string) {
+  const where = category && category !== "ALL" ? { category: category as any } : {};
+  return prisma.document.findMany({ where, include: { user: true }, orderBy: { createdAt: "desc" } });
+}
+
+export async function getDocument(id: string) {
+  return prisma.document.findUnique({ where: { id }, include: { user: true } });
+}
+
+export async function createDocument(data: {
+  title: string;
+  description?: string;
+  category: string;
+  content?: string;
+  fileUrl?: string;
+  tags?: string;
+  userId?: string;
+}) {
+  return prisma.document.create({ data: { ...data, category: data.category as any } });
+}
+
+export async function updateDocument(id: string, data: Partial<{
+  title: string;
+  description: string;
+  category: string;
+  content: string;
+  fileUrl: string;
+  tags: string;
+}>) {
+  const updateData: Record<string, unknown> = {};
+  if (data.title) updateData.title = data.title;
+  if (data.description !== undefined) updateData.description = data.description;
+  if (data.category) updateData.category = data.category;
+  if (data.content !== undefined) updateData.content = data.content;
+  if (data.fileUrl !== undefined) updateData.fileUrl = data.fileUrl;
+  if (data.tags !== undefined) updateData.tags = data.tags;
+  return prisma.document.update({ where: { id }, data: updateData });
+}
+
+export async function deleteDocument(id: string) {
+  return prisma.document.delete({ where: { id } });
+}

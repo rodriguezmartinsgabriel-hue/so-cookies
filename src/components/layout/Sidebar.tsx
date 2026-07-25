@@ -12,6 +12,7 @@ import {
   Truck,
   Factory,
   BarChart3,
+  BookOpen,
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
@@ -25,6 +26,7 @@ const navItems = [
   { href: "/caixa", label: "Caixa", icon: Wallet },
   { href: "/delivery", label: "Delivery", icon: Truck },
   { href: "/producao", label: "Produção", icon: Factory },
+  { href: "/documentos", label: "Documentos", icon: BookOpen },
   { href: "/relatorios", label: "Relatórios", icon: BarChart3 },
 ];
 
