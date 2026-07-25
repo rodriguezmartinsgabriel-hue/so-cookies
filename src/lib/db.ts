@@ -95,7 +95,27 @@ export async function createOrder(data: { channel: string; customer: string; tot
 }
 
 export async function updateOrderStatus(id: string, status: string) {
-  return prisma.order.update({ where: { id }, data: { status: status as any } });
+  const order = await prisma.order.update({ where: { id }, data: { status: status as any }, include: { items: true, sale: true } });
+  if (status === "CONCLUIDO" && !order.sale) {
+    await createSaleFromOrder(order);
+  }
+  return order;
+}
+
+export async function createSaleFromOrder(order: { id: string; channel: string; total: number; items: { productId: string; qty: number; price: number }[] }) {
+  const channels = await prisma.saleChannel.findMany();
+  const matchChannel = channels.find((c) => c.name.toLowerCase() === order.channel.toLowerCase());
+  const channelId = matchChannel?.id || channels[0]?.id;
+  if (!channelId) return null;
+  return prisma.sale.create({
+    data: {
+      total: order.total,
+      channelId,
+      orderId: order.id,
+      items: { create: order.items.map((item) => ({ productId: item.productId, qty: item.qty, price: item.price })) },
+    },
+    include: { items: true },
+  });
 }
 
 export async function updateOrder(id: string, data: Partial<{ channel: string; customer: string; notes: string; status: string }>) {

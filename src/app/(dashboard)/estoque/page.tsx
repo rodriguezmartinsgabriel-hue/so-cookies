@@ -10,8 +10,9 @@ export default function EstoquePage() {
   const [showModal, setShowModal] = useState(false);
   const [editingItem, setEditingItem] = useState<any>(null);
   const [ingredients, setIngredients] = useState<any[]>([]);
+  const [recipes, setRecipes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<"insumos" | "precos">("insumos");
+  const [tab, setTab] = useState<"insumos" | "precos" | "geral">("insumos");
 
   const [form, setForm] = useState({
     name: "", brand: "", stockKg: "", minStockKg: "", costPerKg: "", supplier: "",
@@ -21,8 +22,12 @@ export default function EstoquePage() {
   const loadIngredients = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await repository.ingredients.getAll();
-      setIngredients(data);
+      const [ingredientsData, recipesResp] = await Promise.all([
+        repository.ingredients.getAll(),
+        fetch("/api/recipes").then((r) => r.ok ? r.json() : []),
+      ]);
+      setIngredients(ingredientsData);
+      setRecipes(recipesResp);
     } catch {}
     setLoading(false);
   }, []);
@@ -114,6 +119,9 @@ export default function EstoquePage() {
         <div className="flex gap-2 border-b border-line pb-2">
           <button onClick={() => setTab("insumos")} className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${tab === "insumos" ? "bg-ink text-paper" : "text-muted hover:bg-cream"}`}>
             Insumos
+          </button>
+          <button onClick={() => setTab("geral")} className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${tab === "geral" ? "bg-ink text-paper" : "text-muted hover:bg-cream"}`}>
+            Geral
           </button>
           <button onClick={() => setTab("precos")} className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${tab === "precos" ? "bg-ink text-paper" : "text-muted hover:bg-cream"}`}>
             Tabela de Preços
@@ -224,6 +232,8 @@ export default function EstoquePage() {
               </div>
             </>
           )
+        ) : tab === "geral" ? (
+          <GeralTab ingredients={ingredients} recipes={recipes} onUpdate={loadIngredients} />
         ) : (
           <PriceTiersTab />
         )}
@@ -471,6 +481,155 @@ function PriceTiersTab() {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function GeralTab({ ingredients, recipes, onUpdate }: { ingredients: any[]; recipes: any[]; onUpdate: () => void }) {
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editField, setEditField] = useState<"name" | "brand">("name");
+  const [editValue, setEditValue] = useState("");
+  const [newName, setNewName] = useState("");
+  const [newBrand, setNewBrand] = useState("");
+
+  function ingredientUsage(ingredientId: string) {
+    return recipes.filter((r: any) =>
+      (r.ingredients || []).some((ri: any) => ri.ingredientId === ingredientId || ri.ingredient?.id === ingredientId)
+    );
+  }
+
+  function startEdit(id: string, field: "name" | "brand", value: string) {
+    setEditingId(id);
+    setEditField(field);
+    setEditValue(value);
+  }
+
+  async function saveEdit(id: string) {
+    if (!editValue.trim()) return;
+    await repository.ingredients.update(id, { [editField]: editValue.trim() });
+    setEditingId(null);
+    onUpdate();
+  }
+
+  async function handleAdd() {
+    if (!newName.trim()) return;
+    await repository.ingredients.create({
+      name: newName.trim(),
+      brand: newBrand.trim() || undefined,
+      costPerKg: 0,
+      supplier: "Não informado",
+    });
+    setNewName("");
+    setNewBrand("");
+    onUpdate();
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="border border-line rounded-lg bg-paper shadow-card overflow-hidden">
+        <div className="px-4 py-3 bg-cream border-b border-line">
+          <p className="text-sm font-semibold text-ink">Visão Geral dos Insumos</p>
+          <p className="text-xs text-muted">Edite nomes e marcas diretamente · Veja em quais receitas cada insumo é usado</p>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-line">
+                <th className="text-left text-xs font-semibold text-muted uppercase tracking-wide px-4 py-2">Insumo</th>
+                <th className="text-left text-xs font-semibold text-muted uppercase tracking-wide px-4 py-2">Marca</th>
+                <th className="text-left text-xs font-semibold text-muted uppercase tracking-wide px-4 py-2">Usado em</th>
+                <th className="text-right text-xs font-semibold text-muted uppercase tracking-wide px-4 py-2">Custo/kg</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-line">
+              {ingredients.map((item: any) => {
+                const usage = ingredientUsage(item.id);
+                return (
+                  <tr key={item.id} className="hover:bg-cream/50 transition-colors">
+                    <td className="px-4 py-2">
+                      {editingId === item.id && editField === "name" ? (
+                        <input
+                          autoFocus
+                          type="text"
+                          value={editValue}
+                          onChange={(e) => setEditValue(e.target.value)}
+                          onBlur={() => saveEdit(item.id)}
+                          onKeyDown={(e) => { if (e.key === "Enter") saveEdit(item.id); if (e.key === "Escape") setEditingId(null); }}
+                          className="w-full h-8 px-2 border border-info rounded text-sm text-ink bg-paper focus:outline-none"
+                        />
+                      ) : (
+                        <span
+                          onClick={() => startEdit(item.id, "name", item.name)}
+                          className="text-sm font-medium text-ink cursor-pointer hover:bg-info/10 px-1 rounded transition-colors"
+                        >
+                          {item.name}
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-4 py-2">
+                      {editingId === item.id && editField === "brand" ? (
+                        <input
+                          autoFocus
+                          type="text"
+                          value={editValue}
+                          onChange={(e) => setEditValue(e.target.value)}
+                          onBlur={() => saveEdit(item.id)}
+                          onKeyDown={(e) => { if (e.key === "Enter") saveEdit(item.id); if (e.key === "Escape") setEditingId(null); }}
+                          className="w-full h-8 px-2 border border-info rounded text-sm text-ink bg-paper focus:outline-none"
+                        />
+                      ) : (
+                        <span
+                          onClick={() => startEdit(item.id, "brand", item.brand || "")}
+                          className="text-sm text-muted cursor-pointer hover:bg-info/10 px-1 rounded transition-colors"
+                        >
+                          {item.brand || <span className="italic text-kraft">adicionar</span>}
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-4 py-2">
+                      <div className="flex flex-wrap gap-1">
+                        {usage.length > 0 ? usage.map((r: any) => (
+                          <span key={r.id} className="text-[10px] bg-cream text-muted px-1.5 py-0.5 rounded border border-line">
+                            {r.name}
+                          </span>
+                        )) : (
+                          <span className="text-[10px] italic text-kraft">nenhum</span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-4 py-2 text-sm text-right">R$ {(item.costPerKg || 0).toFixed(2)}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div className="border border-dashed border-line rounded-lg bg-paper p-4">
+        <p className="text-xs font-semibold text-muted uppercase tracking-wide mb-3">Adicionar Insumo</p>
+        <div className="flex items-center gap-2">
+          <input
+            type="text"
+            placeholder="Nome do insumo"
+            value={newName}
+            onChange={(e) => setNewName(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") handleAdd(); }}
+            className="flex-1 h-9 px-3 border border-line rounded-lg text-sm text-ink placeholder:text-kraft focus:outline-none focus:border-ink transition-colors"
+          />
+          <input
+            type="text"
+            placeholder="Marca (opcional)"
+            value={newBrand}
+            onChange={(e) => setNewBrand(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") handleAdd(); }}
+            className="w-40 h-9 px-3 border border-line rounded-lg text-sm text-ink placeholder:text-kraft focus:outline-none focus:border-ink transition-colors"
+          />
+          <button onClick={handleAdd} className="h-9 px-4 bg-ink text-paper rounded-lg text-sm font-medium hover:bg-ink/90 transition-colors">
+            <Plus className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

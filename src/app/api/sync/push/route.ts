@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
+import { createSaleFromOrder } from "@/lib/db"
 
 export async function POST(request: Request) {
   const { changes } = await request.json()
@@ -25,10 +26,14 @@ export async function POST(request: Request) {
         }
         case "order:update": {
           const { id, ...updateData } = change.data
-          await prisma.order.update({
+          const updated = await prisma.order.update({
             where: { id },
             data: { ...updateData, updatedAt: new Date() },
+            include: { items: true, sale: true },
           })
+          if (updateData.status === "CONCLUIDO" && !updated.sale) {
+            await createSaleFromOrder(updated)
+          }
           break
         }
         case "sale:create": {
@@ -38,6 +43,7 @@ export async function POST(request: Request) {
               channelId: saleData.channelId,
               total: saleData.total,
               userId: saleData.userId,
+              orderId: saleData.orderId,
               items: items ? { create: items.map((i: { productId: string; qty: number; price: number }) => ({ productId: i.productId, qty: i.qty, price: i.price })) } : undefined,
             },
           })

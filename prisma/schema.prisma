@@ -124,6 +124,9 @@ model Sale {
   user      User?       @relation(fields: [userId], references: [id])
   userId    String?
   items     SaleItem[]
+
+  order   Order? @relation(fields: [orderId], references: [id])
+  orderId String? @unique
 }
 
 model SaleItem {
@@ -148,6 +151,7 @@ model Order {
   updatedAt DateTime    @updatedAt
 
   items OrderItem[]
+  sale  Sale?
 }
 
 enum OrderStatus {
