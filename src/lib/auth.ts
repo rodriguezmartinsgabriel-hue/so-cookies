@@ -3,12 +3,7 @@ import Credentials from "next-auth/providers/credentials";
 import { compare } from "bcryptjs";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@/generated/prisma/client";
-
-function getDatabaseUrl() {
-  return process.env.DIRECT_DATABASE_URL
-    ?? process.env.POSTGRES_URL_NON_POOLING
-    ?? process.env.DATABASE_URL!;
-}
+import { getDatabaseUrl } from "./db-url";
 
 declare module "next-auth" {
   interface User {
