@@ -52,7 +52,11 @@ export function InstallPrompt() {
       <div className="mx-auto max-w-md rounded-2xl bg-ink p-6 text-paper shadow-lg">
         <div className="space-y-4">
           <div className="space-y-2 text-center">
-            <h2 className="font-brand text-3xl">Só Manager</h2>
+            <img
+              src="/só logo sem fundo.svg"
+              alt="Só"
+              className="h-16 w-auto mx-auto"
+            />
             <p className="text-sm opacity-80">
               Instale o app no seu dispositivo para acesso rápido e funcionamento offline.
             </p>

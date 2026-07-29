@@ -44,9 +44,16 @@ export function Sidebar() {
     >
       <div className="flex items-center justify-between h-14 px-3 border-b border-line">
         {!collapsed && (
-          <Link href="/" className="font-brand text-2xl text-ink leading-none">
-            só
-          </Link>
+          <div className="flex items-center gap-2">
+            <img
+              src="/só logo sem fundo.svg"
+              alt="Só Cookies & Café"
+              className="h-10 w-auto"
+            />
+            <span className="text-sm font-medium text-muted hidden sm:block">
+              Só Cookies
+            </span>
+          </div>
         )}
         <button
           onClick={() => setCollapsed(!collapsed)}

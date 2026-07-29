@@ -89,8 +89,12 @@ export default function HomePage() {
   if (status === "loading" || status === "unauthenticated") {
     return (
       <div className="h-screen flex items-center justify-center bg-paper">
-        <div className="text-center">
-          <h1 className="font-brand text-4xl text-ink">só</h1>
+        <div className="flex items-center gap-4">
+          <img
+            src="/só logo sem fundo.svg"
+            alt="Só"
+            className="h-10 w-auto"
+          />
           <Skeleton className="h-4 w-24 mx-auto mt-2" />
         </div>
       </div>

@@ -53,7 +53,11 @@ export function Header({
   return (
     <header className="h-14 border-b border-line bg-paper flex items-center justify-between px-4 lg:px-6 shrink-0">
       <div className="lg:hidden">
-        <span className="font-brand text-xl text-ink">só</span>
+        <img
+          src="/só logo sem fundo.svg"
+          alt="Só Cookies & Café"
+          className="h-8 w-auto"
+        />
       </div>
 
       <div className="hidden lg:block" />

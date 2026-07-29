@@ -36,9 +36,13 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-paper p-4">
       <div className="w-full max-w-sm space-y-8">
-        <div className="text-center">
-          <h1 className="font-brand text-6xl text-ink mb-2">só</h1>
-          <p className="text-muted text-sm">cookies & café</p>
+        <div className="text-center mb-8">
+          <img
+            src="/só logo sem fundo.svg"
+            alt="Só Cookies & Café"
+            className="h-20 w-auto object-contain"
+          />
+          <p className="text-muted text-sm mt-2">cookies & café</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
