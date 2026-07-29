@@ -3,6 +3,7 @@ import Credentials from "next-auth/providers/credentials";
 import { compare } from "bcryptjs";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@/generated/prisma/client";
+import { getDatabaseUrl } from "./db-url";
 
 declare module "next-auth" {
   interface User {
@@ -30,7 +31,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         if (!credentials?.email || !credentials?.password) return null;
 
         const adapter = new PrismaPg({
-          connectionString: process.env.DATABASE_URL!,
+          connectionString: getDatabaseUrl(),
         });
         const prisma = new PrismaClient({ adapter });
 
