@@ -54,9 +54,8 @@ chat:
   auto_reply: true
 knowledge_base:
   learnings:
-    - scope: local
-      learnings:
-        - "O app é offline-first: operações vão para Dexie (IndexedDB) primeiro, depois sincronizam"
-        - "Roles são: ADMIN (tudo), OPERACIONAL (CRUD), VISUALIZADOR (leitura)"
-        - "sync push/pull com reconciliação de IDs temporários (offline_*)"
-        - "Prisma com adapter-pg e relationMode=prisma (sem FK real no banco)"
+    local:
+      - "O app é offline-first: operações vão para Dexie (IndexedDB) primeiro, depois sincronizam"
+      - "Roles são: ADMIN (tudo), OPERACIONAL (CRUD), VISUALIZADOR (leitura)"
+      - "sync push/pull com reconciliação de IDs temporários (offline_*)"
+      - "Prisma com adapter-pg e relationMode=prisma (sem FK real no banco)"
