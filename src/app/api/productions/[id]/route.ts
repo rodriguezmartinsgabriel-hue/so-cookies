@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { requireAuth } from "@/lib/api-auth"
+import { updateProductionSchema } from "@/lib/validation"
 
 export async function PATCH(
   request: Request,
@@ -11,9 +12,11 @@ export async function PATCH(
   try {
     const { id } = await params
     const json = await request.json()
-    const data = await prisma.production.update({ where: { id }, data: json, include: { product: true } })
+    const parsed = updateProductionSchema.parse(json)
+    const data = await prisma.production.update({ where: { id }, data: parsed, include: { product: true } })
     return NextResponse.json(data)
-  } catch (e) {
+  } catch (e: any) {
+    if (e?.issues) return NextResponse.json({ error: "Dados inválidos", details: e.issues }, { status: 400 })
     return NextResponse.json({ error: "Erro ao atualizar produção" }, { status: 500 })
   }
 }

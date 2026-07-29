@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { getProduct, updateProduct, deleteProduct } from "@/lib/db"
 import { requireAuth } from "@/lib/api-auth"
+import { updateProductSchema } from "@/lib/validation"
 
 export async function GET(
   request: Request,
@@ -26,10 +27,12 @@ export async function PUT(
   if (error) return error
   try {
     const { id } = await params
-    const data = await request.json()
-    const product = await updateProduct(id, data)
+    const json = await request.json()
+    const parsed = updateProductSchema.parse(json)
+    const product = await updateProduct(id, parsed)
     return NextResponse.json(product)
-  } catch (e) {
+  } catch (e: any) {
+    if (e?.issues) return NextResponse.json({ error: "Dados inválidos", details: e.issues }, { status: 400 })
     return NextResponse.json({ error: "Erro ao atualizar produto" }, { status: 500 })
   }
 }

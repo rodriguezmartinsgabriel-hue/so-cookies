@@ -137,3 +137,65 @@ export const createDocumentSchema = z.object({
   tags: z.string().optional(),
   userId: z.string().optional(),
 })
+
+export const updateProductSchema = z.object({
+  name: z.string().min(1).optional(),
+  price: z.number().min(0).optional(),
+  cost: z.number().min(0).optional(),
+  margin: z.number().optional(),
+  active: z.boolean().optional(),
+  category: z.string().optional(),
+  sku: z.string().optional(),
+  unit: z.string().optional(),
+  image: z.string().optional(),
+})
+
+export const updateChannelSchema = z.object({
+  name: z.string().min(1).optional(),
+  commission: z.number().min(0).optional(),
+})
+
+export const updateProductionSchema = z.object({
+  status: z.string().optional(),
+  endTime: z.string().optional(),
+  notes: z.string().optional(),
+  qty: z.number().int().min(0).optional(),
+})
+
+export const updateRecipeSchema = z.object({
+  name: z.string().min(1).optional(),
+  yield: z.number().int().min(1).optional(),
+  yieldUnit: z.string().optional(),
+  productId: z.string().optional(),
+  totalCost: z.number().min(0).optional(),
+  ingredients: z.array(z.object({
+    ingredientId: z.string().min(1),
+    qty: z.number().min(0),
+    unit: z.string(),
+  })).optional(),
+})
+
+export const updateDocumentSchema = z.object({
+  title: z.string().min(1).optional(),
+  description: z.string().optional(),
+  category: z.enum(["FICHA_TECNICA", "MODO_PREPARO", "HIGIENE", "MANIPULACAO", "TREINAMENTO", "OUTROS"]).optional(),
+  content: z.string().optional(),
+  fileUrl: z.string().optional(),
+  tags: z.string().optional(),
+})
+
+export const updateDeliveryCostSchema = z.object({
+  channel: z.string().min(1).optional(),
+  amount: z.number().min(0).optional(),
+  orderId: z.string().optional(),
+  notes: z.string().optional(),
+  date: z.string().optional(),
+})
+
+export const updatePriceTierSchema = z.object({
+  productId: z.string().optional(),
+  name: z.string().min(1).optional(),
+  minQty: z.number().int().min(0).optional(),
+  maxQty: z.number().int().optional(),
+  price: z.number().min(0).optional(),
+})

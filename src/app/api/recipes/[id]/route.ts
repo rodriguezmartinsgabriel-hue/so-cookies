@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { requireAuth } from "@/lib/api-auth"
+import { updateRecipeSchema } from "@/lib/validation"
 
 export async function GET(
   request: Request,
@@ -30,7 +31,8 @@ export async function PUT(
   try {
     const { id } = await params
     const json = await request.json()
-    const { ingredients, ...recipeData } = json
+    const parsed = updateRecipeSchema.parse(json)
+    const { ingredients, ...recipeData } = parsed
     const data = await prisma.recipe.update({ where: { id }, data: recipeData })
     if (ingredients && Array.isArray(ingredients)) {
       await prisma.recipeItem.deleteMany({ where: { recipeId: id } })
