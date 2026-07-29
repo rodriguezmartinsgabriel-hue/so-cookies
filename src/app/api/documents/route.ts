@@ -19,7 +19,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const { error } = await requireAuth()
+  const { error } = await requireAuth("OPERACIONAL")
   if (error) return error
   try {
     const json = await request.json();
