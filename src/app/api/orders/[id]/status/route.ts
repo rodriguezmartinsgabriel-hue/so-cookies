@@ -7,7 +7,7 @@ export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { error } = await requireAuth()
+  const { error } = await requireAuth("OPERACIONAL")
   if (error) return error
   try {
     const { id } = await params

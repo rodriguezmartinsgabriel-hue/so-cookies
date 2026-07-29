@@ -15,7 +15,7 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const { error } = await requireAuth()
+  const { error } = await requireAuth("ADMIN")
   if (error) return error
   try {
     const json = await request.json()
