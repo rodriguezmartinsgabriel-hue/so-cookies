@@ -8,7 +8,7 @@ export async function requireAuth(minRole?: Role) {
   if (!session?.user?.id) {
     return { error: NextResponse.json({ error: "Não autenticado" }, { status: 401 }), session: null }
   }
-  if (minRole && session.user.role) {
+  if (minRole) {
     const hierarchy: Record<Role, number> = { ADMIN: 3, OPERACIONAL: 2, VISUALIZADOR: 1 }
     const userLevel = hierarchy[session.user.role as Role] || 0
     const requiredLevel = hierarchy[minRole] || 0

@@ -34,7 +34,14 @@ reviews:
         Verifique:
         1. Índices para consultas frequentes
         2. Relacionamentos com onDelete adequados
-        3. RelatioName vs chaves estrangeiras
+        3. relationMode vs chaves estrangeiras
+    - path: "src/**/*.tsx"
+      instructions: |
+        Verifique:
+        1. Substituição de `any` por tipos concretos (importar de @/generated/prisma)
+        2. Hooks com estados de loading/error/data
+        3. useMemo/useCallback para dados derivados
+        4. Acessibilidade (aria, role, semantic HTML)
     - path: "src/**/page.tsx"
       instructions: |
         Verifique:
