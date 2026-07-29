@@ -1,21 +1,31 @@
 import { NextResponse } from "next/server";
-import { getPriceTiers, createPriceTier } from "@/lib/db";
+import { prisma } from "@/lib/prisma";
+import { requireAuth } from "@/lib/api-auth";
+import { createPriceTierSchema } from "@/lib/validation";
 
 export async function GET() {
+  const { error } = await requireAuth()
+  if (error) return error
   try {
-    const tiers = await getPriceTiers();
-    return NextResponse.json(tiers);
-  } catch (error) {
-    return NextResponse.json({ error: "Failed to fetch price tiers" }, { status: 500 });
+    const tiers = await prisma.priceTier.findMany()
+    return NextResponse.json(tiers)
+  } catch (e) {
+    return NextResponse.json({ error: "Erro ao buscar faixas de preço" }, { status: 500 })
   }
 }
 
 export async function POST(request: Request) {
+  const { error } = await requireAuth()
+  if (error) return error
   try {
-    const data = await request.json();
-    const tier = await createPriceTier(data);
-    return NextResponse.json(tier);
-  } catch (error) {
-    return NextResponse.json({ error: "Failed to create price tier" }, { status: 500 });
+    const json = await request.json()
+    const parsed = createPriceTierSchema.parse(json)
+    const tier = await prisma.priceTier.create({ data: parsed })
+    return NextResponse.json(tier)
+  } catch (e: any) {
+    if (e?.issues) {
+      return NextResponse.json({ error: "Dados inválidos", details: e.issues }, { status: 400 })
+    }
+    return NextResponse.json({ error: "Erro ao criar faixa de preço" }, { status: 500 })
   }
 }

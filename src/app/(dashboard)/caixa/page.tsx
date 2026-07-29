@@ -1,16 +1,22 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
+import { useFocusTrap } from "@/hooks/useFocusTrap"
 import { AppShell } from "@/components/layout/AppShell"
+import { Skeleton } from "@/components/ui/Skeleton"
+import { ErrorState } from "@/components/ui/ErrorState"
 import { repository } from "@/lib/repository"
 import { Plus, ArrowUpRight, ArrowDownLeft, X, Trash2, Edit } from "lucide-react"
 
 export default function CaixaPage() {
   const [showModal, setShowModal] = useState(false)
+  const modalRef = useFocusTrap(showModal)
   const [showEditModal, setShowEditModal] = useState(false)
+  const editModalRef = useFocusTrap(showEditModal)
   const [editingEntry, setEditingEntry] = useState<any>(null)
   const [entries, setEntries] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [formType, setFormType] = useState<"ENTRADA" | "SAIDA">("ENTRADA")
   const [formCategory, setFormCategory] = useState("")
   const [formDescription, setFormDescription] = useState("")
@@ -28,7 +34,9 @@ export default function CaixaPage() {
     try {
       const data = await repository.cashFlow.getAll()
       setEntries(data)
-    } catch {}
+    } catch {
+      setError("Erro ao carregar caixa")
+    }
     setLoading(false)
   }, [])
 
@@ -127,8 +135,29 @@ export default function CaixaPage() {
           </div>
         </div>
 
+        {error && (
+          <ErrorState message={error} onRetry={loadEntries} />
+        )}
+
         {loading ? (
-          <div className="text-center py-8 text-muted">Carregando...</div>
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="border border-line rounded-lg bg-paper p-4 shadow-card">
+                  <Skeleton className="h-3 w-20 mb-2" />
+                  <Skeleton className="h-7 w-16" />
+                </div>
+              ))}
+            </div>
+            <div className="border border-line rounded-lg bg-paper shadow-card overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead><tr className="border-b border-line bg-cream">{Array.from({ length: 6 }).map((_, i) => (<th key={i} className="px-4 py-3"><Skeleton className="h-3 w-16" /></th>))}</tr></thead>
+                  <tbody className="divide-y divide-line">{Array.from({ length: 4 }).map((_, i) => (<tr key={i}>{Array.from({ length: 6 }).map((_, j) => (<td key={j} className="px-4 py-3"><Skeleton className="h-4 w-full" /></td>))}</tr>))}</tbody>
+                </table>
+              </div>
+            </div>
+          </div>
         ) : (
           <div className="border border-line rounded-lg bg-paper shadow-card overflow-hidden">
             <div className="overflow-x-auto">
@@ -157,8 +186,8 @@ export default function CaixaPage() {
                       <td className="px-4 py-3 text-sm text-muted">{entry.date ? new Date(entry.date).toLocaleDateString("pt-BR") : "—"}</td>
                       <td className="px-4 py-3 text-center">
                         <div className="flex items-center justify-center gap-1">
-                          <button onClick={() => openEdit(entry)} className="p-1.5 rounded-md hover:bg-cream text-muted"><Edit className="w-4 h-4" /></button>
-                          <button onClick={() => handleDelete(entry.id)} className="p-1.5 rounded-md hover:bg-cream text-danger"><Trash2 className="w-4 h-4" /></button>
+                          <button onClick={() => openEdit(entry)} aria-label="Editar" className="p-1.5 rounded-md hover:bg-cream text-muted"><Edit className="w-4 h-4" /></button>
+                          <button onClick={() => handleDelete(entry.id)} aria-label="Excluir" className="p-1.5 rounded-md hover:bg-cream text-danger"><Trash2 className="w-4 h-4" /></button>
                         </div>
                       </td>
                     </tr>
@@ -173,11 +202,11 @@ export default function CaixaPage() {
         )}
 
         {showModal && (
-          <div className="fixed inset-0 z-50 bg-ink/30 flex items-center justify-center p-4">
-            <div className="bg-paper rounded-xl border border-line shadow-lg w-full max-w-md">
+          <div className="fixed inset-0 z-50 bg-ink/30 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="novo-lancamento-title">
+            <div ref={modalRef} className="bg-paper rounded-xl border border-line shadow-lg w-full max-w-md">
               <div className="flex items-center justify-between p-4 border-b border-line">
-                <h3 className="text-lg font-bold text-ink">Novo Lançamento</h3>
-                <button onClick={() => setShowModal(false)} className="p-1.5 rounded-md hover:bg-cream text-muted"><X className="w-5 h-5" /></button>
+                <h3 id="novo-lancamento-title" className="text-lg font-bold text-ink">Novo Lançamento</h3>
+                <button onClick={() => setShowModal(false)} data-close-modal aria-label="Fechar" className="p-1.5 rounded-md hover:bg-cream text-muted"><X className="w-5 h-5" /></button>
               </div>
               <div className="p-4 space-y-4">
                 <div>
@@ -190,20 +219,20 @@ export default function CaixaPage() {
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Valor (R$) *</label>
-                    <input type="number" step="0.01" placeholder="0.00" value={formAmount} onChange={(e) => setFormAmount(e.target.value)} className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink placeholder:text-kraft focus:outline-none focus:border-ink transition-colors" />
+                    <input type="number" step="0.01" placeholder="0.00" value={formAmount} onChange={(e) => setFormAmount(e.target.value)} className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink placeholder:text-kraft focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink transition-colors" />
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Data</label>
-                    <input type="date" value={formDate} onChange={(e) => setFormDate(e.target.value)} className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink focus:outline-none focus:border-ink transition-colors" />
+                    <input type="date" value={formDate} onChange={(e) => setFormDate(e.target.value)} className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink transition-colors" />
                   </div>
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Categoria *</label>
-                  <input type="text" placeholder="Ex: Venda, Compra, Frete..." value={formCategory} onChange={(e) => setFormCategory(e.target.value)} className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink placeholder:text-kraft focus:outline-none focus:border-ink transition-colors" />
+                  <input type="text" placeholder="Ex: Venda, Compra, Frete..." value={formCategory} onChange={(e) => setFormCategory(e.target.value)} className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink placeholder:text-kraft focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink transition-colors" />
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Descrição</label>
-                  <input type="text" placeholder="Descrição do lançamento" value={formDescription} onChange={(e) => setFormDescription(e.target.value)} className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink placeholder:text-kraft focus:outline-none focus:border-ink transition-colors" />
+                  <input type="text" placeholder="Descrição do lançamento" value={formDescription} onChange={(e) => setFormDescription(e.target.value)} className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink placeholder:text-kraft focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink transition-colors" />
                 </div>
               </div>
               <div className="p-4 border-t border-line flex gap-2">
@@ -215,11 +244,11 @@ export default function CaixaPage() {
         )}
 
         {showEditModal && editingEntry && (
-          <div className="fixed inset-0 z-50 bg-ink/30 flex items-center justify-center p-4">
-            <div className="bg-paper rounded-xl border border-line shadow-lg w-full max-w-md">
+          <div className="fixed inset-0 z-50 bg-ink/30 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="edit-lancamento-title">
+            <div ref={editModalRef} className="bg-paper rounded-xl border border-line shadow-lg w-full max-w-md">
               <div className="flex items-center justify-between p-4 border-b border-line">
-                <h3 className="text-lg font-bold text-ink">Editar Lançamento</h3>
-                <button onClick={() => { setShowEditModal(false); setEditingEntry(null); }} className="p-1.5 rounded-md hover:bg-cream text-muted"><X className="w-5 h-5" /></button>
+                <h3 id="edit-lancamento-title" className="text-lg font-bold text-ink">Editar Lançamento</h3>
+                <button onClick={() => { setShowEditModal(false); setEditingEntry(null); }} data-close-modal aria-label="Fechar" className="p-1.5 rounded-md hover:bg-cream text-muted"><X className="w-5 h-5" /></button>
               </div>
               <div className="p-4 space-y-4">
                 <div>
@@ -232,20 +261,20 @@ export default function CaixaPage() {
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Valor (R$) *</label>
-                    <input type="number" step="0.01" placeholder="0.00" value={editAmount} onChange={(e) => setEditAmount(e.target.value)} className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink placeholder:text-kraft focus:outline-none focus:border-ink transition-colors" />
+                    <input type="number" step="0.01" placeholder="0.00" value={editAmount} onChange={(e) => setEditAmount(e.target.value)} className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink placeholder:text-kraft focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink transition-colors" />
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Data</label>
-                    <input type="date" value={editDate} onChange={(e) => setEditDate(e.target.value)} className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink focus:outline-none focus:border-ink transition-colors" />
+                    <input type="date" value={editDate} onChange={(e) => setEditDate(e.target.value)} className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink transition-colors" />
                   </div>
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Categoria *</label>
-                  <input type="text" placeholder="Ex: Venda, Compra, Frete..." value={editCategory} onChange={(e) => setEditCategory(e.target.value)} className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink placeholder:text-kraft focus:outline-none focus:border-ink transition-colors" />
+                  <input type="text" placeholder="Ex: Venda, Compra, Frete..." value={editCategory} onChange={(e) => setEditCategory(e.target.value)} className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink placeholder:text-kraft focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink transition-colors" />
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Descrição</label>
-                  <input type="text" placeholder="Descrição do lançamento" value={editDescription} onChange={(e) => setEditDescription(e.target.value)} className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink placeholder:text-kraft focus:outline-none focus:border-ink transition-colors" />
+                  <input type="text" placeholder="Descrição do lançamento" value={editDescription} onChange={(e) => setEditDescription(e.target.value)} className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink placeholder:text-kraft focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink transition-colors" />
                 </div>
               </div>
               <div className="p-4 border-t border-line flex gap-2">

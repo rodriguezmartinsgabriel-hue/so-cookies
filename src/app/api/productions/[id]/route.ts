@@ -1,17 +1,20 @@
 import { NextResponse } from "next/server"
-import { updateProduction, deleteProduction } from "@/lib/db"
+import { prisma } from "@/lib/prisma"
+import { requireAuth } from "@/lib/api-auth"
 
 export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const { error } = await requireAuth("OPERACIONAL")
+  if (error) return error
   try {
     const { id } = await params
-    const body = await request.json()
-    const production = await updateProduction(id, body)
-    return NextResponse.json(production)
-  } catch (error) {
-    return NextResponse.json({ error: "Failed to update production" }, { status: 500 })
+    const json = await request.json()
+    const data = await prisma.production.update({ where: { id }, data: json, include: { product: true } })
+    return NextResponse.json(data)
+  } catch (e) {
+    return NextResponse.json({ error: "Erro ao atualizar produção" }, { status: 500 })
   }
 }
 
@@ -19,11 +22,13 @@ export async function DELETE(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const { error } = await requireAuth("ADMIN")
+  if (error) return error
   try {
     const { id } = await params
-    await deleteProduction(id)
+    await prisma.production.delete({ where: { id } })
     return NextResponse.json({ ok: true })
-  } catch (error) {
-    return NextResponse.json({ error: "Failed to delete production" }, { status: 500 })
+  } catch (e) {
+    return NextResponse.json({ error: "Erro ao deletar produção" }, { status: 500 })
   }
 }

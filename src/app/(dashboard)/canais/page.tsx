@@ -1,14 +1,19 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
+import { useFocusTrap } from "@/hooks/useFocusTrap"
 import { AppShell } from "@/components/layout/AppShell"
+import { Skeleton } from "@/components/ui/Skeleton"
+import { ErrorState } from "@/components/ui/ErrorState"
 import { repository } from "@/lib/repository"
 import { Plus, Edit, Trash2, X, Store } from "lucide-react"
 
 export default function CanaisPage() {
   const [channels, setChannels] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [showModal, setShowModal] = useState(false)
+  const modalRef = useFocusTrap(showModal)
   const [editingItem, setEditingItem] = useState<any>(null)
   const [form, setForm] = useState({ name: "", commission: "" })
 
@@ -17,7 +22,9 @@ export default function CanaisPage() {
     try {
       const data = await repository.channels.getAll()
       setChannels(data)
-    } catch {}
+    } catch {
+      setError("Erro ao carregar canais")
+    }
     setLoading(false)
   }, [])
 
@@ -73,8 +80,33 @@ export default function CanaisPage() {
           </button>
         </div>
 
+        {error && (
+          <ErrorState message={error} onRetry={loadData} />
+        )}
+
         {loading ? (
-          <div className="text-center py-8 text-muted">Carregando...</div>
+          <div className="border border-line rounded-lg bg-paper shadow-card overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-line bg-cream">
+                    <th className="px-4 py-3"><Skeleton className="h-3 w-20" /></th>
+                    <th className="px-4 py-3"><Skeleton className="h-3 w-16 ml-auto" /></th>
+                    <th className="px-4 py-3"><Skeleton className="h-3 w-12 mx-auto" /></th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-line">
+                  {Array.from({ length: 3 }).map((_, i) => (
+                    <tr key={i}>
+                      <td className="px-4 py-3"><div className="flex items-center gap-3"><Skeleton className="h-8 w-8 rounded-lg" /><Skeleton className="h-4 w-24" /></div></td>
+                      <td className="px-4 py-3"><Skeleton className="h-4 w-12 ml-auto" /></td>
+                      <td className="px-4 py-3"><div className="flex justify-center gap-1"><Skeleton className="h-7 w-7" /><Skeleton className="h-7 w-7" /></div></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
         ) : channels.length === 0 ? (
           <div className="text-center py-8 text-muted border border-dashed border-line rounded-lg">
             Nenhum canal cadastrado. Clique em &quot;Novo Canal&quot; para começar.
@@ -106,8 +138,8 @@ export default function CanaisPage() {
                       </td>
                       <td className="px-4 py-3 text-center">
                         <div className="flex items-center justify-center gap-1">
-                          <button onClick={() => openEdit(ch)} className="p-1.5 rounded-md hover:bg-cream text-muted"><Edit className="w-4 h-4" /></button>
-                          <button onClick={() => handleDelete(ch.id)} className="p-1.5 rounded-md hover:bg-cream text-danger"><Trash2 className="w-4 h-4" /></button>
+                          <button onClick={() => openEdit(ch)} aria-label="Editar" className="p-1.5 rounded-md hover:bg-cream text-muted"><Edit className="w-4 h-4" /></button>
+                          <button onClick={() => handleDelete(ch.id)} aria-label="Excluir" className="p-1.5 rounded-md hover:bg-cream text-danger"><Trash2 className="w-4 h-4" /></button>
                         </div>
                       </td>
                     </tr>
@@ -119,20 +151,20 @@ export default function CanaisPage() {
         )}
 
         {showModal && (
-          <div className="fixed inset-0 z-50 bg-ink/30 flex items-center justify-center p-4">
-            <div className="bg-paper rounded-xl border border-line shadow-lg w-full max-w-md">
+          <div className="fixed inset-0 z-50 bg-ink/30 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="canal-title">
+            <div ref={modalRef} className="bg-paper rounded-xl border border-line shadow-lg w-full max-w-md">
               <div className="flex items-center justify-between p-4 border-b border-line">
-                <h3 className="text-lg font-bold text-ink">{editingItem ? "Editar Canal" : "Novo Canal"}</h3>
-                <button onClick={() => { setShowModal(false); resetForm(); }} className="p-1.5 rounded-md hover:bg-cream text-muted"><X className="w-5 h-5" /></button>
+                <h3 id="canal-title" className="text-lg font-bold text-ink">{editingItem ? "Editar Canal" : "Novo Canal"}</h3>
+                <button onClick={() => { setShowModal(false); resetForm(); }} data-close-modal aria-label="Fechar" className="p-1.5 rounded-md hover:bg-cream text-muted"><X className="w-5 h-5" /></button>
               </div>
               <div className="p-4 space-y-4">
                 <div>
                   <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Nome *</label>
-                  <input type="text" placeholder="Ex: WhatsApp, iFood..." value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink placeholder:text-kraft focus:outline-none focus:border-ink transition-colors" />
+                  <input type="text" placeholder="Ex: WhatsApp, iFood..." value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink placeholder:text-kraft focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink transition-colors" />
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Comissão (0-1)</label>
-                  <input type="number" step="0.01" min="0" max="1" placeholder="0 = sem comissão" value={form.commission} onChange={(e) => setForm({ ...form, commission: e.target.value })} className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink placeholder:text-kraft focus:outline-none focus:border-ink transition-colors" />
+                  <input type="number" step="0.01" min="0" max="1" placeholder="0 = sem comissão" value={form.commission} onChange={(e) => setForm({ ...form, commission: e.target.value })} className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink placeholder:text-kraft focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink transition-colors" />
                   <p className="text-[10px] text-muted mt-1">Ex: 0.23 = 23% de comissão</p>
                 </div>
               </div>

@@ -1,11 +1,15 @@
-import { NextResponse } from "next/server";
-import { getLowStock } from "@/lib/db";
+import { NextResponse } from "next/server"
+import { prisma } from "@/lib/prisma"
+import { requireAuth } from "@/lib/api-auth"
 
 export async function GET() {
+  const { error } = await requireAuth()
+  if (error) return error
   try {
-    const lowStock = await getLowStock();
-    return NextResponse.json(lowStock);
-  } catch (error) {
-    return NextResponse.json({ error: "Failed to fetch low stock" }, { status: 500 });
+    const data = await prisma.ingredient.findMany()
+    const lowStock = data.filter((i) => i.stockKg <= i.minStockKg)
+    return NextResponse.json(lowStock)
+  } catch (e) {
+    return NextResponse.json({ error: "Erro ao buscar estoque baixo" }, { status: 500 })
   }
 }

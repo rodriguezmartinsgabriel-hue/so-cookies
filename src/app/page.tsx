@@ -4,6 +4,8 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { AppShell } from "@/components/layout/AppShell";
+import { Skeleton } from "@/components/ui/Skeleton";
+import { ErrorState } from "@/components/ui/ErrorState";
 import {
   ShoppingBag,
   Package,
@@ -13,6 +15,7 @@ import {
   BarChart3,
   Truck,
   ClipboardList,
+  Store,
   TrendingUp,
   AlertTriangle,
   ArrowUpRight,
@@ -30,6 +33,7 @@ const modules = [
   { label: "Delivery", icon: Truck, href: "/delivery", color: "bg-info/10 text-info", desc: "Entregas" },
   { label: "Relatórios", icon: BarChart3, href: "/relatorios", color: "bg-muted/10 text-muted", desc: "Análises" },
   { label: "Previsão", icon: ClipboardList, href: "/previsao", color: "bg-warning/10 text-warning", desc: "Previsão de demanda" },
+  { label: "Canais", icon: Store, href: "/canais", color: "bg-info/10 text-info", desc: "Canais de venda" },
 ];
 
 export default function HomePage() {
@@ -39,6 +43,7 @@ export default function HomePage() {
   const [lowStock, setLowStock] = useState<any[]>([]);
   const [recentOrders, setRecentOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -75,7 +80,9 @@ export default function HomePage() {
       if (lowStockResp.status === "fulfilled" && lowStockResp.value.ok) {
         setLowStock(await lowStockResp.value.json());
       }
-    } catch {}
+    } catch {
+      setError("Erro ao carregar dashboard");
+    }
     setLoading(false);
   }
 
@@ -84,7 +91,7 @@ export default function HomePage() {
       <div className="h-screen flex items-center justify-center bg-paper">
         <div className="text-center">
           <h1 className="font-brand text-4xl text-ink">só</h1>
-          <p className="text-muted text-sm mt-2">Carregando...</p>
+          <Skeleton className="h-4 w-24 mx-auto mt-2" />
         </div>
       </div>
     );
@@ -102,6 +109,36 @@ export default function HomePage() {
           </p>
         </div>
 
+        {error && (
+          <ErrorState message={error} onRetry={loadData} />
+        )}
+
+        {loading ? (
+          <div className="space-y-6">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="border border-line rounded-lg bg-paper p-4 shadow-card">
+                  <Skeleton className="h-3 w-20 mb-2" />
+                  <Skeleton className="h-7 w-24 mb-1" />
+                  <Skeleton className="h-3 w-16" />
+                </div>
+              ))}
+            </div>
+            <div>
+              <Skeleton className="h-4 w-20 mb-3" />
+              <div className="grid grid-cols-3 gap-3">
+                {Array.from({ length: 9 }).map((_, i) => (
+                  <div key={i} className="border border-line rounded-xl bg-paper p-5 shadow-card">
+                    <Skeleton className="h-12 w-12 rounded-xl mb-3" />
+                    <Skeleton className="h-4 w-16 mx-auto mb-1" />
+                    <Skeleton className="h-3 w-20 mx-auto" />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        ) : (
+        <>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           <div className="border border-line rounded-lg bg-paper p-4 shadow-card">
             <div className="flex items-center justify-between mb-2">
@@ -214,6 +251,8 @@ export default function HomePage() {
               ))}
             </div>
           </div>
+        )}
+        </>
         )}
       </div>
     </AppShell>

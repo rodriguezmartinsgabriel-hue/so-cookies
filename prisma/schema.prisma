@@ -20,6 +20,9 @@ model User {
   sales     Sale[]
   cashFlow  CashFlow[]
   documents Document[]
+
+  @@index([email])
+  @@index([role])
 }
 
 enum Role {
@@ -47,6 +50,10 @@ model Product {
   recipes    Recipe[]
   priceTiers PriceTier[]
   productions Production[]
+
+  @@index([category])
+  @@index([active])
+  @@index([name])
 }
 
 model Ingredient {
@@ -66,6 +73,10 @@ model Ingredient {
   updatedAt       DateTime @updatedAt
 
   recipeItems RecipeItem[]
+
+  @@index([name])
+  @@index([supplier])
+  @@index([stockKg])
 }
 
 model Recipe {
@@ -76,10 +87,12 @@ model Recipe {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  product    Product?       @relation(fields: [productId], references: [id])
+  product    Product?       @relation(fields: [productId], references: [id], onDelete: SetNull)
   productId  String?
   ingredients RecipeItem[]
   totalCost  Float          @default(0)
+
+  @@index([name])
 }
 
 model RecipeItem {
@@ -87,9 +100,9 @@ model RecipeItem {
   qty          Float
   unit         String @default("kg")
 
-  recipe       Recipe     @relation(fields: [recipeId], references: [id])
+  recipe       Recipe     @relation(fields: [recipeId], references: [id], onDelete: Cascade)
   recipeId     String
-  ingredient   Ingredient @relation(fields: [ingredientId], references: [id])
+  ingredient   Ingredient @relation(fields: [ingredientId], references: [id], onDelete: Cascade)
   ingredientId String
 
   @@unique([recipeId, ingredientId])
@@ -113,6 +126,8 @@ model SaleChannel {
   commission Float  @default(0)
 
   sales Sale[]
+
+  @@index([name])
 }
 
 model Sale {
@@ -128,6 +143,10 @@ model Sale {
 
   order   Order? @relation(fields: [orderId], references: [id])
   orderId String? @unique
+
+  @@index([channelId])
+  @@index([createdAt])
+  @@index([userId])
 }
 
 model SaleItem {
@@ -135,10 +154,13 @@ model SaleItem {
   qty      Int
   price    Float
 
-  sale      Sale    @relation(fields: [saleId], references: [id])
+  sale      Sale    @relation(fields: [saleId], references: [id], onDelete: Cascade)
   saleId    String
   product   Product @relation(fields: [productId], references: [id])
   productId String
+
+  @@index([saleId])
+  @@index([productId])
 }
 
 model Order {
@@ -153,6 +175,12 @@ model Order {
 
   items OrderItem[]
   sale  Sale?
+  deliveryCosts DeliveryCost[]
+
+  @@index([status])
+  @@index([createdAt])
+  @@index([updatedAt])
+  @@index([channel])
 }
 
 enum OrderStatus {
@@ -169,10 +197,13 @@ model OrderItem {
   qty      Int
   price    Float
 
-  order     Order   @relation(fields: [orderId], references: [id])
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
   orderId   String
   product   Product @relation(fields: [productId], references: [id])
   productId String
+
+  @@index([orderId])
+  @@index([productId])
 }
 
 model CashFlow {
@@ -185,6 +216,10 @@ model CashFlow {
 
   user   User? @relation(fields: [userId], references: [id])
   userId String?
+
+  @@index([type])
+  @@index([category])
+  @@index([date])
 }
 
 enum CashType {
@@ -204,7 +239,11 @@ model Production {
   updatedAt DateTime @updatedAt
 
   productId String
-  product   Product @relation(fields: [productId], references: [id])
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@index([startTime])
+  @@index([productId])
 }
 
 model DeliveryCost {
@@ -215,6 +254,8 @@ model DeliveryCost {
   amount    Float
   notes     String?
   createdAt DateTime @default(now())
+
+  order Order? @relation(fields: [orderId], references: [id])
 }
 
 model Document {
@@ -230,6 +271,9 @@ model Document {
 
   userId String?
   user   User? @relation(fields: [userId], references: [id])
+
+  @@index([category])
+  @@index([userId])
 }
 
 enum DocumentCategory {

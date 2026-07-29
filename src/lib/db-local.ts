@@ -115,6 +115,56 @@ export interface LocalPriceTier {
   _updatedAt: string
 }
 
+export interface LocalRecipe {
+  id: string
+  name: string
+  yield: number
+  yieldUnit: string
+  totalCost: number
+  productId?: string
+  ingredients: string
+  createdAt: string
+  updatedAt: string
+  _synced: boolean
+  _updatedAt: string
+}
+
+export interface LocalRecipeItem {
+  id: string
+  recipeId: string
+  ingredientId: string
+  qty: number
+  unit: string
+  _synced: boolean
+}
+
+export interface LocalDocument {
+  id: string
+  title: string
+  description?: string
+  category: string
+  content?: string
+  fileUrl?: string
+  tags?: string
+  userId?: string
+  createdAt: string
+  updatedAt: string
+  _synced: boolean
+  _updatedAt: string
+}
+
+export interface LocalDeliveryCost {
+  id: string
+  date: string
+  channel: string
+  orderId?: string
+  amount: number
+  notes?: string
+  createdAt: string
+  _synced: boolean
+  _updatedAt: string
+}
+
 export interface SyncQueueItem {
   id?: number
   action: "create" | "update" | "delete"
@@ -135,6 +185,10 @@ const db = new Dexie("SoManagerDB") as Dexie & {
   ingredients: EntityTable<LocalIngredient, "id">
   channels: EntityTable<LocalChannel, "id">
   priceTiers: EntityTable<LocalPriceTier, "id">
+  recipes: EntityTable<LocalRecipe, "id">
+  recipeItems: EntityTable<LocalRecipeItem, "id">
+  documents: EntityTable<LocalDocument, "id">
+  deliveryCosts: EntityTable<LocalDeliveryCost, "id">
   syncQueue: EntityTable<SyncQueueItem, "id">
   syncMeta: EntityTable<{ key: string; value: string }, "key">
 }
@@ -152,9 +206,22 @@ db.version(1).stores({
 })
 
 db.version(2).stores({
+  orders: "id, status, _synced, createdAt",
+  orderItems: "id, orderId, _synced",
+  sales: "id, _synced, createdAt",
+  saleItems: "id, saleId, _synced",
+  cashFlow: "id, _synced, date",
+  productions: "id, _synced, startTime",
+  products: "id, _synced",
+  syncQueue: "++id, entity, createdAt",
+  syncMeta: "key",
   ingredients: "id, _synced",
   channels: "id, _synced",
   priceTiers: "id, _synced, productId",
+  recipes: "id, _synced",
+  recipeItems: "id, recipeId, _synced",
+  documents: "id, _synced, category",
+  deliveryCosts: "id, _synced, date",
 })
 
 export { db }

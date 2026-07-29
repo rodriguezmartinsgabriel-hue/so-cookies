@@ -1,17 +1,21 @@
-import { NextResponse } from "next/server";
-import { getIngredient, updateIngredient, deleteIngredient } from "@/lib/db";
+import { NextResponse } from "next/server"
+import { prisma } from "@/lib/prisma"
+import { requireAuth } from "@/lib/api-auth"
+import { updateIngredientSchema } from "@/lib/validation"
 
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const { error } = await requireAuth()
+  if (error) return error
   try {
-    const { id } = await params;
-    const ingredient = await getIngredient(id);
-    if (!ingredient) return NextResponse.json({ error: "Not found" }, { status: 404 });
-    return NextResponse.json(ingredient);
-  } catch (error) {
-    return NextResponse.json({ error: "Failed to fetch ingredient" }, { status: 500 });
+    const { id } = await params
+    const data = await prisma.ingredient.findUnique({ where: { id } })
+    if (!data) return NextResponse.json({ error: "Não encontrado" }, { status: 404 })
+    return NextResponse.json(data)
+  } catch (e) {
+    return NextResponse.json({ error: "Erro ao buscar ingrediente" }, { status: 500 })
   }
 }
 
@@ -19,13 +23,17 @@ export async function PUT(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const { error } = await requireAuth("ADMIN")
+  if (error) return error
   try {
-    const { id } = await params;
-    const data = await request.json();
-    const ingredient = await updateIngredient(id, data);
-    return NextResponse.json(ingredient);
-  } catch (error) {
-    return NextResponse.json({ error: "Failed to update ingredient" }, { status: 500 });
+    const { id } = await params
+    const json = await request.json()
+    const parsed = updateIngredientSchema.parse(json)
+    const data = await prisma.ingredient.update({ where: { id }, data: parsed })
+    return NextResponse.json(data)
+  } catch (e: any) {
+    if (e?.issues) return NextResponse.json({ error: "Dados inválidos", details: e.issues }, { status: 400 })
+    return NextResponse.json({ error: "Erro ao atualizar ingrediente" }, { status: 500 })
   }
 }
 
@@ -33,11 +41,13 @@ export async function DELETE(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const { error } = await requireAuth("ADMIN")
+  if (error) return error
   try {
-    const { id } = await params;
-    await deleteIngredient(id);
-    return NextResponse.json({ ok: true });
-  } catch (error) {
-    return NextResponse.json({ error: "Failed to delete ingredient" }, { status: 500 });
+    const { id } = await params
+    await prisma.ingredient.delete({ where: { id } })
+    return NextResponse.json({ ok: true })
+  } catch (e) {
+    return NextResponse.json({ error: "Erro ao deletar ingrediente" }, { status: 500 })
   }
 }

@@ -1,21 +1,31 @@
-import { NextResponse } from "next/server";
-import { getIngredients, createIngredient } from "@/lib/db";
+import { NextResponse } from "next/server"
+import { prisma } from "@/lib/prisma"
+import { requireAuth } from "@/lib/api-auth"
+import { createIngredientSchema } from "@/lib/validation"
 
 export async function GET() {
+  const { error } = await requireAuth()
+  if (error) return error
   try {
-    const ingredients = await getIngredients();
-    return NextResponse.json(ingredients);
-  } catch (error) {
-    return NextResponse.json({ error: "Failed to fetch ingredients" }, { status: 500 });
+    const data = await prisma.ingredient.findMany()
+    return NextResponse.json(data)
+  } catch (e) {
+    return NextResponse.json({ error: "Erro ao buscar ingredientes" }, { status: 500 })
   }
 }
 
 export async function POST(request: Request) {
+  const { error } = await requireAuth("ADMIN")
+  if (error) return error
   try {
-    const data = await request.json();
-    const ingredient = await createIngredient(data);
-    return NextResponse.json(ingredient);
-  } catch (error) {
-    return NextResponse.json({ error: "Failed to create ingredient" }, { status: 500 });
+    const json = await request.json()
+    const parsed = createIngredientSchema.parse(json)
+    const data = await prisma.ingredient.create({ data: parsed })
+    return NextResponse.json(data)
+  } catch (e: any) {
+    if (e?.issues) {
+      return NextResponse.json({ error: "Dados inválidos", details: e.issues }, { status: 400 })
+    }
+    return NextResponse.json({ error: "Erro ao criar ingrediente" }, { status: 500 })
   }
 }

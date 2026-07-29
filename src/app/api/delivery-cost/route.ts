@@ -1,21 +1,31 @@
 import { NextResponse } from "next/server"
-import { getDeliveryCosts, createDeliveryCost } from "@/lib/db"
+import { prisma } from "@/lib/prisma"
+import { requireAuth } from "@/lib/api-auth"
+import { createDeliveryCostSchema } from "@/lib/validation"
 
 export async function GET() {
+  const { error } = await requireAuth()
+  if (error) return error
   try {
-    const costs = await getDeliveryCosts()
+    const costs = await prisma.deliveryCost.findMany()
     return NextResponse.json(costs)
-  } catch (error) {
-    return NextResponse.json({ error: "Failed to fetch delivery costs" }, { status: 500 })
+  } catch (e) {
+    return NextResponse.json({ error: "Erro ao buscar custos de entrega" }, { status: 500 })
   }
 }
 
 export async function POST(request: Request) {
+  const { error } = await requireAuth()
+  if (error) return error
   try {
-    const data = await request.json()
-    const cost = await createDeliveryCost(data)
+    const json = await request.json()
+    const parsed = createDeliveryCostSchema.parse(json)
+    const cost = await prisma.deliveryCost.create({ data: parsed })
     return NextResponse.json(cost)
-  } catch (error) {
-    return NextResponse.json({ error: "Failed to create delivery cost" }, { status: 500 })
+  } catch (e: any) {
+    if (e?.issues) {
+      return NextResponse.json({ error: "Dados inválidos", details: e.issues }, { status: 400 })
+    }
+    return NextResponse.json({ error: "Erro ao criar custo de entrega" }, { status: 500 })
   }
 }

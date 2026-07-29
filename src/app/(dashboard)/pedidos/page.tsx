@@ -1,12 +1,16 @@
 "use client"
 
 import { useState, useCallback, useEffect } from "react"
+import { useFocusTrap } from "@/hooks/useFocusTrap"
 import { AppShell } from "@/components/layout/AppShell"
+import { Skeleton } from "@/components/ui/Skeleton"
+import { ErrorState } from "@/components/ui/ErrorState"
 import { repository } from "@/lib/repository"
 import { Clock, ChefHat, Package, Truck, X, Plus, Check, Edit, Trash2, Ban, ChevronDown, ChevronRight } from "lucide-react"
 
 const columns = [
   { id: "PENDENTE", label: "Pendente", icon: Clock, color: "text-warning", bg: "bg-warning/10" },
+  { id: "CONFIRMADO", label: "Confirmado", icon: Check, color: "text-info", bg: "bg-info/10" },
   { id: "PRODUCAO", label: "Produção", icon: ChefHat, color: "text-ink", bg: "bg-ink/10" },
   { id: "PRONTO", label: "Pronto", icon: Package, color: "text-success", bg: "bg-success/10" },
   { id: "ENTREGA", label: "Entrega", icon: Truck, color: "text-muted", bg: "bg-cream" },
@@ -16,6 +20,7 @@ const columns = [
 
 const statusColors: Record<string, string> = {
   PENDENTE: "border-l-warning",
+  CONFIRMADO: "border-l-info",
   PRODUCAO: "border-l-ink",
   PRONTO: "border-l-success",
   ENTREGA: "border-l-muted",
@@ -24,14 +29,16 @@ const statusColors: Record<string, string> = {
 }
 
 const nextStatus: Record<string, string> = {
-  PENDENTE: "PRODUCAO",
+  PENDENTE: "CONFIRMADO",
+  CONFIRMADO: "PRODUCAO",
   PRODUCAO: "PRONTO",
   PRONTO: "ENTREGA",
   ENTREGA: "CONCLUIDO",
 }
 
 const nextStatusLabel: Record<string, string> = {
-  PENDENTE: "Produzir",
+  PENDENTE: "Confirmar",
+  CONFIRMADO: "Produzir",
   PRODUCAO: "Pronto",
   PRONTO: "Entregar",
   ENTREGA: "Concluir",
@@ -46,12 +53,17 @@ export default function PedidosPage() {
   const [products, setProducts] = useState<any[]>([])
   const [channels, setChannels] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [selectedOrder, setSelectedOrder] = useState<string | null>(null)
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
   const [editingOrder, setEditingOrder] = useState<any>(null)
   const [view, setView] = useState<"kanban" | "list">("kanban")
   const [showCompleted, setShowCompleted] = useState(false)
+
+  const orderDetailRef = useFocusTrap(!!selectedOrder)
+  const editModalRef = useFocusTrap(showEditModal)
+  const createModalRef = useFocusTrap(showCreateModal)
 
   const [formChannel, setFormChannel] = useState("")
   const [formCustomer, setFormCustomer] = useState("")
@@ -71,7 +83,9 @@ export default function PedidosPage() {
       if (ordersData.status === "fulfilled") setOrders(ordersData.value)
       if (prodsResp.status === "fulfilled") setProducts(prodsResp.value)
       if (channelsData.status === "fulfilled") setChannels(channelsData.value)
-    } catch {}
+    } catch {
+      setError("Erro ao carregar pedidos")
+    }
     setLoading(false)
   }, [])
 
@@ -170,8 +184,29 @@ export default function PedidosPage() {
           </div>
         </div>
 
+        {error && (
+          <ErrorState message={error} onRetry={loadData} />
+        )}
+
         {loading ? (
-          <div className="text-center py-8 text-muted">Carregando...</div>
+          <div className="space-y-4">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="border border-line rounded-lg bg-paper shadow-card overflow-hidden">
+                <div className="px-4 py-3 border-b border-line">
+                  <Skeleton className="h-4 w-24" />
+                </div>
+                <div className="p-2 space-y-2">
+                  {Array.from({ length: 2 }).map((_, j) => (
+                    <div key={j} className="p-3 border border-line rounded-lg">
+                      <Skeleton className="h-3 w-16 mb-2" />
+                      <Skeleton className="h-4 w-32 mb-2" />
+                      <Skeleton className="h-3 w-24" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
         ) : view === "kanban" ? (
           <div className="space-y-4">
             {columns.filter((c) => c.id !== "CONCLUIDO" && c.id !== "CANCELADO").map((col) => {
@@ -274,11 +309,11 @@ export default function PedidosPage() {
                       </td>
                       <td className="px-4 py-3 text-center">
                         <div className="flex items-center justify-center gap-1">
-                          <button onClick={() => openEditModal(o)} className="p-1.5 rounded-md hover:bg-cream text-muted"><Edit className="w-4 h-4" /></button>
+                          <button onClick={() => openEditModal(o)} aria-label="Editar" className="p-1.5 rounded-md hover:bg-cream text-muted"><Edit className="w-4 h-4" /></button>
                           {canCancel(o.status) && (
                             <button onClick={() => handleStatusChange(o.id, "CANCELADO")} className="p-1.5 rounded-md hover:bg-cream text-danger"><Ban className="w-4 h-4" /></button>
                           )}
-                          <button onClick={() => handleDeleteOrder(o.id)} className="p-1.5 rounded-md hover:bg-cream text-danger"><Trash2 className="w-4 h-4" /></button>
+                          <button onClick={() => handleDeleteOrder(o.id)} aria-label="Excluir" className="p-1.5 rounded-md hover:bg-cream text-danger"><Trash2 className="w-4 h-4" /></button>
                           {nextStatus[o.status] && (
                             <button onClick={() => handleStatusChange(o.id, nextStatus[o.status])} className="text-xs px-3 py-1.5 bg-ink text-paper rounded-lg font-medium hover:bg-ink/90 transition-colors">
                               {nextStatusLabel[o.status]}
@@ -295,14 +330,14 @@ export default function PedidosPage() {
         )}
 
         {order && (
-          <div className="fixed inset-0 z-50 bg-ink/30 flex items-center justify-center p-4">
-            <div className="bg-paper rounded-xl border border-line shadow-lg w-full max-w-md max-h-[80vh] overflow-y-auto">
+          <div className="fixed inset-0 z-50 bg-ink/30 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="order-detail-title">
+            <div ref={orderDetailRef} className="bg-paper rounded-xl border border-line shadow-lg w-full max-w-md max-h-[80vh] overflow-y-auto">
               <div className="flex items-center justify-between p-4 border-b border-line">
                 <div>
-                  <h3 className="text-lg font-bold text-ink">Pedido #{order.id.slice(0, 6)}</h3>
+                  <h3 id="order-detail-title" className="text-lg font-bold text-ink">Pedido #{order.id.slice(0, 6)}</h3>
                   <p className="text-xs text-muted">{order.channel} · {order.createdAt ? new Date(order.createdAt).toLocaleDateString("pt-BR") : ""}</p>
                 </div>
-                <button onClick={() => setSelectedOrder(null)} className="p-1.5 rounded-md hover:bg-cream text-muted"><X className="w-5 h-5" /></button>
+                <button onClick={() => setSelectedOrder(null)} data-close-modal aria-label="Fechar" className="p-1.5 rounded-md hover:bg-cream text-muted"><X className="w-5 h-5" /></button>
               </div>
               <div className="p-4 space-y-3">
                 <div>
@@ -336,10 +371,10 @@ export default function PedidosPage() {
                 </div>
               </div>
               <div className="p-4 border-t border-line flex gap-2">
-                <button onClick={() => handleDeleteOrder(order.id)} className="h-10 px-3 border border-danger/30 rounded-lg text-sm font-medium text-danger hover:bg-danger/5 transition-colors">
+                <button onClick={() => handleDeleteOrder(order.id)} aria-label="Excluir" className="h-10 px-3 border border-danger/30 rounded-lg text-sm font-medium text-danger hover:bg-danger/5 transition-colors">
                   <Trash2 className="w-4 h-4" />
                 </button>
-                <button onClick={() => { setSelectedOrder(null); openEditModal(order); }} className="h-10 px-3 border border-line rounded-lg text-sm font-medium text-ink hover:bg-cream transition-colors">
+                <button onClick={() => { setSelectedOrder(null); openEditModal(order); }} aria-label="Editar" className="h-10 px-3 border border-line rounded-lg text-sm font-medium text-ink hover:bg-cream transition-colors">
                   <Edit className="w-4 h-4" />
                 </button>
                 {canCancel(order.status) && (
@@ -359,20 +394,20 @@ export default function PedidosPage() {
         )}
 
         {showEditModal && editingOrder && (
-          <div className="fixed inset-0 z-50 bg-ink/30 flex items-center justify-center p-4">
-            <div className="bg-paper rounded-xl border border-line shadow-lg w-full max-w-md">
+          <div className="fixed inset-0 z-50 bg-ink/30 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="edit-order-title">
+            <div ref={editModalRef} className="bg-paper rounded-xl border border-line shadow-lg w-full max-w-md">
               <div className="flex items-center justify-between p-4 border-b border-line">
-                <h3 className="text-lg font-bold text-ink">Editar Pedido #{editingOrder.id.slice(0, 6)}</h3>
-                <button onClick={() => { setShowEditModal(false); setEditingOrder(null); }} className="p-1.5 rounded-md hover:bg-cream text-muted"><X className="w-5 h-5" /></button>
+                <h3 id="edit-order-title" className="text-lg font-bold text-ink">Editar Pedido #{editingOrder.id.slice(0, 6)}</h3>
+                <button onClick={() => { setShowEditModal(false); setEditingOrder(null); }} data-close-modal aria-label="Fechar" className="p-1.5 rounded-md hover:bg-cream text-muted"><X className="w-5 h-5" /></button>
               </div>
               <div className="p-4 space-y-4">
                 <div>
                   <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Cliente</label>
-                  <input type="text" value={editForm.customer} onChange={(e) => setEditForm({ ...editForm, customer: e.target.value })} className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink placeholder:text-kraft focus:outline-none focus:border-ink transition-colors" />
+                  <input type="text" value={editForm.customer} onChange={(e) => setEditForm({ ...editForm, customer: e.target.value })} className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink placeholder:text-kraft focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink transition-colors" />
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Observações</label>
-                  <textarea value={editForm.notes} onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })} rows={3} className="w-full px-3 py-2 border border-line rounded-lg text-sm text-ink placeholder:text-kraft focus:outline-none focus:border-ink transition-colors resize-none" />
+                  <textarea value={editForm.notes} onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })} rows={3} className="w-full px-3 py-2 border border-line rounded-lg text-sm text-ink placeholder:text-kraft focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink transition-colors resize-none" />
                 </div>
               </div>
               <div className="p-4 border-t border-line flex gap-2">
@@ -384,24 +419,24 @@ export default function PedidosPage() {
         )}
 
         {showCreateModal && (
-          <div className="fixed inset-0 z-50 bg-ink/30 flex items-center justify-center p-4">
-            <div className="bg-paper rounded-xl border border-line shadow-lg w-full max-w-lg max-h-[85vh] overflow-y-auto">
+          <div className="fixed inset-0 z-50 bg-ink/30 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="create-order-title">
+            <div ref={createModalRef} className="bg-paper rounded-xl border border-line shadow-lg w-full max-w-lg max-h-[85vh] overflow-y-auto">
               <div className="flex items-center justify-between p-4 border-b border-line sticky top-0 bg-paper">
-                <h3 className="text-lg font-bold text-ink">Novo Pedido</h3>
-                <button onClick={() => setShowCreateModal(false)} className="p-1.5 rounded-md hover:bg-cream text-muted"><X className="w-5 h-5" /></button>
+                <h3 id="create-order-title" className="text-lg font-bold text-ink">Novo Pedido</h3>
+                <button onClick={() => setShowCreateModal(false)} data-close-modal aria-label="Fechar" className="p-1.5 rounded-md hover:bg-cream text-muted"><X className="w-5 h-5" /></button>
               </div>
               <div className="p-4 space-y-4">
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Canal *</label>
-                    <select value={formChannel} onChange={(e) => setFormChannel(e.target.value)} className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink focus:outline-none focus:border-ink bg-paper">
+                    <select value={formChannel} onChange={(e) => setFormChannel(e.target.value)} className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink bg-paper">
                       <option value="">Selecionar</option>
                       {channels.map((ch: any) => <option key={ch.id} value={ch.id}>{ch.name}</option>)}
                     </select>
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Cliente *</label>
-                    <input type="text" placeholder="Nome do cliente" value={formCustomer} onChange={(e) => setFormCustomer(e.target.value)} className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink placeholder:text-kraft focus:outline-none focus:border-ink" />
+                    <input type="text" placeholder="Nome do cliente" value={formCustomer} onChange={(e) => setFormCustomer(e.target.value)} className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink placeholder:text-kraft focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink" />
                   </div>
                 </div>
                 <div>
@@ -418,7 +453,7 @@ export default function PedidosPage() {
                         </select>
                         <input type="number" min="1" value={item.qty} onChange={(e) => updateItem(i, "qty", e.target.value)} className="w-16 h-9 px-2 border border-line rounded-lg text-xs text-ink bg-paper" />
                         <input type="number" step="0.01" value={item.price} onChange={(e) => updateItem(i, "price", e.target.value)} className="w-24 h-9 px-2 border border-line rounded-lg text-xs text-ink bg-paper" />
-                        <button onClick={() => removeItem(i)} className="p-1 text-danger"><X className="w-3 h-3" /></button>
+                        <button onClick={() => removeItem(i)} aria-label="Remover" className="p-1 text-danger"><X className="w-3 h-3" /></button>
                       </div>
                     ))}
                   </div>

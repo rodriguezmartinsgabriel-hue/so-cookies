@@ -1,15 +1,20 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { AppShell } from "@/components/layout/AppShell";
+import { Skeleton } from "@/components/ui/Skeleton";
+import { ErrorState } from "@/components/ui/ErrorState";
 import { Plus, X, Edit, Trash2, ChevronDown, ChevronUp } from "lucide-react";
 
 export default function ReceitasPage() {
   const [recipes, setRecipes] = useState<any[]>([]);
   const [ingredients, setIngredients] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
+  const modalRef = useFocusTrap(showModal);
   const [editingRecipe, setEditingRecipe] = useState<any>(null);
 
   const [form, setForm] = useState({
@@ -28,7 +33,9 @@ export default function ReceitasPage() {
       ]);
       if (recipesResp.ok) setRecipes(await recipesResp.json());
       if (ingredientsResp.ok) setIngredients(await ingredientsResp.json());
-    } catch {}
+    } catch {
+      setError("Erro ao carregar receitas");
+    }
     setLoading(false);
   }, []);
 
@@ -159,8 +166,23 @@ export default function ReceitasPage() {
           </button>
         </div>
 
+        {error && (
+          <ErrorState message={error} onRetry={loadAll} />
+        )}
+
         {loading ? (
-          <div className="text-center py-8 text-muted">Carregando...</div>
+          <div className="space-y-2">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="border border-line rounded-lg bg-paper shadow-card overflow-hidden p-4">
+                <div className="flex items-center gap-2">
+                  <div className="flex-1">
+                    <Skeleton className="h-4 w-40 mb-1" />
+                    <Skeleton className="h-3 w-56" />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         ) : (
           <div className="space-y-2">
             {recipes.map((recipe: any) => {
@@ -185,10 +207,10 @@ export default function ReceitasPage() {
                       )}
                     </button>
                     <div className="flex items-center gap-1 shrink-0">
-                      <button onClick={() => openEdit(recipe)} className="p-2 rounded-md hover:bg-cream text-muted transition-colors">
+                      <button onClick={() => openEdit(recipe)} aria-label="Editar" className="p-2 rounded-md hover:bg-cream text-muted transition-colors">
                         <Edit className="w-4 h-4" />
                       </button>
-                      <button onClick={() => handleDelete(recipe.id)} className="p-2 rounded-md hover:bg-cream text-danger transition-colors">
+                      <button onClick={() => handleDelete(recipe.id)} aria-label="Excluir" className="p-2 rounded-md hover:bg-cream text-danger transition-colors">
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
@@ -236,25 +258,25 @@ export default function ReceitasPage() {
         )}
 
         {showModal && (
-          <div className="fixed inset-0 z-50 bg-ink/30 flex items-center justify-center p-4">
-            <div className="bg-paper rounded-xl border border-line shadow-lg w-full max-w-lg max-h-[90vh] overflow-y-auto">
+          <div className="fixed inset-0 z-50 bg-ink/30 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="receita-title">
+            <div ref={modalRef} className="bg-paper rounded-xl border border-line shadow-lg w-full max-w-lg max-h-[90vh] overflow-y-auto">
               <div className="flex items-center justify-between p-4 border-b border-line sticky top-0 bg-paper z-10">
-                <h3 className="text-lg font-bold text-ink">{editingRecipe ? "Editar Receita" : "Nova Receita"}</h3>
-                <button onClick={() => { setShowModal(false); resetForm(); }} className="p-1.5 rounded-md hover:bg-cream text-muted"><X className="w-5 h-5" /></button>
+                <h3 id="receita-title" className="text-lg font-bold text-ink">{editingRecipe ? "Editar Receita" : "Nova Receita"}</h3>
+                <button onClick={() => { setShowModal(false); resetForm(); }} data-close-modal aria-label="Fechar" className="p-1.5 rounded-md hover:bg-cream text-muted"><X className="w-5 h-5" /></button>
               </div>
               <div className="p-4 space-y-4">
                 <div>
                   <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Nome da Receita *</label>
-                  <input type="text" placeholder="Ex: Cookie Especial" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink placeholder:text-kraft focus:outline-none focus:border-ink transition-colors" />
+                  <input type="text" placeholder="Ex: Cookie Especial" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink placeholder:text-kraft focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink transition-colors" />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Rende (Qtd) *</label>
-                    <input type="number" placeholder="20" value={form.yield} onChange={(e) => setForm({ ...form, yield: e.target.value })} className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink placeholder:text-kraft focus:outline-none focus:border-ink transition-colors" />
+                    <input type="number" placeholder="20" value={form.yield} onChange={(e) => setForm({ ...form, yield: e.target.value })} className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink placeholder:text-kraft focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink transition-colors" />
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Unidade</label>
-                    <select value={form.yieldUnit} onChange={(e) => setForm({ ...form, yieldUnit: e.target.value })} className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink focus:outline-none focus:border-ink transition-colors bg-paper">
+                    <select value={form.yieldUnit} onChange={(e) => setForm({ ...form, yieldUnit: e.target.value })} className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink transition-colors bg-paper">
                       <option value="un">un (unidades)</option>
                       <option value="kg">kg (quilos)</option>
                       <option value="g">g (gramas)</option>
@@ -272,21 +294,21 @@ export default function ReceitasPage() {
                   <div className="space-y-2">
                     {form.ingredients.map((ing, i) => (
                       <div key={i} className="flex items-center gap-2 bg-cream/50 rounded-lg p-2">
-                        <select value={ing.ingredientId} onChange={(e) => updateIngredient(i, "ingredientId", e.target.value)} className="flex-1 h-9 px-2 border border-line rounded-lg text-xs text-ink focus:outline-none focus:border-ink bg-paper">
+                        <select value={ing.ingredientId} onChange={(e) => updateIngredient(i, "ingredientId", e.target.value)} className="flex-1 h-9 px-2 border border-line rounded-lg text-xs text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink bg-paper">
                           <option value="">Selecionar ingrediente</option>
                           {ingredients.map((item: any) => (
                             <option key={item.id} value={item.id}>{item.name} (R$ {(item.costPerKg || 0).toFixed(2)}/{item.unit || "g"})</option>
                           ))}
                         </select>
-                        <input type="number" step="0.1" placeholder="Qtd" value={ing.qty} onChange={(e) => updateIngredient(i, "qty", e.target.value)} className="w-20 h-9 px-2 border border-line rounded-lg text-xs text-ink placeholder:text-kraft focus:outline-none focus:border-ink bg-paper" />
-                        <select value={ing.unit} onChange={(e) => updateIngredient(i, "unit", e.target.value)} className="w-16 h-9 px-1 border border-line rounded-lg text-xs text-ink focus:outline-none focus:border-ink bg-paper">
+                        <input type="number" step="0.1" placeholder="Qtd" value={ing.qty} onChange={(e) => updateIngredient(i, "qty", e.target.value)} className="w-20 h-9 px-2 border border-line rounded-lg text-xs text-ink placeholder:text-kraft focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink bg-paper" />
+                        <select value={ing.unit} onChange={(e) => updateIngredient(i, "unit", e.target.value)} className="w-16 h-9 px-1 border border-line rounded-lg text-xs text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink bg-paper">
                           <option value="g">g</option>
                           <option value="kg">kg</option>
                           <option value="un">un</option>
                           <option value="ml">ml</option>
                         </select>
                         <span className="text-xs text-muted w-16 text-right">R$ {((parseFloat(ing.qty) || 0) * ing.costPerUnit).toFixed(2)}</span>
-                        <button onClick={() => removeIngredient(i)} className="p-1 rounded hover:bg-cream text-danger"><Trash2 className="w-3 h-3" /></button>
+                        <button onClick={() => removeIngredient(i)} aria-label="Remover" className="p-1 rounded hover:bg-cream text-danger"><Trash2 className="w-3 h-3" /></button>
                       </div>
                     ))}
                     {form.ingredients.length === 0 && (

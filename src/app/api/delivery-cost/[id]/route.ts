@@ -1,17 +1,20 @@
 import { NextResponse } from "next/server"
-import { updateDeliveryCost, deleteDeliveryCost } from "@/lib/db"
+import { prisma } from "@/lib/prisma"
+import { requireAuth } from "@/lib/api-auth"
 
 export async function PUT(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const { error } = await requireAuth("OPERACIONAL")
+  if (error) return error
   try {
     const { id } = await params
-    const data = await request.json()
-    const cost = await updateDeliveryCost(id, data)
+    const json = await request.json()
+    const cost = await prisma.deliveryCost.update({ where: { id }, data: json })
     return NextResponse.json(cost)
-  } catch (error) {
-    return NextResponse.json({ error: "Failed to update delivery cost" }, { status: 500 })
+  } catch (e) {
+    return NextResponse.json({ error: "Erro ao atualizar custo de entrega" }, { status: 500 })
   }
 }
 
@@ -19,11 +22,13 @@ export async function DELETE(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const { error } = await requireAuth("OPERACIONAL")
+  if (error) return error
   try {
     const { id } = await params
-    await deleteDeliveryCost(id)
+    await prisma.deliveryCost.delete({ where: { id } })
     return NextResponse.json({ ok: true })
-  } catch (error) {
-    return NextResponse.json({ error: "Failed to delete delivery cost" }, { status: 500 })
+  } catch (e) {
+    return NextResponse.json({ error: "Erro ao deletar custo de entrega" }, { status: 500 })
   }
 }

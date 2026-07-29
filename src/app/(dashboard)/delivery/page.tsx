@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useCallback } from "react"
 import { AppShell } from "@/components/layout/AppShell"
+import { Skeleton } from "@/components/ui/Skeleton"
+import { ErrorState } from "@/components/ui/ErrorState"
 import { MapPin, Check, Truck } from "lucide-react"
 import { repository } from "@/lib/repository"
 
@@ -16,6 +18,7 @@ const channelFilters = ["Todos", "iFood", "Rappi", "WhatsApp", "Direto"]
 export default function DeliveryPage() {
   const [orders, setOrders] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [activeFilter, setActiveFilter] = useState("Todos")
 
   const loadOrders = useCallback(async () => {
@@ -23,7 +26,9 @@ export default function DeliveryPage() {
     try {
       const resp = await fetch("/api/orders")
       if (resp.ok) setOrders(await resp.json())
-    } catch {}
+    } catch {
+      setError("Erro ao carregar entregas")
+    }
     setLoading(false)
   }, [])
 
@@ -64,8 +69,31 @@ export default function DeliveryPage() {
           ))}
         </div>
 
+        {error && (
+          <ErrorState message={error} onRetry={loadOrders} />
+        )}
+
         {loading ? (
-          <div className="text-center py-8 text-muted">Carregando...</div>
+          <div className="space-y-2">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="border border-line rounded-lg bg-paper p-4 shadow-card">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Skeleton className="h-4 w-40" />
+                      <Skeleton className="h-5 w-20 rounded-full" />
+                    </div>
+                    <Skeleton className="h-3 w-24 mb-1" />
+                    <Skeleton className="h-3 w-32" />
+                  </div>
+                  <div className="text-right">
+                    <Skeleton className="h-5 w-16 mb-2" />
+                    <Skeleton className="h-6 w-16 rounded-lg" />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         ) : (
           <div className="space-y-2">
             {deliveryOrders.map((order: any) => {

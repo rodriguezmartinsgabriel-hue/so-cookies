@@ -1,7 +1,10 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { AppShell } from "@/components/layout/AppShell";
+import { Skeleton } from "@/components/ui/Skeleton";
+import { ErrorState } from "@/components/ui/ErrorState";
 import { Plus, X, Edit, Trash2, FileText, Search, ChevronDown, ChevronUp, Eye } from "lucide-react";
 
 const CATEGORIES = [
@@ -20,12 +23,15 @@ const CATEGORY_MAP: Record<string, typeof CATEGORIES[number]> = Object.fromEntri
 export default function DocumentosPage() {
   const [documents, setDocuments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState("ALL");
   const [search, setSearch] = useState("");
   const [expanded, setExpanded] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
+  const modalRef = useFocusTrap(showModal);
   const [editingDoc, setEditingDoc] = useState<any>(null);
   const [viewingDoc, setViewingDoc] = useState<any>(null);
+  const viewRef = useFocusTrap(!!viewingDoc);
 
   const [form, setForm] = useState({
     title: "",
@@ -41,7 +47,9 @@ export default function DocumentosPage() {
       const url = filter !== "ALL" ? `/api/documents?category=${filter}` : "/api/documents";
       const resp = await fetch(url);
       if (resp.ok) setDocuments(await resp.json());
-    } catch {}
+    } catch {
+      setError("Erro ao carregar documentos");
+    }
     setLoading(false);
   }, [filter]);
 
@@ -167,12 +175,33 @@ export default function DocumentosPage() {
             placeholder="Buscar documentos..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full h-10 pl-10 pr-3 border border-line rounded-lg text-sm text-ink placeholder:text-kraft focus:outline-none focus:border-ink transition-colors"
+            className="w-full h-10 pl-10 pr-3 border border-line rounded-lg text-sm text-ink placeholder:text-kraft focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink transition-colors"
           />
         </div>
 
+        {error && (
+          <ErrorState message={error} onRetry={loadDocs} />
+        )}
+
         {loading ? (
-          <div className="text-center py-8 text-muted">Carregando...</div>
+          <div className="space-y-2">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="border border-line rounded-lg bg-paper shadow-card overflow-hidden p-4">
+                <div className="flex items-center gap-3">
+                  <Skeleton className="h-8 w-8 rounded-lg shrink-0" />
+                  <div className="flex-1">
+                    <Skeleton className="h-4 w-40 mb-1" />
+                    <Skeleton className="h-3 w-24" />
+                  </div>
+                  <div className="flex gap-1">
+                    <Skeleton className="h-8 w-8" />
+                    <Skeleton className="h-8 w-8" />
+                    <Skeleton className="h-8 w-8" />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         ) : (
           <div className="space-y-2">
             {filtered.map((doc) => {
@@ -209,13 +238,13 @@ export default function DocumentosPage() {
                       )}
                     </button>
                     <div className="flex items-center gap-1 shrink-0">
-                      <button onClick={() => openView(doc)} className="p-2 rounded-md hover:bg-cream text-muted transition-colors">
+                      <button onClick={() => openView(doc)} aria-label="Visualizar" className="p-2 rounded-md hover:bg-cream text-muted transition-colors">
                         <Eye className="w-4 h-4" />
                       </button>
-                      <button onClick={() => openEdit(doc)} className="p-2 rounded-md hover:bg-cream text-muted transition-colors">
+                      <button onClick={() => openEdit(doc)} aria-label="Editar" className="p-2 rounded-md hover:bg-cream text-muted transition-colors">
                         <Edit className="w-4 h-4" />
                       </button>
-                      <button onClick={() => handleDelete(doc.id)} className="p-2 rounded-md hover:bg-cream text-danger transition-colors">
+                      <button onClick={() => handleDelete(doc.id)} aria-label="Excluir" className="p-2 rounded-md hover:bg-cream text-danger transition-colors">
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
@@ -254,20 +283,20 @@ export default function DocumentosPage() {
         )}
 
         {showModal && (
-          <div className="fixed inset-0 z-50 bg-ink/30 flex items-center justify-center p-4">
-            <div className="bg-paper rounded-xl border border-line shadow-lg w-full max-w-lg max-h-[90vh] overflow-y-auto">
+          <div className="fixed inset-0 z-50 bg-ink/30 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="documento-title">
+            <div ref={modalRef} className="bg-paper rounded-xl border border-line shadow-lg w-full max-w-lg max-h-[90vh] overflow-y-auto">
               <div className="flex items-center justify-between p-4 border-b border-line sticky top-0 bg-paper z-10">
-                <h3 className="text-lg font-bold text-ink">{editingDoc ? "Editar Documento" : "Novo Documento"}</h3>
-                <button onClick={() => { setShowModal(false); resetForm(); }} className="p-1.5 rounded-md hover:bg-cream text-muted"><X className="w-5 h-5" /></button>
+                <h3 id="documento-title" className="text-lg font-bold text-ink">{editingDoc ? "Editar Documento" : "Novo Documento"}</h3>
+                <button onClick={() => { setShowModal(false); resetForm(); }} data-close-modal aria-label="Fechar" className="p-1.5 rounded-md hover:bg-cream text-muted"><X className="w-5 h-5" /></button>
               </div>
               <div className="p-4 space-y-4">
                 <div>
                   <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Título *</label>
-                  <input type="text" placeholder="Ex: Higiene das mãos" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink placeholder:text-kraft focus:outline-none focus:border-ink transition-colors" />
+                  <input type="text" placeholder="Ex: Higiene das mãos" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink placeholder:text-kraft focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink transition-colors" />
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Categoria *</label>
-                  <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink focus:outline-none focus:border-ink transition-colors bg-paper">
+                  <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink transition-colors bg-paper">
                     {CATEGORIES.map((cat) => (
                       <option key={cat.value} value={cat.value}>{cat.label}</option>
                     ))}
@@ -275,15 +304,15 @@ export default function DocumentosPage() {
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Descrição</label>
-                  <input type="text" placeholder="Resumo do documento" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink placeholder:text-kraft focus:outline-none focus:border-ink transition-colors" />
+                  <input type="text" placeholder="Resumo do documento" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink placeholder:text-kraft focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink transition-colors" />
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Conteúdo</label>
-                  <textarea placeholder="Conteúdo do documento (fichas técnicas, procedimentos, etc.)" value={form.content} onChange={(e) => setForm({ ...form, content: e.target.value })} rows={8} className="w-full px-3 py-2 border border-line rounded-lg text-sm text-ink placeholder:text-kraft focus:outline-none focus:border-ink transition-colors resize-none" />
+                  <textarea placeholder="Conteúdo do documento (fichas técnicas, procedimentos, etc.)" value={form.content} onChange={(e) => setForm({ ...form, content: e.target.value })} rows={8} className="w-full px-3 py-2 border border-line rounded-lg text-sm text-ink placeholder:text-kraft focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink transition-colors resize-none" />
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Tags</label>
-                  <input type="text" placeholder="Separar por vírgulas: cookie, higiene, EPI" value={form.tags} onChange={(e) => setForm({ ...form, tags: e.target.value })} className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink placeholder:text-kraft focus:outline-none focus:border-ink transition-colors" />
+                  <input type="text" placeholder="Separar por vírgulas: cookie, higiene, EPI" value={form.tags} onChange={(e) => setForm({ ...form, tags: e.target.value })} className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink placeholder:text-kraft focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink transition-colors" />
                 </div>
               </div>
               <div className="p-4 border-t border-line flex gap-2 sticky bottom-0 bg-paper">
@@ -297,21 +326,21 @@ export default function DocumentosPage() {
         )}
 
         {viewingDoc && (
-          <div className="fixed inset-0 z-50 bg-ink/30 flex items-center justify-center p-4">
-            <div className="bg-paper rounded-xl border border-line shadow-lg w-full max-w-lg max-h-[90vh] overflow-y-auto">
+          <div className="fixed inset-0 z-50 bg-ink/30 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="view-documento-title">
+            <div ref={viewRef} className="bg-paper rounded-xl border border-line shadow-lg w-full max-w-lg max-h-[90vh] overflow-y-auto">
               <div className="flex items-center justify-between p-4 border-b border-line sticky top-0 bg-paper z-10">
                 <div className="flex items-center gap-2">
                   <div className={`w-8 h-8 rounded-lg ${(CATEGORY_MAP[viewingDoc.category] || CATEGORIES[5]).color} text-paper flex items-center justify-center`}>
                     <FileText className="w-4 h-4" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-bold text-ink">{viewingDoc.title}</h3>
+                    <h3 id="view-documento-title" className="text-lg font-bold text-ink">{viewingDoc.title}</h3>
                     <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-cream text-muted">
                       {(CATEGORY_MAP[viewingDoc.category] || CATEGORIES[5]).label}
                     </span>
                   </div>
                 </div>
-                <button onClick={() => setViewingDoc(null)} className="p-1.5 rounded-md hover:bg-cream text-muted"><X className="w-5 h-5" /></button>
+                <button onClick={() => setViewingDoc(null)} data-close-modal aria-label="Fechar" className="p-1.5 rounded-md hover:bg-cream text-muted"><X className="w-5 h-5" /></button>
               </div>
               <div className="p-4 space-y-4">
                 {viewingDoc.description && (
