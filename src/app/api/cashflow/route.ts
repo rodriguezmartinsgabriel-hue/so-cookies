@@ -20,7 +20,7 @@ export async function POST(request: Request) {
   try {
     const json = await request.json()
     const parsed = createCashFlowSchema.parse(json)
-    const data = await prisma.cashFlow.create({ data: parsed as any })
+    const data = await prisma.cashFlow.create({ data: parsed })
     return NextResponse.json(data)
   } catch (e: any) {
     if (e?.issues) {

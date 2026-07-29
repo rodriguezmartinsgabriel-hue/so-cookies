@@ -29,7 +29,7 @@ export async function PUT(
     const { id } = await params
     const json = await request.json()
     const parsed = updateCashFlowSchema.parse(json)
-    const data = await prisma.cashFlow.update({ where: { id }, data: parsed as any })
+    const data = await prisma.cashFlow.update({ where: { id }, data: parsed })
     return NextResponse.json(data)
   } catch (e: any) {
     if (e?.issues) return NextResponse.json({ error: "Dados inválidos", details: e.issues }, { status: 400 })
