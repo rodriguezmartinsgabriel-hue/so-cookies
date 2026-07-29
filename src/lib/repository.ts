@@ -34,7 +34,9 @@ export const repository = {
               .map((o: any) => ({ ...o, _synced: true, _updatedAt: now() }))
             await db.orders.bulkPut(toUpsert)
           }
-        } catch {}
+        } catch (e) {
+          console.error("Erro ao sync orders:", e)
+        }
       }
       return db.orders.toArray()
     },
@@ -97,7 +99,9 @@ export const repository = {
             const unsyncedIds = new Set((await db.sales.where("_synced").equals(0).toArray()).map((s) => s.id))
             await db.sales.bulkPut(data.filter((s: any) => !unsyncedIds.has(s.id)).map((s: any) => ({ ...s, _synced: true, _updatedAt: now() })))
           }
-        } catch {}
+        } catch (e) {
+          console.error("Erro ao sync:", e)
+        }
       }
       return db.sales.toArray()
     },
@@ -145,7 +149,9 @@ export const repository = {
             const unsyncedIds = new Set((await db.cashFlow.where("_synced").equals(0).toArray()).map((e) => e.id))
             await db.cashFlow.bulkPut(data.filter((e: any) => !unsyncedIds.has(e.id)).map((e: any) => ({ ...e, _synced: true, _updatedAt: now() })))
           }
-        } catch {}
+        } catch (e) {
+          console.error("Erro ao sync:", e)
+        }
       }
       return db.cashFlow.toArray()
     },
@@ -192,7 +198,9 @@ export const repository = {
             const unsyncedIds = new Set((await db.productions.where("_synced").equals(0).toArray()).map((p) => p.id))
             await db.productions.bulkPut(data.filter((p: any) => !unsyncedIds.has(p.id)).map((p: any) => ({ ...p, _synced: true, _updatedAt: now() })))
           }
-        } catch {}
+        } catch (e) {
+          console.error("Erro ao sync:", e)
+        }
       }
       return db.productions.toArray()
     },
@@ -238,7 +246,9 @@ export const repository = {
             const data = await resp.json()
             await db.products.bulkPut(data.map((p: any) => ({ ...p, _synced: true })))
           }
-        } catch {}
+        } catch (e) {
+          console.error("Erro ao sync:", e)
+        }
       }
       return db.products.toArray()
     },
@@ -261,7 +271,9 @@ export const repository = {
             const unsyncedIds = new Set((await db.ingredients.where("_synced").equals(0).toArray()).map((i) => i.id))
             await db.ingredients.bulkPut(data.filter((i: any) => !unsyncedIds.has(i.id)).map((i: any) => ({ ...i, _synced: true, _updatedAt: now() })))
           }
-        } catch {}
+        } catch (e) {
+          console.error("Erro ao sync:", e)
+        }
       }
       return db.ingredients.toArray()
     },
@@ -308,7 +320,9 @@ export const repository = {
             const unsyncedIds = new Set((await db.channels.where("_synced").equals(0).toArray()).map((c) => c.id))
             await db.channels.bulkPut(data.filter((c: any) => !unsyncedIds.has(c.id)).map((c: any) => ({ ...c, _synced: true, _updatedAt: now() })))
           }
-        } catch {}
+        } catch (e) {
+          console.error("Erro ao sync:", e)
+        }
       }
       return db.channels.toArray()
     },
@@ -355,7 +369,9 @@ export const repository = {
             const unsyncedIds = new Set((await db.priceTiers.where("_synced").equals(0).toArray()).map((t) => t.id))
             await db.priceTiers.bulkPut(data.filter((t: any) => !unsyncedIds.has(t.id)).map((t: any) => ({ ...t, _synced: true, _updatedAt: now() })))
           }
-        } catch {}
+        } catch (e) {
+          console.error("Erro ao sync:", e)
+        }
       }
       return db.priceTiers.toArray()
     },
@@ -406,7 +422,9 @@ export const repository = {
               .map((r: any) => ({ ...r, ingredients: JSON.stringify(r.ingredients || []), _synced: true, _updatedAt: now() }))
             await db.recipes.bulkPut(toUpsert)
           }
-        } catch {}
+        } catch (e) {
+          console.error("Erro ao sync:", e)
+        }
       }
       return (await db.recipes.toArray()).map((r) => ({ ...r, ingredients: JSON.parse(r.ingredients) }))
     },
@@ -473,7 +491,9 @@ export const repository = {
             const unsyncedIds = new Set((await db.documents.where("_synced").equals(0).toArray()).map((d) => d.id))
             await db.documents.bulkPut(data.filter((d: any) => !unsyncedIds.has(d.id)).map((d: any) => ({ ...d, _synced: true, _updatedAt: now() })))
           }
-        } catch {}
+        } catch (e) {
+          console.error("Erro ao sync:", e)
+        }
       }
       return db.documents.toArray()
     },
@@ -520,7 +540,9 @@ export const repository = {
             const unsyncedIds = new Set((await db.deliveryCosts.where("_synced").equals(0).toArray()).map((c) => c.id))
             await db.deliveryCosts.bulkPut(data.filter((c: any) => !unsyncedIds.has(c.id)).map((c: any) => ({ ...c, _synced: true, _updatedAt: now() })))
           }
-        } catch {}
+        } catch (e) {
+          console.error("Erro ao sync:", e)
+        }
       }
       return db.deliveryCosts.toArray()
     },

@@ -20,7 +20,9 @@ export function useOrders() {
           return
         }
       }
-    } catch {}
+    } catch (e) {
+      console.error("Erro ao buscar pedidos:", e)
+    }
 
     const local = await db.orders.toArray()
     setOrders(local)

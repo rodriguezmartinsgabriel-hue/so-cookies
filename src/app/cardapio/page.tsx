@@ -27,7 +27,9 @@ export default function CardapioPage() {
     try {
       const resp = await fetch("/api/products");
       if (resp.ok) setProducts(await resp.json());
-    } catch {}
+    } catch (e) {
+      console.error("Erro ao carregar cardápio:", e);
+    }
     setLoading(false);
   }
 
@@ -64,6 +66,16 @@ export default function CardapioPage() {
   };
 
   const total = cart.reduce((sum, item) => sum + item.price * item.qty, 0);
+
+  const finalizarPedido = () => {
+    const pedido = {
+      itens: cart,
+      total,
+      data: new Date().toISOString(),
+    };
+    localStorage.setItem("so-cart-pedido", JSON.stringify(pedido));
+    alert("Pedido salvo! Em breve você poderá finalizá-lo diretamente pelo sistema.");
+  };
 
   const grouped: Record<string, any[]> = products
     .reduce(
@@ -167,7 +179,7 @@ export default function CardapioPage() {
                 </div>
               ))}
             </div>
-            <button className="mt-3 w-full h-10 bg-paper text-ink rounded-lg text-sm font-semibold hover:bg-paper/90 transition-colors">
+            <button onClick={finalizarPedido} className="mt-3 w-full h-10 bg-paper text-ink rounded-lg text-sm font-semibold hover:bg-paper/90 transition-colors">
               Finalizar Pedido
             </button>
           </div>

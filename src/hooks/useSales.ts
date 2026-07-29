@@ -20,7 +20,9 @@ export function useSales() {
           return
         }
       }
-    } catch {}
+    } catch (e) {
+      console.error("Erro ao buscar vendas:", e)
+    }
 
     const local = await db.sales.toArray()
     setSales(local)
