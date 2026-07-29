@@ -1,7 +1,10 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
+import { useFocusTrap } from "@/hooks/useFocusTrap"
 import { AppShell } from "@/components/layout/AppShell"
+import { Skeleton } from "@/components/ui/Skeleton"
+import { ErrorState } from "@/components/ui/ErrorState"
 import { repository } from "@/lib/repository"
 import { ChefHat, Clock, CheckCircle, Plus, X, Edit, Trash2 } from "lucide-react"
 
@@ -15,8 +18,11 @@ export default function ProducaoPage() {
   const [batches, setBatches] = useState<any[]>([])
   const [products, setProducts] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [showCreateModal, setShowCreateModal] = useState(false)
+  const createModalRef = useFocusTrap(showCreateModal)
   const [showEditModal, setShowEditModal] = useState(false)
+  const editModalRef = useFocusTrap(showEditModal)
   const [editingBatch, setEditingBatch] = useState<any>(null)
   const [formProduct, setFormProduct] = useState("")
   const [formQty, setFormQty] = useState("")
@@ -34,7 +40,9 @@ export default function ProducaoPage() {
       ])
       if (batchesData.status === "fulfilled") setBatches(batchesData.value)
       if (prodsResp.status === "fulfilled") setProducts(prodsResp.value)
-    } catch {}
+    } catch {
+      setError("Erro ao carregar produção")
+    }
     setLoading(false)
   }, [])
 
@@ -106,8 +114,25 @@ export default function ProducaoPage() {
           </button>
         </div>
 
+        {error && (
+          <ErrorState message={error} onRetry={loadData} />
+        )}
+
         {loading ? (
-          <div className="text-center py-8 text-muted">Carregando...</div>
+          <div className="space-y-2">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="border border-line rounded-lg bg-paper p-4 shadow-card">
+                <div className="flex items-center gap-3">
+                  <Skeleton className="h-10 w-10 rounded-lg" />
+                  <div className="flex-1">
+                    <Skeleton className="h-4 w-40 mb-1" />
+                    <Skeleton className="h-3 w-32" />
+                  </div>
+                  <Skeleton className="h-5 w-20 rounded-full" />
+                </div>
+              </div>
+            ))}
+          </div>
         ) : batches.length === 0 ? (
           <div className="text-center py-8 text-muted border border-dashed border-line rounded-lg">
             Nenhum lote registrado. Clique em &quot;Novo Lote&quot; para começar.
@@ -133,8 +158,8 @@ export default function ProducaoPage() {
                     <div className="text-right flex items-center gap-2">
                       <span className={`text-xs font-medium px-2 py-1 rounded-full ${cfg.color}`}>{cfg.label}</span>
                       <div className="flex gap-1">
-                        <button onClick={() => openEdit(batch)} className="p-1.5 rounded-md hover:bg-cream text-muted"><Edit className="w-4 h-4" /></button>
-                        <button onClick={() => handleDelete(batch.id)} className="p-1.5 rounded-md hover:bg-cream text-danger"><Trash2 className="w-4 h-4" /></button>
+                        <button onClick={() => openEdit(batch)} aria-label="Editar" className="p-1.5 rounded-md hover:bg-cream text-muted"><Edit className="w-4 h-4" /></button>
+                        <button onClick={() => handleDelete(batch.id)} aria-label="Excluir" className="p-1.5 rounded-md hover:bg-cream text-danger"><Trash2 className="w-4 h-4" /></button>
                         {batch.status === "pendente" && (
                           <button onClick={() => handleStatusChange(batch.id, "em_producao")} className="text-xs px-3 py-1.5 bg-warning/10 text-warning rounded-lg font-medium hover:bg-warning/20 transition-colors">Iniciar</button>
                         )}
@@ -156,20 +181,20 @@ export default function ProducaoPage() {
         )}
 
         {showEditModal && editingBatch && (
-          <div className="fixed inset-0 z-50 bg-ink/30 flex items-center justify-center p-4">
-            <div className="bg-paper rounded-xl border border-line shadow-lg w-full max-w-md">
+          <div className="fixed inset-0 z-50 bg-ink/30 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="edit-lote-title">
+            <div ref={editModalRef} className="bg-paper rounded-xl border border-line shadow-lg w-full max-w-md">
               <div className="flex items-center justify-between p-4 border-b border-line">
-                <h3 className="text-lg font-bold text-ink">Editar Lote {editingBatch.batchCode}</h3>
-                <button onClick={() => { setShowEditModal(false); setEditingBatch(null); }} className="p-1.5 rounded-md hover:bg-cream text-muted"><X className="w-5 h-5" /></button>
+                <h3 id="edit-lote-title" className="text-lg font-bold text-ink">Editar Lote {editingBatch.batchCode}</h3>
+                <button onClick={() => { setShowEditModal(false); setEditingBatch(null); }} data-close-modal aria-label="Fechar" className="p-1.5 rounded-md hover:bg-cream text-muted"><X className="w-5 h-5" /></button>
               </div>
               <div className="p-4 space-y-4">
                 <div>
                   <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Quantidade</label>
-                  <input type="number" min="1" value={editForm.qty} onChange={(e) => setEditForm({ ...editForm, qty: e.target.value })} className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink placeholder:text-kraft focus:outline-none focus:border-ink transition-colors" />
+                  <input type="number" min="1" value={editForm.qty} onChange={(e) => setEditForm({ ...editForm, qty: e.target.value })} className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink placeholder:text-kraft focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink transition-colors" />
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Observações</label>
-                  <textarea value={editForm.notes} onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })} rows={3} placeholder="Ex: Temperatura do forno..." className="w-full px-3 py-2 border border-line rounded-lg text-sm text-ink placeholder:text-kraft focus:outline-none focus:border-ink transition-colors resize-none" />
+                  <textarea value={editForm.notes} onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })} rows={3} placeholder="Ex: Temperatura do forno..." className="w-full px-3 py-2 border border-line rounded-lg text-sm text-ink placeholder:text-kraft focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink transition-colors resize-none" />
                 </div>
               </div>
               <div className="p-4 border-t border-line flex gap-2">
@@ -181,16 +206,16 @@ export default function ProducaoPage() {
         )}
 
         {showCreateModal && (
-          <div className="fixed inset-0 z-50 bg-ink/30 flex items-center justify-center p-4">
-            <div className="bg-paper rounded-xl border border-line shadow-lg w-full max-w-md">
+          <div className="fixed inset-0 z-50 bg-ink/30 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="create-lote-title">
+            <div ref={createModalRef} className="bg-paper rounded-xl border border-line shadow-lg w-full max-w-md">
               <div className="flex items-center justify-between p-4 border-b border-line">
-                <h3 className="text-lg font-bold text-ink">Novo Lote</h3>
-                <button onClick={() => setShowCreateModal(false)} className="p-1.5 rounded-md hover:bg-cream text-muted"><X className="w-5 h-5" /></button>
+                <h3 id="create-lote-title" className="text-lg font-bold text-ink">Novo Lote</h3>
+                <button onClick={() => setShowCreateModal(false)} data-close-modal aria-label="Fechar" className="p-1.5 rounded-md hover:bg-cream text-muted"><X className="w-5 h-5" /></button>
               </div>
               <div className="p-4 space-y-4">
                 <div>
                   <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Produto *</label>
-                  <select value={formProduct} onChange={(e) => setFormProduct(e.target.value)} className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink focus:outline-none focus:border-ink bg-paper">
+                  <select value={formProduct} onChange={(e) => setFormProduct(e.target.value)} className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink bg-paper">
                     <option value="">Selecionar produto</option>
                     {products.map((p: any) => <option key={p.id} value={p.id}>{p.name}</option>)}
                   </select>
@@ -198,16 +223,16 @@ export default function ProducaoPage() {
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Código do Lote *</label>
-                    <input type="text" placeholder="LOTE-20260724" value={formBatchCode} onChange={(e) => setFormBatchCode(e.target.value)} className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink placeholder:text-kraft focus:outline-none focus:border-ink" />
+                    <input type="text" placeholder="LOTE-20260724" value={formBatchCode} onChange={(e) => setFormBatchCode(e.target.value)} className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink placeholder:text-kraft focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink" />
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Quantidade *</label>
-                    <input type="number" min="1" placeholder="20" value={formQty} onChange={(e) => setFormQty(e.target.value)} className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink placeholder:text-kraft focus:outline-none focus:border-ink" />
+                    <input type="number" min="1" placeholder="20" value={formQty} onChange={(e) => setFormQty(e.target.value)} className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink placeholder:text-kraft focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink" />
                   </div>
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Observações</label>
-                  <input type="text" placeholder="Ex: Temperatura do forno..." value={formNotes} onChange={(e) => setFormNotes(e.target.value)} className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink placeholder:text-kraft focus:outline-none focus:border-ink" />
+                  <input type="text" placeholder="Ex: Temperatura do forno..." value={formNotes} onChange={(e) => setFormNotes(e.target.value)} className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink placeholder:text-kraft focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink" />
                 </div>
               </div>
               <div className="p-4 border-t border-line flex gap-2">

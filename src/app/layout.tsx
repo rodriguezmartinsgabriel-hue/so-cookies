@@ -1,6 +1,21 @@
 import "./globals.css"
 import type { Metadata, Viewport } from "next"
+import { Space_Grotesk, Caveat } from "next/font/google"
 import Providers from "./providers"
+
+const spaceGrotesk = Space_Grotesk({
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700"],
+  variable: "--font-ui",
+  display: "swap",
+})
+
+const caveat = Caveat({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-brand",
+  display: "swap",
+})
 
 export const metadata: Metadata = {
   applicationName: "Só Manager",
@@ -36,7 +51,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="pt-BR" className="h-full antialiased">
+    <html lang="pt-BR" className={`${spaceGrotesk.variable} ${caveat.variable} h-full antialiased`} suppressHydrationWarning>
       <body className="h-full font-ui">
         <Providers>{children}</Providers>
       </body>

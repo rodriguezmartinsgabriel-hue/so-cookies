@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react"
 import { AppShell } from "@/components/layout/AppShell"
+import { Skeleton } from "@/components/ui/Skeleton"
+import { ErrorState } from "@/components/ui/ErrorState"
 import { TrendingUp, AlertTriangle, Package, DollarSign } from "lucide-react"
 
 export default function PrevisaoPage() {
@@ -10,6 +12,7 @@ export default function PrevisaoPage() {
   const [products, setProducts] = useState<any[]>([])
   const [recipes, setRecipes] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     async function load() {
@@ -25,7 +28,9 @@ export default function PrevisaoPage() {
         if (salesResp.status === "fulfilled" && salesResp.value.ok) setSales(await salesResp.value.json())
         if (prodsResp.status === "fulfilled" && prodsResp.value.ok) setProducts(await prodsResp.value.json())
         if (recipesResp.status === "fulfilled" && recipesResp.value.ok) setRecipes(await recipesResp.value.json())
-      } catch {}
+      } catch {
+        setError("Erro ao carregar dados")
+      }
       setLoading(false)
     }
     load()
@@ -70,8 +75,28 @@ export default function PrevisaoPage() {
           </p>
         </div>
 
+        {error && (
+          <ErrorState message={error} onRetry={() => window.location.reload()} />
+        )}
+
         {loading ? (
-          <div className="text-center py-8 text-muted">Carregando...</div>
+          <div className="space-y-4">
+            <div className="space-y-3">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="border border-line rounded-lg bg-paper p-4 shadow-card">
+                  <div className="flex items-start gap-3">
+                    <Skeleton className="h-10 w-10 rounded-lg shrink-0" />
+                    <div className="flex-1">
+                      <Skeleton className="h-3 w-24 mb-2" />
+                      <Skeleton className="h-6 w-20 mb-1" />
+                      <Skeleton className="h-3 w-40" />
+                    </div>
+                    <Skeleton className="h-3 w-16" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         ) : (
           <>
             <div className="space-y-3">

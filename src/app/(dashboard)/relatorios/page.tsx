@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { AppShell } from "@/components/layout/AppShell";
+import { Skeleton } from "@/components/ui/Skeleton";
+import { ErrorState } from "@/components/ui/ErrorState";
 import {
   BarChart,
   Bar,
@@ -22,6 +24,7 @@ export default function RelatoriosPage() {
   const [sales, setSales] = useState<any[]>([]);
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     load();
@@ -36,7 +39,9 @@ export default function RelatoriosPage() {
       ]);
       if (salesResp.ok) setSales(await salesResp.json());
       if (ordersResp.ok) setOrders(await ordersResp.json());
-    } catch {}
+    } catch {
+      setError("Erro ao carregar relatórios");
+    }
     setLoading(false);
   }
 
@@ -73,8 +78,29 @@ export default function RelatoriosPage() {
       <div className="space-y-6">
         <h1 className="text-2xl font-bold text-ink">Relatórios</h1>
 
+        {error && (
+          <ErrorState message={error} onRetry={load} />
+        )}
+
         {loading ? (
-          <div className="text-center py-8 text-muted">Carregando...</div>
+          <div className="space-y-6">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="border border-line rounded-lg bg-paper p-4 shadow-card">
+                  <Skeleton className="h-4 w-16 mb-2" />
+                  <Skeleton className="h-7 w-20" />
+                </div>
+              ))}
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {Array.from({ length: 2 }).map((_, i) => (
+                <div key={i} className="border border-line rounded-lg bg-paper p-4 shadow-card">
+                  <Skeleton className="h-4 w-32 mb-4" />
+                  <Skeleton className="h-48" />
+                </div>
+              ))}
+            </div>
+          </div>
         ) : (
           <>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">

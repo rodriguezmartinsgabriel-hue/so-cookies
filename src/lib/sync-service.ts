@@ -28,7 +28,7 @@ export async function pushPendingChanges() {
     })
     if (resp.ok) {
       const result = await resp.json()
-      await clearSyncQueue()
+      if (!result.ok) return { pushed: 0 }
       if (result.mappings) {
         for (const [tempId, realId] of Object.entries(result.mappings)) {
           await reconcileIds(tempId as string, realId as string)
@@ -58,16 +58,23 @@ export async function pullChanges() {
       if (data.cashFlow) await db.cashFlow.bulkPut(data.cashFlow)
       if (data.productions) await db.productions.bulkPut(data.productions)
       if (data.ingredients) await db.ingredients.bulkPut(data.ingredients)
+      if (data.recipes) await db.recipes.bulkPut(data.recipes.map((r: any) => ({ ...r, ingredients: JSON.stringify(r.ingredients || []), _synced: true, _updatedAt: new Date().toISOString() })))
+      if (data.documents) await db.documents.bulkPut(data.documents)
+      if (data.deliveryCosts) await db.deliveryCosts.bulkPut(data.deliveryCosts)
       await setLastSyncTime(new Date().toISOString())
-      return { pulled: (data.orders?.length || 0) + (data.sales?.length || 0) + (data.cashFlow?.length || 0) + (data.productions?.length || 0) + (data.ingredients?.length || 0) }
+      return { pulled: (data.orders?.length || 0) + (data.sales?.length || 0) + (data.cashFlow?.length || 0) + (data.productions?.length || 0) + (data.ingredients?.length || 0) + (data.recipes?.length || 0) + (data.documents?.length || 0) + (data.deliveryCosts?.length || 0) }
     }
   } catch {}
   return { pulled: 0 }
 }
 
 export async function syncAll() {
+  const pending = await db.syncQueue.count()
   const pushed = await pushPendingChanges()
   const pulled = await pullChanges()
+  if (pushed.pushed > 0 && pulled.pulled >= 0) {
+    await clearSyncQueue()
+  }
   return { pushed: pushed.pushed, pulled: pulled.pulled }
 }
 
@@ -181,6 +188,41 @@ async function reconcileIds(tempId: string, realId: string) {
     } else {
       await db.priceTiers.delete(tempId)
       await db.priceTiers.put({ ...tier, id: realId, _synced: true })
+    }
+  }
+
+  const recipe = await db.recipes.get(tempId)
+  if (recipe) {
+    const existingReal = await db.recipes.get(realId)
+    if (existingReal) {
+      await db.recipes.delete(tempId)
+      await db.recipeItems.where("recipeId").equals(tempId).delete()
+    } else {
+      await db.recipes.delete(tempId)
+      await db.recipeItems.where("recipeId").equals(tempId).modify({ recipeId: realId, _synced: true })
+      await db.recipes.put({ ...recipe, id: realId, _synced: true })
+    }
+  }
+
+  const doc = await db.documents.get(tempId)
+  if (doc) {
+    const existingReal = await db.documents.get(realId)
+    if (existingReal) {
+      await db.documents.delete(tempId)
+    } else {
+      await db.documents.delete(tempId)
+      await db.documents.put({ ...doc, id: realId, _synced: true })
+    }
+  }
+
+  const cost = await db.deliveryCosts.get(tempId)
+  if (cost) {
+    const existingReal = await db.deliveryCosts.get(realId)
+    if (existingReal) {
+      await db.deliveryCosts.delete(tempId)
+    } else {
+      await db.deliveryCosts.delete(tempId)
+      await db.deliveryCosts.put({ ...cost, id: realId, _synced: true })
     }
   }
 }

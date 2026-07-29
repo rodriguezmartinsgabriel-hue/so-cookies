@@ -1,21 +1,40 @@
-import { NextResponse } from "next/server";
-import { getRecipes, createRecipe } from "@/lib/db";
+import { NextResponse } from "next/server"
+import { prisma } from "@/lib/prisma"
+import { requireAuth } from "@/lib/api-auth"
+import { createRecipeSchema } from "@/lib/validation"
 
 export async function GET() {
+  const { error } = await requireAuth()
+  if (error) return error
   try {
-    const recipes = await getRecipes();
-    return NextResponse.json(recipes);
-  } catch (error) {
-    return NextResponse.json({ error: "Failed to fetch recipes" }, { status: 500 });
+    const data = await prisma.recipe.findMany({ include: { ingredients: { include: { ingredient: true } } } })
+    return NextResponse.json(data)
+  } catch (e) {
+    return NextResponse.json({ error: "Erro ao buscar receitas" }, { status: 500 })
   }
 }
 
 export async function POST(request: Request) {
+  const { error } = await requireAuth("ADMIN")
+  if (error) return error
   try {
-    const data = await request.json();
-    const recipe = await createRecipe(data);
-    return NextResponse.json(recipe);
-  } catch (error) {
-    return NextResponse.json({ error: "Failed to create recipe" }, { status: 500 });
+    const json = await request.json()
+    const parsed = createRecipeSchema.parse(json)
+    const { ingredients, ...recipeData } = parsed
+    const data = await prisma.recipe.create({
+      data: {
+        ...recipeData,
+        ingredients: ingredients?.length
+          ? { create: ingredients.map((i) => ({ ingredientId: i.ingredientId, qty: i.qty, unit: i.unit })) }
+          : undefined,
+      },
+      include: { ingredients: { include: { ingredient: true } } },
+    })
+    return NextResponse.json(data)
+  } catch (e: any) {
+    if (e?.issues) {
+      return NextResponse.json({ error: "Dados inválidos", details: e.issues }, { status: 400 })
+    }
+    return NextResponse.json({ error: "Erro ao criar receita" }, { status: 500 })
   }
 }

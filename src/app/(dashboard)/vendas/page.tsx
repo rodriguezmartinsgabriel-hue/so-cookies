@@ -1,7 +1,10 @@
 "use client"
 
 import { useState, useCallback, useEffect } from "react"
+import { useFocusTrap } from "@/hooks/useFocusTrap"
 import { AppShell } from "@/components/layout/AppShell"
+import { Skeleton } from "@/components/ui/Skeleton"
+import { ErrorState } from "@/components/ui/ErrorState"
 import { repository } from "@/lib/repository"
 import { Plus, Search, X, Trash2 } from "lucide-react"
 
@@ -17,8 +20,10 @@ export default function VendasPage() {
   const [products, setProducts] = useState<any[]>([])
   const [channels, setChannels] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [search, setSearch] = useState("")
   const [showModal, setShowModal] = useState(false)
+  const modalRef = useFocusTrap(showModal)
 
   const [formChannel, setFormChannel] = useState("")
   const [formItems, setFormItems] = useState<{ productId: string; qty: string; price: string }[]>([])
@@ -35,7 +40,9 @@ export default function VendasPage() {
       if (salesData.status === "fulfilled") setSales(salesData.value)
       if (prodsResp.status === "fulfilled") setProducts(prodsResp.value)
       if (channelsData.status === "fulfilled") setChannels(channelsData.value)
-    } catch {}
+    } catch {
+      setError("Erro ao carregar vendas")
+    }
     setLoading(false)
   }, [])
 
@@ -123,12 +130,37 @@ export default function VendasPage() {
             placeholder="Buscar por canal..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full h-10 pl-10 pr-4 border border-line rounded-lg text-sm text-ink placeholder:text-kraft focus:outline-none focus:border-ink transition-colors"
+            className="w-full h-10 pl-10 pr-4 border border-line rounded-lg text-sm text-ink placeholder:text-kraft focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink transition-colors"
           />
         </div>
 
+        {error && (
+          <ErrorState message={error} onRetry={loadData} />
+        )}
+
         {loading ? (
-          <div className="text-center py-8 text-muted">Carregando...</div>
+          <div className="border border-line rounded-lg bg-paper shadow-card overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-line bg-cream">
+                    {Array.from({ length: 6 }).map((_, i) => (
+                      <th key={i} className="px-4 py-3"><Skeleton className="h-3 w-16" /></th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-line">
+                  {Array.from({ length: 4 }).map((_, i) => (
+                    <tr key={i}>
+                      {Array.from({ length: 6 }).map((_, j) => (
+                        <td key={j} className="px-4 py-3"><Skeleton className="h-4 w-full" /></td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
         ) : (
           <div className="border border-line rounded-lg bg-paper shadow-card overflow-hidden">
             <div className="overflow-x-auto">
@@ -157,7 +189,7 @@ export default function VendasPage() {
                         <td className="px-4 py-3 text-sm font-semibold text-ink text-right">R$ {sale.total}</td>
                         <td className="px-4 py-3 text-sm text-muted">{new Date(sale.createdAt).toLocaleDateString("pt-BR")}</td>
                         <td className="px-4 py-3 text-center">
-                          <button onClick={() => handleDeleteSale(sale.id)} className="p-1.5 rounded-md hover:bg-cream text-danger"><Trash2 className="w-4 h-4" /></button>
+                          <button onClick={() => handleDeleteSale(sale.id)} aria-label="Excluir" className="p-1.5 rounded-md hover:bg-cream text-danger"><Trash2 className="w-4 h-4" /></button>
                         </td>
                       </tr>
                     )
@@ -172,16 +204,16 @@ export default function VendasPage() {
         )}
 
         {showModal && (
-          <div className="fixed inset-0 z-50 bg-ink/30 flex items-center justify-center p-4">
-            <div className="bg-paper rounded-xl border border-line shadow-lg w-full max-w-lg max-h-[85vh] overflow-y-auto">
+          <div className="fixed inset-0 z-50 bg-ink/30 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="venda-title">
+            <div ref={modalRef} className="bg-paper rounded-xl border border-line shadow-lg w-full max-w-lg max-h-[85vh] overflow-y-auto">
               <div className="flex items-center justify-between p-4 border-b border-line sticky top-0 bg-paper">
-                <h3 className="text-lg font-bold text-ink">Nova Venda</h3>
-                <button onClick={() => setShowModal(false)} className="p-1.5 rounded-md hover:bg-cream text-muted"><X className="w-5 h-5" /></button>
+                <h3 id="venda-title" className="text-lg font-bold text-ink">Nova Venda</h3>
+                <button onClick={() => setShowModal(false)} data-close-modal aria-label="Fechar" className="p-1.5 rounded-md hover:bg-cream text-muted"><X className="w-5 h-5" /></button>
               </div>
               <div className="p-4 space-y-4">
                 <div>
                   <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Canal de Venda *</label>
-                  <select value={formChannel} onChange={(e) => setFormChannel(e.target.value)} className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink focus:outline-none focus:border-ink transition-colors bg-paper">
+                  <select value={formChannel} onChange={(e) => setFormChannel(e.target.value)} className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink transition-colors bg-paper">
                     <option value="">Selecionar canal</option>
                     {channels.map((ch: any) => (
                       <option key={ch.id} value={ch.id}>{ch.name}</option>
@@ -199,16 +231,16 @@ export default function VendasPage() {
                   <div className="space-y-2">
                     {formItems.map((item, i) => (
                       <div key={i} className="flex items-center gap-2 bg-cream/50 rounded-lg p-2">
-                        <select value={item.productId} onChange={(e) => updateItem(i, "productId", e.target.value)} className="flex-1 h-9 px-2 border border-line rounded-lg text-xs text-ink focus:outline-none focus:border-ink bg-paper">
+                        <select value={item.productId} onChange={(e) => updateItem(i, "productId", e.target.value)} className="flex-1 h-9 px-2 border border-line rounded-lg text-xs text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink bg-paper">
                           <option value="">Produto</option>
                           {products.map((p: any) => (
                             <option key={p.id} value={p.id}>{p.name}</option>
                           ))}
                         </select>
-                        <input type="number" min="1" placeholder="Qtd" value={item.qty} onChange={(e) => updateItem(i, "qty", e.target.value)} className="w-16 h-9 px-2 border border-line rounded-lg text-xs text-ink placeholder:text-kraft focus:outline-none focus:border-ink bg-paper" />
-                        <input type="number" step="0.01" placeholder="Preço" value={item.price} onChange={(e) => updateItem(i, "price", e.target.value)} className="w-24 h-9 px-2 border border-line rounded-lg text-xs text-ink placeholder:text-kraft focus:outline-none focus:border-ink bg-paper" />
+                        <input type="number" min="1" placeholder="Qtd" value={item.qty} onChange={(e) => updateItem(i, "qty", e.target.value)} className="w-16 h-9 px-2 border border-line rounded-lg text-xs text-ink placeholder:text-kraft focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink bg-paper" />
+                        <input type="number" step="0.01" placeholder="Preço" value={item.price} onChange={(e) => updateItem(i, "price", e.target.value)} className="w-24 h-9 px-2 border border-line rounded-lg text-xs text-ink placeholder:text-kraft focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink bg-paper" />
                         <span className="text-xs font-semibold text-ink w-16 text-right">R$ {((parseFloat(item.qty) || 0) * (parseFloat(item.price) || 0)).toFixed(2)}</span>
-                        <button onClick={() => removeItem(i)} className="p-1 rounded hover:bg-cream text-danger"><X className="w-3 h-3" /></button>
+                        <button onClick={() => removeItem(i)} aria-label="Remover" className="p-1 rounded hover:bg-cream text-danger"><X className="w-3 h-3" /></button>
                       </div>
                     ))}
                   </div>

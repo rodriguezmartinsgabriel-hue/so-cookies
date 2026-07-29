@@ -385,6 +385,171 @@ export const repository = {
     },
   },
 
+  recipes: {
+    async getAll() {
+      if (isOnline()) {
+        try {
+          const resp = await fetch("/api/recipes")
+          if (resp.ok) {
+            const data = await resp.json()
+            const realIds = new Set(data.map((r: any) => r.id))
+            const localOnly = await db.recipes.toArray()
+            for (const local of localOnly) {
+              if (local.id.startsWith("offline_") && !realIds.has(local.id)) {
+                await db.recipes.delete(local.id)
+                await db.recipeItems.where("recipeId").equals(local.id).delete()
+              }
+            }
+            const unsyncedIds = new Set((await db.recipes.where("_synced").equals(0).toArray()).map((r) => r.id))
+            const toUpsert = data
+              .filter((r: any) => !unsyncedIds.has(r.id))
+              .map((r: any) => ({ ...r, ingredients: JSON.stringify(r.ingredients || []), _synced: true, _updatedAt: now() }))
+            await db.recipes.bulkPut(toUpsert)
+          }
+        } catch {}
+      }
+      return (await db.recipes.toArray()).map((r) => ({ ...r, ingredients: JSON.parse(r.ingredients) }))
+    },
+
+    async create(data: { name: string; yield: number; yieldUnit?: string; totalCost?: number; productId?: string; ingredients: { ingredientId: string; qty: number; unit: string }[] }) {
+      const id = generateTempId()
+      const recipe = {
+        ...data,
+        id,
+        yieldUnit: data.yieldUnit || "un",
+        totalCost: data.totalCost || 0,
+        ingredients: JSON.stringify(data.ingredients || []),
+        createdAt: now(),
+        updatedAt: now(),
+        _synced: false,
+        _updatedAt: now(),
+      }
+      const items = (data.ingredients || []).map((item) => ({
+        id: generateTempId(),
+        recipeId: id,
+        ...item,
+        _synced: false,
+      }))
+
+      await db.recipes.add(recipe)
+      if (items.length) await db.recipeItems.bulkAdd(items)
+      await addToSyncQueue({ action: "create", entity: "recipe", data: { ...data, id }, tempId: id, createdAt: now() })
+
+      scheduleSync()
+      return { ...recipe, ingredients: JSON.parse(recipe.ingredients) }
+    },
+
+    async update(id: string, data: { name?: string; yield?: number; yieldUnit?: string; totalCost?: number; productId?: string; ingredients?: { ingredientId: string; qty: number; unit: string }[] }) {
+      const updatedAt = now()
+      const patch: any = { ...data, _synced: false, _updatedAt: updatedAt }
+      if (data.ingredients) patch.ingredients = JSON.stringify(data.ingredients)
+      await db.recipes.update(id, patch)
+      await addToSyncQueue({ action: "update", entity: "recipe", data: { id, ...data }, createdAt: now() })
+      scheduleSync()
+    },
+
+    async delete(id: string) {
+      await db.recipes.delete(id)
+      await db.recipeItems.where("recipeId").equals(id).delete()
+      await addToSyncQueue({ action: "delete", entity: "recipe", data: { id }, createdAt: now() })
+      scheduleSync()
+    },
+  },
+
+  documents: {
+    async getAll() {
+      if (isOnline()) {
+        try {
+          const resp = await fetch("/api/documents")
+          if (resp.ok) {
+            const data = await resp.json()
+            const realIds = new Set(data.map((d: any) => d.id))
+            const localOnly = await db.documents.toArray()
+            for (const local of localOnly) {
+              if (local.id.startsWith("offline_") && !realIds.has(local.id)) {
+                await db.documents.delete(local.id)
+              }
+            }
+            const unsyncedIds = new Set((await db.documents.where("_synced").equals(0).toArray()).map((d) => d.id))
+            await db.documents.bulkPut(data.filter((d: any) => !unsyncedIds.has(d.id)).map((d: any) => ({ ...d, _synced: true, _updatedAt: now() })))
+          }
+        } catch {}
+      }
+      return db.documents.toArray()
+    },
+
+    async create(data: { title: string; description?: string; category: string; content?: string; fileUrl?: string; tags?: string; userId?: string }) {
+      const id = generateTempId()
+      const doc = { ...data, id, createdAt: now(), updatedAt: now(), _synced: false, _updatedAt: now() }
+
+      await db.documents.add(doc)
+      await addToSyncQueue({ action: "create", entity: "document", data: doc, tempId: id, createdAt: now() })
+
+      scheduleSync()
+      return doc
+    },
+
+    async update(id: string, data: { title?: string; description?: string; category?: string; content?: string; fileUrl?: string; tags?: string }) {
+      const updatedAt = now()
+      await db.documents.update(id, { ...data, _synced: false, _updatedAt: updatedAt })
+      await addToSyncQueue({ action: "update", entity: "document", data: { id, ...data }, createdAt: now() })
+      scheduleSync()
+    },
+
+    async delete(id: string) {
+      await db.documents.delete(id)
+      await addToSyncQueue({ action: "delete", entity: "document", data: { id }, createdAt: now() })
+      scheduleSync()
+    },
+  },
+
+  deliveryCosts: {
+    async getAll() {
+      if (isOnline()) {
+        try {
+          const resp = await fetch("/api/delivery-cost")
+          if (resp.ok) {
+            const data = await resp.json()
+            const realIds = new Set(data.map((c: any) => c.id))
+            const localOnly = await db.deliveryCosts.toArray()
+            for (const local of localOnly) {
+              if (local.id.startsWith("offline_") && !realIds.has(local.id)) {
+                await db.deliveryCosts.delete(local.id)
+              }
+            }
+            const unsyncedIds = new Set((await db.deliveryCosts.where("_synced").equals(0).toArray()).map((c) => c.id))
+            await db.deliveryCosts.bulkPut(data.filter((c: any) => !unsyncedIds.has(c.id)).map((c: any) => ({ ...c, _synced: true, _updatedAt: now() })))
+          }
+        } catch {}
+      }
+      return db.deliveryCosts.toArray()
+    },
+
+    async create(data: { date?: string; channel: string; orderId?: string; amount: number; notes?: string }) {
+      const id = generateTempId()
+      const cost = { ...data, id, date: data.date || now(), createdAt: now(), _synced: false, _updatedAt: now() }
+
+      await db.deliveryCosts.add(cost)
+      await addToSyncQueue({ action: "create", entity: "deliveryCost", data: cost, tempId: id, createdAt: now() })
+
+      scheduleSync()
+      return cost
+    },
+
+    async update(id: string, data: { date?: string; channel?: string; orderId?: string; amount?: number; notes?: string }) {
+      const updatedAt = now()
+      await db.deliveryCosts.update(id, { ...data, _synced: false, _updatedAt: updatedAt })
+      await addToSyncQueue({ action: "update", entity: "deliveryCost", data: { id, ...data }, createdAt: now() })
+      scheduleSync()
+    },
+
+    async delete(id: string) {
+      await db.deliveryCosts.delete(id)
+      await addToSyncQueue({ action: "delete", entity: "deliveryCost", data: { id }, createdAt: now() })
+      scheduleSync()
+    },
+  },
+
   async getUnsyncedCount() {
     return db.syncQueue.count()
   },

@@ -1,17 +1,20 @@
 import { NextResponse } from "next/server";
-import { getDocument, updateDocument, deleteDocument } from "@/lib/db";
+import { prisma } from "@/lib/prisma";
+import { requireAuth } from "@/lib/api-auth";
 
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const { error } = await requireAuth()
+  if (error) return error
   try {
     const { id } = await params;
-    const document = await getDocument(id);
-    if (!document) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    const document = await prisma.document.findUnique({ where: { id } });
+    if (!document) return NextResponse.json({ error: "Não encontrado" }, { status: 404 });
     return NextResponse.json(document);
-  } catch (error) {
-    return NextResponse.json({ error: "Failed to fetch document" }, { status: 500 });
+  } catch (e) {
+    return NextResponse.json({ error: "Erro ao buscar documento" }, { status: 500 });
   }
 }
 
@@ -19,13 +22,15 @@ export async function PUT(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const { error } = await requireAuth("OPERACIONAL")
+  if (error) return error
   try {
     const { id } = await params;
-    const data = await request.json();
-    const document = await updateDocument(id, data);
+    const json = await request.json();
+    const document = await prisma.document.update({ where: { id }, data: json });
     return NextResponse.json(document);
-  } catch (error) {
-    return NextResponse.json({ error: "Failed to update document" }, { status: 500 });
+  } catch (e) {
+    return NextResponse.json({ error: "Erro ao atualizar documento" }, { status: 500 });
   }
 }
 
@@ -33,11 +38,13 @@ export async function DELETE(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const { error } = await requireAuth("OPERACIONAL")
+  if (error) return error
   try {
     const { id } = await params;
-    await deleteDocument(id);
+    await prisma.document.delete({ where: { id } });
     return NextResponse.json({ ok: true });
-  } catch (error) {
-    return NextResponse.json({ error: "Failed to delete document" }, { status: 500 });
+  } catch (e) {
+    return NextResponse.json({ error: "Erro ao deletar documento" }, { status: 500 });
   }
 }
