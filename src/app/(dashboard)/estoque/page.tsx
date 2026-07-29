@@ -73,10 +73,10 @@ export default function EstoquePage() {
       costPerKg: parseFloat(form.costPerKg) || 0,
       supplier: form.supplier || "Não informado",
     };
-    if (form.caloriesPer100g) payload.caloriesPer100g = parseFloat(form.caloriesPer100g);
-    if (form.proteinPer100g) payload.proteinPer100g = parseFloat(form.proteinPer100g);
-    if (form.carbsPer100g) payload.carbsPer100g = parseFloat(form.carbsPer100g);
-    if (form.fatPer100g) payload.fatPer100g = parseFloat(form.fatPer100g);
+    if (form.caloriesPer100g !== "") payload.caloriesPer100g = parseFloat(form.caloriesPer100g) || 0;
+    if (form.proteinPer100g !== "") payload.proteinPer100g = parseFloat(form.proteinPer100g) || 0;
+    if (form.carbsPer100g !== "") payload.carbsPer100g = parseFloat(form.carbsPer100g) || 0;
+    if (form.fatPer100g !== "") payload.fatPer100g = parseFloat(form.fatPer100g) || 0;
 
     if (editingItem) {
       await repository.ingredients.update(editingItem.id, payload);
@@ -89,7 +89,7 @@ export default function EstoquePage() {
   }
 
   async function handleDelete(id: string) {
-    if (!confirm("Excluir este insumo?")) return;
+    if (typeof window !== "undefined" && !window.confirm("Excluir este insumo?")) return;
     await repository.ingredients.delete(id);
     await loadIngredients();
   }

@@ -159,7 +159,7 @@ export default function PrevisaoPage() {
                     <span className="text-sm text-ink">{r.name}</span>
                     <div className="flex items-center gap-3">
                       <span className="text-xs text-muted">Rende {r.yield}{r.yieldUnit}</span>
-                      <span className="text-sm font-semibold text-ink">R$ {(r.totalCost / r.yield).toFixed(3)}/un</span>
+                      <span className="text-sm font-semibold text-ink">R$ {(r.yield > 0 ? r.totalCost / r.yield : 0).toFixed(3)}/un</span>
                     </div>
                   </div>
                 )) : (
@@ -186,9 +186,9 @@ export default function PrevisaoPage() {
                     {activeProducts.length > 0 ? activeProducts.map((p: any) => (
                       <tr key={p.id}>
                         <td className="px-2 py-2 text-ink font-medium">{p.name}</td>
-                        <td className="px-2 py-2 text-right text-ink">R$ {p.price.toFixed(2)}</td>
-                        <td className="px-2 py-2 text-right text-muted">R$ {p.cost.toFixed(3)}</td>
-                        <td className="px-2 py-2 text-right text-success font-medium">{p.margin.toFixed(1)}%</td>
+                        <td className="px-2 py-2 text-right text-ink">R$ {(p.price || 0).toFixed(2)}</td>
+                        <td className="px-2 py-2 text-right text-muted">R$ {(p.cost || 0).toFixed(3)}</td>
+                        <td className="px-2 py-2 text-right text-success font-medium">{(p.margin || 0).toFixed(1)}%</td>
                       </tr>
                     )) : (
                       <tr><td colSpan={4} className="px-2 py-4 text-center text-muted">Nenhum produto cadastrado</td></tr>
