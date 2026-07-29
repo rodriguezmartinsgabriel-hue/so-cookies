@@ -7,6 +7,9 @@ CREATE TYPE "OrderStatus" AS ENUM ('PENDENTE', 'CONFIRMADO', 'PRODUCAO', 'PRONTO
 -- CreateEnum
 CREATE TYPE "CashType" AS ENUM ('ENTRADA', 'SAIDA');
 
+-- CreateEnum
+CREATE TYPE "DocumentCategory" AS ENUM ('FICHA_TECNICA', 'MODO_PREPARO', 'HIGIENE', 'MANIPULACAO', 'TREINAMENTO', 'OUTROS');
+
 -- CreateTable
 CREATE TABLE "User" (
     "id" TEXT NOT NULL,
@@ -42,11 +45,16 @@ CREATE TABLE "Product" (
 CREATE TABLE "Ingredient" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
+    "brand" TEXT,
     "stockKg" DOUBLE PRECISION NOT NULL DEFAULT 0,
     "minStockKg" DOUBLE PRECISION NOT NULL DEFAULT 0,
     "costPerKg" DOUBLE PRECISION NOT NULL,
     "supplier" TEXT NOT NULL,
     "lastPurchase" TIMESTAMP(3),
+    "caloriesPer100g" DOUBLE PRECISION,
+    "proteinPer100g" DOUBLE PRECISION,
+    "carbsPer100g" DOUBLE PRECISION,
+    "fatPer100g" DOUBLE PRECISION,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -107,6 +115,7 @@ CREATE TABLE "Sale" (
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "channelId" TEXT NOT NULL,
     "userId" TEXT,
+    "orderId" TEXT,
 
     CONSTRAINT "Sale_pkey" PRIMARY KEY ("id")
 );
@@ -189,6 +198,22 @@ CREATE TABLE "DeliveryCost" (
     CONSTRAINT "DeliveryCost_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "Document" (
+    "id" TEXT NOT NULL,
+    "title" TEXT NOT NULL,
+    "description" TEXT,
+    "category" "DocumentCategory" NOT NULL,
+    "content" TEXT,
+    "fileUrl" TEXT,
+    "tags" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "userId" TEXT,
+
+    CONSTRAINT "Document_pkey" PRIMARY KEY ("id")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
 
@@ -200,3 +225,6 @@ CREATE UNIQUE INDEX "RecipeItem_recipeId_ingredientId_key" ON "RecipeItem"("reci
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Production_batchCode_key" ON "Production"("batchCode");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Sale_orderId_key" ON "Sale"("orderId");
