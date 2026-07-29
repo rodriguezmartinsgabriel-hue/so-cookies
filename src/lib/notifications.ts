@@ -100,7 +100,9 @@ export function useNotifications() {
 
       clearOldReads(notifs.map((n) => n.id))
       setNotifications(notifs)
-    } catch {}
+    } catch (e) {
+      console.error("Erro ao carregar notificações:", e)
+    }
     setLoading(false)
   }, [])
 

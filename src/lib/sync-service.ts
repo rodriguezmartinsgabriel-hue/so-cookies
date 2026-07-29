@@ -36,7 +36,9 @@ export async function pushPendingChanges() {
       }
       return { pushed: pending.length }
     }
-  } catch {}
+  } catch (e) {
+    console.error("Erro no push:", e)
+  }
   return { pushed: 0 }
 }
 
@@ -64,7 +66,9 @@ export async function pullChanges() {
       await setLastSyncTime(new Date().toISOString())
       return { pulled: (data.orders?.length || 0) + (data.sales?.length || 0) + (data.cashFlow?.length || 0) + (data.productions?.length || 0) + (data.ingredients?.length || 0) + (data.recipes?.length || 0) + (data.documents?.length || 0) + (data.deliveryCosts?.length || 0) }
     }
-  } catch {}
+  } catch (e) {
+    console.error("Erro no pull:", e)
+  }
   return { pulled: 0 }
 }
 
