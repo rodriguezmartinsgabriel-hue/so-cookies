@@ -1,0 +1,62 @@
+# CodeRabbit Configuration
+# https://docs.coderabbit.ai/guides/configure-coderabbit
+
+language: pt-BR
+early_access: true
+reviews:
+  profile: assertive
+  request_changes_workflow: true
+  high_level_summary: true
+  poem: false
+  review_status: true
+  collapse_walkthrough: false
+  auto_review:
+    enabled: true
+    drafts: false
+    base_branches:
+      - master
+      - main
+  path_filters:
+    - "!node_modules/**"
+    - "!src/generated/**"
+    - "!.next/**"
+  path_instructions:
+    - path: "src/**/*.ts"
+      instructions: |
+        Verifique:
+        1. Substituição de `any` por tipos concretos (importar de @/generated/prisma)
+        2. Validação Zod em todos os inputs de API
+        3. Tratamento de erros sem catch {} vazio
+        4. RBAC correto (requireAuth com role mínima)
+        5. useMemo/useCallback para dados derivados
+    - path: "prisma/schema.prisma"
+      instructions: |
+        Verifique:
+        1. Índices para consultas frequentes
+        2. Relacionamentos com onDelete adequados
+        3. RelatioName vs chaves estrangeiras
+    - path: "src/**/page.tsx"
+      instructions: |
+        Verifique:
+        1. Componentes extraídos (máx 200 linhas)
+        2. Tipagem com @/generated/prisma
+        3. Loading, empty, error states
+        4. Acessibilidade (aria, role, semantic HTML)
+  labeling_commands:
+    - command: auto
+      labels:
+        - "type: security"
+        - "type: bug"
+        - "type: performance"
+        - "type: accessibility"
+        - "type: enhancement"
+chat:
+  auto_reply: true
+knowledge_base:
+  learnings:
+    - scope: local
+      learnings:
+        - "O app é offline-first: operações vão para Dexie (IndexedDB) primeiro, depois sincronizam"
+        - "Roles são: ADMIN (tudo), OPERACIONAL (CRUD), VISUALIZADOR (leitura)"
+        - "sync push/pull com reconciliação de IDs temporários (offline_*)"
+        - "Prisma com adapter-pg e relationMode=prisma (sem FK real no banco)"
