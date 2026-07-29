@@ -35,6 +35,7 @@ yarn-error.log*
 
 # vercel
 .vercel
+.vercel-*
 
 # supabase local
 supabase/.temp/
@@ -49,5 +50,9 @@ next-env.d.ts
 public/sw*
 public/swe-worker*
 
-.vercel
+# env files
 .env*
+
+# planilhas exportadas
+parsed_output.txt
+planilha_data.*
