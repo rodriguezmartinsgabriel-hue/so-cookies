@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { requireAuth } from "@/lib/api-auth"
+import { updateDeliveryCostSchema } from "@/lib/validation"
 
 export async function PUT(
   request: Request,
@@ -11,9 +12,11 @@ export async function PUT(
   try {
     const { id } = await params
     const json = await request.json()
-    const cost = await prisma.deliveryCost.update({ where: { id }, data: json })
+    const parsed = updateDeliveryCostSchema.parse(json)
+    const cost = await prisma.deliveryCost.update({ where: { id }, data: parsed })
     return NextResponse.json(cost)
-  } catch (e) {
+  } catch (e: any) {
+    if (e?.issues) return NextResponse.json({ error: "Dados inválidos", details: e.issues }, { status: 400 })
     return NextResponse.json({ error: "Erro ao atualizar custo de entrega" }, { status: 500 })
   }
 }
