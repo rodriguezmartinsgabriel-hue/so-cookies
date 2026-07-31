@@ -10,7 +10,7 @@ export function proxy(request: NextRequest) {
     pathname.startsWith("/_next/static") ||
     pathname.startsWith("/serwist") ||
     pathname === "/favicon.ico" ||
-    pathname === "/manifest.ts" ||
+    pathname === "/manifest.webmanifest" ||
     pathname === "/~offline" ||
     pathname.startsWith("/api/auth");
 
@@ -19,6 +19,8 @@ export function proxy(request: NextRequest) {
   }
 
   const sessionToken =
+    request.cookies.get("authjs.session-token")?.value ||
+    request.cookies.get("__Secure-authjs.session-token")?.value ||
     request.cookies.get("next-auth.session-token")?.value ||
     request.cookies.get("__Secure-next-auth.session-token")?.value;
 
@@ -32,6 +34,6 @@ export function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico).*)",
+    "/((?!_next/static|_next/image|favicon.ico|.*\\..*).*)",
   ],
 };
