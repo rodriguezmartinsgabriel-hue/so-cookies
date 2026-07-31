@@ -319,4 +319,41 @@ async function reconcileIds(tempId: string, realId: string) {
       await db.contactInteractions.put({ ...interaction, id: realId, _synced: true })
     }
   }
+
+  const queued = await db.syncQueue.toArray()
+  for (const item of queued) {
+    const data = item.data
+    if (!data) continue
+    let changed = false
+    const next: Record<string, unknown> = { ...data }
+    if (item.action !== "create" && next.id === tempId) {
+      next.id = realId
+      changed = true
+    }
+    if (next.orderId === tempId) {
+      next.orderId = realId
+      changed = true
+    }
+    if (next.contactId === tempId) {
+      next.contactId = realId
+      changed = true
+    }
+    if (Array.isArray(next.ingredients)) {
+      let ingChanged = false
+      const ingredients = (next.ingredients as { ingredientId: string }[]).map((ing) => {
+        if (ing.ingredientId === tempId) {
+          ingChanged = true
+          return { ...ing, ingredientId: realId }
+        }
+        return ing
+      })
+      if (ingChanged) {
+        next.ingredients = ingredients
+        changed = true
+      }
+    }
+    if (changed && item.id) {
+      await db.syncQueue.update(item.id, { data: next })
+    }
+  }
 }

@@ -7,7 +7,7 @@ const iso = "2026-07-31T20:00:00.000Z"
 
 beforeEach(async () => {
   Object.defineProperty(navigator, "onLine", { configurable: true, value: true })
-  await Promise.all([db.cashFlow.clear(), db.syncQueue.clear(), db.syncMeta.clear(), db.contacts.clear()])
+  await Promise.all([db.cashFlow.clear(), db.syncQueue.clear(), db.syncMeta.clear(), db.contacts.clear(), db.ingredients.clear()])
 })
 
 afterEach(() => {
@@ -18,8 +18,8 @@ afterEach(() => {
 describe("sync pipeline", () => {
   it("merge não sobrescreve edições locais não sincronizadas (regressão bug _synced)", async () => {
     await db.cashFlow.bulkPut([
-      { id: "server-1", amount: 10, _synced: true },
-      { id: "offline_1", amount: 99, _synced: false },
+      { id: "server-1", type: "ENTRADA", category: "Venda", description: "x", amount: 10, date: iso, _synced: true, _updatedAt: iso },
+      { id: "offline_1", type: "ENTRADA", category: "Venda", description: "x", amount: 99, date: iso, _synced: false, _updatedAt: iso },
     ])
 
     vi.stubGlobal(
@@ -48,7 +48,7 @@ describe("sync pipeline", () => {
       { id: 1, action: "create", entity: "cashFlow", data: { type: "ENTRADA", category: "Venda", description: "x", amount: 5 }, tempId: "offline_x", createdAt: iso },
       { id: 2, action: "create", entity: "cashFlow", data: { type: "SAIDA", category: "Compra", description: "y", amount: 3 }, tempId: "offline_y", createdAt: iso },
     ])
-    await db.cashFlow.add({ id: "offline_x", amount: 5, _synced: false })
+    await db.cashFlow.add({ id: "offline_x", type: "ENTRADA", category: "Venda", description: "x", amount: 5, date: iso, _synced: false, _updatedAt: iso })
 
     vi.stubGlobal(
       "fetch",
@@ -100,7 +100,7 @@ describe("sync pipeline", () => {
   })
 
   it("pull preserva linhas locais não sincronizadas e carimba as demais", async () => {
-    await db.cashFlow.add({ id: "offline_z", amount: 77, _synced: false })
+    await db.cashFlow.add({ id: "offline_z", type: "ENTRADA", category: "Venda", description: "x", amount: 77, date: iso, _synced: false, _updatedAt: iso })
 
     vi.stubGlobal(
       "fetch",
@@ -121,5 +121,64 @@ describe("sync pipeline", () => {
     expect(offline?.amount).toBe(77)
     expect(offline?._synced).toBe(false)
     expect(rows).toHaveLength(2)
+  })
+
+  it("reconciliação reescreve itens update/delete que apontam para o tempId", async () => {
+    await db.syncQueue.bulkAdd([
+      { id: 1, action: "create", entity: "ingredient", data: { name: "Farinha" }, tempId: "offline_a", createdAt: iso },
+      { id: 2, action: "update", entity: "ingredient", data: { id: "offline_a", brand: "X" }, createdAt: iso },
+      { id: 3, action: "delete", entity: "ingredient", data: { id: "offline_a" }, createdAt: iso },
+    ])
+    await db.ingredients.add({ id: "offline_a", name: "Farinha", stockKg: 0, minStockKg: 0, costPerKg: 1, supplier: "", _synced: false, _updatedAt: iso })
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => {
+        return new Response(
+          JSON.stringify({ ok: false, processed: [{ queueId: 1, ok: true, tempId: "offline_a", realId: "real-a" }] }),
+          { status: 200 },
+        )
+      }),
+    )
+
+    await pushPendingChanges()
+
+    const queue = await db.syncQueue.toArray()
+    const update = queue.find((q) => q.action === "update")
+    const del = queue.find((q) => q.action === "delete")
+    expect(update?.data.id).toBe("real-a")
+    expect(del?.data.id).toBe("real-a")
+    expect(queue.some((q) => q.id === 1)).toBe(false)
+  })
+
+  it("reconciliação reescreve refs aninhadas em itens enfileirados (recipe → ingredient)", async () => {
+    await db.syncQueue.bulkAdd([
+      { id: 10, action: "create", entity: "ingredient", data: { name: "Aveia" }, tempId: "offline_b", createdAt: iso },
+      {
+        id: 11,
+        action: "create",
+        entity: "recipe",
+        data: { name: "Panqueca", yield: 1, yieldUnit: "un", totalCost: 0, ingredients: [{ ingredientId: "offline_b", qty: 2, unit: "g" }] },
+        tempId: "offline_c",
+        createdAt: iso,
+      },
+    ])
+    await db.ingredients.add({ id: "offline_b", name: "Aveia", stockKg: 0, minStockKg: 0, costPerKg: 1, supplier: "", _synced: false, _updatedAt: iso })
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => {
+        return new Response(
+          JSON.stringify({ ok: false, processed: [{ queueId: 10, ok: true, tempId: "offline_b", realId: "real-b" }] }),
+          { status: 200 },
+        )
+      }),
+    )
+
+    await pushPendingChanges()
+
+    const recipe = await db.syncQueue.get(11)
+    expect(recipe?.data.ingredients).toBeDefined()
+    expect((recipe?.data.ingredients as { ingredientId: string }[])[0].ingredientId).toBe("real-b")
   })
 })

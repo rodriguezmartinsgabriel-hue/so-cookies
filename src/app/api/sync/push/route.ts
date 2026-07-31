@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma"
 import type { Prisma } from "@/generated/prisma/client"
 import { requireAuth } from "@/lib/api-auth"
 import { applyOrderUpdate } from "@/lib/db"
+import { resolveRefs, runDelete } from "@/lib/sync-refs"
 import {
   createOrderSchema,
   updateOrderSchema,
@@ -130,6 +131,7 @@ export async function POST(request: Request) {
 
   const userLevel = ROLE_HIERARCHY[(session?.user?.role as string) || ""] || 0
   const processed: ProcessedEntry[] = []
+  const sessionMap = new Map<string, string>()
 
   for (const change of changes) {
     const entity = change?.entity as string
@@ -160,6 +162,8 @@ export async function POST(request: Request) {
       continue
     }
 
+    data = resolveRefs(data, sessionMap)
+
     try {
       switch (key) {
         case "order:create": {
@@ -189,7 +193,7 @@ export async function POST(request: Request) {
           break
         }
         case "order:delete": {
-          await prisma.order.delete({ where: { id: data.id } })
+          await runDelete(() => prisma.order.delete({ where: { id: data.id } }))
           entry.ok = true
           break
         }
@@ -227,7 +231,7 @@ export async function POST(request: Request) {
         case "sale:delete": {
           const sale = await prisma.sale.findUnique({ where: { id: data.id } })
           await prisma.saleItem.deleteMany({ where: { saleId: data.id } })
-          await prisma.sale.delete({ where: { id: data.id } })
+          await runDelete(() => prisma.sale.delete({ where: { id: data.id } }))
           if (sale?.orderId) {
             await prisma.order.update({ where: { id: sale.orderId }, data: { status: "PRONTO", updatedAt: new Date() } })
           }
@@ -263,7 +267,7 @@ export async function POST(request: Request) {
           break
         }
         case "cashFlow:delete": {
-          await prisma.cashFlow.delete({ where: { id: data.id } })
+          await runDelete(() => prisma.cashFlow.delete({ where: { id: data.id } }))
           entry.ok = true
           break
         }
@@ -296,7 +300,7 @@ export async function POST(request: Request) {
           break
         }
         case "production:delete": {
-          await prisma.production.delete({ where: { id: data.id } })
+          await runDelete(() => prisma.production.delete({ where: { id: data.id } }))
           entry.ok = true
           break
         }
@@ -332,7 +336,7 @@ export async function POST(request: Request) {
           break
         }
         case "ingredient:delete": {
-          await prisma.ingredient.delete({ where: { id: data.id } })
+          await runDelete(() => prisma.ingredient.delete({ where: { id: data.id } }))
           entry.ok = true
           break
         }
@@ -372,7 +376,7 @@ export async function POST(request: Request) {
           break
         }
         case "recipe:delete": {
-          await prisma.recipe.delete({ where: { id: data.id } })
+          await runDelete(() => prisma.recipe.delete({ where: { id: data.id } }))
           entry.ok = true
           break
         }
@@ -402,7 +406,7 @@ export async function POST(request: Request) {
           break
         }
         case "document:delete": {
-          await prisma.document.delete({ where: { id: data.id } })
+          await runDelete(() => prisma.document.delete({ where: { id: data.id } }))
           entry.ok = true
           break
         }
@@ -420,7 +424,7 @@ export async function POST(request: Request) {
           break
         }
         case "channel:delete": {
-          await prisma.saleChannel.delete({ where: { id: data.id } })
+          await runDelete(() => prisma.saleChannel.delete({ where: { id: data.id } }))
           entry.ok = true
           break
         }
@@ -442,7 +446,7 @@ export async function POST(request: Request) {
           break
         }
         case "priceTier:delete": {
-          await prisma.priceTier.delete({ where: { id: data.id } })
+          await runDelete(() => prisma.priceTier.delete({ where: { id: data.id } }))
           entry.ok = true
           break
         }
@@ -472,7 +476,7 @@ export async function POST(request: Request) {
           break
         }
         case "deliveryCost:delete": {
-          await prisma.deliveryCost.delete({ where: { id: data.id } })
+          await runDelete(() => prisma.deliveryCost.delete({ where: { id: data.id } }))
           entry.ok = true
           break
         }
@@ -507,7 +511,7 @@ export async function POST(request: Request) {
         }
         case "contact:delete": {
           await prisma.contactInteraction.deleteMany({ where: { contactId: data.id } })
-          await prisma.contact.delete({ where: { id: data.id } })
+          await runDelete(() => prisma.contact.delete({ where: { id: data.id } }))
           entry.ok = true
           break
         }
@@ -524,7 +528,7 @@ export async function POST(request: Request) {
           break
         }
         case "contactInteraction:delete": {
-          await prisma.contactInteraction.delete({ where: { id: data.id } })
+          await runDelete(() => prisma.contactInteraction.delete({ where: { id: data.id } }))
           entry.ok = true
           break
         }
@@ -533,7 +537,17 @@ export async function POST(request: Request) {
       console.error(`Sync error for ${key}`, e)
       entry.error = "Erro ao aplicar alteração"
     }
+    if (entry.ok && entry.tempId && entry.realId) {
+      sessionMap.set(entry.tempId, entry.realId)
+    }
     processed.push(entry)
+  }
+
+  try {
+    const cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+    await prisma.syncApply.deleteMany({ where: { appliedAt: { lt: cutoff } } })
+  } catch (e) {
+    console.error("Falha ao purgar SyncApply:", e)
   }
 
   return NextResponse.json({ ok: processed.every((p) => p.ok), processed })
