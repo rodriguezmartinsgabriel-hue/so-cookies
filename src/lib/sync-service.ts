@@ -1,4 +1,4 @@
-import { db, getLastSyncTime, setLastSyncTime } from "./db-local"
+import { db, getLastSyncTime, setLastSyncTime, addSyncError } from "./db-local"
 
 const ENTITY_TABLES: Record<string, string> = {
   order: "orders",
@@ -49,11 +49,13 @@ export async function pushPendingChanges() {
       const toDelete: number[] = []
       for (const p of processed) {
         if (!p.ok) {
-          if (typeof p.queueId === "number") {
-            const item = await db.syncQueue.get(p.queueId)
-            const attempts = (item?.attempts || 0) + 1
-            if (attempts >= 5) {
-              console.error(`Sync: descartando alteração após ${attempts} tentativas (${item?.entity}:${item?.action})`, p.error)
+          const item = typeof p.queueId === "number" ? await db.syncQueue.get(p.queueId) : undefined
+          const attempts = (item?.attempts || 0) + 1
+          const dropped = attempts >= 5
+          await addSyncError({ entity: item?.entity || "desconhecido", action: item?.action || "?", error: p.error || "Erro desconhecido", dropped })
+          if (item && typeof p.queueId === "number") {
+            if (dropped) {
+              console.error(`Sync: descartando alteração após ${attempts} tentativas (${item.entity}:${item.action})`, p.error)
               await db.syncQueue.delete(p.queueId)
             } else {
               await db.syncQueue.update(p.queueId, { attempts })

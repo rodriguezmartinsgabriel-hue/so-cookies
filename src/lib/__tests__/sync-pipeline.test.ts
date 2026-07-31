@@ -7,7 +7,7 @@ const iso = "2026-07-31T20:00:00.000Z"
 
 beforeEach(async () => {
   Object.defineProperty(navigator, "onLine", { configurable: true, value: true })
-  await Promise.all([db.cashFlow.clear(), db.syncQueue.clear(), db.syncMeta.clear(), db.contacts.clear(), db.ingredients.clear()])
+  await Promise.all([db.cashFlow.clear(), db.syncQueue.clear(), db.syncMeta.clear(), db.contacts.clear(), db.ingredients.clear(), db.syncErrors.clear()])
 })
 
 afterEach(() => {
@@ -180,5 +180,49 @@ describe("sync pipeline", () => {
     const recipe = await db.syncQueue.get(11)
     expect(recipe?.data.ingredients).toBeDefined()
     expect((recipe?.data.ingredients as { ingredientId: string }[])[0].ingredientId).toBe("real-b")
+  })
+
+  it("push registra erros de itens falhos em syncErrors", async () => {
+    await db.syncQueue.add({ id: 20, action: "update", entity: "cashFlow", data: { id: "server-1", description: "" }, createdAt: iso })
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => {
+        return new Response(JSON.stringify({ ok: false, processed: [{ queueId: 20, ok: false, error: "Dados inválidos" }] }), { status: 200 })
+      }),
+    )
+
+    await pushPendingChanges()
+
+    const errs = await db.syncErrors.toArray()
+    expect(errs).toHaveLength(1)
+    expect(errs[0].entity).toBe("cashFlow")
+    expect(errs[0].action).toBe("update")
+    expect(errs[0].error).toBe("Dados inválidos")
+    expect(errs[0].dropped).toBe(false)
+
+    const queue = await db.syncQueue.toArray()
+    expect(queue).toHaveLength(1)
+    expect(queue[0].attempts).toBe(1)
+  })
+
+  it("push marca erro como descartado ao dropar poison pill", async () => {
+    await db.syncQueue.add({ id: 21, action: "update", entity: "cashFlow", data: { id: "server-1", description: "" }, attempts: 4, createdAt: iso })
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => {
+        return new Response(JSON.stringify({ ok: false, processed: [{ queueId: 21, ok: false, error: "Dados inválidos" }] }), { status: 200 })
+      }),
+    )
+
+    await pushPendingChanges()
+
+    const errs = await db.syncErrors.toArray()
+    expect(errs).toHaveLength(1)
+    expect(errs[0].dropped).toBe(true)
+
+    const queue = await db.syncQueue.toArray()
+    expect(queue).toHaveLength(0)
   })
 })

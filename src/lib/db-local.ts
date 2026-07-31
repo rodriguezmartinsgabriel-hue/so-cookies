@@ -199,6 +199,15 @@ export interface SyncQueueItem {
   attempts?: number
 }
 
+export interface SyncErrorItem {
+  id?: number
+  entity: string
+  action: string
+  error: string
+  dropped: boolean
+  createdAt: string
+}
+
 const db = new Dexie("SoManagerDB") as Dexie & {
   orders: EntityTable<LocalOrder, "id">
   orderItems: EntityTable<LocalOrderItem, "id">
@@ -218,6 +227,7 @@ const db = new Dexie("SoManagerDB") as Dexie & {
   contactInteractions: EntityTable<LocalContactInteraction, "id">
   syncQueue: EntityTable<SyncQueueItem, "id">
   syncMeta: EntityTable<{ key: string; value: string }, "key">
+  syncErrors: EntityTable<SyncErrorItem, "id">
 }
 
 db.version(1).stores({
@@ -272,6 +282,28 @@ db.version(3).stores({
   contactInteractions: "id, contactId, _synced, createdAt",
 })
 
+db.version(4).stores({
+  orders: "id, status, _synced, createdAt",
+  orderItems: "id, orderId, _synced",
+  sales: "id, _synced, createdAt",
+  saleItems: "id, saleId, _synced",
+  cashFlow: "id, _synced, date",
+  productions: "id, _synced, startTime",
+  products: "id, _synced",
+  syncQueue: "++id, entity, createdAt",
+  syncMeta: "key",
+  ingredients: "id, _synced",
+  channels: "id, _synced",
+  priceTiers: "id, _synced, productId",
+  recipes: "id, _synced",
+  recipeItems: "id, recipeId, _synced",
+  documents: "id, _synced, category",
+  deliveryCosts: "id, _synced, date",
+  contacts: "id, _synced, type",
+  contactInteractions: "id, contactId, _synced, createdAt",
+  syncErrors: "++id, createdAt",
+})
+
 export { db }
 
 export async function getLastSyncTime(): Promise<string> {
@@ -293,4 +325,23 @@ export async function clearSyncQueue() {
 
 export async function getPendingSyncCount(): Promise<number> {
   return db.syncQueue.count()
+}
+
+const SYNC_ERRORS_CAP = 100
+
+export async function addSyncError(data: { entity: string; action: string; error: string; dropped?: boolean }) {
+  await db.syncErrors.add({ ...data, dropped: data.dropped || false, createdAt: new Date().toISOString() })
+  const count = await db.syncErrors.count()
+  if (count > SYNC_ERRORS_CAP) {
+    const oldest = await db.syncErrors.orderBy("id").limit(count - SYNC_ERRORS_CAP).toArray()
+    await db.syncErrors.bulkDelete(oldest.map((r) => r.id!).filter((id): id is number => id !== undefined))
+  }
+}
+
+export async function getSyncErrors(): Promise<SyncErrorItem[]> {
+  return db.syncErrors.orderBy("id").reverse().limit(50).toArray()
+}
+
+export async function clearSyncErrors() {
+  await db.syncErrors.clear()
 }
