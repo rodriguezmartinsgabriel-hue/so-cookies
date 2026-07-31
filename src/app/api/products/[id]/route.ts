@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { getProduct, updateProduct, deleteProduct } from "@/lib/db"
+import { getProduct, updateProduct, deleteProduct, isNotFoundError } from "@/lib/db"
 import { requireAuth } from "@/lib/api-auth"
 import { updateProductSchema } from "@/lib/validation"
 
@@ -48,6 +48,7 @@ export async function DELETE(
     await deleteProduct(id)
     return NextResponse.json({ ok: true })
   } catch (e) {
+    if (isNotFoundError(e)) return NextResponse.json({ error: "Não encontrado" }, { status: 404 })
     return NextResponse.json({ error: "Erro ao deletar produto" }, { status: 500 })
   }
 }

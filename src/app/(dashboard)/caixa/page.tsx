@@ -8,6 +8,18 @@ import { ErrorState } from "@/components/ui/ErrorState"
 import { repository } from "@/lib/repository"
 import { Plus, ArrowUpRight, ArrowDownLeft, X, Trash2, Edit } from "lucide-react"
 
+function localDateString(d: Date) {
+  const pad = (n: number) => String(n).padStart(2, "0")
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+}
+
+function displayDate(date: string) {
+  if (!date) return "—"
+  const parts = date.split("T")[0].split("-")
+  if (parts.length !== 3) return date
+  return `${parts[2]}/${parts[1]}/${parts[0]}`
+}
+
 export default function CaixaPage() {
   const [showModal, setShowModal] = useState(false)
   const modalRef = useFocusTrap(showModal)
@@ -21,7 +33,7 @@ export default function CaixaPage() {
   const [formCategory, setFormCategory] = useState("")
   const [formDescription, setFormDescription] = useState("")
   const [formAmount, setFormAmount] = useState("")
-  const [formDate, setFormDate] = useState(new Date().toISOString().split("T")[0])
+  const [formDate, setFormDate] = useState(localDateString(new Date()))
 
   const [editType, setEditType] = useState<"ENTRADA" | "SAIDA">("ENTRADA")
   const [editCategory, setEditCategory] = useState("")
@@ -55,7 +67,7 @@ export default function CaixaPage() {
     setFormCategory("")
     setFormDescription("")
     setFormAmount("")
-    setFormDate(new Date().toISOString().split("T")[0])
+    setFormDate(localDateString(new Date()))
     await loadEntries()
   }
 
@@ -65,7 +77,7 @@ export default function CaixaPage() {
     setEditCategory(entry.category || "")
     setEditDescription(entry.description || "")
     setEditAmount(String(Math.abs(entry.amount || 0)))
-    setEditDate(entry.date ? new Date(entry.date).toISOString().split("T")[0] : "")
+    setEditDate(entry.date ? entry.date.split("T")[0] : "")
     setShowEditModal(true)
   }
 
@@ -89,7 +101,7 @@ export default function CaixaPage() {
     await loadEntries()
   }
 
-  const today = new Date().toISOString().split("T")[0]
+  const today = localDateString(new Date())
   const todayIn = entries
     .filter((e: any) => e.type === "ENTRADA" && e.date?.startsWith(today))
     .reduce((sum: number, e: any) => sum + (e.amount || 0), 0)
@@ -183,7 +195,7 @@ export default function CaixaPage() {
                       <td className={`px-4 py-3 text-sm font-semibold text-right ${(entry.amount || 0) >= 0 ? "text-success" : "text-danger"}`}>
                         R$ {Math.abs(entry.amount || 0).toFixed(2)}
                       </td>
-                      <td className="px-4 py-3 text-sm text-muted">{entry.date ? new Date(entry.date).toLocaleDateString("pt-BR") : "—"}</td>
+                      <td className="px-4 py-3 text-sm text-muted">{displayDate(entry.date)}</td>
                       <td className="px-4 py-3 text-center">
                         <div className="flex items-center justify-center gap-1">
                           <button onClick={() => openEdit(entry)} aria-label="Editar" className="p-1.5 rounded-md hover:bg-cream text-muted"><Edit className="w-4 h-4" /></button>

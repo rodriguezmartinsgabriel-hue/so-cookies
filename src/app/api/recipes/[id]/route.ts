@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { requireAuth } from "@/lib/api-auth"
+import { isNotFoundError } from "@/lib/db"
 import { updateRecipeSchema } from "@/lib/validation"
 
 export async function GET(
@@ -67,6 +68,7 @@ export async function DELETE(
     await prisma.recipe.delete({ where: { id } })
     return NextResponse.json({ ok: true })
   } catch (e) {
+    if (isNotFoundError(e)) return NextResponse.json({ error: "Não encontrado" }, { status: 404 })
     return NextResponse.json({ error: "Erro ao deletar receita" }, { status: 500 })
   }
 }

@@ -123,18 +123,21 @@ export default function ReceitasPage() {
         })),
     };
 
-    if (editingRecipe) {
-      await fetch(`/api/recipes/${editingRecipe.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-    } else {
-      await fetch("/api/recipes", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
+    const res = editingRecipe
+      ? await fetch(`/api/recipes/${editingRecipe.id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        })
+      : await fetch("/api/recipes", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+    if (!res.ok) {
+      const data = await res.json().catch(() => null);
+      alert(data?.error || "Erro ao salvar receita");
+      return;
     }
     setShowModal(false);
     resetForm();
@@ -143,7 +146,12 @@ export default function ReceitasPage() {
 
   async function handleDelete(id: string) {
     if (!confirm("Excluir esta receita?")) return;
-    await fetch(`/api/recipes/${id}`, { method: "DELETE" });
+    const res = await fetch(`/api/recipes/${id}`, { method: "DELETE" });
+    if (!res.ok) {
+      const data = await res.json().catch(() => null);
+      alert(data?.error || "Erro ao excluir receita");
+      return;
+    }
     await loadAll();
   }
 

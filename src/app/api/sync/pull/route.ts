@@ -6,8 +6,15 @@ export async function POST(request: Request) {
   const { error } = await requireAuth()
   if (error) return error
   try {
-    const { since } = await request.json()
-    const sinceDate = new Date(since)
+    let since: string | undefined
+    try {
+      const body = await request.json()
+      since = body?.since
+    } catch {
+      since = undefined
+    }
+    const sinceDate = since ? new Date(since) : new Date(0)
+    if (isNaN(sinceDate.getTime())) sinceDate.setTime(0)
 
     const [orders, sales, cashFlow, productions, ingredients, recipes, documents, deliveryCosts] = await Promise.all([
       prisma.order.findMany({

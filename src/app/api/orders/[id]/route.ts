@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { getOrder, updateOrder, deleteOrder } from "@/lib/db"
+import { getOrder, applyOrderUpdate, deleteOrder, isNotFoundError } from "@/lib/db"
 import { requireAuth } from "@/lib/api-auth"
 import { updateOrderSchema } from "@/lib/validation"
 
@@ -29,7 +29,7 @@ export async function PUT(
     const { id } = await params
     const json = await request.json()
     const parsed = updateOrderSchema.parse(json)
-    const order = await updateOrder(id, parsed)
+    const order = await applyOrderUpdate(id, parsed)
     return NextResponse.json(order)
   } catch (e: any) {
     if (e?.issues) return NextResponse.json({ error: "Dados inválidos", details: e.issues }, { status: 400 })
@@ -48,6 +48,7 @@ export async function DELETE(
     await deleteOrder(id)
     return NextResponse.json({ ok: true })
   } catch (e) {
+    if (isNotFoundError(e)) return NextResponse.json({ error: "Não encontrado" }, { status: 404 })
     return NextResponse.json({ error: "Erro ao deletar pedido" }, { status: 500 })
   }
 }

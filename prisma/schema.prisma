@@ -4,7 +4,7 @@ generator client {
 }
 
 datasource db {
-  provider   = "postgresql"
+  provider     = "postgresql"
   relationMode = "prisma"
 }
 
@@ -190,6 +190,7 @@ enum OrderStatus {
   PRONTO
   ENTREGA
   CONCLUIDO
+  CANCELADO
 }
 
 model OrderItem {

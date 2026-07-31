@@ -69,7 +69,7 @@ export default function HomePage() {
       if (kpisResp.status === "fulfilled" && kpisResp.value.ok) {
         setKpis(await kpisResp.value.json());
       } else {
-        setKpis({ revenue: 450, profit: 130, margin: 28.9, ordersToday: 2, pendingOrders: 0, todayIn: 450, todayOut: 320, todayBalance: 130 });
+        setKpis(null);
       }
 
       if (ordersResp.status === "fulfilled" && ordersResp.value.ok) {

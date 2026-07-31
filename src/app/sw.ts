@@ -1,6 +1,7 @@
 import { defaultCache } from "@serwist/next/worker"
 import type { PrecacheEntry, SerwistGlobalConfig } from "serwist"
 import { Serwist } from "serwist"
+import { pushPendingChanges, pullChanges } from "../lib/sync-service"
 
 declare global {
   interface WorkerGlobalScope extends SerwistGlobalConfig {
@@ -36,10 +37,16 @@ self.addEventListener("sync", (event) => {
   }
 })
 
+self.addEventListener("message", (event) => {
+  if (event.data?.type === "TRIGGER_SYNC") {
+    event.waitUntil(handleBackgroundSync())
+  }
+})
+
 async function handleBackgroundSync() {
   try {
-    await fetch("/api/sync/push", { method: "POST" })
-    await fetch("/api/sync/pull", { method: "POST" })
+    await pushPendingChanges()
+    await pullChanges()
   } catch (e) {
     console.error("Background sync failed:", e)
   }

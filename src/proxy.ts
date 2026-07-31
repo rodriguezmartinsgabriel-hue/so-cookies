@@ -6,7 +6,6 @@ export function proxy(request: NextRequest) {
 
   const isPublicRoute =
     pathname === "/login" ||
-    pathname.startsWith("/cardapio") ||
     pathname.startsWith("/_next/static") ||
     pathname.startsWith("/serwist") ||
     pathname === "/favicon.ico" ||

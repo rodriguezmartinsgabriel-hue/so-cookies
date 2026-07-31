@@ -366,14 +366,22 @@ function PriceTiersTab() {
     load();
   }, []);
 
+  function productName(tier: any) {
+    return products.find((p: any) => p.id === tier.productId)?.name || "—";
+  }
+
   async function handleSave() {
     if (!form.name || !form.price) return;
+    if (!form.productId) {
+      alert("Selecione um produto");
+      return;
+    }
     const payload = {
       name: form.name,
       minQty: parseInt(form.minQty) || 1,
       maxQty: form.maxQty ? parseInt(form.maxQty) : undefined,
       price: parseFloat(form.price) || 0,
-      productId: form.productId || undefined,
+      productId: form.productId,
     };
     if (editingTier) {
       await repository.priceTiers.update(editingTier.id, payload);
@@ -430,6 +438,7 @@ function PriceTiersTab() {
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-line">
+                    <th className="text-left text-xs font-semibold text-muted uppercase tracking-wide px-4 py-2">Produto</th>
                     <th className="text-left text-xs font-semibold text-muted uppercase tracking-wide px-4 py-2">Faixa</th>
                     <th className="text-right text-xs font-semibold text-muted uppercase tracking-wide px-4 py-2">Qtd Mín</th>
                     <th className="text-right text-xs font-semibold text-muted uppercase tracking-wide px-4 py-2">Qtd Máx</th>
@@ -440,6 +449,7 @@ function PriceTiersTab() {
                 <tbody className="divide-y divide-line">
                   {assadoTiers.map((tier: any) => (
                     <tr key={tier.id} className="hover:bg-cream/50">
+                      <td className="px-4 py-3 text-sm text-muted">{productName(tier)}</td>
                       <td className="px-4 py-3 text-sm font-medium text-ink">{tier.name}</td>
                       <td className="px-4 py-3 text-sm text-right text-muted">{tier.minQty}</td>
                       <td className="px-4 py-3 text-sm text-right text-muted">{tier.maxQty || "∞"}</td>
@@ -465,6 +475,7 @@ function PriceTiersTab() {
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-line">
+                    <th className="text-left text-xs font-semibold text-muted uppercase tracking-wide px-4 py-2">Produto</th>
                     <th className="text-left text-xs font-semibold text-muted uppercase tracking-wide px-4 py-2">Faixa</th>
                     <th className="text-right text-xs font-semibold text-muted uppercase tracking-wide px-4 py-2">Qtd</th>
                     <th className="text-right text-xs font-semibold text-muted uppercase tracking-wide px-4 py-2">Preço Pacote</th>
@@ -475,6 +486,7 @@ function PriceTiersTab() {
                 <tbody className="divide-y divide-line">
                   {congeladoTiers.map((tier: any) => (
                     <tr key={tier.id} className="hover:bg-cream/50">
+                      <td className="px-4 py-3 text-sm text-muted">{productName(tier)}</td>
                       <td className="px-4 py-3 text-sm font-medium text-ink">{tier.name}</td>
                       <td className="px-4 py-3 text-sm text-right text-muted">{tier.minQty}</td>
                       <td className="px-4 py-3 text-sm font-semibold text-ink text-right">R$ {(tier.price * tier.minQty).toFixed(2)}</td>
@@ -502,6 +514,19 @@ function PriceTiersTab() {
               <button onClick={() => { setShowModal(false); setEditingTier(null); }} data-close-modal aria-label="Fechar" className="p-1.5 rounded-md hover:bg-cream text-muted"><X className="w-5 h-5" /></button>
             </div>
             <div className="p-4 space-y-4">
+              <div>
+                <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Produto *</label>
+                <select
+                  value={form.productId}
+                  onChange={(e) => setForm({ ...form, productId: e.target.value })}
+                  className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink bg-paper focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink transition-colors"
+                >
+                  <option value="">Selecione um produto</option>
+                  {products.map((p: any) => (
+                    <option key={p.id} value={p.id}>{p.name}</option>
+                  ))}
+                </select>
+              </div>
               <div>
                 <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Nome da Faixa</label>
                 <input type="text" placeholder="Ex: Assado 3un" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink placeholder:text-kraft focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink transition-colors" />

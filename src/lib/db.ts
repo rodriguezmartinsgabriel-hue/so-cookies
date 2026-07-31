@@ -1,5 +1,9 @@
 import { prisma } from "./prisma";
 
+export function isNotFoundError(e: unknown): boolean {
+  return typeof e === "object" && e !== null && "code" in e && (e as any).code === "P2025";
+}
+
 export async function getDashboardKpis() {
   const now = new Date();
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -94,41 +98,66 @@ export async function createOrder(data: { channel: string; customer: string; tot
   });
 }
 
-export async function updateOrderStatus(id: string, status: string) {
-  const order = await prisma.order.update({ where: { id }, data: { status: status as any }, include: { items: true, sale: true } });
-  if (status === "CONCLUIDO" && !order.sale) {
-    await createSaleFromOrder(order);
-  }
-  return order;
-}
+type Tx = Parameters<Parameters<typeof prisma.$transaction>[0]>[0]
 
-export async function createSaleFromOrder(order: { id: string; channel: string; total: number; items: { productId: string; qty: number; price: number }[] }) {
-  const channels = await prisma.saleChannel.findMany();
-  const matchChannel = channels.find((c) => c.name.toLowerCase() === order.channel.toLowerCase());
-  const channelId = matchChannel?.id || channels[0]?.id;
-  if (!channelId) return null;
-  return prisma.sale.create({
+async function createSaleForOrder(
+  tx: Tx,
+  order: { id: string; channel: string; total: number; items: { productId: string; qty: number; price: number }[] },
+) {
+  const channels = await tx.saleChannel.findMany()
+  const matchChannel = channels.find((c) => c.name.toLowerCase() === order.channel.toLowerCase())
+  const channelId = matchChannel?.id || channels[0]?.id
+  if (!channelId) return null
+  return tx.sale.create({
     data: {
       total: order.total,
       channelId,
       orderId: order.id,
       items: { create: order.items.map((item) => ({ productId: item.productId, qty: item.qty, price: item.price })) },
     },
-    include: { items: true },
-  });
+  })
+}
+
+export async function updateOrderStatus(id: string, status: string) {
+  return prisma.$transaction(async (tx) => {
+    const order = await tx.order.update({
+      where: { id },
+      data: { status: status as any, updatedAt: new Date() },
+      include: { items: true, sale: true },
+    })
+    if (status === "CONCLUIDO" && !order.sale) {
+      await createSaleForOrder(tx, order)
+    }
+    return order
+  })
+}
+
+export async function applyOrderUpdate(id: string, data: Partial<{ channel: string; customer: string; notes: string; status: string }>) {
+  return prisma.$transaction(async (tx) => {
+    const updateData: Record<string, unknown> = { ...data, updatedAt: new Date() }
+    const order = await tx.order.update({
+      where: { id },
+      data: updateData,
+      include: { items: true, sale: true },
+    })
+    if (data.status === "CONCLUIDO" && !order.sale) {
+      await createSaleForOrder(tx, order)
+    }
+    return order
+  })
 }
 
 export async function updateOrder(id: string, data: Partial<{ channel: string; customer: string; notes: string; status: string }>) {
-  const updateData: Record<string, unknown> = {};
-  if (data.channel) updateData.channel = data.channel;
-  if (data.customer) updateData.customer = data.customer;
-  if (data.notes !== undefined) updateData.notes = data.notes;
-  if (data.status) updateData.status = data.status;
-  return prisma.order.update({ where: { id }, data: updateData, include: { items: { include: { product: true } } } });
+  const updateData: Record<string, unknown> = {}
+  if (data.channel) updateData.channel = data.channel
+  if (data.customer) updateData.customer = data.customer
+  if (data.notes !== undefined) updateData.notes = data.notes
+  if (data.status) updateData.status = data.status
+  return prisma.order.update({ where: { id }, data: updateData, include: { items: { include: { product: true } } } })
 }
 
 export async function deleteOrder(id: string) {
-  return prisma.order.delete({ where: { id }, include: { items: true } });
+  return prisma.order.delete({ where: { id }, include: { items: true } })
 }
 
 export async function getCashFlow() {

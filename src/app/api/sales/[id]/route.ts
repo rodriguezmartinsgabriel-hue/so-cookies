@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { getSale, deleteSale } from "@/lib/db"
+import { getSale, deleteSale, isNotFoundError } from "@/lib/db"
 import { requireAuth } from "@/lib/api-auth"
 
 export async function GET(
@@ -29,6 +29,7 @@ export async function DELETE(
     await deleteSale(id)
     return NextResponse.json({ ok: true })
   } catch (e) {
+    if (isNotFoundError(e)) return NextResponse.json({ error: "Não encontrado" }, { status: 404 })
     return NextResponse.json({ error: "Erro ao deletar venda" }, { status: 500 })
   }
 }

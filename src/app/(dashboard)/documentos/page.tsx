@@ -85,18 +85,21 @@ export default function DocumentosPage() {
     if (!form.title) return;
     const payload = { ...form };
 
-    if (editingDoc) {
-      await fetch(`/api/documents/${editingDoc.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-    } else {
-      await fetch("/api/documents", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
+    const res = editingDoc
+      ? await fetch(`/api/documents/${editingDoc.id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        })
+      : await fetch("/api/documents", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+    if (!res.ok) {
+      const data = await res.json().catch(() => null);
+      alert(data?.error || "Erro ao salvar documento");
+      return;
     }
     setShowModal(false);
     resetForm();
@@ -105,7 +108,12 @@ export default function DocumentosPage() {
 
   async function handleDelete(id: string) {
     if (!confirm("Excluir este documento?")) return;
-    await fetch(`/api/documents/${id}`, { method: "DELETE" });
+    const res = await fetch(`/api/documents/${id}`, { method: "DELETE" });
+    if (!res.ok) {
+      const data = await res.json().catch(() => null);
+      alert(data?.error || "Erro ao excluir documento");
+      return;
+    }
     await loadDocs();
   }
 

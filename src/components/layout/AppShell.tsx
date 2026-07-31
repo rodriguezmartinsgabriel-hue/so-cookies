@@ -14,7 +14,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
   useEffect(() => {
-    if (status === "unauthenticated" && pathname !== "/login" && !pathname.startsWith("/cardapio")) {
+    if (status === "unauthenticated" && pathname !== "/login") {
       router.push("/login");
     }
   }, [status, pathname, router]);
@@ -30,7 +30,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (status === "unauthenticated" && pathname !== "/login" && !pathname.startsWith("/cardapio")) {
+  if (status === "unauthenticated" && pathname !== "/login") {
     return null;
   }
 

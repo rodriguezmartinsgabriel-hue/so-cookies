@@ -12,15 +12,17 @@ export const createOrderSchema = z.object({
   })).min(1, "Pelo menos 1 item"),
 })
 
+export const ORDER_STATUSES = ["PENDENTE", "CONFIRMADO", "PRODUCAO", "PRONTO", "ENTREGA", "CONCLUIDO", "CANCELADO"] as const
+
 export const updateOrderSchema = z.object({
   channel: z.string().min(1).optional(),
   customer: z.string().min(1).optional(),
   notes: z.string().optional(),
-  status: z.enum(["PENDENTE", "CONFIRMADO", "PRODUCAO", "PRONTO", "ENTREGA", "CONCLUIDO"]).optional(),
+  status: z.enum(ORDER_STATUSES).optional(),
 })
 
 export const updateOrderStatusSchema = z.object({
-  status: z.enum(["PENDENTE", "CONFIRMADO", "PRODUCAO", "PRONTO", "ENTREGA", "CONCLUIDO"]),
+  status: z.enum(ORDER_STATUSES),
 })
 
 export const createSaleSchema = z.object({
