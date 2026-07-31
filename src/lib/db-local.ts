@@ -196,6 +196,7 @@ export interface SyncQueueItem {
   data: Record<string, unknown>
   tempId?: string
   createdAt: string
+  attempts?: number
 }
 
 const db = new Dexie("SoManagerDB") as Dexie & {

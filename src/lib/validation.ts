@@ -83,7 +83,7 @@ export const createRecipeSchema = z.object({
 export const createCashFlowSchema = z.object({
   type: z.enum(["ENTRADA", "SAIDA"]),
   category: z.string().min(1, "Categoria é obrigatória"),
-  description: z.string().min(1, "Descrição é obrigatória"),
+  description: z.string().optional(),
   amount: z.number().min(0, "Valor deve ser positivo"),
   userId: z.string().optional(),
   date: z.string().optional(),
@@ -92,7 +92,7 @@ export const createCashFlowSchema = z.object({
 export const updateCashFlowSchema = z.object({
   type: z.enum(["ENTRADA", "SAIDA"]).optional(),
   category: z.string().min(1).optional(),
-  description: z.string().min(1).optional(),
+  description: z.string().optional(),
   amount: z.number().min(0).optional(),
   date: z.string().optional(),
 })

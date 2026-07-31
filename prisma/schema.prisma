@@ -69,8 +69,8 @@ model Ingredient {
   proteinPer100g  Float?
   carbsPer100g    Float?
   fatPer100g      Float?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   recipeItems RecipeItem[]
 
@@ -134,6 +134,7 @@ model Sale {
   id        String   @id @default(cuid())
   total     Float
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   channel   SaleChannel @relation(fields: [channelId], references: [id])
   channelId String
@@ -146,6 +147,7 @@ model Sale {
 
   @@index([channelId])
   @@index([createdAt])
+  @@index([updatedAt])
   @@index([userId])
 }
 
@@ -214,6 +216,7 @@ model CashFlow {
   description String
   amount      Float
   date        DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
 
   user   User? @relation(fields: [userId], references: [id])
   userId String?
@@ -221,6 +224,7 @@ model CashFlow {
   @@index([type])
   @@index([category])
   @@index([date])
+  @@index([updatedAt])
 }
 
 enum CashType {
@@ -255,8 +259,12 @@ model DeliveryCost {
   amount    Float
   notes     String?
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   order Order? @relation(fields: [orderId], references: [id])
+
+  @@index([date])
+  @@index([updatedAt])
 }
 
 model Document {
@@ -330,4 +338,15 @@ enum InteractionType {
   WHATSAPP
   VISITA
   OUTRO
+}
+
+model SyncApply {
+  id        String   @id @default(cuid())
+  entity    String
+  tempId    String
+  realId    String
+  appliedAt DateTime @default(now())
+
+  @@unique([entity, tempId])
+  @@index([appliedAt])
 }

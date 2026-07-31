@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { z } from "zod"
 import { prisma } from "@/lib/prisma"
+import type { Prisma } from "@/generated/prisma/client"
 import { requireAuth } from "@/lib/api-auth"
 import { applyOrderUpdate } from "@/lib/db"
 import {
@@ -31,7 +32,6 @@ import {
 const ROLE_HIERARCHY: Record<string, number> = { ADMIN: 3, OPERACIONAL: 2, VISUALIZADOR: 1 }
 
 function minRoleFor(entity: string, action: string): "ADMIN" | "OPERACIONAL" {
-  if (entity === "priceTier" && action === "create") return "ADMIN"
   if (entity === "production" && action === "delete") return "ADMIN"
   return "OPERACIONAL"
 }
@@ -78,6 +78,41 @@ const syncSchemas: Record<string, z.ZodTypeAny> = {
   "contactInteraction:delete": idSchema,
 }
 
+type Tx = Prisma.TransactionClient
+
+interface ProcessedEntry {
+  queueId?: number | null
+  ok: boolean
+  tempId?: string
+  realId?: string
+  error?: string
+}
+
+async function applyCreate(
+  entity: string,
+  tempId: string | undefined,
+  create: (tx: Tx) => Promise<{ id: string }>
+): Promise<string> {
+  if (!tempId) {
+    const created = await create(prisma)
+    return created.id
+  }
+  const existing = await prisma.syncApply.findUnique({ where: { entity_tempId: { entity, tempId } } })
+  if (existing) return existing.realId
+  try {
+    const created = await prisma.$transaction(async (tx) => {
+      const row = await create(tx)
+      await tx.syncApply.create({ data: { entity, tempId, realId: row.id } })
+      return row
+    })
+    return created.id
+  } catch (e) {
+    const dup = await prisma.syncApply.findUnique({ where: { entity_tempId: { entity, tempId } } })
+    if (dup) return dup.realId
+    throw e
+  }
+}
+
 export async function POST(request: Request) {
   const { error, session } = await requireAuth("OPERACIONAL")
   if (error) return error
@@ -87,29 +122,32 @@ export async function POST(request: Request) {
     const body = await request.json()
     changes = body?.changes
   } catch {
-    return NextResponse.json({ ok: true, mappings: {} })
+    return NextResponse.json({ ok: true, processed: [] })
   }
   if (!Array.isArray(changes) || changes.length === 0) {
-    return NextResponse.json({ ok: true, mappings: {} })
+    return NextResponse.json({ ok: true, processed: [] })
   }
 
   const userLevel = ROLE_HIERARCHY[(session?.user?.role as string) || ""] || 0
-  const mappings: Record<string, string> = {}
-  const errors: { entity: string; action: string; message: string }[] = []
+  const processed: ProcessedEntry[] = []
 
   for (const change of changes) {
     const entity = change?.entity as string
     const action = change?.action as string
     const key = `${entity}:${action}`
+    const tempId = change?.tempId as string | undefined
+    const entry: ProcessedEntry = { queueId: change?.id as number | null | undefined, ok: false }
 
     if (!key || !syncSchemas[key]) {
-      errors.push({ entity, action, message: "Tipo de alteração não suportado" })
+      entry.error = "Tipo de alteração não suportado"
+      processed.push(entry)
       continue
     }
 
     const requiredRole = minRoleFor(entity, action)
     if (userLevel < ROLE_HIERARCHY[requiredRole]) {
-      errors.push({ entity, action, message: "Sem permissão" })
+      entry.error = "Sem permissão"
+      processed.push(entry)
       continue
     }
 
@@ -117,7 +155,8 @@ export async function POST(request: Request) {
     try {
       data = syncSchemas[key].parse(change.data)
     } catch (e: any) {
-      errors.push({ entity, action, message: e?.issues?.[0]?.message || "Dados inválidos" })
+      entry.error = e?.issues?.[0]?.message || "Dados inválidos"
+      processed.push(entry)
       continue
     }
 
@@ -125,40 +164,50 @@ export async function POST(request: Request) {
       switch (key) {
         case "order:create": {
           const { items, ...orderData } = data
-          const created = await prisma.order.create({
-            data: {
-              channel: orderData.channel,
-              customer: orderData.customer,
-              total: orderData.total,
-              status: orderData.status || "PENDENTE",
-              notes: orderData.notes,
-              items: items ? { create: items.map((i: { productId: string; qty: number; price: number }) => ({ productId: i.productId, qty: i.qty, price: i.price })) } : undefined,
-            },
-          })
-          if (change.tempId) mappings[change.tempId] = created.id
+          const realId = await applyCreate("order", tempId, (tx) =>
+            tx.order.create({
+              data: {
+                channel: orderData.channel,
+                customer: orderData.customer,
+                total: orderData.total,
+                status: orderData.status || "PENDENTE",
+                notes: orderData.notes,
+                items: items ? { create: items.map((i: { productId: string; qty: number; price: number }) => ({ productId: i.productId, qty: i.qty, price: i.price })) } : undefined,
+              },
+            })
+          )
+          entry.ok = true
+          entry.tempId = tempId
+          entry.realId = realId
           break
         }
         case "order:update": {
           const { id, ...updateData } = data
           const updated = await applyOrderUpdate(id, updateData)
-          if (change.tempId) mappings[change.tempId] = updated.id
+          entry.ok = true
+          entry.realId = updated.id
           break
         }
         case "order:delete": {
           await prisma.order.delete({ where: { id: data.id } })
+          entry.ok = true
           break
         }
         case "sale:create": {
           const { items, ...saleData } = data
-          const created = await prisma.sale.create({
-            data: {
-              channelId: saleData.channelId,
-              total: saleData.total,
-              userId: saleData.userId,
-              items: items ? { create: items.map((i: { productId: string; qty: number; price: number }) => ({ productId: i.productId, qty: i.qty, price: i.price })) } : undefined,
-            },
-          })
-          if (change.tempId) mappings[change.tempId] = created.id
+          const realId = await applyCreate("sale", tempId, (tx) =>
+            tx.sale.create({
+              data: {
+                channelId: saleData.channelId,
+                total: saleData.total,
+                userId: saleData.userId,
+                items: items ? { create: items.map((i: { productId: string; qty: number; price: number }) => ({ productId: i.productId, qty: i.qty, price: i.price })) } : undefined,
+              },
+            })
+          )
+          entry.ok = true
+          entry.tempId = tempId
+          entry.realId = realId
           break
         }
         case "sale:update": {
@@ -171,7 +220,8 @@ export async function POST(request: Request) {
             await prisma.saleItem.deleteMany({ where: { saleId: id } })
             await prisma.saleItem.createMany({ data: items.map((i: { productId: string; qty: number; price: number }) => ({ saleId: id, ...i })) })
           }
-          if (change.tempId) mappings[change.tempId] = updated.id
+          entry.ok = true
+          entry.realId = updated.id
           break
         }
         case "sale:delete": {
@@ -181,44 +231,57 @@ export async function POST(request: Request) {
           if (sale?.orderId) {
             await prisma.order.update({ where: { id: sale.orderId }, data: { status: "PRONTO", updatedAt: new Date() } })
           }
+          entry.ok = true
           break
         }
         case "cashFlow:create": {
-          const created = await prisma.cashFlow.create({
-            data: {
-              type: data.type,
-              category: data.category,
-              description: data.description,
-              amount: data.amount,
-              userId: data.userId,
-              date: data.date ? new Date(data.date) : new Date(),
-            },
-          })
-          if (change.tempId) mappings[change.tempId] = created.id
+          const description = (data.description as string | undefined)?.trim() || "Sem descrição"
+          const realId = await applyCreate("cashFlow", tempId, (tx) =>
+            tx.cashFlow.create({
+              data: {
+                type: data.type,
+                category: data.category,
+                description,
+                amount: data.amount,
+                userId: data.userId,
+                date: data.date ? new Date(data.date) : new Date(),
+              },
+            })
+          )
+          entry.ok = true
+          entry.tempId = tempId
+          entry.realId = realId
           break
         }
         case "cashFlow:update": {
           const { id, ...cashData } = data
           const patch: Record<string, unknown> = { ...cashData }
           if (cashData.date) patch.date = new Date(cashData.date)
+          if (cashData.description !== undefined) patch.description = (cashData.description as string).trim() || "Sem descrição"
           await prisma.cashFlow.update({ where: { id }, data: patch })
+          entry.ok = true
           break
         }
         case "cashFlow:delete": {
           await prisma.cashFlow.delete({ where: { id: data.id } })
+          entry.ok = true
           break
         }
         case "production:create": {
-          const created = await prisma.production.create({
-            data: {
-              batchCode: data.batchCode,
-              productId: data.productId,
-              qty: data.qty,
-              status: (data.status || "AGENDADA").toUpperCase(),
-              notes: data.notes,
-            },
-          })
-          if (change.tempId) mappings[change.tempId] = created.id
+          const realId = await applyCreate("production", tempId, (tx) =>
+            tx.production.create({
+              data: {
+                batchCode: data.batchCode,
+                productId: data.productId,
+                qty: data.qty,
+                status: (data.status || "AGENDADA").toUpperCase(),
+                notes: data.notes,
+              },
+            })
+          )
+          entry.ok = true
+          entry.tempId = tempId
+          entry.realId = realId
           break
         }
         case "production:update": {
@@ -229,28 +292,34 @@ export async function POST(request: Request) {
           if (prodData.notes !== undefined) patch.notes = prodData.notes
           if (prodData.qty !== undefined) patch.qty = prodData.qty
           await prisma.production.update({ where: { id }, data: patch })
+          entry.ok = true
           break
         }
         case "production:delete": {
           await prisma.production.delete({ where: { id: data.id } })
+          entry.ok = true
           break
         }
         case "ingredient:create": {
-          const created = await prisma.ingredient.create({
-            data: {
-              name: data.name,
-              brand: data.brand,
-              stockKg: data.stockKg ?? 0,
-              minStockKg: data.minStockKg ?? 0,
-              costPerKg: data.costPerKg,
-              supplier: data.supplier,
-              caloriesPer100g: data.caloriesPer100g,
-              proteinPer100g: data.proteinPer100g,
-              carbsPer100g: data.carbsPer100g,
-              fatPer100g: data.fatPer100g,
-            },
-          })
-          if (change.tempId) mappings[change.tempId] = created.id
+          const realId = await applyCreate("ingredient", tempId, (tx) =>
+            tx.ingredient.create({
+              data: {
+                name: data.name,
+                brand: data.brand,
+                stockKg: data.stockKg ?? 0,
+                minStockKg: data.minStockKg ?? 0,
+                costPerKg: data.costPerKg,
+                supplier: data.supplier,
+                caloriesPer100g: data.caloriesPer100g,
+                proteinPer100g: data.proteinPer100g,
+                carbsPer100g: data.carbsPer100g,
+                fatPer100g: data.fatPer100g,
+              },
+            })
+          )
+          entry.ok = true
+          entry.tempId = tempId
+          entry.realId = realId
           break
         }
         case "ingredient:update": {
@@ -259,27 +328,33 @@ export async function POST(request: Request) {
             where: { id },
             data: { ...updateData, updatedAt: new Date() },
           })
+          entry.ok = true
           break
         }
         case "ingredient:delete": {
           await prisma.ingredient.delete({ where: { id: data.id } })
+          entry.ok = true
           break
         }
         case "recipe:create": {
           const { ingredients, ...recipeData } = data
-          const created = await prisma.recipe.create({
-            data: {
-              name: recipeData.name,
-              yield: recipeData.yield,
-              yieldUnit: recipeData.yieldUnit || "un",
-              totalCost: recipeData.totalCost || 0,
-              productId: recipeData.productId,
-              ingredients: ingredients?.length
-                ? { create: ingredients.map((i: { ingredientId: string; qty: number; unit: string }) => ({ ingredientId: i.ingredientId, qty: i.qty, unit: i.unit })) }
-                : undefined,
-            },
-          })
-          if (change.tempId) mappings[change.tempId] = created.id
+          const realId = await applyCreate("recipe", tempId, (tx) =>
+            tx.recipe.create({
+              data: {
+                name: recipeData.name,
+                yield: recipeData.yield,
+                yieldUnit: recipeData.yieldUnit || "un",
+                totalCost: recipeData.totalCost || 0,
+                productId: recipeData.productId,
+                ingredients: ingredients?.length
+                  ? { create: ingredients.map((i: { ingredientId: string; qty: number; unit: string }) => ({ ingredientId: i.ingredientId, qty: i.qty, unit: i.unit })) }
+                  : undefined,
+              },
+            })
+          )
+          entry.ok = true
+          entry.tempId = tempId
+          entry.realId = realId
           break
         }
         case "recipe:update": {
@@ -293,77 +368,99 @@ export async function POST(request: Request) {
               })
             }
           })
+          entry.ok = true
           break
         }
         case "recipe:delete": {
           await prisma.recipe.delete({ where: { id: data.id } })
+          entry.ok = true
           break
         }
         case "document:create": {
-          const created = await prisma.document.create({
-            data: {
-              title: data.title,
-              description: data.description,
-              category: data.category,
-              content: data.content,
-              fileUrl: data.fileUrl,
-              tags: data.tags,
-              userId: data.userId,
-            },
-          })
-          if (change.tempId) mappings[change.tempId] = created.id
+          const realId = await applyCreate("document", tempId, (tx) =>
+            tx.document.create({
+              data: {
+                title: data.title,
+                description: data.description,
+                category: data.category,
+                content: data.content,
+                fileUrl: data.fileUrl,
+                tags: data.tags,
+                userId: data.userId,
+              },
+            })
+          )
+          entry.ok = true
+          entry.tempId = tempId
+          entry.realId = realId
           break
         }
         case "document:update": {
           const { id, ...updateData } = data
           await prisma.document.update({ where: { id }, data: { ...updateData, updatedAt: new Date() } })
+          entry.ok = true
           break
         }
         case "document:delete": {
           await prisma.document.delete({ where: { id: data.id } })
+          entry.ok = true
           break
         }
         case "channel:create": {
-          const created = await prisma.saleChannel.create({ data: { name: data.name, commission: data.commission ?? 0 } })
-          if (change.tempId) mappings[change.tempId] = created.id
+          const realId = await applyCreate("channel", tempId, (tx) => tx.saleChannel.create({ data: { name: data.name, commission: data.commission ?? 0 } }))
+          entry.ok = true
+          entry.tempId = tempId
+          entry.realId = realId
           break
         }
         case "channel:update": {
           const { id, ...updateData } = data
           await prisma.saleChannel.update({ where: { id }, data: updateData })
+          entry.ok = true
           break
         }
         case "channel:delete": {
           await prisma.saleChannel.delete({ where: { id: data.id } })
+          entry.ok = true
           break
         }
         case "priceTier:create": {
-          const created = await prisma.priceTier.create({
-            data: { productId: data.productId, name: data.name, minQty: data.minQty, maxQty: data.maxQty, price: data.price },
-          })
-          if (change.tempId) mappings[change.tempId] = created.id
+          const realId = await applyCreate("priceTier", tempId, (tx) =>
+            tx.priceTier.create({
+              data: { productId: data.productId, name: data.name, minQty: data.minQty, maxQty: data.maxQty, price: data.price },
+            })
+          )
+          entry.ok = true
+          entry.tempId = tempId
+          entry.realId = realId
           break
         }
         case "priceTier:update": {
           const { id, ...updateData } = data
           await prisma.priceTier.update({ where: { id }, data: updateData })
+          entry.ok = true
           break
         }
         case "priceTier:delete": {
           await prisma.priceTier.delete({ where: { id: data.id } })
+          entry.ok = true
           break
         }
         case "deliveryCost:create": {
-          const created = await prisma.deliveryCost.create({
-            data: {
-              channel: data.channel,
-              amount: data.amount,
-              orderId: data.orderId,
-              notes: data.notes,
-              date: data.date ? new Date(data.date) : new Date(),
-            },
-          })
-          if (change.tempId) mappings[change.tempId] = created.id
+          const realId = await applyCreate("deliveryCost", tempId, (tx) =>
+            tx.deliveryCost.create({
+              data: {
+                channel: data.channel,
+                amount: data.amount,
+                orderId: data.orderId,
+                notes: data.notes,
+                date: data.date ? new Date(data.date) : new Date(),
+              },
+            })
+          )
+          entry.ok = true
+          entry.tempId = tempId
+          entry.realId = realId
           break
         }
         case "deliveryCost:update": {
@@ -371,24 +468,30 @@ export async function POST(request: Request) {
           const patch: Record<string, unknown> = { ...updateData }
           if (patch.date) patch.date = new Date(patch.date as string)
           await prisma.deliveryCost.update({ where: { id }, data: patch })
+          entry.ok = true
           break
         }
         case "deliveryCost:delete": {
           await prisma.deliveryCost.delete({ where: { id: data.id } })
+          entry.ok = true
           break
         }
         case "contact:create": {
-          const created = await prisma.contact.create({
-            data: {
-              name: data.name,
-              email: data.email || null,
-              phone: data.phone || null,
-              type: data.type || "CLIENTE",
-              company: data.company || null,
-              notes: data.notes || null,
-            },
-          })
-          if (change.tempId) mappings[change.tempId] = created.id
+          const realId = await applyCreate("contact", tempId, (tx) =>
+            tx.contact.create({
+              data: {
+                name: data.name,
+                email: data.email || null,
+                phone: data.phone || null,
+                type: data.type || "CLIENTE",
+                company: data.company || null,
+                notes: data.notes || null,
+              },
+            })
+          )
+          entry.ok = true
+          entry.tempId = tempId
+          entry.realId = realId
           break
         }
         case "contact:update": {
@@ -399,31 +502,39 @@ export async function POST(request: Request) {
           if (updateData.company !== undefined) patch.company = updateData.company || null
           if (updateData.notes !== undefined) patch.notes = updateData.notes || null
           await prisma.contact.update({ where: { id }, data: patch })
+          entry.ok = true
           break
         }
         case "contact:delete": {
           await prisma.contactInteraction.deleteMany({ where: { contactId: data.id } })
           await prisma.contact.delete({ where: { id: data.id } })
+          entry.ok = true
           break
         }
         case "contactInteraction:create": {
           const { contactId, ...interactionData } = data
-          const created = await prisma.contactInteraction.create({
-            data: { contactId, type: interactionData.type || "NOTA", note: interactionData.note },
-          })
-          if (change.tempId) mappings[change.tempId] = created.id
+          const realId = await applyCreate("contactInteraction", tempId, (tx) =>
+            tx.contactInteraction.create({
+              data: { contactId, type: interactionData.type || "NOTA", note: interactionData.note },
+            })
+          )
+          entry.ok = true
+          entry.tempId = tempId
+          entry.realId = realId
           break
         }
         case "contactInteraction:delete": {
           await prisma.contactInteraction.delete({ where: { id: data.id } })
+          entry.ok = true
           break
         }
       }
     } catch (e) {
       console.error(`Sync error for ${key}`, e)
-      errors.push({ entity, action, message: "Erro ao aplicar alteração" })
+      entry.error = "Erro ao aplicar alteração"
     }
+    processed.push(entry)
   }
 
-  return NextResponse.json({ ok: errors.length === 0, mappings, errors })
+  return NextResponse.json({ ok: processed.every((p) => p.ok), processed })
 }

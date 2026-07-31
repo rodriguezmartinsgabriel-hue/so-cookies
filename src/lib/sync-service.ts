@@ -43,23 +43,42 @@ export async function pushPendingChanges() {
     })
     if (resp.ok) {
       const result = await resp.json()
-      if (!result.ok) return { pushed: 0, pushedIds: [] }
-      if (result.mappings) {
-        for (const [tempId, realId] of Object.entries(result.mappings)) {
-          await reconcileIds(tempId as string, realId as string)
+      const processed = Array.isArray(result.processed) ? result.processed : []
+      const pendingById = new Map(pending.map((p) => [p.id, p]))
+      let pushed = 0
+      const toDelete: number[] = []
+      for (const p of processed) {
+        if (!p.ok) {
+          if (typeof p.queueId === "number") {
+            const item = await db.syncQueue.get(p.queueId)
+            const attempts = (item?.attempts || 0) + 1
+            if (attempts >= 5) {
+              console.error(`Sync: descartando alteração após ${attempts} tentativas (${item?.entity}:${item?.action})`, p.error)
+              await db.syncQueue.delete(p.queueId)
+            } else {
+              await db.syncQueue.update(p.queueId, { attempts })
+            }
+          }
+          continue
         }
-      }
-      for (const item of pending) {
-        if (item.action !== "update") continue
-        const table = (db as any)[ENTITY_TABLES[item.entity]]
-        if (!table?.get) continue
-        const id = item.data.id as string
-        const local = await table.get(id)
-        if (local && local._updatedAt <= item.createdAt) {
-          await table.update(id, { _synced: true })
+        pushed++
+        if (p.tempId && p.realId) await reconcileIds(p.tempId, p.realId)
+        if (typeof p.queueId !== "number") continue
+        const queued = pendingById.get(p.queueId)
+        if (queued?.action === "update") {
+          const table = (db as any)[ENTITY_TABLES[queued.entity]]
+          const id = queued.data?.id as string | undefined
+          if (table?.get && id) {
+            const local = await table.get(id)
+            if (local && local._updatedAt <= queued.createdAt) {
+              await table.update(id, { _synced: true })
+            }
+          }
         }
+        toDelete.push(p.queueId)
       }
-      return { pushed: pending.length, pushedIds: pending.map((p) => p.id).filter((id): id is number => id != null) }
+      if (toDelete.length) await db.syncQueue.bulkDelete(toDelete)
+      return { pushed }
     }
   } catch (e) {
     console.error("Erro no push:", e)
@@ -126,11 +145,6 @@ export async function pullChanges() {
 export async function syncAll() {
   const pushed = await pushPendingChanges()
   const pulled = await pullChanges()
-  if (pushed.pushed > 0 && pulled.pulled >= 0) {
-    if (pushed.pushedIds?.length) {
-      await db.syncQueue.bulkDelete(pushed.pushedIds)
-    }
-  }
   return { pushed: pushed.pushed, pulled: pulled.pulled }
 }
 

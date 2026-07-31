@@ -60,11 +60,11 @@ export default function CaixaPage() {
   }, [loadEntries])
 
   async function handleSave() {
-    if (!formCategory || !formAmount) return
+    if (!formCategory || !formAmount || !formDescription.trim()) return
     await repository.cashFlow.create({
       type: formType,
       category: formCategory,
-      description: formDescription,
+      description: formDescription.trim(),
       amount: parseFloat(formAmount),
       date: formDate,
     })
@@ -87,11 +87,11 @@ export default function CaixaPage() {
   }
 
   async function handleEditSave() {
-    if (!editingEntry || !editCategory || !editAmount) return
+    if (!editingEntry || !editCategory || !editAmount || !editDescription.trim()) return
     await repository.cashFlow.update(editingEntry.id, {
       type: editType,
       category: editCategory,
-      description: editDescription,
+      description: editDescription.trim(),
       amount: parseFloat(editAmount),
       date: editDate,
     })
@@ -254,7 +254,7 @@ export default function CaixaPage() {
                   <input type="text" placeholder="Ex: Venda, Compra, Frete..." value={formCategory} onChange={(e) => setFormCategory(e.target.value)} className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink placeholder:text-kraft focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink transition-colors" />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Descrição</label>
+                  <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Descrição *</label>
                   <input type="text" placeholder="Descrição do lançamento" value={formDescription} onChange={(e) => setFormDescription(e.target.value)} className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink placeholder:text-kraft focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink transition-colors" />
                 </div>
               </div>
@@ -296,7 +296,7 @@ export default function CaixaPage() {
                   <input type="text" placeholder="Ex: Venda, Compra, Frete..." value={editCategory} onChange={(e) => setEditCategory(e.target.value)} className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink placeholder:text-kraft focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink transition-colors" />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Descrição</label>
+                  <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Descrição *</label>
                   <input type="text" placeholder="Descrição do lançamento" value={editDescription} onChange={(e) => setEditDescription(e.target.value)} className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink placeholder:text-kraft focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink transition-colors" />
                 </div>
               </div>

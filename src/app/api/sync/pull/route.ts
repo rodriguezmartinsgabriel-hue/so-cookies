@@ -22,11 +22,11 @@ export async function POST(request: Request) {
         include: { items: true },
       }),
       prisma.sale.findMany({
-        where: { createdAt: { gt: sinceDate } },
+        where: { updatedAt: { gt: sinceDate } },
         include: { items: true },
       }),
       prisma.cashFlow.findMany({
-        where: { date: { gt: sinceDate } },
+        where: { updatedAt: { gt: sinceDate } },
       }),
       prisma.production.findMany({
         where: { updatedAt: { gt: sinceDate } },
@@ -42,7 +42,7 @@ export async function POST(request: Request) {
         where: { updatedAt: { gt: sinceDate } },
       }),
       prisma.deliveryCost.findMany({
-        where: { createdAt: { gt: sinceDate } },
+        where: { updatedAt: { gt: sinceDate } },
       }),
       prisma.contact.findMany({
         where: { updatedAt: { gt: sinceDate } },

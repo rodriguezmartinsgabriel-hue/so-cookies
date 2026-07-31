@@ -33,6 +33,7 @@ export async function PUT(
     return NextResponse.json(product)
   } catch (e: any) {
     if (e?.issues) return NextResponse.json({ error: "Dados inválidos", details: e.issues }, { status: 400 })
+    if (isNotFoundError(e)) return NextResponse.json({ error: "Não encontrado" }, { status: 404 })
     return NextResponse.json({ error: "Erro ao atualizar produto" }, { status: 500 })
   }
 }
