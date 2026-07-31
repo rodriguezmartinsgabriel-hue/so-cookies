@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react"
 import { useFocusTrap } from "@/hooks/useFocusTrap"
+import { useRole } from "@/hooks/useRole"
 import { AppShell } from "@/components/layout/AppShell"
 import { Skeleton } from "@/components/ui/Skeleton"
 import { ErrorState } from "@/components/ui/ErrorState"
@@ -21,6 +22,7 @@ function displayDate(date: string) {
 }
 
 export default function CaixaPage() {
+  const { canEdit } = useRole();
   const [showModal, setShowModal] = useState(false)
   const modalRef = useFocusTrap(showModal)
   const [showEditModal, setShowEditModal] = useState(false)
@@ -122,10 +124,12 @@ export default function CaixaPage() {
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold text-ink">Caixa</h1>
-          <button onClick={() => setShowModal(true)} className="flex items-center gap-2 h-10 px-4 bg-ink text-paper rounded-lg text-sm font-medium hover:bg-ink/90 transition-colors">
-            <Plus className="w-4 h-4" />
-            Lançamento
-          </button>
+          {canEdit && (
+            <button onClick={() => setShowModal(true)} className="flex items-center gap-2 h-10 px-4 bg-ink text-paper rounded-lg text-sm font-medium hover:bg-ink/90 transition-colors">
+              <Plus className="w-4 h-4" />
+              Novo Lançamento
+            </button>
+          )}
         </div>
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
@@ -198,8 +202,12 @@ export default function CaixaPage() {
                       <td className="px-4 py-3 text-sm text-muted">{displayDate(entry.date)}</td>
                       <td className="px-4 py-3 text-center">
                         <div className="flex items-center justify-center gap-1">
-                          <button onClick={() => openEdit(entry)} aria-label="Editar" className="p-1.5 rounded-md hover:bg-cream text-muted"><Edit className="w-4 h-4" /></button>
-                          <button onClick={() => handleDelete(entry.id)} aria-label="Excluir" className="p-1.5 rounded-md hover:bg-cream text-danger"><Trash2 className="w-4 h-4" /></button>
+                          {canEdit && (
+                            <>
+                              <button onClick={() => openEdit(entry)} aria-label="Editar" className="p-1.5 rounded-md hover:bg-cream text-muted"><Edit className="w-4 h-4" /></button>
+                              <button onClick={() => handleDelete(entry.id)} aria-label="Excluir" className="p-1.5 rounded-md hover:bg-cream text-danger"><Trash2 className="w-4 h-4" /></button>
+                            </>
+                          )}
                         </div>
                       </td>
                     </tr>

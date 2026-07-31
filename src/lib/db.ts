@@ -1,7 +1,12 @@
 import { prisma } from "./prisma";
+import type { Role } from "@/generated/prisma/enums";
 
 export function isNotFoundError(e: unknown): boolean {
   return typeof e === "object" && e !== null && "code" in e && (e as any).code === "P2025";
+}
+
+export function isConstraintError(e: unknown): boolean {
+  return typeof e === "object" && e !== null && "code" in e && (e as any).code === "P2003";
 }
 
 export async function getDashboardKpis() {
@@ -369,4 +374,31 @@ export async function updateDocument(id: string, data: Partial<{
 
 export async function deleteDocument(id: string) {
   return prisma.document.delete({ where: { id } });
+}
+
+export async function getUsers() {
+  return prisma.user.findMany({
+    select: { id: true, name: true, email: true, role: true, createdAt: true },
+    orderBy: { name: "asc" },
+  });
+}
+
+export async function getUserById(id: string) {
+  return prisma.user.findUnique({ where: { id } });
+}
+
+export async function getUserByEmail(email: string) {
+  return prisma.user.findUnique({ where: { email } });
+}
+
+export async function createUser(data: { name: string; email: string; password: string; role: Role }) {
+  return prisma.user.create({ data });
+}
+
+export async function updateUser(id: string, data: Partial<{ name: string; role: Role; password: string }>) {
+  return prisma.user.update({ where: { id }, data });
+}
+
+export async function deleteUser(id: string) {
+  return prisma.user.delete({ where: { id } });
 }

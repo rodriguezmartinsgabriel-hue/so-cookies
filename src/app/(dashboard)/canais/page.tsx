@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react"
 import { useFocusTrap } from "@/hooks/useFocusTrap"
+import { useRole } from "@/hooks/useRole"
 import { AppShell } from "@/components/layout/AppShell"
 import { Skeleton } from "@/components/ui/Skeleton"
 import { ErrorState } from "@/components/ui/ErrorState"
@@ -9,6 +10,7 @@ import { repository } from "@/lib/repository"
 import { Plus, Edit, Trash2, X, Store } from "lucide-react"
 
 export default function CanaisPage() {
+  const { canEdit } = useRole();
   const [channels, setChannels] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -71,13 +73,15 @@ export default function CanaisPage() {
             <h1 className="text-2xl font-bold text-ink">Canais de Venda</h1>
             <p className="text-sm text-muted">{channels.length} canais cadastrados</p>
           </div>
-          <button
-            onClick={() => { resetForm(); setShowModal(true); }}
-            className="flex items-center gap-2 h-10 px-4 bg-ink text-paper rounded-lg text-sm font-medium hover:bg-ink/90 transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            Novo Canal
-          </button>
+          {canEdit && (
+            <button
+              onClick={() => { resetForm(); setShowModal(true); }}
+              className="flex items-center gap-2 h-10 px-4 bg-ink text-paper rounded-lg text-sm font-medium hover:bg-ink/90 transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              Novo Canal
+            </button>
+          )}
         </div>
 
         {error && (
@@ -138,8 +142,12 @@ export default function CanaisPage() {
                       </td>
                       <td className="px-4 py-3 text-center">
                         <div className="flex items-center justify-center gap-1">
-                          <button onClick={() => openEdit(ch)} aria-label="Editar" className="p-1.5 rounded-md hover:bg-cream text-muted"><Edit className="w-4 h-4" /></button>
-                          <button onClick={() => handleDelete(ch.id)} aria-label="Excluir" className="p-1.5 rounded-md hover:bg-cream text-danger"><Trash2 className="w-4 h-4" /></button>
+                          {canEdit && (
+                            <>
+                              <button onClick={() => openEdit(ch)} aria-label="Editar" className="p-1.5 rounded-md hover:bg-cream text-muted"><Edit className="w-4 h-4" /></button>
+                              <button onClick={() => handleDelete(ch.id)} aria-label="Excluir" className="p-1.5 rounded-md hover:bg-cream text-danger"><Trash2 className="w-4 h-4" /></button>
+                            </>
+                          )}
                         </div>
                       </td>
                     </tr>

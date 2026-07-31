@@ -2,12 +2,14 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
+import { useRole } from "@/hooks/useRole";
 import { AppShell } from "@/components/layout/AppShell";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { Plus, X, Edit, Trash2, ChevronDown, ChevronUp } from "lucide-react";
 
 export default function ReceitasPage() {
+  const { canEdit } = useRole();
   const [recipes, setRecipes] = useState<any[]>([]);
   const [ingredients, setIngredients] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -165,13 +167,15 @@ export default function ReceitasPage() {
               Fichas técnicas · {recipes.length} receitas
             </p>
           </div>
-          <button
-            onClick={openNew}
-            className="flex items-center gap-2 h-10 px-4 bg-ink text-paper rounded-lg text-sm font-medium hover:bg-ink/90 transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            Nova Receita
-          </button>
+          {canEdit && (
+            <button
+              onClick={openNew}
+              className="flex items-center gap-2 h-10 px-4 bg-ink text-paper rounded-lg text-sm font-medium hover:bg-ink/90 transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              Nova Receita
+            </button>
+          )}
         </div>
 
         {error && (
@@ -215,12 +219,16 @@ export default function ReceitasPage() {
                       )}
                     </button>
                     <div className="flex items-center gap-1 shrink-0">
-                      <button onClick={() => openEdit(recipe)} aria-label="Editar" className="p-2 rounded-md hover:bg-cream text-muted transition-colors">
-                        <Edit className="w-4 h-4" />
-                      </button>
-                      <button onClick={() => handleDelete(recipe.id)} aria-label="Excluir" className="p-2 rounded-md hover:bg-cream text-danger transition-colors">
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      {canEdit && (
+                        <>
+                          <button onClick={() => openEdit(recipe)} aria-label="Editar" className="p-2 rounded-md hover:bg-cream text-muted transition-colors">
+                            <Edit className="w-4 h-4" />
+                          </button>
+                          <button onClick={() => handleDelete(recipe.id)} aria-label="Excluir" className="p-2 rounded-md hover:bg-cream text-danger transition-colors">
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </>
+                      )}
                     </div>
                   </div>
 

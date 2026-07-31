@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
+import { useRole } from "@/hooks/useRole";
 import { AppShell } from "@/components/layout/AppShell";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { ErrorState } from "@/components/ui/ErrorState";
@@ -21,6 +22,7 @@ const CATEGORY_MAP: Record<string, typeof CATEGORIES[number]> = Object.fromEntri
 );
 
 export default function DocumentosPage() {
+  const { canEdit } = useRole();
   const [documents, setDocuments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -145,13 +147,15 @@ export default function DocumentosPage() {
               Fichas técnicas, higiene, treinamentos · {stats.total} documentos
             </p>
           </div>
-          <button
-            onClick={openNew}
-            className="flex items-center gap-2 h-10 px-4 bg-ink text-paper rounded-lg text-sm font-medium hover:bg-ink/90 transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            Novo Documento
-          </button>
+          {canEdit && (
+            <button
+              onClick={openNew}
+              className="flex items-center gap-2 h-10 px-4 bg-ink text-paper rounded-lg text-sm font-medium hover:bg-ink/90 transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              Novo Documento
+            </button>
+          )}
         </div>
 
         <div className="flex gap-2 overflow-x-auto pb-1">
@@ -249,12 +253,16 @@ export default function DocumentosPage() {
                       <button onClick={() => openView(doc)} aria-label="Visualizar" className="p-2 rounded-md hover:bg-cream text-muted transition-colors">
                         <Eye className="w-4 h-4" />
                       </button>
-                      <button onClick={() => openEdit(doc)} aria-label="Editar" className="p-2 rounded-md hover:bg-cream text-muted transition-colors">
-                        <Edit className="w-4 h-4" />
-                      </button>
-                      <button onClick={() => handleDelete(doc.id)} aria-label="Excluir" className="p-2 rounded-md hover:bg-cream text-danger transition-colors">
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      {canEdit && (
+                        <>
+                          <button onClick={() => openEdit(doc)} aria-label="Editar" className="p-2 rounded-md hover:bg-cream text-muted transition-colors">
+                            <Edit className="w-4 h-4" />
+                          </button>
+                          <button onClick={() => handleDelete(doc.id)} aria-label="Excluir" className="p-2 rounded-md hover:bg-cream text-danger transition-colors">
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </>
+                      )}
                     </div>
                   </div>
 
@@ -380,9 +388,11 @@ export default function DocumentosPage() {
                 </div>
               </div>
               <div className="p-4 border-t border-line flex gap-2 sticky bottom-0 bg-paper">
-                <button onClick={() => { setViewingDoc(null); openEdit(viewingDoc); }} className="flex-1 h-10 border border-line rounded-lg text-sm font-medium text-ink hover:bg-cream transition-colors flex items-center justify-center gap-2">
-                  <Edit className="w-4 h-4" /> Editar
-                </button>
+                {canEdit && (
+                  <button onClick={() => { setViewingDoc(null); openEdit(viewingDoc); }} className="flex-1 h-10 border border-line rounded-lg text-sm font-medium text-ink hover:bg-cream transition-colors flex items-center justify-center gap-2">
+                    <Edit className="w-4 h-4" /> Editar
+                  </button>
+                )}
                 <button onClick={() => setViewingDoc(null)} className="flex-1 h-10 bg-ink text-paper rounded-lg text-sm font-medium hover:bg-ink/90 transition-colors">
                   Fechar
                 </button>

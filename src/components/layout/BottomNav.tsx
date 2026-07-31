@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, ShoppingBag, Package, DollarSign, Factory, BarChart3, BookOpen } from "lucide-react";
+import { useRole } from "@/hooks/useRole";
+import { Home, ShoppingBag, Package, DollarSign, Factory, BarChart3, BookOpen, Users } from "lucide-react";
 
 const navItems = [
   { href: "/", label: "Home", icon: Home },
@@ -10,15 +11,18 @@ const navItems = [
   { href: "/vendas", label: "Vendas", icon: DollarSign, isCenter: true },
   { href: "/estoque", label: "Insumos", icon: Package },
   { href: "/relatorios", label: "Relat.", icon: BarChart3 },
+  { href: "/usuarios", label: "Usuários", icon: Users, adminOnly: true },
 ];
 
 export function BottomNav() {
   const pathname = usePathname();
+  const { isAdmin } = useRole();
+  const visibleItems = navItems.filter((item) => !item.adminOnly || isAdmin);
 
   return (
     <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-paper border-t border-line">
       <div className="flex items-center justify-around h-16 px-2">
-        {navItems.map((item) => {
+        {visibleItems.map((item) => {
           const isActive = pathname === item.href;
           const Icon = item.icon;
 

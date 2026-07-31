@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react"
 import { useFocusTrap } from "@/hooks/useFocusTrap"
+import { useRole } from "@/hooks/useRole"
 import { AppShell } from "@/components/layout/AppShell"
 import { Skeleton } from "@/components/ui/Skeleton"
 import { ErrorState } from "@/components/ui/ErrorState"
@@ -15,6 +16,7 @@ const statusConfig: Record<string, { label: string; color: string; icon: typeof 
 }
 
 export default function ProducaoPage() {
+  const { canEdit } = useRole();
   const [batches, setBatches] = useState<any[]>([])
   const [products, setProducts] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -108,10 +110,12 @@ export default function ProducaoPage() {
               {batches.length} lotes · {pendingCount} pendentes · {inProgressCount} em produção · {doneCount} concluídos
             </p>
           </div>
-          <button onClick={() => { setFormProduct(""); setFormQty(""); setFormBatchCode(`LOTE-${new Date().toISOString().slice(0,10).replace(/-/g,"")}`); setFormNotes(""); setShowCreateModal(true); }} className="flex items-center gap-2 h-10 px-4 bg-ink text-paper rounded-lg text-sm font-medium hover:bg-ink/90 transition-colors">
-            <ChefHat className="w-4 h-4" />
-            Novo Lote
-          </button>
+          {canEdit && (
+            <button onClick={() => { setFormProduct(""); setFormQty(""); setFormBatchCode(`LOTE-${new Date().toISOString().slice(0,10).replace(/-/g,"")}`); setFormNotes(""); setShowCreateModal(true); }} className="flex items-center gap-2 h-10 px-4 bg-ink text-paper rounded-lg text-sm font-medium hover:bg-ink/90 transition-colors">
+              <ChefHat className="w-4 h-4" />
+              Novo Lote
+            </button>
+          )}
         </div>
 
         {error && (
@@ -158,13 +162,17 @@ export default function ProducaoPage() {
                     <div className="text-right flex items-center gap-2">
                       <span className={`text-xs font-medium px-2 py-1 rounded-full ${cfg.color}`}>{cfg.label}</span>
                       <div className="flex gap-1">
-                        <button onClick={() => openEdit(batch)} aria-label="Editar" className="p-1.5 rounded-md hover:bg-cream text-muted"><Edit className="w-4 h-4" /></button>
-                        <button onClick={() => handleDelete(batch.id)} aria-label="Excluir" className="p-1.5 rounded-md hover:bg-cream text-danger"><Trash2 className="w-4 h-4" /></button>
-                        {batch.status === "pendente" && (
-                          <button onClick={() => handleStatusChange(batch.id, "em_producao")} className="text-xs px-3 py-1.5 bg-warning/10 text-warning rounded-lg font-medium hover:bg-warning/20 transition-colors">Iniciar</button>
-                        )}
-                        {batch.status === "em_producao" && (
-                          <button onClick={() => handleStatusChange(batch.id, "concluido")} className="text-xs px-3 py-1.5 bg-success/10 text-success rounded-lg font-medium hover:bg-success/20 transition-colors">Concluir</button>
+                        {canEdit && (
+                          <>
+                            <button onClick={() => openEdit(batch)} aria-label="Editar" className="p-1.5 rounded-md hover:bg-cream text-muted"><Edit className="w-4 h-4" /></button>
+                            <button onClick={() => handleDelete(batch.id)} aria-label="Excluir" className="p-1.5 rounded-md hover:bg-cream text-danger"><Trash2 className="w-4 h-4" /></button>
+                            {batch.status === "pendente" && (
+                              <button onClick={() => handleStatusChange(batch.id, "em_producao")} className="text-xs px-3 py-1.5 bg-warning/10 text-warning rounded-lg font-medium hover:bg-warning/20 transition-colors">Iniciar</button>
+                            )}
+                            {batch.status === "em_producao" && (
+                              <button onClick={() => handleStatusChange(batch.id, "concluido")} className="text-xs px-3 py-1.5 bg-success/10 text-success rounded-lg font-medium hover:bg-success/20 transition-colors">Concluir</button>
+                            )}
+                          </>
                         )}
                         {batch.status === "concluido" && batch.endTime && (
                           <span className="text-xs text-muted">

@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useEffect } from "react"
 import { useFocusTrap } from "@/hooks/useFocusTrap"
+import { useRole } from "@/hooks/useRole"
 import { AppShell } from "@/components/layout/AppShell"
 import { Skeleton } from "@/components/ui/Skeleton"
 import { ErrorState } from "@/components/ui/ErrorState"
@@ -49,6 +50,7 @@ function canCancel(status: string) {
 }
 
 export default function PedidosPage() {
+  const { canEdit } = useRole();
   const [orders, setOrders] = useState<any[]>([])
   const [products, setProducts] = useState<any[]>([])
   const [channels, setChannels] = useState<any[]>([])
@@ -177,10 +179,12 @@ export default function PedidosPage() {
               <button onClick={() => setView("kanban")} className={`px-3 py-2 text-xs font-medium transition-colors ${view === "kanban" ? "bg-ink text-paper" : "text-muted hover:bg-cream"}`}>Kanban</button>
               <button onClick={() => setView("list")} className={`px-3 py-2 text-xs font-medium transition-colors ${view === "list" ? "bg-ink text-paper" : "text-muted hover:bg-cream"}`}>Lista</button>
             </div>
-            <button onClick={() => { setFormChannel(""); setFormCustomer(""); setFormItems([]); setFormTotal(0); setShowCreateModal(true); }} className="flex items-center gap-2 h-10 px-4 bg-ink text-paper rounded-lg text-sm font-medium hover:bg-ink/90 transition-colors">
-              <Plus className="w-4 h-4" />
-              Novo Pedido
-            </button>
+            {canEdit && (
+              <button onClick={() => { setFormChannel(""); setFormCustomer(""); setFormItems([]); setFormTotal(0); setShowCreateModal(true); }} className="flex items-center gap-2 h-10 px-4 bg-ink text-paper rounded-lg text-sm font-medium hover:bg-ink/90 transition-colors">
+                <Plus className="w-4 h-4" />
+                Novo Pedido
+              </button>
+            )}
           </div>
         </div>
 
@@ -309,15 +313,19 @@ export default function PedidosPage() {
                       </td>
                       <td className="px-4 py-3 text-center">
                         <div className="flex items-center justify-center gap-1">
-                          <button onClick={() => openEditModal(o)} aria-label="Editar" className="p-1.5 rounded-md hover:bg-cream text-muted"><Edit className="w-4 h-4" /></button>
-                          {canCancel(o.status) && (
-                            <button onClick={() => handleStatusChange(o.id, "CANCELADO")} className="p-1.5 rounded-md hover:bg-cream text-danger"><Ban className="w-4 h-4" /></button>
-                          )}
-                          <button onClick={() => handleDeleteOrder(o.id)} aria-label="Excluir" className="p-1.5 rounded-md hover:bg-cream text-danger"><Trash2 className="w-4 h-4" /></button>
-                          {nextStatus[o.status] && (
-                            <button onClick={() => handleStatusChange(o.id, nextStatus[o.status])} className="text-xs px-3 py-1.5 bg-ink text-paper rounded-lg font-medium hover:bg-ink/90 transition-colors">
-                              {nextStatusLabel[o.status]}
-                            </button>
+                          {canEdit && (
+                            <>
+                              <button onClick={() => openEditModal(o)} aria-label="Editar" className="p-1.5 rounded-md hover:bg-cream text-muted"><Edit className="w-4 h-4" /></button>
+                              {canCancel(o.status) && (
+                                <button onClick={() => handleStatusChange(o.id, "CANCELADO")} className="p-1.5 rounded-md hover:bg-cream text-danger"><Ban className="w-4 h-4" /></button>
+                              )}
+                              <button onClick={() => handleDeleteOrder(o.id)} aria-label="Excluir" className="p-1.5 rounded-md hover:bg-cream text-danger"><Trash2 className="w-4 h-4" /></button>
+                              {nextStatus[o.status] && (
+                                <button onClick={() => handleStatusChange(o.id, nextStatus[o.status])} className="text-xs px-3 py-1.5 bg-ink text-paper rounded-lg font-medium hover:bg-ink/90 transition-colors">
+                                  {nextStatusLabel[o.status]}
+                                </button>
+                              )}
+                            </>
                           )}
                         </div>
                       </td>
@@ -371,19 +379,23 @@ export default function PedidosPage() {
                 </div>
               </div>
               <div className="p-4 border-t border-line flex gap-2">
-                <button onClick={() => handleDeleteOrder(order.id)} aria-label="Excluir" className="h-10 px-3 border border-danger/30 rounded-lg text-sm font-medium text-danger hover:bg-danger/5 transition-colors">
-                  <Trash2 className="w-4 h-4" />
-                </button>
-                <button onClick={() => { setSelectedOrder(null); openEditModal(order); }} aria-label="Editar" className="h-10 px-3 border border-line rounded-lg text-sm font-medium text-ink hover:bg-cream transition-colors">
-                  <Edit className="w-4 h-4" />
-                </button>
-                {canCancel(order.status) && (
-                  <button onClick={() => handleStatusChange(order.id, "CANCELADO")} className="h-10 px-3 border border-danger/30 rounded-lg text-sm font-medium text-danger hover:bg-danger/5 transition-colors">
-                    <Ban className="w-4 h-4" />
-                  </button>
+                {canEdit && (
+                  <>
+                    <button onClick={() => handleDeleteOrder(order.id)} aria-label="Excluir" className="h-10 px-3 border border-danger/30 rounded-lg text-sm font-medium text-danger hover:bg-danger/5 transition-colors">
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                    <button onClick={() => { setSelectedOrder(null); openEditModal(order); }} aria-label="Editar" className="h-10 px-3 border border-line rounded-lg text-sm font-medium text-ink hover:bg-cream transition-colors">
+                      <Edit className="w-4 h-4" />
+                    </button>
+                    {canCancel(order.status) && (
+                      <button onClick={() => handleStatusChange(order.id, "CANCELADO")} className="h-10 px-3 border border-danger/30 rounded-lg text-sm font-medium text-danger hover:bg-danger/5 transition-colors">
+                        <Ban className="w-4 h-4" />
+                      </button>
+                    )}
+                  </>
                 )}
                 <button onClick={() => setSelectedOrder(null)} className="flex-1 h-10 border border-line rounded-lg text-sm font-medium text-ink hover:bg-cream transition-colors">Fechar</button>
-                {nextStatus[order.status] && (
+                {canEdit && nextStatus[order.status] && (
                   <button onClick={() => handleStatusChange(order.id, nextStatus[order.status])} className="flex-1 h-10 bg-ink text-paper rounded-lg text-sm font-medium transition-colors hover:bg-ink/90">
                     {nextStatusLabel[order.status]}
                   </button>

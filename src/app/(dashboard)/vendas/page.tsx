@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useEffect } from "react"
 import { useFocusTrap } from "@/hooks/useFocusTrap"
+import { useRole } from "@/hooks/useRole"
 import { AppShell } from "@/components/layout/AppShell"
 import { Skeleton } from "@/components/ui/Skeleton"
 import { ErrorState } from "@/components/ui/ErrorState"
@@ -16,6 +17,7 @@ const channelColors: Record<string, string> = {
 };
 
 export default function VendasPage() {
+  const { canEdit } = useRole();
   const [sales, setSales] = useState<any[]>([])
   const [products, setProducts] = useState<any[]>([])
   const [channels, setChannels] = useState<any[]>([])
@@ -117,10 +119,12 @@ export default function VendasPage() {
               Total: R$ {totalRevenue.toLocaleString("pt-BR")} · {sales.length} vendas
             </p>
           </div>
-          <button onClick={() => { setFormChannel(""); setFormItems([]); setFormTotal(0); setShowModal(true); }} className="flex items-center gap-2 h-10 px-4 bg-ink text-paper rounded-lg text-sm font-medium hover:bg-ink/90 transition-colors">
-            <Plus className="w-4 h-4" />
-            Nova Venda
-          </button>
+          {canEdit && (
+            <button onClick={() => { setFormChannel(""); setFormItems([]); setFormTotal(0); setShowModal(true); }} className="flex items-center gap-2 h-10 px-4 bg-ink text-paper rounded-lg text-sm font-medium hover:bg-ink/90 transition-colors">
+              <Plus className="w-4 h-4" />
+              Nova Venda
+            </button>
+          )}
         </div>
 
         <div className="relative">
@@ -189,7 +193,9 @@ export default function VendasPage() {
                         <td className="px-4 py-3 text-sm font-semibold text-ink text-right">R$ {sale.total}</td>
                         <td className="px-4 py-3 text-sm text-muted">{new Date(sale.createdAt).toLocaleDateString("pt-BR")}</td>
                         <td className="px-4 py-3 text-center">
-                          <button onClick={() => handleDeleteSale(sale.id)} aria-label="Excluir" className="p-1.5 rounded-md hover:bg-cream text-danger"><Trash2 className="w-4 h-4" /></button>
+                          {canEdit && (
+                            <button onClick={() => handleDeleteSale(sale.id)} aria-label="Excluir" className="p-1.5 rounded-md hover:bg-cream text-danger"><Trash2 className="w-4 h-4" /></button>
+                          )}
                         </td>
                       </tr>
                     )

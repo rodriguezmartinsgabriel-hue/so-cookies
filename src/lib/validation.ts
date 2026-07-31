@@ -197,3 +197,18 @@ export const updatePriceTierSchema = z.object({
   maxQty: z.number().int().optional(),
   price: z.number().min(0).optional(),
 })
+
+export const USER_ROLES = ["ADMIN", "OPERACIONAL", "VISUALIZADOR"] as const
+
+export const createUserSchema = z.object({
+  name: z.string().min(1, "Nome é obrigatório"),
+  email: z.string().email("E-mail inválido"),
+  password: z.string().min(6, "Senha deve ter no mínimo 6 caracteres"),
+  role: z.enum(USER_ROLES).default("OPERACIONAL"),
+})
+
+export const updateUserSchema = z.object({
+  name: z.string().min(1).optional(),
+  role: z.enum(USER_ROLES).optional(),
+  password: z.string().min(6, "Senha deve ter no mínimo 6 caracteres").optional(),
+})

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
+import { useRole } from "@/hooks/useRole";
 import { AppShell } from "@/components/layout/AppShell";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { ErrorState } from "@/components/ui/ErrorState";
@@ -9,6 +10,7 @@ import { repository } from "@/lib/repository";
 import { Plus, Search, Package, Edit, Trash2, X, AlertTriangle } from "lucide-react";
 
 export default function EstoquePage() {
+  const { canEdit } = useRole();
   const [search, setSearch] = useState("");
   const [showModal, setShowModal] = useState(false);
   const modalRef = useFocusTrap(showModal);
@@ -114,13 +116,15 @@ export default function EstoquePage() {
               {ingredients.length} insumos · Estoque total: R$ {totalValue.toFixed(2)}
             </p>
           </div>
-          <button
-            onClick={() => { resetForm(); setShowModal(true); }}
-            className="flex items-center gap-2 h-10 px-4 bg-ink text-paper rounded-lg text-sm font-medium hover:bg-ink/90 transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            Novo Insumo
-          </button>
+          {canEdit && (
+            <button
+              onClick={() => { resetForm(); setShowModal(true); }}
+              className="flex items-center gap-2 h-10 px-4 bg-ink text-paper rounded-lg text-sm font-medium hover:bg-ink/90 transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              Novo Insumo
+            </button>
+          )}
         </div>
 
         <div className="flex gap-2 border-b border-line pb-2">
@@ -191,8 +195,12 @@ export default function EstoquePage() {
                         <p className="text-xs text-muted">{item.supplier}</p>
                       </div>
                       <div className="flex gap-1">
-                        <button onClick={() => openEdit(item)} aria-label="Editar" className="p-1.5 rounded-md hover:bg-cream text-muted"><Edit className="w-4 h-4" /></button>
-                        <button onClick={() => handleDelete(item.id)} aria-label="Excluir" className="p-1.5 rounded-md hover:bg-cream text-danger"><Trash2 className="w-4 h-4" /></button>
+                        {canEdit && (
+                          <>
+                            <button onClick={() => openEdit(item)} aria-label="Editar" className="p-1.5 rounded-md hover:bg-cream text-muted"><Edit className="w-4 h-4" /></button>
+                            <button onClick={() => handleDelete(item.id)} aria-label="Excluir" className="p-1.5 rounded-md hover:bg-cream text-danger"><Trash2 className="w-4 h-4" /></button>
+                          </>
+                        )}
                       </div>
                     </div>
                     <div className="grid grid-cols-3 gap-2 mt-2 text-xs">
@@ -248,8 +256,12 @@ export default function EstoquePage() {
                           <td className="px-4 py-3 text-sm font-semibold text-ink text-right">R$ {((item.stockKg || 0) * (item.costPerKg || 0)).toFixed(2)}</td>
                           <td className="px-4 py-3 text-center">
                             <div className="flex items-center justify-center gap-1">
-                              <button onClick={() => openEdit(item)} aria-label="Editar" className="p-1.5 rounded-md hover:bg-cream text-muted"><Edit className="w-4 h-4" /></button>
-                              <button onClick={() => handleDelete(item.id)} aria-label="Excluir" className="p-1.5 rounded-md hover:bg-cream text-danger"><Trash2 className="w-4 h-4" /></button>
+                              {canEdit && (
+                                <>
+                                  <button onClick={() => openEdit(item)} aria-label="Editar" className="p-1.5 rounded-md hover:bg-cream text-muted"><Edit className="w-4 h-4" /></button>
+                                  <button onClick={() => handleDelete(item.id)} aria-label="Excluir" className="p-1.5 rounded-md hover:bg-cream text-danger"><Trash2 className="w-4 h-4" /></button>
+                                </>
+                              )}
                             </div>
                           </td>
                         </tr>
@@ -339,6 +351,7 @@ export default function EstoquePage() {
 }
 
 function PriceTiersTab() {
+  const { canEdit } = useRole();
   const [tiers, setTiers] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -408,9 +421,11 @@ function PriceTiersTab() {
   return (
     <div className="space-y-4">
       <div className="flex justify-end">
-        <button onClick={() => { setEditingTier(null); setForm({ name: "", minQty: "", maxQty: "", price: "", productId: "", type: "assado" }); setShowModal(true); }} className="flex items-center gap-2 h-10 px-4 bg-ink text-paper rounded-lg text-sm font-medium hover:bg-ink/90 transition-colors">
-          <Plus className="w-4 h-4" /> Nova Faixa
-        </button>
+        {canEdit && (
+          <button onClick={() => { setEditingTier(null); setForm({ name: "", minQty: "", maxQty: "", price: "", productId: "", type: "assado" }); setShowModal(true); }} className="flex items-center gap-2 h-10 px-4 bg-ink text-paper rounded-lg text-sm font-medium hover:bg-ink/90 transition-colors">
+            <Plus className="w-4 h-4" /> Nova Faixa
+          </button>
+        )}
       </div>
 
       {error && <ErrorState message={error} onRetry={() => window.location.reload()} />}
@@ -456,8 +471,12 @@ function PriceTiersTab() {
                       <td className="px-4 py-3 text-sm font-semibold text-ink text-right">R$ {tier.price.toFixed(2)}</td>
                       <td className="px-4 py-3 text-center">
                         <div className="flex items-center justify-center gap-1">
-                          <button onClick={() => { setEditingTier(tier); setForm({ name: tier.name, minQty: String(tier.minQty), maxQty: tier.maxQty ? String(tier.maxQty) : "", price: String(tier.price), productId: tier.productId || "", type: "assado" }); setShowModal(true); }} aria-label="Editar" className="p-1.5 rounded-md hover:bg-cream text-muted"><Edit className="w-4 h-4" /></button>
-                          <button onClick={() => handleDelete(tier.id)} aria-label="Excluir" className="p-1.5 rounded-md hover:bg-cream text-danger"><Trash2 className="w-4 h-4" /></button>
+                          {canEdit && (
+                            <>
+                              <button onClick={() => { setEditingTier(tier); setForm({ name: tier.name, minQty: String(tier.minQty), maxQty: tier.maxQty ? String(tier.maxQty) : "", price: String(tier.price), productId: tier.productId || "", type: "assado" }); setShowModal(true); }} aria-label="Editar" className="p-1.5 rounded-md hover:bg-cream text-muted"><Edit className="w-4 h-4" /></button>
+                              <button onClick={() => handleDelete(tier.id)} aria-label="Excluir" className="p-1.5 rounded-md hover:bg-cream text-danger"><Trash2 className="w-4 h-4" /></button>
+                            </>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -493,8 +512,12 @@ function PriceTiersTab() {
                       <td className="px-4 py-3 text-sm text-ink text-right">R$ {tier.price.toFixed(2)}</td>
                       <td className="px-4 py-3 text-center">
                         <div className="flex items-center justify-center gap-1">
-                          <button onClick={() => { setEditingTier(tier); setForm({ name: tier.name, minQty: String(tier.minQty), maxQty: tier.maxQty ? String(tier.maxQty) : "", price: String(tier.price), productId: tier.productId || "", type: "congelado" }); setShowModal(true); }} aria-label="Editar" className="p-1.5 rounded-md hover:bg-cream text-muted"><Edit className="w-4 h-4" /></button>
-                          <button onClick={() => handleDelete(tier.id)} aria-label="Excluir" className="p-1.5 rounded-md hover:bg-cream text-danger"><Trash2 className="w-4 h-4" /></button>
+                          {canEdit && (
+                            <>
+                              <button onClick={() => { setEditingTier(tier); setForm({ name: tier.name, minQty: String(tier.minQty), maxQty: tier.maxQty ? String(tier.maxQty) : "", price: String(tier.price), productId: tier.productId || "", type: "congelado" }); setShowModal(true); }} aria-label="Editar" className="p-1.5 rounded-md hover:bg-cream text-muted"><Edit className="w-4 h-4" /></button>
+                              <button onClick={() => handleDelete(tier.id)} aria-label="Excluir" className="p-1.5 rounded-md hover:bg-cream text-danger"><Trash2 className="w-4 h-4" /></button>
+                            </>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -558,6 +581,7 @@ function PriceTiersTab() {
 }
 
 function GeralTab({ ingredients, recipes, onUpdate }: { ingredients: any[]; recipes: any[]; onUpdate: () => void }) {
+  const { canEdit } = useRole();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editField, setEditField] = useState<"name" | "brand">("name");
   const [editValue, setEditValue] = useState("");
@@ -631,8 +655,8 @@ function GeralTab({ ingredients, recipes, onUpdate }: { ingredients: any[]; reci
                         />
                       ) : (
                         <span
-                          onClick={() => startEdit(item.id, "name", item.name)}
-                          className="text-sm font-medium text-ink cursor-pointer hover:bg-info/10 px-1 rounded transition-colors"
+                          onClick={() => canEdit && startEdit(item.id, "name", item.name)}
+                          className={`text-sm font-medium text-ink px-1 rounded transition-colors ${canEdit ? "cursor-pointer hover:bg-info/10" : ""}`}
                         >
                           {item.name}
                         </span>
@@ -651,8 +675,8 @@ function GeralTab({ ingredients, recipes, onUpdate }: { ingredients: any[]; reci
                         />
                       ) : (
                         <span
-                          onClick={() => startEdit(item.id, "brand", item.brand || "")}
-                          className="text-sm text-muted cursor-pointer hover:bg-info/10 px-1 rounded transition-colors"
+                          onClick={() => canEdit && startEdit(item.id, "brand", item.brand || "")}
+                          className={`text-sm text-muted px-1 rounded transition-colors ${canEdit ? "cursor-pointer hover:bg-info/10" : ""}`}
                         >
                           {item.brand || <span className="italic text-kraft">adicionar</span>}
                         </span>
@@ -678,30 +702,32 @@ function GeralTab({ ingredients, recipes, onUpdate }: { ingredients: any[]; reci
         </div>
       </div>
 
-      <div className="border border-dashed border-line rounded-lg bg-paper p-4">
-        <p className="text-xs font-semibold text-muted uppercase tracking-wide mb-3">Adicionar Insumo</p>
-        <div className="flex items-center gap-2">
-          <input
-            type="text"
-            placeholder="Nome do insumo"
-            value={newName}
-            onChange={(e) => setNewName(e.target.value)}
-            onKeyDown={(e) => { if (e.key === "Enter") handleAdd(); }}
-            className="flex-1 h-9 px-3 border border-line rounded-lg text-sm text-ink placeholder:text-kraft focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink transition-colors"
-          />
-          <input
-            type="text"
-            placeholder="Marca (opcional)"
-            value={newBrand}
-            onChange={(e) => setNewBrand(e.target.value)}
-            onKeyDown={(e) => { if (e.key === "Enter") handleAdd(); }}
-            className="w-40 h-9 px-3 border border-line rounded-lg text-sm text-ink placeholder:text-kraft focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink transition-colors"
-          />
-          <button onClick={handleAdd} aria-label="Adicionar" className="h-9 px-4 bg-ink text-paper rounded-lg text-sm font-medium hover:bg-ink/90 transition-colors">
-            <Plus className="w-4 h-4" />
-          </button>
+      {canEdit && (
+        <div className="border border-dashed border-line rounded-lg bg-paper p-4">
+          <p className="text-xs font-semibold text-muted uppercase tracking-wide mb-3">Adicionar Insumo</p>
+          <div className="flex items-center gap-2">
+            <input
+              type="text"
+              placeholder="Nome do insumo"
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") handleAdd(); }}
+              className="flex-1 h-9 px-3 border border-line rounded-lg text-sm text-ink placeholder:text-kraft focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink transition-colors"
+            />
+            <input
+              type="text"
+              placeholder="Marca (opcional)"
+              value={newBrand}
+              onChange={(e) => setNewBrand(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") handleAdd(); }}
+              className="w-40 h-9 px-3 border border-line rounded-lg text-sm text-ink placeholder:text-kraft focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink transition-colors"
+            />
+            <button onClick={handleAdd} aria-label="Adicionar" className="h-9 px-4 bg-ink text-paper rounded-lg text-sm font-medium hover:bg-ink/90 transition-colors">
+              <Plus className="w-4 h-4" />
+            </button>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

@@ -3,6 +3,7 @@
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useRole } from "@/hooks/useRole";
 import { AppShell } from "@/components/layout/AppShell";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { ErrorState } from "@/components/ui/ErrorState";
@@ -20,6 +21,7 @@ import {
   AlertTriangle,
   ArrowUpRight,
   ArrowDownLeft,
+  Users,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -34,10 +36,12 @@ const modules = [
   { label: "Relatórios", icon: BarChart3, href: "/relatorios", color: "bg-muted/10 text-muted", desc: "Análises" },
   { label: "Indicadores", icon: ClipboardList, href: "/indicadores", color: "bg-warning/10 text-warning", desc: "Indicadores do negócio" },
   { label: "Canais", icon: Store, href: "/canais", color: "bg-info/10 text-info", desc: "Canais de venda" },
+  { label: "Usuários", icon: Users, href: "/usuarios", color: "bg-muted/10 text-muted", desc: "Acesso e permissões", adminOnly: true },
 ];
 
 export default function HomePage() {
   const { data: session, status } = useSession();
+  const { isAdmin } = useRole();
   const router = useRouter();
   const [kpis, setKpis] = useState<any>(null);
   const [lowStock, setLowStock] = useState<any[]>([]);
@@ -192,7 +196,7 @@ export default function HomePage() {
             Módulos
           </h2>
           <div className="grid grid-cols-3 lg:grid-cols-3 gap-3">
-            {modules.map((mod) => (
+            {modules.filter((mod) => !mod.adminOnly || isAdmin).map((mod) => (
               <Link
                 key={mod.label}
                 href={mod.href}

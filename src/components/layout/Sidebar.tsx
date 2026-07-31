@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
+import { useRole } from "@/hooks/useRole";
 import {
   Home,
   ShoppingBag,
@@ -14,6 +15,7 @@ import {
   BarChart3,
   BookOpen,
   Store,
+  Users,
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
@@ -30,11 +32,14 @@ const navItems = [
   { href: "/producao", label: "Produção", icon: Factory },
   { href: "/documentos", label: "Documentos", icon: BookOpen },
   { href: "/relatorios", label: "Relatórios", icon: BarChart3 },
+  { href: "/usuarios", label: "Usuários", icon: Users, adminOnly: true },
 ];
 
 export function Sidebar() {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
+  const { isAdmin } = useRole();
+  const visibleItems = navItems.filter((item) => !item.adminOnly || isAdmin);
 
   return (
     <aside
@@ -65,7 +70,7 @@ export function Sidebar() {
       </div>
 
       <nav className="flex-1 py-2 px-2 space-y-0.5 overflow-y-auto">
-        {navItems.map((item) => {
+        {visibleItems.map((item) => {
           const isActive = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href));
           return (
             <Link

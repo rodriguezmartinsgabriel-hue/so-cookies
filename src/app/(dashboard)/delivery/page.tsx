@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
+import { useRole } from "@/hooks/useRole"
 import { AppShell } from "@/components/layout/AppShell"
 import { Skeleton } from "@/components/ui/Skeleton"
 import { ErrorState } from "@/components/ui/ErrorState"
@@ -16,6 +17,7 @@ const statusConfig: Record<string, { label: string; color: string }> = {
 const channelFilters = ["Todos", "iFood", "Rappi", "WhatsApp", "Direto"]
 
 export default function DeliveryPage() {
+  const { canEdit } = useRole();
   const [orders, setOrders] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -121,7 +123,7 @@ export default function DeliveryPage() {
                     <div className="text-right">
                       <span className="text-sm font-bold text-ink">R$ {order.total}</span>
                       <div className="mt-2">
-                        {order.status !== "CONCLUIDO" && (
+                        {canEdit && order.status !== "CONCLUIDO" && (
                           <button
                             onClick={() => handleMarkDelivered(order.id)}
                             className="flex items-center gap-1 text-xs px-3 py-1.5 bg-success/10 text-success rounded-lg font-medium hover:bg-success/20 transition-colors"
