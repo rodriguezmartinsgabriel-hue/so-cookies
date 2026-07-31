@@ -6,7 +6,7 @@ import { useRole } from "@/hooks/useRole"
 import { AppShell } from "@/components/layout/AppShell"
 import { Skeleton } from "@/components/ui/Skeleton"
 import { ErrorState } from "@/components/ui/ErrorState"
-import { repository } from "@/lib/repository"
+import { repository, onDataRefresh } from "@/lib/repository"
 import { Plus, ArrowUpRight, ArrowDownLeft, X, Trash2, Edit } from "lucide-react"
 
 function localDateString(d: Date) {
@@ -44,7 +44,6 @@ export default function CaixaPage() {
   const [editDate, setEditDate] = useState("")
 
   const loadEntries = useCallback(async () => {
-    setLoading(true)
     try {
       const data = await repository.cashFlow.getAll()
       setEntries(data)
@@ -55,6 +54,10 @@ export default function CaixaPage() {
   }, [])
 
   useEffect(() => { loadEntries() }, [loadEntries])
+
+  useEffect(() => {
+    return onDataRefresh(() => { loadEntries() })
+  }, [loadEntries])
 
   async function handleSave() {
     if (!formCategory || !formAmount) return

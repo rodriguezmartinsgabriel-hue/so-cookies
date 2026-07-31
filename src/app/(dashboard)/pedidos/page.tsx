@@ -6,7 +6,7 @@ import { useRole } from "@/hooks/useRole"
 import { AppShell } from "@/components/layout/AppShell"
 import { Skeleton } from "@/components/ui/Skeleton"
 import { ErrorState } from "@/components/ui/ErrorState"
-import { repository } from "@/lib/repository"
+import { repository, onDataRefresh } from "@/lib/repository"
 import { Clock, ChefHat, Package, Truck, X, Plus, Check, Edit, Trash2, Ban, ChevronDown, ChevronRight } from "lucide-react"
 
 const columns = [
@@ -75,15 +75,14 @@ export default function PedidosPage() {
   const [editForm, setEditForm] = useState({ customer: "", notes: "" })
 
   const loadData = useCallback(async () => {
-    setLoading(true)
     try {
-      const [ordersData, prodsResp, channelsData] = await Promise.allSettled([
+      const [ordersData, prodsData, channelsData] = await Promise.allSettled([
         repository.orders.getAll(),
-        fetch("/api/products").then((r) => r.ok ? r.json() : []),
+        repository.products.getAll(),
         repository.channels.getAll(),
       ])
       if (ordersData.status === "fulfilled") setOrders(ordersData.value)
-      if (prodsResp.status === "fulfilled") setProducts(prodsResp.value)
+      if (prodsData.status === "fulfilled") setProducts(prodsData.value)
       if (channelsData.status === "fulfilled") setChannels(channelsData.value)
     } catch {
       setError("Erro ao carregar pedidos")
@@ -92,6 +91,10 @@ export default function PedidosPage() {
   }, [])
 
   useEffect(() => { loadData() }, [loadData])
+
+  useEffect(() => {
+    return onDataRefresh(() => { loadData() })
+  }, [loadData])
 
   const order = orders.find((o: any) => o.id === selectedOrder)
 

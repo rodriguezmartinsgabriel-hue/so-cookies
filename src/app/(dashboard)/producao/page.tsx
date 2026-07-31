@@ -6,7 +6,7 @@ import { useRole } from "@/hooks/useRole"
 import { AppShell } from "@/components/layout/AppShell"
 import { Skeleton } from "@/components/ui/Skeleton"
 import { ErrorState } from "@/components/ui/ErrorState"
-import { repository } from "@/lib/repository"
+import { repository, onDataRefresh } from "@/lib/repository"
 import { ChefHat, Clock, CheckCircle, Plus, X, Edit, Trash2 } from "lucide-react"
 
 const statusConfig: Record<string, { label: string; color: string; icon: typeof Clock }> = {
@@ -34,14 +34,13 @@ export default function ProducaoPage() {
   const [editForm, setEditForm] = useState({ qty: "", notes: "" })
 
   const loadData = useCallback(async () => {
-    setLoading(true)
     try {
-      const [batchesData, prodsResp] = await Promise.allSettled([
+      const [batchesData, prodsData] = await Promise.allSettled([
         repository.productions.getAll(),
-        fetch("/api/products").then((r) => r.ok ? r.json() : []),
+        repository.products.getAll(),
       ])
       if (batchesData.status === "fulfilled") setBatches(batchesData.value)
-      if (prodsResp.status === "fulfilled") setProducts(prodsResp.value)
+      if (prodsData.status === "fulfilled") setProducts(prodsData.value)
     } catch {
       setError("Erro ao carregar produção")
     }
@@ -49,6 +48,10 @@ export default function ProducaoPage() {
   }, [])
 
   useEffect(() => { loadData() }, [loadData])
+
+  useEffect(() => {
+    return onDataRefresh(() => { loadData() })
+  }, [loadData])
 
   async function handleStatusChange(id: string, newStatus: string) {
     const endTime = newStatus === "concluido" ? new Date().toISOString() : undefined

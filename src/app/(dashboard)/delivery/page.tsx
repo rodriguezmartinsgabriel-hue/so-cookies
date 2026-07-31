@@ -6,7 +6,7 @@ import { AppShell } from "@/components/layout/AppShell"
 import { Skeleton } from "@/components/ui/Skeleton"
 import { ErrorState } from "@/components/ui/ErrorState"
 import { MapPin, Check, Truck } from "lucide-react"
-import { repository } from "@/lib/repository"
+import { repository, onDataRefresh } from "@/lib/repository"
 
 const statusConfig: Record<string, { label: string; color: string }> = {
   ENTREGA: { label: "Em Rota", color: "text-info bg-info/10" },
@@ -24,10 +24,9 @@ export default function DeliveryPage() {
   const [activeFilter, setActiveFilter] = useState("Todos")
 
   const loadOrders = useCallback(async () => {
-    setLoading(true)
     try {
-      const resp = await fetch("/api/orders")
-      if (resp.ok) setOrders(await resp.json())
+      const data = await repository.orders.getAll()
+      setOrders(data)
     } catch {
       setError("Erro ao carregar entregas")
     }
@@ -35,6 +34,10 @@ export default function DeliveryPage() {
   }, [])
 
   useEffect(() => { loadOrders() }, [loadOrders])
+
+  useEffect(() => {
+    return onDataRefresh(() => { loadOrders() })
+  }, [loadOrders])
 
   const deliveryOrders = orders
     .filter((o: any) => ["ENTREGA", "PRONTO", "CONCLUIDO"].includes(o.status))

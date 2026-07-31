@@ -11,13 +11,38 @@ function now() {
   return new Date().toISOString()
 }
 
+type RefreshListener = () => void
+let refreshListeners: RefreshListener[] = []
+
+const fetchThrottle = new Map<string, number>()
+
+function shouldFetch(url: string) {
+  const now = Date.now()
+  const last = fetchThrottle.get(url) || 0
+  if (now - last < 2000) return false
+  fetchThrottle.set(url, now)
+  return true
+}
+
+export function onDataRefresh(fn: RefreshListener) {
+  refreshListeners.push(fn)
+  return () => {
+    refreshListeners = refreshListeners.filter((f) => f !== fn)
+  }
+}
+
+function emitDataRefresh() {
+  refreshListeners.forEach((fn) => fn())
+}
+
 export const repository = {
   orders: {
     async getAll() {
-      if (isOnline()) {
-        try {
-          const resp = await fetch("/api/orders")
-          if (resp.ok) {
+      const cached = await db.orders.toArray()
+      if (isOnline() && shouldFetch("/api/orders")) {
+        fetch("/api/orders")
+          .then(async (resp) => {
+            if (!resp.ok) return
             const data = await resp.json()
             const realIds = new Set(data.map((o: any) => o.id))
             const localOnly = await db.orders.toArray()
@@ -33,12 +58,11 @@ export const repository = {
               .filter((o: any) => !unsyncedIds.has(o.id))
               .map((o: any) => ({ ...o, _synced: true, _updatedAt: now() }))
             await db.orders.bulkPut(toUpsert)
-          }
-        } catch (e) {
-          console.error("Erro ao sync orders:", e)
-        }
+            emitDataRefresh()
+          })
+          .catch((e) => console.error("Erro ao sync orders:", e))
       }
-      return db.orders.toArray()
+      return cached
     },
 
     async create(data: { channel: string; customer: string; total: number; notes?: string; items: { productId: string; qty: number; price: number }[] }) {
@@ -83,10 +107,11 @@ export const repository = {
 
   sales: {
     async getAll() {
-      if (isOnline()) {
-        try {
-          const resp = await fetch("/api/sales")
-          if (resp.ok) {
+      const cached = await db.sales.toArray()
+      if (isOnline() && shouldFetch("/api/sales")) {
+        fetch("/api/sales")
+          .then(async (resp) => {
+            if (!resp.ok) return
             const data = await resp.json()
             const realIds = new Set(data.map((s: any) => s.id))
             const localOnly = await db.sales.toArray()
@@ -98,12 +123,11 @@ export const repository = {
             }
             const unsyncedIds = new Set((await db.sales.where("_synced").equals(0).toArray()).map((s) => s.id))
             await db.sales.bulkPut(data.filter((s: any) => !unsyncedIds.has(s.id)).map((s: any) => ({ ...s, _synced: true, _updatedAt: now() })))
-          }
-        } catch (e) {
-          console.error("Erro ao sync:", e)
-        }
+            emitDataRefresh()
+          })
+          .catch((e) => console.error("Erro ao sync:", e))
       }
-      return db.sales.toArray()
+      return cached
     },
 
     async create(data: { channelId: string; total: number; userId?: string; items: { productId: string; qty: number; price: number }[] }) {
@@ -134,10 +158,11 @@ export const repository = {
 
   cashFlow: {
     async getAll() {
-      if (isOnline()) {
-        try {
-          const resp = await fetch("/api/cashflow")
-          if (resp.ok) {
+      const cached = await db.cashFlow.toArray()
+      if (isOnline() && shouldFetch("/api/cashflow")) {
+        fetch("/api/cashflow")
+          .then(async (resp) => {
+            if (!resp.ok) return
             const data = await resp.json()
             const realIds = new Set(data.map((e: any) => e.id))
             const localOnly = await db.cashFlow.toArray()
@@ -148,12 +173,11 @@ export const repository = {
             }
             const unsyncedIds = new Set((await db.cashFlow.where("_synced").equals(0).toArray()).map((e) => e.id))
             await db.cashFlow.bulkPut(data.filter((e: any) => !unsyncedIds.has(e.id)).map((e: any) => ({ ...e, _synced: true, _updatedAt: now() })))
-          }
-        } catch (e) {
-          console.error("Erro ao sync:", e)
-        }
+            emitDataRefresh()
+          })
+          .catch((e) => console.error("Erro ao sync:", e))
       }
-      return db.cashFlow.toArray()
+      return cached
     },
 
     async create(data: { type: "ENTRADA" | "SAIDA"; category: string; description: string; amount: number; userId?: string; date?: string }) {
@@ -183,10 +207,11 @@ export const repository = {
 
   productions: {
     async getAll() {
-      if (isOnline()) {
-        try {
-          const resp = await fetch("/api/productions")
-          if (resp.ok) {
+      const cached = await db.productions.toArray()
+      if (isOnline() && shouldFetch("/api/productions")) {
+        fetch("/api/productions")
+          .then(async (resp) => {
+            if (!resp.ok) return
             const data = await resp.json()
             const realIds = new Set(data.map((p: any) => p.id))
             const localOnly = await db.productions.toArray()
@@ -197,12 +222,11 @@ export const repository = {
             }
             const unsyncedIds = new Set((await db.productions.where("_synced").equals(0).toArray()).map((p) => p.id))
             await db.productions.bulkPut(data.filter((p: any) => !unsyncedIds.has(p.id)).map((p: any) => ({ ...p, _synced: true, _updatedAt: now() })))
-          }
-        } catch (e) {
-          console.error("Erro ao sync:", e)
-        }
+            emitDataRefresh()
+          })
+          .catch((e) => console.error("Erro ao sync:", e))
       }
-      return db.productions.toArray()
+      return cached
     },
 
     async create(data: { batchCode: string; productId: string; qty: number; status?: string; notes?: string }) {
@@ -239,27 +263,28 @@ export const repository = {
 
   products: {
     async getAll() {
-      if (isOnline()) {
-        try {
-          const resp = await fetch("/api/products")
-          if (resp.ok) {
+      const cached = await db.products.toArray()
+      if (isOnline() && shouldFetch("/api/products")) {
+        fetch("/api/products")
+          .then(async (resp) => {
+            if (!resp.ok) return
             const data = await resp.json()
             await db.products.bulkPut(data.map((p: any) => ({ ...p, _synced: true })))
-          }
-        } catch (e) {
-          console.error("Erro ao sync:", e)
-        }
+            emitDataRefresh()
+          })
+          .catch((e) => console.error("Erro ao sync:", e))
       }
-      return db.products.toArray()
+      return cached
     },
   },
 
   ingredients: {
     async getAll() {
-      if (isOnline()) {
-        try {
-          const resp = await fetch("/api/ingredients")
-          if (resp.ok) {
+      const cached = await db.ingredients.toArray()
+      if (isOnline() && shouldFetch("/api/ingredients")) {
+        fetch("/api/ingredients")
+          .then(async (resp) => {
+            if (!resp.ok) return
             const data = await resp.json()
             const realIds = new Set(data.map((i: any) => i.id))
             const localOnly = await db.ingredients.toArray()
@@ -270,12 +295,11 @@ export const repository = {
             }
             const unsyncedIds = new Set((await db.ingredients.where("_synced").equals(0).toArray()).map((i) => i.id))
             await db.ingredients.bulkPut(data.filter((i: any) => !unsyncedIds.has(i.id)).map((i: any) => ({ ...i, _synced: true, _updatedAt: now() })))
-          }
-        } catch (e) {
-          console.error("Erro ao sync:", e)
-        }
+            emitDataRefresh()
+          })
+          .catch((e) => console.error("Erro ao sync:", e))
       }
-      return db.ingredients.toArray()
+      return cached
     },
 
     async create(data: { name: string; brand?: string; stockKg?: number; minStockKg?: number; costPerKg: number; supplier: string; caloriesPer100g?: number; proteinPer100g?: number; carbsPer100g?: number; fatPer100g?: number }) {
@@ -305,10 +329,11 @@ export const repository = {
 
   channels: {
     async getAll() {
-      if (isOnline()) {
-        try {
-          const resp = await fetch("/api/channels")
-          if (resp.ok) {
+      const cached = await db.channels.toArray()
+      if (isOnline() && shouldFetch("/api/channels")) {
+        fetch("/api/channels")
+          .then(async (resp) => {
+            if (!resp.ok) return
             const data = await resp.json()
             const realIds = new Set(data.map((c: any) => c.id))
             const localOnly = await db.channels.toArray()
@@ -319,12 +344,11 @@ export const repository = {
             }
             const unsyncedIds = new Set((await db.channels.where("_synced").equals(0).toArray()).map((c) => c.id))
             await db.channels.bulkPut(data.filter((c: any) => !unsyncedIds.has(c.id)).map((c: any) => ({ ...c, _synced: true, _updatedAt: now() })))
-          }
-        } catch (e) {
-          console.error("Erro ao sync:", e)
-        }
+            emitDataRefresh()
+          })
+          .catch((e) => console.error("Erro ao sync:", e))
       }
-      return db.channels.toArray()
+      return cached
     },
 
     async create(data: { name: string; commission?: number }) {
@@ -354,10 +378,11 @@ export const repository = {
 
   priceTiers: {
     async getAll() {
-      if (isOnline()) {
-        try {
-          const resp = await fetch("/api/price-tiers")
-          if (resp.ok) {
+      const cached = await db.priceTiers.toArray()
+      if (isOnline() && shouldFetch("/api/price-tiers")) {
+        fetch("/api/price-tiers")
+          .then(async (resp) => {
+            if (!resp.ok) return
             const data = await resp.json()
             const realIds = new Set(data.map((t: any) => t.id))
             const localOnly = await db.priceTiers.toArray()
@@ -368,12 +393,11 @@ export const repository = {
             }
             const unsyncedIds = new Set((await db.priceTiers.where("_synced").equals(0).toArray()).map((t) => t.id))
             await db.priceTiers.bulkPut(data.filter((t: any) => !unsyncedIds.has(t.id)).map((t: any) => ({ ...t, _synced: true, _updatedAt: now() })))
-          }
-        } catch (e) {
-          console.error("Erro ao sync:", e)
-        }
+            emitDataRefresh()
+          })
+          .catch((e) => console.error("Erro ao sync:", e))
       }
-      return db.priceTiers.toArray()
+      return cached
     },
 
     async create(data: { name: string; minQty: number; maxQty?: number; price: number; productId?: string }) {
@@ -403,10 +427,11 @@ export const repository = {
 
   recipes: {
     async getAll() {
-      if (isOnline()) {
-        try {
-          const resp = await fetch("/api/recipes")
-          if (resp.ok) {
+      const cached = (await db.recipes.toArray()).map((r) => ({ ...r, ingredients: JSON.parse(r.ingredients) }))
+      if (isOnline() && shouldFetch("/api/recipes")) {
+        fetch("/api/recipes")
+          .then(async (resp) => {
+            if (!resp.ok) return
             const data = await resp.json()
             const realIds = new Set(data.map((r: any) => r.id))
             const localOnly = await db.recipes.toArray()
@@ -421,12 +446,11 @@ export const repository = {
               .filter((r: any) => !unsyncedIds.has(r.id))
               .map((r: any) => ({ ...r, ingredients: JSON.stringify(r.ingredients || []), _synced: true, _updatedAt: now() }))
             await db.recipes.bulkPut(toUpsert)
-          }
-        } catch (e) {
-          console.error("Erro ao sync:", e)
-        }
+            emitDataRefresh()
+          })
+          .catch((e) => console.error("Erro ao sync:", e))
       }
-      return (await db.recipes.toArray()).map((r) => ({ ...r, ingredients: JSON.parse(r.ingredients) }))
+      return cached
     },
 
     async create(data: { name: string; yield: number; yieldUnit?: string; totalCost?: number; productId?: string; ingredients: { ingredientId: string; qty: number; unit: string }[] }) {
@@ -476,10 +500,11 @@ export const repository = {
 
   documents: {
     async getAll() {
-      if (isOnline()) {
-        try {
-          const resp = await fetch("/api/documents")
-          if (resp.ok) {
+      const cached = await db.documents.toArray()
+      if (isOnline() && shouldFetch("/api/documents")) {
+        fetch("/api/documents")
+          .then(async (resp) => {
+            if (!resp.ok) return
             const data = await resp.json()
             const realIds = new Set(data.map((d: any) => d.id))
             const localOnly = await db.documents.toArray()
@@ -490,12 +515,11 @@ export const repository = {
             }
             const unsyncedIds = new Set((await db.documents.where("_synced").equals(0).toArray()).map((d) => d.id))
             await db.documents.bulkPut(data.filter((d: any) => !unsyncedIds.has(d.id)).map((d: any) => ({ ...d, _synced: true, _updatedAt: now() })))
-          }
-        } catch (e) {
-          console.error("Erro ao sync:", e)
-        }
+            emitDataRefresh()
+          })
+          .catch((e) => console.error("Erro ao sync:", e))
       }
-      return db.documents.toArray()
+      return cached
     },
 
     async create(data: { title: string; description?: string; category: string; content?: string; fileUrl?: string; tags?: string; userId?: string }) {
@@ -525,10 +549,11 @@ export const repository = {
 
   deliveryCosts: {
     async getAll() {
-      if (isOnline()) {
-        try {
-          const resp = await fetch("/api/delivery-cost")
-          if (resp.ok) {
+      const cached = await db.deliveryCosts.toArray()
+      if (isOnline() && shouldFetch("/api/delivery-cost")) {
+        fetch("/api/delivery-cost")
+          .then(async (resp) => {
+            if (!resp.ok) return
             const data = await resp.json()
             const realIds = new Set(data.map((c: any) => c.id))
             const localOnly = await db.deliveryCosts.toArray()
@@ -539,12 +564,11 @@ export const repository = {
             }
             const unsyncedIds = new Set((await db.deliveryCosts.where("_synced").equals(0).toArray()).map((c) => c.id))
             await db.deliveryCosts.bulkPut(data.filter((c: any) => !unsyncedIds.has(c.id)).map((c: any) => ({ ...c, _synced: true, _updatedAt: now() })))
-          }
-        } catch (e) {
-          console.error("Erro ao sync:", e)
-        }
+            emitDataRefresh()
+          })
+          .catch((e) => console.error("Erro ao sync:", e))
       }
-      return db.deliveryCosts.toArray()
+      return cached
     },
 
     async create(data: { date?: string; channel: string; orderId?: string; amount: number; notes?: string }) {
@@ -574,10 +598,11 @@ export const repository = {
 
   contacts: {
     async getAll() {
-      if (isOnline()) {
-        try {
-          const resp = await fetch("/api/contacts")
-          if (resp.ok) {
+      const cached = await db.contacts.toArray()
+      if (isOnline() && shouldFetch("/api/contacts")) {
+        fetch("/api/contacts")
+          .then(async (resp) => {
+            if (!resp.ok) return
             const data = await resp.json()
             const realIds = new Set(data.map((c: any) => c.id))
             const localOnly = await db.contacts.toArray()
@@ -596,12 +621,11 @@ export const repository = {
               .filter((i: any) => !unsyncedInteractionIds.has(i.id))
               .map((i: any) => ({ ...i, _synced: true, _updatedAt: now() }))
             if (toUpsert.length) await db.contactInteractions.bulkPut(toUpsert)
-          }
-        } catch (e) {
-          console.error("Erro ao sync contacts:", e)
-        }
+            emitDataRefresh()
+          })
+          .catch((e) => console.error("Erro ao sync contacts:", e))
       }
-      return db.contacts.toArray()
+      return cached
     },
 
     async create(data: { name: string; email?: string; phone?: string; type?: string; company?: string; notes?: string }) {
@@ -630,10 +654,12 @@ export const repository = {
     },
 
     async getInteractions(contactId: string) {
-      if (isOnline()) {
-        try {
-          const resp = await fetch(`/api/contacts/${contactId}/interactions`)
-          if (resp.ok) {
+      const items = await db.contactInteractions.where("contactId").equals(contactId).toArray()
+      const sorted = items.sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+      if (isOnline() && shouldFetch(`/api/contacts/${contactId}/interactions`)) {
+        fetch(`/api/contacts/${contactId}/interactions`)
+          .then(async (resp) => {
+            if (!resp.ok) return
             const data = await resp.json()
             const realIds = new Set(data.map((i: any) => i.id))
             const localOnly = await db.contactInteractions.where("contactId").equals(contactId).toArray()
@@ -644,13 +670,11 @@ export const repository = {
             }
             const unsyncedIds = new Set((await db.contactInteractions.where("_synced").equals(0).toArray()).map((i) => i.id))
             await db.contactInteractions.bulkPut(data.filter((i: any) => !unsyncedIds.has(i.id)).map((i: any) => ({ ...i, _synced: true, _updatedAt: now() })))
-          }
-        } catch (e) {
-          console.error("Erro ao sync interactions:", e)
-        }
+            emitDataRefresh()
+          })
+          .catch((e) => console.error("Erro ao sync interactions:", e))
       }
-      const items = await db.contactInteractions.where("contactId").equals(contactId).toArray()
-      return items.sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+      return sorted
     },
 
     async createInteraction(contactId: string, data: { type?: string; note: string }) {

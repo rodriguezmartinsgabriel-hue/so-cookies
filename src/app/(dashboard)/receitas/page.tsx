@@ -7,6 +7,7 @@ import { AppShell } from "@/components/layout/AppShell";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { Plus, X, Edit, Trash2, ChevronDown, ChevronUp } from "lucide-react";
+import { repository, onDataRefresh } from "@/lib/repository";
 
 export default function ReceitasPage() {
   const { canEdit } = useRole();
@@ -27,14 +28,13 @@ export default function ReceitasPage() {
   });
 
   const loadAll = useCallback(async () => {
-    setLoading(true);
     try {
       const [recipesResp, ingredientsResp] = await Promise.all([
-        fetch("/api/recipes"),
-        fetch("/api/ingredients"),
+        repository.recipes.getAll(),
+        repository.ingredients.getAll(),
       ]);
-      if (recipesResp.ok) setRecipes(await recipesResp.json());
-      if (ingredientsResp.ok) setIngredients(await ingredientsResp.json());
+      setRecipes(recipesResp);
+      setIngredients(ingredientsResp);
     } catch {
       setError("Erro ao carregar receitas");
     }
@@ -42,6 +42,10 @@ export default function ReceitasPage() {
   }, []);
 
   useEffect(() => { loadAll(); }, [loadAll]);
+
+  useEffect(() => {
+    return onDataRefresh(() => { loadAll(); });
+  }, [loadAll]);
 
   function resetForm() {
     setForm({ name: "", yield: "", yieldUnit: "un", ingredients: [] });
@@ -125,21 +129,10 @@ export default function ReceitasPage() {
         })),
     };
 
-    const res = editingRecipe
-      ? await fetch(`/api/recipes/${editingRecipe.id}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        })
-      : await fetch("/api/recipes", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        });
-    if (!res.ok) {
-      const data = await res.json().catch(() => null);
-      alert(data?.error || "Erro ao salvar receita");
-      return;
+    if (editingRecipe) {
+      await repository.recipes.update(editingRecipe.id, payload);
+    } else {
+      await repository.recipes.create(payload);
     }
     setShowModal(false);
     resetForm();
@@ -148,12 +141,7 @@ export default function ReceitasPage() {
 
   async function handleDelete(id: string) {
     if (!confirm("Excluir esta receita?")) return;
-    const res = await fetch(`/api/recipes/${id}`, { method: "DELETE" });
-    if (!res.ok) {
-      const data = await res.json().catch(() => null);
-      alert(data?.error || "Erro ao excluir receita");
-      return;
-    }
+    await repository.recipes.delete(id);
     await loadAll();
   }
 

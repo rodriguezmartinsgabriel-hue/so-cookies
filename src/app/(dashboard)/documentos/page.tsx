@@ -7,6 +7,7 @@ import { AppShell } from "@/components/layout/AppShell";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { Plus, X, Edit, Trash2, FileText, Search, ChevronDown, ChevronUp, Eye } from "lucide-react";
+import { repository, onDataRefresh } from "@/lib/repository";
 
 const CATEGORIES = [
   { value: "FICHA_TECNICA", label: "Fichas Técnicas", color: "bg-ink" },
@@ -44,18 +45,20 @@ export default function DocumentosPage() {
   });
 
   const loadDocs = useCallback(async () => {
-    setLoading(true);
     try {
-      const url = filter !== "ALL" ? `/api/documents?category=${filter}` : "/api/documents";
-      const resp = await fetch(url);
-      if (resp.ok) setDocuments(await resp.json());
+      const data = await repository.documents.getAll();
+      setDocuments(data);
     } catch {
       setError("Erro ao carregar documentos");
     }
     setLoading(false);
-  }, [filter]);
+  }, []);
 
   useEffect(() => { loadDocs(); }, [loadDocs]);
+
+  useEffect(() => {
+    return onDataRefresh(() => { loadDocs(); });
+  }, [loadDocs]);
 
   function resetForm() {
     setForm({ title: "", description: "", category: "FICHA_TECNICA", content: "", tags: "" });
@@ -87,21 +90,10 @@ export default function DocumentosPage() {
     if (!form.title) return;
     const payload = { ...form };
 
-    const res = editingDoc
-      ? await fetch(`/api/documents/${editingDoc.id}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        })
-      : await fetch("/api/documents", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        });
-    if (!res.ok) {
-      const data = await res.json().catch(() => null);
-      alert(data?.error || "Erro ao salvar documento");
-      return;
+    if (editingDoc) {
+      await repository.documents.update(editingDoc.id, payload);
+    } else {
+      await repository.documents.create(payload);
     }
     setShowModal(false);
     resetForm();
@@ -110,16 +102,12 @@ export default function DocumentosPage() {
 
   async function handleDelete(id: string) {
     if (!confirm("Excluir este documento?")) return;
-    const res = await fetch(`/api/documents/${id}`, { method: "DELETE" });
-    if (!res.ok) {
-      const data = await res.json().catch(() => null);
-      alert(data?.error || "Erro ao excluir documento");
-      return;
-    }
+    await repository.documents.delete(id);
     await loadDocs();
   }
 
   const filtered = documents.filter((doc) => {
+    if (filter !== "ALL" && doc.category !== filter) return false;
     if (!search) return true;
     const q = search.toLowerCase();
     return (

@@ -6,12 +6,11 @@ import { useRole } from "@/hooks/useRole";
 import { AppShell } from "@/components/layout/AppShell";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { ErrorState } from "@/components/ui/ErrorState";
-import { repository } from "@/lib/repository";
+import { repository, onDataRefresh } from "@/lib/repository";
 import {
   BookUser,
   Plus,
   X,
-  Edit,
   Trash2,
   Search,
   Phone,
@@ -22,7 +21,6 @@ import {
   PhoneCall,
   Calendar,
   Send,
-  Check,
   Eye,
 } from "lucide-react";
 
@@ -50,6 +48,8 @@ const FILTERS = [
   { value: "OUTRO", label: "Outros" },
 ];
 
+const inputClass = "w-full h-10 px-3 border border-line rounded-lg text-sm text-ink placeholder:text-kraft focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink transition-colors";
+
 export default function ContatosPage() {
   const { canEdit } = useRole();
   const [contacts, setContacts] = useState<any[]>([]);
@@ -59,7 +59,6 @@ export default function ContatosPage() {
   const [filter, setFilter] = useState("ALL");
   const [showModal, setShowModal] = useState(false);
   const modalRef = useFocusTrap(showModal);
-  const [editingItem, setEditingItem] = useState<any>(null);
   const [form, setForm] = useState({ name: "", email: "", phone: "", type: "CLIENTE", company: "", notes: "" });
 
   const [selectedContact, setSelectedContact] = useState<any>(null);
@@ -67,8 +66,12 @@ export default function ContatosPage() {
   const [interactions, setInteractions] = useState<any[]>([]);
   const [interactionForm, setInteractionForm] = useState({ type: "NOTA", note: "" });
 
+  const [editingField, setEditingField] = useState<{ id: string; field: string } | null>(null);
+  const [editValue, setEditValue] = useState("");
+  const [editingNotes, setEditingNotes] = useState(false);
+  const [notesValue, setNotesValue] = useState("");
+
   const loadData = useCallback(async () => {
-    setLoading(true);
     try {
       const data = await repository.contacts.getAll();
       setContacts(data);
@@ -79,6 +82,10 @@ export default function ContatosPage() {
   }, []);
 
   useEffect(() => { loadData(); }, [loadData]);
+
+  useEffect(() => {
+    return onDataRefresh(() => { loadData(); });
+  }, [loadData]);
 
   useEffect(() => {
     if (selectedContact) {
@@ -104,64 +111,89 @@ export default function ContatosPage() {
 
   function resetForm() {
     setForm({ name: "", email: "", phone: "", type: "CLIENTE", company: "", notes: "" });
-    setEditingItem(null);
   }
 
-  function openEdit(item: any) {
-    setEditingItem(item);
-    setForm({
-      name: item.name || "",
-      email: item.email || "",
-      phone: item.phone || "",
-      type: item.type || "CLIENTE",
-      company: item.company || "",
-      notes: item.notes || "",
-    });
-    setShowModal(true);
-  }
-
-  async function handleSave() {
+  async function handleCreate() {
     if (!form.name.trim()) return;
-    const payload = {
+    const created = await repository.contacts.create({
       name: form.name.trim(),
       email: form.email.trim() || undefined,
       phone: form.phone.trim() || undefined,
       type: form.type,
       company: form.company.trim() || undefined,
       notes: form.notes.trim() || undefined,
-    };
-    if (editingItem) {
-      await repository.contacts.update(editingItem.id, payload);
-    } else {
-      await repository.contacts.create(payload);
-    }
+    });
     setShowModal(false);
     resetForm();
-    await loadData();
+    setContacts((prev) => [created, ...prev]);
   }
 
   async function handleDelete(id: string) {
     if (!confirm("Excluir este contato?")) return;
     await repository.contacts.delete(id);
-    await loadData();
+    setContacts((prev) => prev.filter((c) => c.id !== id));
+    if (selectedContact?.id === id) setSelectedContact(null);
+  }
+
+  function startEdit(id: string, field: string, value: string) {
+    setEditingField({ id, field });
+    setEditValue(value);
+  }
+
+  function cancelEdit() {
+    setEditingField(null);
+  }
+
+  async function saveEdit(id: string) {
+    if (!editingField) return;
+    const { field } = editingField;
+    if (field === "name" && !editValue.trim()) {
+      cancelEdit();
+      return;
+    }
+    const value = editValue.trim();
+    const payload: any = { [field]: value || undefined };
+    await repository.contacts.update(id, payload);
+    setContacts((prev) => prev.map((c: any) => (c.id === id ? { ...c, ...payload, updatedAt: new Date().toISOString() } : c)));
+    if (selectedContact?.id === id) setSelectedContact((prev: any) => ({ ...prev, ...payload }));
+    cancelEdit();
+  }
+
+  const isEditing = (id: string, field: string) => editingField?.id === id && editingField.field === field;
+
+  function handleEditKey(e: React.KeyboardEvent<HTMLElement>) {
+    if (e.key === "Enter") e.currentTarget.blur();
+    if (e.key === "Escape") cancelEdit();
+  }
+
+  function startEditNotes() {
+    setNotesValue(selectedContact?.notes || "");
+    setEditingNotes(true);
+  }
+
+  async function saveNotes() {
+    if (!selectedContact) return;
+    const notes = notesValue.trim() || undefined;
+    await repository.contacts.update(selectedContact.id, { notes });
+    setContacts((prev) => prev.map((c) => (c.id === selectedContact.id ? { ...c, notes } : c)));
+    setSelectedContact({ ...selectedContact, notes });
+    setEditingNotes(false);
   }
 
   async function handleAddInteraction() {
     if (!selectedContact || !interactionForm.note.trim()) return;
-    await repository.contacts.createInteraction(selectedContact.id, {
+    const created = await repository.contacts.createInteraction(selectedContact.id, {
       type: interactionForm.type,
       note: interactionForm.note.trim(),
     });
     setInteractionForm({ type: "NOTA", note: "" });
-    const data = await repository.contacts.getInteractions(selectedContact.id);
-    setInteractions(data);
+    setInteractions((prev) => [created, ...prev]);
   }
 
   async function handleDeleteInteraction(id: string) {
     if (!confirm("Excluir esta interação?")) return;
     await repository.contacts.deleteInteraction(id);
-    const data = await repository.contacts.getInteractions(selectedContact.id);
-    setInteractions(data);
+    setInteractions((prev) => prev.filter((i) => i.id !== id));
   }
 
   return (
@@ -240,34 +272,125 @@ export default function ContatosPage() {
               return (
                 <div key={c.id} className="border border-line rounded-lg bg-paper p-4 shadow-card">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-cream flex items-center justify-center shrink-0">
+                    <button onClick={() => setSelectedContact(c)} aria-label="Ver detalhes" className="w-10 h-10 rounded-lg bg-cream flex items-center justify-center shrink-0 hover:bg-kraft/50 transition-colors">
                       <BookUser className="w-5 h-5 text-muted" strokeWidth={1.5} />
-                    </div>
-                    <button onClick={() => setSelectedContact(c)} className="flex-1 min-w-0 text-left">
-                      <p className="text-sm font-semibold text-ink truncate">{c.name}</p>
-                      <p className="text-xs text-muted truncate">
-                        {c.company ? `${c.company} · ` : ""}
-                        {c.phone || c.email || "Sem contato"}
-                      </p>
                     </button>
-                    <span className={`shrink-0 text-xs font-medium px-2 py-1 rounded-full ${cfg.className}`}>
-                      {cfg.label}
-                    </span>
+                    <div className="flex-1 min-w-0">
+                      {isEditing(c.id, "name") ? (
+                        <input
+                          autoFocus
+                          type="text"
+                          value={editValue}
+                          onChange={(e) => setEditValue(e.target.value)}
+                          onBlur={() => saveEdit(c.id)}
+                          onKeyDown={handleEditKey}
+                          className="w-full h-7 px-2 border border-info rounded text-sm text-ink bg-paper focus:outline-none focus-visible:ring-2 focus-visible:ring-ink"
+                        />
+                      ) : (
+                        <p
+                          onClick={() => canEdit && startEdit(c.id, "name", c.name)}
+                          title={canEdit ? "Clique para editar" : undefined}
+                          className={`text-sm font-semibold text-ink truncate px-1 rounded transition-colors ${canEdit ? "cursor-pointer hover:bg-info/10" : ""}`}
+                        >
+                          {c.name}
+                        </p>
+                      )}
+                      <div className="flex items-center gap-1 text-xs text-muted truncate mt-0.5">
+                        <Building2 className="w-3 h-3 shrink-0" />
+                        {isEditing(c.id, "company") ? (
+                          <input
+                            autoFocus
+                            type="text"
+                            value={editValue}
+                            onChange={(e) => setEditValue(e.target.value)}
+                            onBlur={() => saveEdit(c.id)}
+                            onKeyDown={handleEditKey}
+                            className="w-32 h-6 px-1.5 border border-info rounded text-xs text-ink bg-paper focus:outline-none focus-visible:ring-2 focus-visible:ring-ink"
+                          />
+                        ) : (
+                          <span
+                            onClick={() => canEdit && startEdit(c.id, "company", c.company || "")}
+                            title={canEdit ? "Clique para editar" : undefined}
+                            className={`px-1 rounded transition-colors ${canEdit ? "cursor-pointer hover:bg-info/10" : ""}`}
+                          >
+                            {c.company || <em className="text-kraft not-italic">Sem empresa</em>}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="shrink-0">
+                      {isEditing(c.id, "type") ? (
+                        <select
+                          autoFocus
+                          value={editValue}
+                          onChange={(e) => setEditValue(e.target.value)}
+                          onBlur={() => saveEdit(c.id)}
+                          className="h-7 px-2 border border-info rounded text-xs text-ink bg-paper focus:outline-none focus-visible:ring-2 focus-visible:ring-ink"
+                        >
+                          {Object.entries(TYPE_CONFIG).map(([value, tcfg]) => (
+                            <option key={value} value={value}>{tcfg.label}</option>
+                          ))}
+                        </select>
+                      ) : (
+                        <span
+                          onClick={() => canEdit && startEdit(c.id, "type", c.type)}
+                          title={canEdit ? "Clique para editar" : undefined}
+                          className={`text-xs font-medium px-2 py-1 rounded-full ${cfg.className} ${canEdit ? "cursor-pointer hover:ring-1 hover:ring-ink" : ""}`}
+                        >
+                          {cfg.label}
+                        </span>
+                      )}
+                    </div>
                     <div className="shrink-0 flex items-center gap-1">
                       <button onClick={() => setSelectedContact(c)} aria-label="Ver" className="p-1.5 rounded-md hover:bg-cream text-muted">
                         <Eye className="w-4 h-4" />
                       </button>
                       {canEdit && (
-                        <>
-                          <button onClick={() => openEdit(c)} aria-label="Editar" className="p-1.5 rounded-md hover:bg-cream text-muted">
-                            <Edit className="w-4 h-4" />
-                          </button>
-                          <button onClick={() => handleDelete(c.id)} aria-label="Excluir" className="p-1.5 rounded-md hover:bg-cream text-danger">
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </>
+                        <button onClick={() => handleDelete(c.id)} aria-label="Excluir" className="p-1.5 rounded-md hover:bg-cream text-danger">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       )}
                     </div>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5 mt-2">
+                    {isEditing(c.id, "phone") ? (
+                      <input
+                        autoFocus
+                        type="text"
+                        value={editValue}
+                        onChange={(e) => setEditValue(e.target.value)}
+                        onBlur={() => saveEdit(c.id)}
+                        onKeyDown={handleEditKey}
+                        className="h-6 w-36 px-1.5 border border-info rounded text-xs text-ink bg-paper focus:outline-none focus-visible:ring-2 focus-visible:ring-ink"
+                      />
+                    ) : (
+                      <span
+                        onClick={() => canEdit && startEdit(c.id, "phone", c.phone || "")}
+                        title={canEdit ? "Clique para editar" : undefined}
+                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md border border-line text-xs text-ink ${canEdit ? "cursor-pointer hover:bg-info/10 hover:border-info" : ""}`}
+                      >
+                        <Phone className="w-3 h-3 text-muted" /> {c.phone || <em className="text-kraft not-italic">adicionar</em>}
+                      </span>
+                    )}
+                    {isEditing(c.id, "email") ? (
+                      <input
+                        autoFocus
+                        type="email"
+                        value={editValue}
+                        onChange={(e) => setEditValue(e.target.value)}
+                        onBlur={() => saveEdit(c.id)}
+                        onKeyDown={handleEditKey}
+                        className="h-6 w-48 px-1.5 border border-info rounded text-xs text-ink bg-paper focus:outline-none focus-visible:ring-2 focus-visible:ring-ink"
+                      />
+                    ) : (
+                      <span
+                        onClick={() => canEdit && startEdit(c.id, "email", c.email || "")}
+                        title={canEdit ? "Clique para editar" : undefined}
+                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md border border-line text-xs text-ink ${canEdit ? "cursor-pointer hover:bg-info/10 hover:border-info" : ""}`}
+                      >
+                        <Mail className="w-3 h-3 text-muted" /> {c.email || <em className="text-kraft not-italic">adicionar</em>}
+                      </span>
+                    )}
                   </div>
                 </div>
               );
@@ -279,18 +402,18 @@ export default function ContatosPage() {
           <div className="fixed inset-0 z-50 bg-ink/30 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="contact-title">
             <div ref={modalRef} className="bg-paper rounded-xl border border-line shadow-lg w-full max-w-lg max-h-[85vh] overflow-y-auto">
               <div className="flex items-center justify-between p-4 border-b border-line sticky top-0 bg-paper">
-                <h3 id="contact-title" className="text-lg font-bold text-ink">{editingItem ? "Editar Contato" : "Novo Contato"}</h3>
-                <button onClick={() => { setShowModal(false); resetForm(); }} data-close-modal aria-label="Fechar" className="p-1.5 rounded-md hover:bg-cream text-muted"><X className="w-5 h-5" /></button>
+                <h3 id="contact-title" className="text-lg font-bold text-ink">Novo Contato</h3>
+                <button onClick={() => { setShowModal(false); }} data-close-modal aria-label="Fechar" className="p-1.5 rounded-md hover:bg-cream text-muted"><X className="w-5 h-5" /></button>
               </div>
               <div className="p-4 space-y-4">
                 <div>
                   <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Nome *</label>
-                  <input type="text" placeholder="Ex: Maria Silva" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink placeholder:text-kraft focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink transition-colors" />
+                  <input type="text" placeholder="Ex: Maria Silva" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className={inputClass} />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Tipo</label>
-                    <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })} className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink bg-paper focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink transition-colors">
+                    <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })} className={inputClass}>
                       {Object.entries(TYPE_CONFIG).map(([value, cfg]) => (
                         <option key={value} value={value}>{cfg.label}</option>
                       ))}
@@ -298,17 +421,17 @@ export default function ContatosPage() {
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Empresa</label>
-                    <input type="text" placeholder="Ex: Padaria Central" value={form.company} onChange={(e) => setForm({ ...form, company: e.target.value })} className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink placeholder:text-kraft focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink transition-colors" />
+                    <input type="text" placeholder="Ex: Padaria Central" value={form.company} onChange={(e) => setForm({ ...form, company: e.target.value })} className={inputClass} />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Telefone</label>
-                    <input type="text" placeholder="(11) 99999-9999" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink placeholder:text-kraft focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink transition-colors" />
+                    <input type="text" placeholder="(11) 99999-9999" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className={inputClass} />
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">E-mail</label>
-                    <input type="email" placeholder="contato@exemplo.com" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink placeholder:text-kraft focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink transition-colors" />
+                    <input type="email" placeholder="contato@exemplo.com" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className={inputClass} />
                   </div>
                 </div>
                 <div>
@@ -317,8 +440,8 @@ export default function ContatosPage() {
                 </div>
               </div>
               <div className="p-4 border-t border-line flex gap-2 sticky bottom-0 bg-paper">
-                <button onClick={() => { setShowModal(false); resetForm(); }} className="flex-1 h-10 border border-line rounded-lg text-sm font-medium text-ink hover:bg-cream transition-colors">Cancelar</button>
-                <button onClick={handleSave} className="flex-1 h-10 bg-ink text-paper rounded-lg text-sm font-medium hover:bg-ink/90 transition-colors">Salvar</button>
+                <button onClick={() => { setShowModal(false); }} className="flex-1 h-10 border border-line rounded-lg text-sm font-medium text-ink hover:bg-cream transition-colors">Cancelar</button>
+                <button onClick={handleCreate} className="flex-1 h-10 bg-ink text-paper rounded-lg text-sm font-medium hover:bg-ink/90 transition-colors">Salvar</button>
               </div>
             </div>
           </div>
@@ -351,12 +474,27 @@ export default function ContatosPage() {
                     <span className="flex items-center gap-2 text-ink"><Building2 className="w-4 h-4 text-muted" /> {selectedContact.company}</span>
                   )}
                 </div>
-                {selectedContact.notes && (
+                {editingNotes ? (
                   <div>
                     <p className="text-xs font-semibold text-muted uppercase tracking-wide mb-1">Observações</p>
-                    <p className="text-sm text-ink bg-cream rounded-lg p-3 border border-line">{selectedContact.notes}</p>
+                    <textarea
+                      autoFocus
+                      rows={3}
+                      value={notesValue}
+                      onChange={(e) => setNotesValue(e.target.value)}
+                      onBlur={saveNotes}
+                      onKeyDown={(e) => { if (e.key === "Escape") setEditingNotes(false); }}
+                      className="w-full px-3 py-2 border border-info rounded-lg text-sm text-ink bg-paper focus:outline-none focus-visible:ring-2 focus-visible:ring-ink resize-none"
+                    />
                   </div>
-                )}
+                ) : selectedContact.notes ? (
+                  <div onClick={() => canEdit && startEditNotes()}>
+                    <p className="text-xs font-semibold text-muted uppercase tracking-wide mb-1">Observações</p>
+                    <p className={`text-sm text-ink bg-cream rounded-lg p-3 border border-line ${canEdit ? "cursor-pointer hover:bg-info/10 hover:border-info" : ""}`}>{selectedContact.notes}</p>
+                  </div>
+                ) : canEdit ? (
+                  <p onClick={startEditNotes} className="text-xs italic text-kraft cursor-pointer hover:text-info px-1 rounded">+ Adicionar observações</p>
+                ) : null}
 
                 <div className="border-t border-line pt-4">
                   <p className="text-xs font-semibold text-muted uppercase tracking-wide mb-3">Histórico de interações</p>
@@ -418,11 +556,6 @@ export default function ContatosPage() {
                 </div>
               </div>
               <div className="p-4 border-t border-line flex gap-2 sticky bottom-0 bg-paper">
-                {canEdit && (
-                  <button onClick={() => { setSelectedContact(null); openEdit(selectedContact); }} className="flex-1 h-10 border border-line rounded-lg text-sm font-medium text-ink hover:bg-cream transition-colors flex items-center justify-center gap-2">
-                    <Edit className="w-4 h-4" /> Editar
-                  </button>
-                )}
                 <button onClick={() => setSelectedContact(null)} className="flex-1 h-10 bg-ink text-paper rounded-lg text-sm font-medium hover:bg-ink/90 transition-colors">
                   Fechar
                 </button>

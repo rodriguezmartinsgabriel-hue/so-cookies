@@ -6,7 +6,7 @@ import { useRole } from "@/hooks/useRole"
 import { AppShell } from "@/components/layout/AppShell"
 import { Skeleton } from "@/components/ui/Skeleton"
 import { ErrorState } from "@/components/ui/ErrorState"
-import { repository } from "@/lib/repository"
+import { repository, onDataRefresh } from "@/lib/repository"
 import { Plus, Edit, Trash2, X, Store } from "lucide-react"
 
 export default function CanaisPage() {
@@ -20,7 +20,6 @@ export default function CanaisPage() {
   const [form, setForm] = useState({ name: "", commission: "" })
 
   const loadData = useCallback(async () => {
-    setLoading(true)
     try {
       const data = await repository.channels.getAll()
       setChannels(data)
@@ -31,6 +30,10 @@ export default function CanaisPage() {
   }, [])
 
   useEffect(() => { loadData() }, [loadData])
+
+  useEffect(() => {
+    return onDataRefresh(() => { loadData() })
+  }, [loadData])
 
   function openEdit(item: any) {
     setEditingItem(item)

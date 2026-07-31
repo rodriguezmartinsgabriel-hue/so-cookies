@@ -6,7 +6,7 @@ import { useRole } from "@/hooks/useRole"
 import { AppShell } from "@/components/layout/AppShell"
 import { Skeleton } from "@/components/ui/Skeleton"
 import { ErrorState } from "@/components/ui/ErrorState"
-import { repository } from "@/lib/repository"
+import { repository, onDataRefresh } from "@/lib/repository"
 import { Plus, Search, X, Trash2 } from "lucide-react"
 
 const channelColors: Record<string, string> = {
@@ -32,15 +32,14 @@ export default function VendasPage() {
   const [formTotal, setFormTotal] = useState(0)
 
   const loadData = useCallback(async () => {
-    setLoading(true)
     try {
-      const [salesData, prodsResp, channelsData] = await Promise.allSettled([
+      const [salesData, prodsData, channelsData] = await Promise.allSettled([
         repository.sales.getAll(),
-        fetch("/api/products").then((r) => r.ok ? r.json() : []),
+        repository.products.getAll(),
         repository.channels.getAll(),
       ])
       if (salesData.status === "fulfilled") setSales(salesData.value)
-      if (prodsResp.status === "fulfilled") setProducts(prodsResp.value)
+      if (prodsData.status === "fulfilled") setProducts(prodsData.value)
       if (channelsData.status === "fulfilled") setChannels(channelsData.value)
     } catch {
       setError("Erro ao carregar vendas")
@@ -50,9 +49,13 @@ export default function VendasPage() {
 
   useEffect(() => { loadData() }, [loadData])
 
+  useEffect(() => {
+    return onDataRefresh(() => { loadData() })
+  }, [loadData])
+
   const filtered = sales.filter(
     (s: any) =>
-      (s.channel?.name || s.channel || "").toLowerCase().includes(search.toLowerCase()) ||
+      (s.channel?.name || s.channel || channels.find((ch: any) => ch.id === s.channelId)?.name || "").toLowerCase().includes(search.toLowerCase()) ||
       (s.user?.name || "").toLowerCase().includes(search.toLowerCase())
   )
 
@@ -181,7 +184,7 @@ export default function VendasPage() {
                 </thead>
                 <tbody className="divide-y divide-line">
                   {filtered.map((sale: any) => {
-                    const channelName = sale.channel?.name || sale.channel || "—"
+                    const channelName = sale.channel?.name || sale.channel || channels.find((ch: any) => ch.id === sale.channelId)?.name || "—"
                     const channelStyle = channelColors[channelName] || "bg-cream text-muted"
                     return (
                       <tr key={sale.id} className="hover:bg-cream/50 transition-colors">

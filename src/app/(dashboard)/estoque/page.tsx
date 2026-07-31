@@ -6,7 +6,7 @@ import { useRole } from "@/hooks/useRole";
 import { AppShell } from "@/components/layout/AppShell";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { ErrorState } from "@/components/ui/ErrorState";
-import { repository } from "@/lib/repository";
+import { repository, onDataRefresh } from "@/lib/repository";
 import { Plus, Search, Package, Edit, Trash2, X, AlertTriangle } from "lucide-react";
 
 export default function EstoquePage() {
@@ -27,14 +27,13 @@ export default function EstoquePage() {
   });
 
   const loadIngredients = useCallback(async () => {
-    setLoading(true);
     try {
-      const [ingredientsData, recipesResp] = await Promise.all([
+      const [ingredientsData, recipesData] = await Promise.all([
         repository.ingredients.getAll(),
-        fetch("/api/recipes").then((r) => r.ok ? r.json() : []),
+        repository.recipes.getAll(),
       ]);
       setIngredients(ingredientsData);
-      setRecipes(recipesResp);
+      setRecipes(recipesData);
     } catch {
       setError("Erro ao carregar insumos");
     }
@@ -42,6 +41,10 @@ export default function EstoquePage() {
   }, []);
 
   useEffect(() => { loadIngredients(); }, [loadIngredients]);
+
+  useEffect(() => {
+    return onDataRefresh(() => { loadIngredients(); });
+  }, [loadIngredients]);
 
   function resetForm() {
     setForm({ name: "", brand: "", stockKg: "", minStockKg: "", costPerKg: "", supplier: "", caloriesPer100g: "", proteinPer100g: "", carbsPer100g: "", fatPer100g: "" });
@@ -363,20 +366,21 @@ function PriceTiersTab() {
 
   useEffect(() => {
     async function load() {
-      setLoading(true);
       try {
-        const [tiersData, prodsResp] = await Promise.allSettled([
+        const [tiersData, prodsData] = await Promise.allSettled([
           repository.priceTiers.getAll(),
-          fetch("/api/products").then((r) => r.ok ? r.json() : []),
+          repository.products.getAll(),
         ]);
         if (tiersData.status === "fulfilled") setTiers(tiersData.value);
-        if (prodsResp.status === "fulfilled") setProducts(prodsResp.value);
+        if (prodsData.status === "fulfilled") setProducts(prodsData.value);
       } catch {
         setError("Erro ao carregar faixas de preço");
       }
       setLoading(false);
     }
     load();
+    const unsub = onDataRefresh(() => { load(); });
+    return () => { unsub(); };
   }, []);
 
   function productName(tier: any) {
