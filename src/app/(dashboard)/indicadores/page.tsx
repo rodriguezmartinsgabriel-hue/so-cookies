@@ -4,9 +4,9 @@ import { useState, useEffect } from "react"
 import { AppShell } from "@/components/layout/AppShell"
 import { Skeleton } from "@/components/ui/Skeleton"
 import { ErrorState } from "@/components/ui/ErrorState"
-import { TrendingUp, AlertTriangle, Package, DollarSign } from "lucide-react"
+import { TrendingUp, AlertTriangle, Package, DollarSign, Percent, Wallet } from "lucide-react"
 
-export default function PrevisaoPage() {
+export default function IndicadoresPage() {
   const [ingredients, setIngredients] = useState<any[]>([])
   const [sales, setSales] = useState<any[]>([])
   const [products, setProducts] = useState<any[]>([])
@@ -38,40 +38,27 @@ export default function PrevisaoPage() {
 
   const lowStockItems = ingredients.filter((i: any) => (i.stockKg || 0) <= (i.minStockKg || 0))
   const totalRevenue = sales.reduce((sum: number, s: any) => sum + (s.total || 0), 0)
+  const totalCost = sales.reduce((sum: number, s: any) => sum + (s.items || []).reduce((acc: number, it: any) => acc + (it.product?.cost || 0) * it.qty, 0), 0)
+  const profit = totalRevenue - totalCost
+  const margin = totalRevenue > 0 ? (profit / totalRevenue) * 100 : 0
   const avgTicket = sales.length > 0 ? totalRevenue / sales.length : 0
   const activeProducts = products.filter((p: any) => p.active)
 
-  const predictions = [
-    {
-      icon: DollarSign,
-      metric: "Ticket Médio",
-      value: `R$ ${avgTicket.toFixed(2)}`,
-      confidence: sales.length > 5 ? 85 : 50,
-      basedOn: `Baseado em ${sales.length} venda(s) registrada(s)`,
-    },
-    {
-      icon: TrendingUp,
-      metric: "Receita Acumulada",
-      value: `R$ ${totalRevenue.toFixed(0)}`,
-      confidence: 100,
-      basedOn: "Total de vendas no sistema",
-    },
-    {
-      icon: Package,
-      metric: "Sabores Ativos",
-      value: String(activeProducts.length),
-      confidence: 100,
-      basedOn: activeProducts.map((p: any) => p.name).join(", ") || "Nenhum produto cadastrado",
-    },
+  const kpis = [
+    { icon: DollarSign, label: "Receita", value: `R$ ${totalRevenue.toFixed(0)}`, sub: `${sales.length} venda(s) registrada(s)` },
+    { icon: Wallet, label: "Lucro Estimado", value: `R$ ${profit.toFixed(0)}`, sub: "receita − custo dos produtos" },
+    { icon: Percent, label: "Margem", value: `${margin.toFixed(1)}%`, sub: "sobre a receita total" },
+    { icon: TrendingUp, label: "Ticket Médio", value: `R$ ${avgTicket.toFixed(2)}`, sub: "receita ÷ nº de vendas" },
+    { icon: Package, label: "Sabores Ativos", value: String(activeProducts.length), sub: activeProducts.map((p: any) => p.name).join(", ") || "Nenhum produto cadastrado" },
   ]
 
   return (
     <AppShell>
       <div className="space-y-4">
         <div>
-          <h1 className="text-2xl font-bold text-ink">Previsão</h1>
+          <h1 className="text-2xl font-bold text-ink">Indicadores</h1>
           <p className="text-sm text-muted">
-            Análise baseada nos dados do negócio
+            Análise baseada nos dados reais do negócio
           </p>
         </div>
 
@@ -82,7 +69,7 @@ export default function PrevisaoPage() {
         {loading ? (
           <div className="space-y-4">
             <div className="space-y-3">
-              {Array.from({ length: 3 }).map((_, i) => (
+              {Array.from({ length: 5 }).map((_, i) => (
                 <div key={i} className="border border-line rounded-lg bg-paper p-4 shadow-card">
                   <div className="flex items-start gap-3">
                     <Skeleton className="h-10 w-10 rounded-lg shrink-0" />
@@ -91,7 +78,6 @@ export default function PrevisaoPage() {
                       <Skeleton className="h-6 w-20 mb-1" />
                       <Skeleton className="h-3 w-40" />
                     </div>
-                    <Skeleton className="h-3 w-16" />
                   </div>
                 </div>
               ))}
@@ -100,26 +86,16 @@ export default function PrevisaoPage() {
         ) : (
           <>
             <div className="space-y-3">
-              {predictions.map((pred, i) => (
-                <div key={i} className="border border-line rounded-lg bg-paper p-4 shadow-card">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-start gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-cream flex items-center justify-center shrink-0">
-                        <pred.icon className="w-5 h-5 text-muted" strokeWidth={1.5} />
-                      </div>
-                      <div>
-                        <p className="text-xs font-medium text-muted uppercase tracking-wide">{pred.metric}</p>
-                        <p className="text-xl font-bold text-ink mt-1">{pred.value}</p>
-                        <p className="text-xs text-muted mt-1">{pred.basedOn}</p>
-                      </div>
+              {kpis.map((kpi) => (
+                <div key={kpi.label} className="border border-line rounded-lg bg-paper p-4 shadow-card">
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-cream flex items-center justify-center shrink-0">
+                      <kpi.icon className="w-5 h-5 text-muted" strokeWidth={1.5} />
                     </div>
-                    <div className="text-right">
-                      <div className="flex items-center gap-1 text-xs text-muted">
-                        {pred.confidence}% confiança
-                      </div>
-                      <div className="mt-2 w-16 h-1.5 bg-cream rounded-full overflow-hidden">
-                        <div className="h-full bg-ink rounded-full" style={{ width: `${pred.confidence}%` }} />
-                      </div>
+                    <div>
+                      <p className="text-xs font-medium text-muted uppercase tracking-wide">{kpi.label}</p>
+                      <p className="text-xl font-bold text-ink mt-1">{kpi.value}</p>
+                      <p className="text-xs text-muted mt-1">{kpi.sub}</p>
                     </div>
                   </div>
                 </div>

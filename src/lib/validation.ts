@@ -21,10 +21,6 @@ export const updateOrderSchema = z.object({
   status: z.enum(ORDER_STATUSES).optional(),
 })
 
-export const updateOrderStatusSchema = z.object({
-  status: z.enum(ORDER_STATUSES),
-})
-
 export const createSaleSchema = z.object({
   channelId: z.string().min(1, "Canal é obrigatório"),
   total: z.number().min(0),

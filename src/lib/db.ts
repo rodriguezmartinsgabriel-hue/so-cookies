@@ -118,20 +118,6 @@ async function createSaleForOrder(
   })
 }
 
-export async function updateOrderStatus(id: string, status: string) {
-  return prisma.$transaction(async (tx) => {
-    const order = await tx.order.update({
-      where: { id },
-      data: { status: status as any, updatedAt: new Date() },
-      include: { items: true, sale: true },
-    })
-    if (status === "CONCLUIDO" && !order.sale) {
-      await createSaleForOrder(tx, order)
-    }
-    return order
-  })
-}
-
 export async function applyOrderUpdate(id: string, data: Partial<{ channel: string; customer: string; notes: string; status: string }>) {
   return prisma.$transaction(async (tx) => {
     const updateData: Record<string, unknown> = { ...data, updatedAt: new Date() }

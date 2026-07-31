@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { AppShell } from "@/components/layout/AppShell";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { ErrorState } from "@/components/ui/ErrorState";
@@ -19,10 +19,26 @@ import {
 import { TrendingUp, DollarSign, ShoppingCart, Package } from "lucide-react";
 
 const COLORS = ["#C23B2E", "#E0A400", "#2F7A3E", "#111111"];
+const PERIODS = [
+  { label: "7 dias", days: 7 },
+  { label: "30 dias", days: 30 },
+  { label: "90 dias", days: 90 },
+  { label: "Tudo", days: 0 },
+];
+const STATUS_LABELS: Record<string, string> = {
+  PENDENTE: "Pendente",
+  CONFIRMADO: "Confirmado",
+  PRODUCAO: "Produção",
+  PRONTO: "Pronto",
+  ENTREGA: "Entrega",
+  CONCLUIDO: "Concluído",
+  CANCELADO: "Cancelado",
+};
 
 export default function RelatoriosPage() {
   const [sales, setSales] = useState<any[]>([]);
   const [orders, setOrders] = useState<any[]>([]);
+  const [period, setPeriod] = useState(30);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -45,22 +61,41 @@ export default function RelatoriosPage() {
     setLoading(false);
   }
 
-  const totalRevenue = sales.reduce((sum: number, s: any) => sum + (s.total || 0), 0);
-  const avgTicket = sales.length > 0 ? totalRevenue / sales.length : 0;
+  const cutoff = useMemo(() => {
+    if (!period) return null;
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    d.setDate(d.getDate() - (period - 1));
+    return d;
+  }, [period]);
+
+  const filteredSales = useMemo(() => {
+    if (!cutoff) return sales;
+    return sales.filter((s: any) => new Date(s.createdAt) >= cutoff);
+  }, [sales, cutoff]);
+
+  const filteredOrders = useMemo(() => {
+    if (!cutoff) return orders;
+    return orders.filter((o: any) => new Date(o.createdAt) >= cutoff);
+  }, [orders, cutoff]);
+
+  const totalRevenue = filteredSales.reduce((sum: number, s: any) => sum + (s.total || 0), 0);
+  const avgTicket = filteredSales.length > 0 ? totalRevenue / filteredSales.length : 0;
 
   const channelCounts: Record<string, number> = {};
-  sales.forEach((s: any) => {
+  filteredSales.forEach((s: any) => {
     const ch = s.channel?.name || s.channel || "Direto";
     channelCounts[ch] = (channelCounts[ch] || 0) + 1;
   });
-  const channelData = Object.entries(channelCounts).map(([name, value]) => ({
+  const channelNames = Object.keys(channelCounts);
+  const channelData = channelNames.map((name) => ({
     name,
-    value: sales.length > 0 ? Math.round((value / sales.length) * 100) : 0,
-    color: COLORS[Object.keys(channelCounts).indexOf(name) % COLORS.length],
+    value: filteredSales.length > 0 ? Math.round((channelCounts[name] / filteredSales.length) * 100) : 0,
+    color: COLORS[channelNames.indexOf(name) % COLORS.length],
   }));
 
   const productCounts: Record<string, { sold: number; revenue: number }> = {};
-  sales.forEach((s: any) => {
+  filteredSales.forEach((s: any) => {
     (s.items || []).forEach((item: any) => {
       const name = item.product?.name || "Produto";
       if (!productCounts[name]) productCounts[name] = { sold: 0, revenue: 0 };
@@ -73,10 +108,83 @@ export default function RelatoriosPage() {
     .sort((a, b) => b.revenue - a.revenue)
     .slice(0, 5);
 
+  const statusCounts: Record<string, number> = {};
+  filteredOrders.forEach((o: any) => {
+    statusCounts[o.status] = (statusCounts[o.status] || 0) + 1;
+  });
+  const statusData = Object.entries(statusCounts)
+    .map(([status, count]) => ({ status, label: STATUS_LABELS[status] || status, count }))
+    .sort((a, b) => b.count - a.count);
+
+  const salesPerDay = useMemo(() => {
+    if (!cutoff) {
+      const byMonth: Record<string, number> = {};
+      sales.forEach((s: any) => {
+        const d = new Date(s.createdAt);
+        const key = `${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`;
+        byMonth[key] = (byMonth[key] || 0) + (s.total || 0);
+      });
+      return Object.entries(byMonth).map(([name, total]) => ({ name, total })).sort((a, b) => a.name.localeCompare(b.name));
+    }
+
+    if (period >= 90) {
+      const byWeek: { name: string; total: number; index: number }[] = [];
+      const days = period;
+      for (let i = 0; i < days; i++) {
+        const d = new Date();
+        d.setHours(0, 0, 0, 0);
+        d.setDate(d.getDate() - (days - 1 - i));
+        const weekIndex = Math.floor(i / 7);
+        if (!byWeek[weekIndex]) {
+          byWeek[weekIndex] = { name: `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}`, total: 0, index: weekIndex };
+        }
+        byWeek[weekIndex].total = 0;
+      }
+      filteredSales.forEach((s: any) => {
+        const d = new Date(s.createdAt);
+        d.setHours(0, 0, 0, 0);
+        const daysDiff = Math.floor((cutoff.getTime() - d.getTime()) / 86400000);
+        const weekIndex = Math.min(Math.floor(daysDiff / 7), byWeek.length - 1);
+        if (byWeek[weekIndex]) byWeek[weekIndex].total += s.total || 0;
+      });
+      return byWeek.sort((a, b) => a.index - b.index);
+    }
+
+    const days = period;
+    const byDay: { name: string; total: number; index: number }[] = [];
+    for (let i = 0; i < days; i++) {
+      const d = new Date();
+      d.setHours(0, 0, 0, 0);
+      d.setDate(d.getDate() - (days - 1 - i));
+      byDay.push({ name: `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}`, total: 0, index: i });
+    }
+    filteredSales.forEach((s: any) => {
+      const d = new Date(s.createdAt);
+      d.setHours(0, 0, 0, 0);
+      const daysDiff = Math.floor((cutoff.getTime() - d.getTime()) / 86400000);
+      const idx = days - 1 - daysDiff;
+      if (byDay[idx]) byDay[idx].total += s.total || 0;
+    });
+    return byDay.sort((a, b) => a.index - b.index);
+  }, [sales, filteredSales, cutoff, period]);
+
   return (
     <AppShell>
       <div className="space-y-6">
-        <h1 className="text-2xl font-bold text-ink">Relatórios</h1>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h1 className="text-2xl font-bold text-ink">Relatórios</h1>
+          <div className="flex gap-1 border border-line rounded-lg bg-paper p-1">
+            {PERIODS.map((p) => (
+              <button
+                key={p.days}
+                onClick={() => setPeriod(p.days)}
+                className={`h-8 px-3 rounded-md text-sm font-medium transition-colors ${period === p.days ? "bg-ink text-paper" : "text-muted hover:bg-cream"}`}
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
+        </div>
 
         {error && (
           <ErrorState message={error} onRetry={load} />
@@ -109,14 +217,14 @@ export default function RelatoriosPage() {
                   <DollarSign className="w-4 h-4 text-muted" />
                   <span className="text-xs text-muted uppercase">Receita</span>
                 </div>
-                <p className="text-2xl font-bold text-ink">R$ {totalRevenue.toLocaleString("pt-BR")}</p>
+                <p className="text-2xl font-bold text-ink">R$ {totalRevenue.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</p>
               </div>
               <div className="border border-line rounded-lg bg-paper p-4 shadow-card">
                 <div className="flex items-center gap-2 mb-2">
                   <ShoppingCart className="w-4 h-4 text-muted" />
                   <span className="text-xs text-muted uppercase">Pedidos</span>
                 </div>
-                <p className="text-2xl font-bold text-ink">{orders.length}</p>
+                <p className="text-2xl font-bold text-ink">{filteredOrders.length}</p>
               </div>
               <div className="border border-line rounded-lg bg-paper p-4 shadow-card">
                 <div className="flex items-center gap-2 mb-2">
@@ -130,8 +238,29 @@ export default function RelatoriosPage() {
                   <TrendingUp className="w-4 h-4 text-muted" />
                   <span className="text-xs text-muted uppercase">Vendas</span>
                 </div>
-                <p className="text-2xl font-bold text-ink">{sales.length}</p>
+                <p className="text-2xl font-bold text-ink">{filteredSales.length}</p>
               </div>
+            </div>
+
+            <div className="border border-line rounded-lg bg-paper p-4 shadow-card">
+              <h2 className="text-sm font-semibold text-ink uppercase tracking-wide mb-4">
+                Vendas por Dia
+              </h2>
+              {salesPerDay.length > 0 && salesPerDay.some((d: any) => d.total > 0) ? (
+                <div className="h-56">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={salesPerDay} margin={{ top: 4, right: 8, bottom: 0, left: 8 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#E5DCCB" />
+                      <XAxis dataKey="name" tick={{ fontSize: 10, fill: "#6B6156" }} tickLine={false} />
+                      <YAxis tick={{ fontSize: 10, fill: "#6B6156" }} tickLine={false} width={54} />
+                      <Tooltip formatter={(value: any) => [`R$ ${Number(value).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`, "Receita"]} labelStyle={{ color: "#111111" }} />
+                      <Bar dataKey="total" fill="#111111" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              ) : (
+                <p className="text-center text-muted text-sm py-8">Sem vendas no período</p>
+              )}
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -167,33 +296,51 @@ export default function RelatoriosPage() {
 
               <div className="border border-line rounded-lg bg-paper p-4 shadow-card">
                 <h2 className="text-sm font-semibold text-ink uppercase tracking-wide mb-4">
-                  Top Produtos
+                  Pedidos por Status
                 </h2>
-                <div className="space-y-2">
-                  {topProducts.length > 0 ? (
-                    topProducts.map((product, i) => (
-                      <div
-                        key={product.name}
-                        className="flex items-center justify-between"
-                      >
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs text-muted w-4">{i + 1}.</span>
-                          <span className="text-sm text-ink">{product.name}</span>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <span className="text-xs text-muted">
-                            {product.sold} un
-                          </span>
-                          <span className="text-sm font-semibold text-ink">
-                            R$ {product.revenue}
-                          </span>
-                        </div>
+                {statusData.length > 0 ? (
+                  <div className="space-y-2">
+                    {statusData.map((item) => (
+                      <div key={item.status} className="flex items-center justify-between">
+                        <span className="text-sm text-ink">{item.label}</span>
+                        <span className="text-sm font-semibold text-ink">{item.count}</span>
                       </div>
-                    ))
-                  ) : (
-                    <p className="text-center text-muted text-sm py-8">Sem dados</p>
-                  )}
-                </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-center text-muted text-sm py-8">Sem dados</p>
+                )}
+              </div>
+            </div>
+
+            <div className="border border-line rounded-lg bg-paper p-4 shadow-card">
+              <h2 className="text-sm font-semibold text-ink uppercase tracking-wide mb-4">
+                Top Produtos
+              </h2>
+              <div className="space-y-2">
+                {topProducts.length > 0 ? (
+                  topProducts.map((product, i) => (
+                    <div
+                      key={product.name}
+                      className="flex items-center justify-between"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-muted w-4">{i + 1}.</span>
+                        <span className="text-sm text-ink">{product.name}</span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="text-xs text-muted">
+                          {product.sold} un
+                        </span>
+                        <span className="text-sm font-semibold text-ink">
+                          R$ {product.revenue.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                        </span>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-center text-muted text-sm py-8">Sem dados</p>
+                )}
               </div>
             </div>
           </>

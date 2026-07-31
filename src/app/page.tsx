@@ -32,7 +32,7 @@ const modules = [
   { label: "Caixa", icon: DollarSign, href: "/caixa", color: "bg-success/10 text-success", desc: "Fluxo de caixa" },
   { label: "Delivery", icon: Truck, href: "/delivery", color: "bg-info/10 text-info", desc: "Entregas" },
   { label: "Relatórios", icon: BarChart3, href: "/relatorios", color: "bg-muted/10 text-muted", desc: "Análises" },
-  { label: "Previsão", icon: ClipboardList, href: "/previsao", color: "bg-warning/10 text-warning", desc: "Previsão de demanda" },
+  { label: "Indicadores", icon: ClipboardList, href: "/indicadores", color: "bg-warning/10 text-warning", desc: "Indicadores do negócio" },
   { label: "Canais", icon: Store, href: "/canais", color: "bg-info/10 text-info", desc: "Canais de venda" },
 ];
 
