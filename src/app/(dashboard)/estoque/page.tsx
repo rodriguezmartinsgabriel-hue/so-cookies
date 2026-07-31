@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { useRole } from "@/hooks/useRole";
 import { AppShell } from "@/components/layout/AppShell";
@@ -591,6 +591,7 @@ function GeralTab({ ingredients, recipes, onUpdate }: { ingredients: any[]; reci
   const [editValue, setEditValue] = useState("");
   const [newName, setNewName] = useState("");
   const [newBrand, setNewBrand] = useState("");
+  const lastSaved = useRef<{ id: string; field: string; value: string } | null>(null);
 
   function ingredientUsage(ingredientId: string) {
     return recipes.filter((r: any) =>
@@ -599,14 +600,18 @@ function GeralTab({ ingredients, recipes, onUpdate }: { ingredients: any[]; reci
   }
 
   function startEdit(id: string, field: "name" | "brand", value: string) {
+    lastSaved.current = null;
     setEditingId(id);
     setEditField(field);
     setEditValue(value);
   }
 
   async function saveEdit(id: string) {
-    if (!editValue.trim()) return;
-    await repository.ingredients.update(id, { [editField]: editValue.trim() });
+    const value = editValue.trim();
+    if (!value) return;
+    if (lastSaved.current?.id === id && lastSaved.current.field === editField && lastSaved.current.value === value) return;
+    lastSaved.current = { id, field: editField, value };
+    await repository.ingredients.update(id, { [editField]: value });
     setEditingId(null);
     onUpdate();
   }

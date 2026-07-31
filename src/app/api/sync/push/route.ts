@@ -29,10 +29,8 @@ import {
 } from "@/lib/validation"
 
 const ROLE_HIERARCHY: Record<string, number> = { ADMIN: 3, OPERACIONAL: 2, VISUALIZADOR: 1 }
-const ADMIN_ONLY_ENTITIES = ["ingredient", "recipe", "channel", "cashFlow"]
 
 function minRoleFor(entity: string, action: string): "ADMIN" | "OPERACIONAL" {
-  if (ADMIN_ONLY_ENTITIES.includes(entity)) return "ADMIN"
   if (entity === "priceTier" && action === "create") return "ADMIN"
   if (entity === "production" && action === "delete") return "ADMIN"
   return "OPERACIONAL"

@@ -1,4 +1,19 @@
-import { db, getLastSyncTime, setLastSyncTime, clearSyncQueue } from "./db-local"
+import { db, getLastSyncTime, setLastSyncTime } from "./db-local"
+
+const ENTITY_TABLES: Record<string, string> = {
+  order: "orders",
+  sale: "sales",
+  cashFlow: "cashFlow",
+  production: "productions",
+  ingredient: "ingredients",
+  recipe: "recipes",
+  document: "documents",
+  deliveryCost: "deliveryCosts",
+  channel: "channels",
+  priceTier: "priceTiers",
+  contact: "contacts",
+  contactInteraction: "contactInteractions",
+}
 
 let syncLock = false
 let pendingSync: ReturnType<typeof setTimeout> | null = null
@@ -28,18 +43,34 @@ export async function pushPendingChanges() {
     })
     if (resp.ok) {
       const result = await resp.json()
-      if (!result.ok) return { pushed: 0 }
+      if (!result.ok) return { pushed: 0, pushedIds: [] }
       if (result.mappings) {
         for (const [tempId, realId] of Object.entries(result.mappings)) {
           await reconcileIds(tempId as string, realId as string)
         }
       }
-      return { pushed: pending.length }
+      for (const item of pending) {
+        if (item.action !== "update") continue
+        const table = (db as any)[ENTITY_TABLES[item.entity]]
+        if (!table?.get) continue
+        const id = item.data.id as string
+        const local = await table.get(id)
+        if (local && local._updatedAt <= item.createdAt) {
+          await table.update(id, { _synced: true })
+        }
+      }
+      return { pushed: pending.length, pushedIds: pending.map((p) => p.id).filter((id): id is number => id != null) }
     }
   } catch (e) {
     console.error("Erro no push:", e)
+  } finally {
+    releaseLock()
   }
   return { pushed: 0 }
+}
+
+async function pullUnsyncedIds(table: any) {
+  return new Set((await table.toArray()).filter((r: any) => r._synced === false).map((r: any) => r.id))
 }
 
 export async function pullChanges() {
@@ -55,31 +86,50 @@ export async function pullChanges() {
     })
     if (resp.ok) {
       const data = await resp.json()
-      if (data.orders) await db.orders.bulkPut(data.orders)
-      if (data.sales) await db.sales.bulkPut(data.sales)
-      if (data.cashFlow) await db.cashFlow.bulkPut(data.cashFlow)
-      if (data.productions) await db.productions.bulkPut(data.productions)
-      if (data.ingredients) await db.ingredients.bulkPut(data.ingredients)
-      if (data.recipes) await db.recipes.bulkPut(data.recipes.map((r: any) => ({ ...r, ingredients: JSON.stringify(r.ingredients || []), _synced: true, _updatedAt: new Date().toISOString() })))
-      if (data.documents) await db.documents.bulkPut(data.documents)
-      if (data.deliveryCosts) await db.deliveryCosts.bulkPut(data.deliveryCosts)
-      if (data.contacts) await db.contacts.bulkPut(data.contacts.map((c: any) => ({ ...c, _synced: true, _updatedAt: new Date().toISOString() })))
-      if (data.contactInteractions) await db.contactInteractions.bulkPut(data.contactInteractions.map((i: any) => ({ ...i, _synced: true, _updatedAt: new Date().toISOString() })))
+      const tables: { key: string; table: any; map?: (r: any) => any }[] = [
+        { key: "orders", table: db.orders },
+        { key: "sales", table: db.sales },
+        { key: "cashFlow", table: db.cashFlow },
+        { key: "productions", table: db.productions },
+        { key: "ingredients", table: db.ingredients },
+        { key: "recipes", table: db.recipes, map: (r) => ({ ...r, ingredients: JSON.stringify(r.ingredients || []) }) },
+        { key: "documents", table: db.documents },
+        { key: "deliveryCosts", table: db.deliveryCosts },
+        { key: "contacts", table: db.contacts },
+        { key: "contactInteractions", table: db.contactInteractions },
+      ]
+
+      let pulled = 0
+      for (const { key, table, map } of tables) {
+        const rows = data[key]
+        if (!rows?.length) continue
+        const skip = await pullUnsyncedIds(table)
+        const toWrite = rows
+          .filter((r: any) => !skip.has(r.id))
+          .map((r: any) => ({ ...(map ? map(r) : r), _synced: true, _updatedAt: new Date().toISOString() }))
+        if (toWrite.length) {
+          await table.bulkPut(toWrite)
+          pulled += toWrite.length
+        }
+      }
       await setLastSyncTime(new Date().toISOString())
-      return { pulled: (data.orders?.length || 0) + (data.sales?.length || 0) + (data.cashFlow?.length || 0) + (data.productions?.length || 0) + (data.ingredients?.length || 0) + (data.recipes?.length || 0) + (data.documents?.length || 0) + (data.deliveryCosts?.length || 0) + (data.contacts?.length || 0) + (data.contactInteractions?.length || 0) }
+      return { pulled }
     }
   } catch (e) {
     console.error("Erro no pull:", e)
+  } finally {
+    releaseLock()
   }
   return { pulled: 0 }
 }
 
 export async function syncAll() {
-  const pending = await db.syncQueue.count()
   const pushed = await pushPendingChanges()
   const pulled = await pullChanges()
   if (pushed.pushed > 0 && pulled.pulled >= 0) {
-    await clearSyncQueue()
+    if (pushed.pushedIds?.length) {
+      await db.syncQueue.bulkDelete(pushed.pushedIds)
+    }
   }
   return { pushed: pushed.pushed, pulled: pulled.pulled }
 }

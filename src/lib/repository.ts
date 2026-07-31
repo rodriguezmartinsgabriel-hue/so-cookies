@@ -35,31 +35,58 @@ function emitDataRefresh() {
   refreshListeners.forEach((fn) => fn())
 }
 
+async function getUnsyncedIds(table: { toArray(): Promise<{ id: string; _synced?: boolean }[]> }) {
+  return new Set((await table.toArray()).filter((r) => r._synced === false).map((r) => r.id))
+}
+
+async function getQueuedIds() {
+  const queued = await db.syncQueue.toArray()
+  return new Set(queued.map((q) => (q.tempId || (q.data && (q.data.id as string))) as string).filter(Boolean))
+}
+
+async function mergeTable(
+  table: any,
+  url: string,
+  options?: {
+    transform?: (row: any) => any
+    scope?: (row: any) => boolean
+    onDelete?: (row: any) => Promise<void>
+  },
+) {
+  const resp = await fetch(url)
+  if (!resp.ok) return
+  const data = await resp.json()
+  const realIds = new Set(data.map((r: any) => r.id))
+  const unsyncedIds = await getUnsyncedIds(table)
+  const queuedIds = await getQueuedIds()
+
+  const localRows = await table.toArray()
+  for (const local of localRows) {
+    if (realIds.has(local.id)) continue
+    if (options?.scope && !options.scope(local)) continue
+    if (unsyncedIds.has(local.id)) continue
+    if (queuedIds.has(local.id)) continue
+    await table.delete(local.id)
+    if (options?.onDelete) await options.onDelete(local)
+  }
+
+  const toUpsert = data
+    .filter((r: any) => !unsyncedIds.has(r.id))
+    .map((r: any) => (options?.transform ? options.transform(r) : { ...r, _synced: true, _updatedAt: now() }))
+  await table.bulkPut(toUpsert)
+}
+
 export const repository = {
   orders: {
     async getAll() {
       const cached = await db.orders.toArray()
       if (isOnline() && shouldFetch("/api/orders")) {
-        fetch("/api/orders")
-          .then(async (resp) => {
-            if (!resp.ok) return
-            const data = await resp.json()
-            const realIds = new Set(data.map((o: any) => o.id))
-            const localOnly = await db.orders.toArray()
-            for (const local of localOnly) {
-              if (local.id.startsWith("offline_") && !realIds.has(local.id)) {
-                await db.orders.delete(local.id)
-                await db.orderItems.where("orderId").equals(local.id).delete()
-              }
-            }
-            const unsyncedLocal = await db.orders.where("_synced").equals(0).toArray()
-            const unsyncedIds = new Set(unsyncedLocal.map((o) => o.id))
-            const toUpsert = data
-              .filter((o: any) => !unsyncedIds.has(o.id))
-              .map((o: any) => ({ ...o, _synced: true, _updatedAt: now() }))
-            await db.orders.bulkPut(toUpsert)
-            emitDataRefresh()
-          })
+        mergeTable(db.orders, "/api/orders", {
+          onDelete: async (o) => {
+            await db.orderItems.where("orderId").equals(o.id).delete()
+          },
+        })
+          .then(() => emitDataRefresh())
           .catch((e) => console.error("Erro ao sync orders:", e))
       }
       return cached
@@ -109,22 +136,12 @@ export const repository = {
     async getAll() {
       const cached = await db.sales.toArray()
       if (isOnline() && shouldFetch("/api/sales")) {
-        fetch("/api/sales")
-          .then(async (resp) => {
-            if (!resp.ok) return
-            const data = await resp.json()
-            const realIds = new Set(data.map((s: any) => s.id))
-            const localOnly = await db.sales.toArray()
-            for (const local of localOnly) {
-              if (local.id.startsWith("offline_") && !realIds.has(local.id)) {
-                await db.sales.delete(local.id)
-                await db.saleItems.where("saleId").equals(local.id).delete()
-              }
-            }
-            const unsyncedIds = new Set((await db.sales.where("_synced").equals(0).toArray()).map((s) => s.id))
-            await db.sales.bulkPut(data.filter((s: any) => !unsyncedIds.has(s.id)).map((s: any) => ({ ...s, _synced: true, _updatedAt: now() })))
-            emitDataRefresh()
-          })
+        mergeTable(db.sales, "/api/sales", {
+          onDelete: async (s) => {
+            await db.saleItems.where("saleId").equals(s.id).delete()
+          },
+        })
+          .then(() => emitDataRefresh())
           .catch((e) => console.error("Erro ao sync:", e))
       }
       return cached
@@ -160,21 +177,8 @@ export const repository = {
     async getAll() {
       const cached = await db.cashFlow.toArray()
       if (isOnline() && shouldFetch("/api/cashflow")) {
-        fetch("/api/cashflow")
-          .then(async (resp) => {
-            if (!resp.ok) return
-            const data = await resp.json()
-            const realIds = new Set(data.map((e: any) => e.id))
-            const localOnly = await db.cashFlow.toArray()
-            for (const local of localOnly) {
-              if (local.id.startsWith("offline_") && !realIds.has(local.id)) {
-                await db.cashFlow.delete(local.id)
-              }
-            }
-            const unsyncedIds = new Set((await db.cashFlow.where("_synced").equals(0).toArray()).map((e) => e.id))
-            await db.cashFlow.bulkPut(data.filter((e: any) => !unsyncedIds.has(e.id)).map((e: any) => ({ ...e, _synced: true, _updatedAt: now() })))
-            emitDataRefresh()
-          })
+        mergeTable(db.cashFlow, "/api/cashflow")
+          .then(() => emitDataRefresh())
           .catch((e) => console.error("Erro ao sync:", e))
       }
       return cached
@@ -209,21 +213,8 @@ export const repository = {
     async getAll() {
       const cached = await db.productions.toArray()
       if (isOnline() && shouldFetch("/api/productions")) {
-        fetch("/api/productions")
-          .then(async (resp) => {
-            if (!resp.ok) return
-            const data = await resp.json()
-            const realIds = new Set(data.map((p: any) => p.id))
-            const localOnly = await db.productions.toArray()
-            for (const local of localOnly) {
-              if (local.id.startsWith("offline_") && !realIds.has(local.id)) {
-                await db.productions.delete(local.id)
-              }
-            }
-            const unsyncedIds = new Set((await db.productions.where("_synced").equals(0).toArray()).map((p) => p.id))
-            await db.productions.bulkPut(data.filter((p: any) => !unsyncedIds.has(p.id)).map((p: any) => ({ ...p, _synced: true, _updatedAt: now() })))
-            emitDataRefresh()
-          })
+        mergeTable(db.productions, "/api/productions")
+          .then(() => emitDataRefresh())
           .catch((e) => console.error("Erro ao sync:", e))
       }
       return cached
@@ -282,21 +273,8 @@ export const repository = {
     async getAll() {
       const cached = await db.ingredients.toArray()
       if (isOnline() && shouldFetch("/api/ingredients")) {
-        fetch("/api/ingredients")
-          .then(async (resp) => {
-            if (!resp.ok) return
-            const data = await resp.json()
-            const realIds = new Set(data.map((i: any) => i.id))
-            const localOnly = await db.ingredients.toArray()
-            for (const local of localOnly) {
-              if (local.id.startsWith("offline_") && !realIds.has(local.id)) {
-                await db.ingredients.delete(local.id)
-              }
-            }
-            const unsyncedIds = new Set((await db.ingredients.where("_synced").equals(0).toArray()).map((i) => i.id))
-            await db.ingredients.bulkPut(data.filter((i: any) => !unsyncedIds.has(i.id)).map((i: any) => ({ ...i, _synced: true, _updatedAt: now() })))
-            emitDataRefresh()
-          })
+        mergeTable(db.ingredients, "/api/ingredients")
+          .then(() => emitDataRefresh())
           .catch((e) => console.error("Erro ao sync:", e))
       }
       return cached
@@ -331,21 +309,8 @@ export const repository = {
     async getAll() {
       const cached = await db.channels.toArray()
       if (isOnline() && shouldFetch("/api/channels")) {
-        fetch("/api/channels")
-          .then(async (resp) => {
-            if (!resp.ok) return
-            const data = await resp.json()
-            const realIds = new Set(data.map((c: any) => c.id))
-            const localOnly = await db.channels.toArray()
-            for (const local of localOnly) {
-              if (local.id.startsWith("offline_") && !realIds.has(local.id)) {
-                await db.channels.delete(local.id)
-              }
-            }
-            const unsyncedIds = new Set((await db.channels.where("_synced").equals(0).toArray()).map((c) => c.id))
-            await db.channels.bulkPut(data.filter((c: any) => !unsyncedIds.has(c.id)).map((c: any) => ({ ...c, _synced: true, _updatedAt: now() })))
-            emitDataRefresh()
-          })
+        mergeTable(db.channels, "/api/channels")
+          .then(() => emitDataRefresh())
           .catch((e) => console.error("Erro ao sync:", e))
       }
       return cached
@@ -380,21 +345,8 @@ export const repository = {
     async getAll() {
       const cached = await db.priceTiers.toArray()
       if (isOnline() && shouldFetch("/api/price-tiers")) {
-        fetch("/api/price-tiers")
-          .then(async (resp) => {
-            if (!resp.ok) return
-            const data = await resp.json()
-            const realIds = new Set(data.map((t: any) => t.id))
-            const localOnly = await db.priceTiers.toArray()
-            for (const local of localOnly) {
-              if (local.id.startsWith("offline_") && !realIds.has(local.id)) {
-                await db.priceTiers.delete(local.id)
-              }
-            }
-            const unsyncedIds = new Set((await db.priceTiers.where("_synced").equals(0).toArray()).map((t) => t.id))
-            await db.priceTiers.bulkPut(data.filter((t: any) => !unsyncedIds.has(t.id)).map((t: any) => ({ ...t, _synced: true, _updatedAt: now() })))
-            emitDataRefresh()
-          })
+        mergeTable(db.priceTiers, "/api/price-tiers")
+          .then(() => emitDataRefresh())
           .catch((e) => console.error("Erro ao sync:", e))
       }
       return cached
@@ -429,25 +381,13 @@ export const repository = {
     async getAll() {
       const cached = (await db.recipes.toArray()).map((r) => ({ ...r, ingredients: JSON.parse(r.ingredients) }))
       if (isOnline() && shouldFetch("/api/recipes")) {
-        fetch("/api/recipes")
-          .then(async (resp) => {
-            if (!resp.ok) return
-            const data = await resp.json()
-            const realIds = new Set(data.map((r: any) => r.id))
-            const localOnly = await db.recipes.toArray()
-            for (const local of localOnly) {
-              if (local.id.startsWith("offline_") && !realIds.has(local.id)) {
-                await db.recipes.delete(local.id)
-                await db.recipeItems.where("recipeId").equals(local.id).delete()
-              }
-            }
-            const unsyncedIds = new Set((await db.recipes.where("_synced").equals(0).toArray()).map((r) => r.id))
-            const toUpsert = data
-              .filter((r: any) => !unsyncedIds.has(r.id))
-              .map((r: any) => ({ ...r, ingredients: JSON.stringify(r.ingredients || []), _synced: true, _updatedAt: now() }))
-            await db.recipes.bulkPut(toUpsert)
-            emitDataRefresh()
-          })
+        mergeTable(db.recipes, "/api/recipes", {
+          transform: (r: any) => ({ ...r, ingredients: JSON.stringify(r.ingredients || []), _synced: true, _updatedAt: now() }),
+          onDelete: async (r) => {
+            await db.recipeItems.where("recipeId").equals(r.id).delete()
+          },
+        })
+          .then(() => emitDataRefresh())
           .catch((e) => console.error("Erro ao sync:", e))
       }
       return cached
@@ -502,21 +442,8 @@ export const repository = {
     async getAll() {
       const cached = await db.documents.toArray()
       if (isOnline() && shouldFetch("/api/documents")) {
-        fetch("/api/documents")
-          .then(async (resp) => {
-            if (!resp.ok) return
-            const data = await resp.json()
-            const realIds = new Set(data.map((d: any) => d.id))
-            const localOnly = await db.documents.toArray()
-            for (const local of localOnly) {
-              if (local.id.startsWith("offline_") && !realIds.has(local.id)) {
-                await db.documents.delete(local.id)
-              }
-            }
-            const unsyncedIds = new Set((await db.documents.where("_synced").equals(0).toArray()).map((d) => d.id))
-            await db.documents.bulkPut(data.filter((d: any) => !unsyncedIds.has(d.id)).map((d: any) => ({ ...d, _synced: true, _updatedAt: now() })))
-            emitDataRefresh()
-          })
+        mergeTable(db.documents, "/api/documents")
+          .then(() => emitDataRefresh())
           .catch((e) => console.error("Erro ao sync:", e))
       }
       return cached
@@ -551,21 +478,8 @@ export const repository = {
     async getAll() {
       const cached = await db.deliveryCosts.toArray()
       if (isOnline() && shouldFetch("/api/delivery-cost")) {
-        fetch("/api/delivery-cost")
-          .then(async (resp) => {
-            if (!resp.ok) return
-            const data = await resp.json()
-            const realIds = new Set(data.map((c: any) => c.id))
-            const localOnly = await db.deliveryCosts.toArray()
-            for (const local of localOnly) {
-              if (local.id.startsWith("offline_") && !realIds.has(local.id)) {
-                await db.deliveryCosts.delete(local.id)
-              }
-            }
-            const unsyncedIds = new Set((await db.deliveryCosts.where("_synced").equals(0).toArray()).map((c) => c.id))
-            await db.deliveryCosts.bulkPut(data.filter((c: any) => !unsyncedIds.has(c.id)).map((c: any) => ({ ...c, _synced: true, _updatedAt: now() })))
-            emitDataRefresh()
-          })
+        mergeTable(db.deliveryCosts, "/api/delivery-cost")
+          .then(() => emitDataRefresh())
           .catch((e) => console.error("Erro ao sync:", e))
       }
       return cached
@@ -605,18 +519,26 @@ export const repository = {
             if (!resp.ok) return
             const data = await resp.json()
             const realIds = new Set(data.map((c: any) => c.id))
-            const localOnly = await db.contacts.toArray()
-            for (const local of localOnly) {
-              if (local.id.startsWith("offline_") && !realIds.has(local.id)) {
-                await db.contacts.delete(local.id)
-                await db.contactInteractions.where("contactId").equals(local.id).delete()
-              }
+            const unsyncedIds = await getUnsyncedIds(db.contacts)
+            const queuedIds = await getQueuedIds()
+
+            const localContacts = await db.contacts.toArray()
+            for (const local of localContacts) {
+              if (realIds.has(local.id)) continue
+              if (unsyncedIds.has(local.id)) continue
+              if (queuedIds.has(local.id)) continue
+              await db.contacts.delete(local.id)
+              await db.contactInteractions.where("contactId").equals(local.id).delete()
             }
-            const unsyncedIds = new Set((await db.contacts.where("_synced").equals(0).toArray()).map((c) => c.id))
-            await db.contacts.bulkPut(data.filter((c: any) => !unsyncedIds.has(c.id)).map((c: any) => ({ ...c, _synced: true, _updatedAt: now() })))
+
+            await db.contacts.bulkPut(
+              data
+                .filter((c: any) => !unsyncedIds.has(c.id))
+                .map((c: any) => ({ ...c, _synced: true, _updatedAt: now() })),
+            )
 
             const allInteractions = data.flatMap((c: any) => (c.interactions || []).map((i: any) => ({ ...i, contactId: c.id })))
-            const unsyncedInteractionIds = new Set((await db.contactInteractions.where("_synced").equals(0).toArray()).map((i) => i.id))
+            const unsyncedInteractionIds = await getUnsyncedIds(db.contactInteractions)
             const toUpsert = allInteractions
               .filter((i: any) => !unsyncedInteractionIds.has(i.id))
               .map((i: any) => ({ ...i, _synced: true, _updatedAt: now() }))
@@ -657,21 +579,10 @@ export const repository = {
       const items = await db.contactInteractions.where("contactId").equals(contactId).toArray()
       const sorted = items.sort((a, b) => b.createdAt.localeCompare(a.createdAt))
       if (isOnline() && shouldFetch(`/api/contacts/${contactId}/interactions`)) {
-        fetch(`/api/contacts/${contactId}/interactions`)
-          .then(async (resp) => {
-            if (!resp.ok) return
-            const data = await resp.json()
-            const realIds = new Set(data.map((i: any) => i.id))
-            const localOnly = await db.contactInteractions.where("contactId").equals(contactId).toArray()
-            for (const local of localOnly) {
-              if (local.id.startsWith("offline_") && !realIds.has(local.id)) {
-                await db.contactInteractions.delete(local.id)
-              }
-            }
-            const unsyncedIds = new Set((await db.contactInteractions.where("_synced").equals(0).toArray()).map((i) => i.id))
-            await db.contactInteractions.bulkPut(data.filter((i: any) => !unsyncedIds.has(i.id)).map((i: any) => ({ ...i, _synced: true, _updatedAt: now() })))
-            emitDataRefresh()
-          })
+        mergeTable(db.contactInteractions, `/api/contacts/${contactId}/interactions`, {
+          scope: (i) => i.contactId === contactId,
+        })
+          .then(() => emitDataRefresh())
           .catch((e) => console.error("Erro ao sync interactions:", e))
       }
       return sorted
