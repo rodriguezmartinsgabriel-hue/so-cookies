@@ -16,7 +16,7 @@ export async function POST(request: Request) {
     const sinceDate = since ? new Date(since) : new Date(0)
     if (isNaN(sinceDate.getTime())) sinceDate.setTime(0)
 
-    const [orders, sales, cashFlow, productions, ingredients, recipes, documents, deliveryCosts] = await Promise.all([
+    const [orders, sales, cashFlow, productions, ingredients, recipes, documents, deliveryCosts, contacts, contactInteractions] = await Promise.all([
       prisma.order.findMany({
         where: { updatedAt: { gt: sinceDate } },
         include: { items: true },
@@ -44,9 +44,16 @@ export async function POST(request: Request) {
       prisma.deliveryCost.findMany({
         where: { createdAt: { gt: sinceDate } },
       }),
+      prisma.contact.findMany({
+        where: { updatedAt: { gt: sinceDate } },
+        include: { interactions: { orderBy: { createdAt: "desc" } } },
+      }),
+      prisma.contactInteraction.findMany({
+        where: { createdAt: { gt: sinceDate } },
+      }),
     ])
 
-    return NextResponse.json({ orders, sales, cashFlow, productions, ingredients, recipes, documents, deliveryCosts })
+    return NextResponse.json({ orders, sales, cashFlow, productions, ingredients, recipes, documents, deliveryCosts, contacts, contactInteractions })
   } catch (e) {
     return NextResponse.json({ error: "Erro no sync pull" }, { status: 500 })
   }

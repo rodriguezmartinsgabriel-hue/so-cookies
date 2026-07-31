@@ -285,3 +285,49 @@ enum DocumentCategory {
   TREINAMENTO
   OUTROS
 }
+
+model Contact {
+  id           String                @id @default(cuid())
+  name         String
+  email        String?
+  phone        String?
+  type         ContactType           @default(CLIENTE)
+  company      String?
+  notes        String?
+  createdAt    DateTime              @default(now())
+  updatedAt    DateTime              @updatedAt
+
+  interactions ContactInteraction[]
+
+  @@index([name])
+  @@index([type])
+}
+
+model ContactInteraction {
+  id        String         @id @default(cuid())
+  type      InteractionType
+  note      String
+  createdAt DateTime       @default(now())
+
+  contact   Contact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  contactId String
+
+  @@index([contactId])
+  @@index([createdAt])
+}
+
+enum ContactType {
+  CLIENTE
+  FORNECEDOR
+  LEAD
+  OUTRO
+}
+
+enum InteractionType {
+  NOTA
+  LIGACAO
+  EMAIL
+  WHATSAPP
+  VISITA
+  OUTRO
+}

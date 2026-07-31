@@ -212,3 +212,31 @@ export const updateUserSchema = z.object({
   role: z.enum(USER_ROLES).optional(),
   password: z.string().min(6, "Senha deve ter no mínimo 6 caracteres").optional(),
 })
+
+export const CONTACT_TYPES = ["CLIENTE", "FORNECEDOR", "LEAD", "OUTRO"] as const
+export const INTERACTION_TYPES = ["NOTA", "LIGACAO", "EMAIL", "WHATSAPP", "VISITA", "OUTRO"] as const
+
+const optionalEmail = z.union([z.string().email("E-mail inválido"), z.literal("")]).optional()
+
+export const createContactSchema = z.object({
+  name: z.string().min(1, "Nome é obrigatório"),
+  email: optionalEmail,
+  phone: z.string().optional(),
+  type: z.enum(CONTACT_TYPES).default("CLIENTE"),
+  company: z.string().optional(),
+  notes: z.string().optional(),
+})
+
+export const updateContactSchema = z.object({
+  name: z.string().min(1).optional(),
+  email: optionalEmail,
+  phone: z.string().optional(),
+  type: z.enum(CONTACT_TYPES).optional(),
+  company: z.string().optional(),
+  notes: z.string().optional(),
+})
+
+export const createInteractionSchema = z.object({
+  type: z.enum(INTERACTION_TYPES).default("NOTA"),
+  note: z.string().min(1, "Descreva a interação"),
+})

@@ -165,6 +165,30 @@ export interface LocalDeliveryCost {
   _updatedAt: string
 }
 
+export interface LocalContact {
+  id: string
+  name: string
+  email?: string
+  phone?: string
+  type: string
+  company?: string
+  notes?: string
+  createdAt: string
+  updatedAt: string
+  _synced: boolean
+  _updatedAt: string
+}
+
+export interface LocalContactInteraction {
+  id: string
+  contactId: string
+  type: string
+  note: string
+  createdAt: string
+  _synced: boolean
+  _updatedAt: string
+}
+
 export interface SyncQueueItem {
   id?: number
   action: "create" | "update" | "delete"
@@ -189,6 +213,8 @@ const db = new Dexie("SoManagerDB") as Dexie & {
   recipeItems: EntityTable<LocalRecipeItem, "id">
   documents: EntityTable<LocalDocument, "id">
   deliveryCosts: EntityTable<LocalDeliveryCost, "id">
+  contacts: EntityTable<LocalContact, "id">
+  contactInteractions: EntityTable<LocalContactInteraction, "id">
   syncQueue: EntityTable<SyncQueueItem, "id">
   syncMeta: EntityTable<{ key: string; value: string }, "key">
 }
@@ -222,6 +248,27 @@ db.version(2).stores({
   recipeItems: "id, recipeId, _synced",
   documents: "id, _synced, category",
   deliveryCosts: "id, _synced, date",
+})
+
+db.version(3).stores({
+  orders: "id, status, _synced, createdAt",
+  orderItems: "id, orderId, _synced",
+  sales: "id, _synced, createdAt",
+  saleItems: "id, saleId, _synced",
+  cashFlow: "id, _synced, date",
+  productions: "id, _synced, startTime",
+  products: "id, _synced",
+  syncQueue: "++id, entity, createdAt",
+  syncMeta: "key",
+  ingredients: "id, _synced",
+  channels: "id, _synced",
+  priceTiers: "id, _synced, productId",
+  recipes: "id, _synced",
+  recipeItems: "id, recipeId, _synced",
+  documents: "id, _synced, category",
+  deliveryCosts: "id, _synced, date",
+  contacts: "id, _synced, type",
+  contactInteractions: "id, contactId, _synced, createdAt",
 })
 
 export { db }

@@ -1,5 +1,5 @@
 import { prisma } from "./prisma";
-import type { Role } from "@/generated/prisma/enums";
+import type { Role, ContactType, InteractionType } from "@/generated/prisma/enums";
 
 export function isNotFoundError(e: unknown): boolean {
   return typeof e === "object" && e !== null && "code" in e && (e as any).code === "P2025";
@@ -401,4 +401,85 @@ export async function updateUser(id: string, data: Partial<{ name: string; role:
 
 export async function deleteUser(id: string) {
   return prisma.user.delete({ where: { id } });
+}
+
+export async function getContacts(search?: string, type?: string) {
+  const where: Record<string, unknown> = {};
+  if (search) {
+    where.OR = [
+      { name: { contains: search, mode: "insensitive" } },
+      { email: { contains: search, mode: "insensitive" } },
+      { phone: { contains: search, mode: "insensitive" } },
+      { company: { contains: search, mode: "insensitive" } },
+    ];
+  }
+  if (type && type !== "ALL") where.type = type;
+  return prisma.contact.findMany({
+    where,
+    include: { interactions: { orderBy: { createdAt: "desc" } } },
+    orderBy: { name: "asc" },
+  });
+}
+
+export async function getContact(id: string) {
+  return prisma.contact.findUnique({
+    where: { id },
+    include: { interactions: { orderBy: { createdAt: "desc" } } },
+  });
+}
+
+export async function createContact(data: {
+  name: string;
+  email?: string;
+  phone?: string;
+  type?: ContactType;
+  company?: string;
+  notes?: string;
+}) {
+  return prisma.contact.create({
+    data: {
+      name: data.name,
+      email: data.email || null,
+      phone: data.phone || null,
+      type: data.type || "CLIENTE",
+      company: data.company || null,
+      notes: data.notes || null,
+    },
+    include: { interactions: { orderBy: { createdAt: "desc" } } },
+  });
+}
+
+export async function updateContact(id: string, data: Partial<{
+  name: string;
+  email: string;
+  phone: string;
+  type: ContactType;
+  company: string;
+  notes: string;
+}>) {
+  const patch: Record<string, unknown> = {};
+  if (data.name) patch.name = data.name;
+  if (data.email !== undefined) patch.email = data.email || null;
+  if (data.phone !== undefined) patch.phone = data.phone || null;
+  if (data.type) patch.type = data.type;
+  if (data.company !== undefined) patch.company = data.company || null;
+  if (data.notes !== undefined) patch.notes = data.notes || null;
+  return prisma.contact.update({ where: { id }, data: patch, include: { interactions: { orderBy: { createdAt: "desc" } } } });
+}
+
+export async function deleteContact(id: string) {
+  await prisma.contactInteraction.deleteMany({ where: { contactId: id } });
+  return prisma.contact.delete({ where: { id } });
+}
+
+export async function getContactInteractions(contactId: string) {
+  return prisma.contactInteraction.findMany({ where: { contactId }, orderBy: { createdAt: "desc" } });
+}
+
+export async function createContactInteraction(contactId: string, data: { type: InteractionType; note: string }) {
+  return prisma.contactInteraction.create({ data: { contactId, type: data.type, note: data.note } });
+}
+
+export async function deleteContactInteraction(id: string) {
+  return prisma.contactInteraction.delete({ where: { id } });
 }

@@ -16,6 +16,7 @@ import {
   BookOpen,
   Store,
   Users,
+  BookUser,
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
@@ -24,6 +25,7 @@ const navItems = [
   { href: "/", label: "Painel", icon: Home },
   { href: "/pedidos", label: "Pedidos", icon: ShoppingBag },
   { href: "/vendas", label: "Vendas", icon: Wallet },
+  { href: "/contatos", label: "Contatos", icon: BookUser },
   { href: "/estoque", label: "Insumos", icon: Package },
   { href: "/receitas", label: "Receitas", icon: FileText },
   { href: "/canais", label: "Canais", icon: Store },

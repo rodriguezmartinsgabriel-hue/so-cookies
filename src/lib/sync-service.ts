@@ -63,8 +63,10 @@ export async function pullChanges() {
       if (data.recipes) await db.recipes.bulkPut(data.recipes.map((r: any) => ({ ...r, ingredients: JSON.stringify(r.ingredients || []), _synced: true, _updatedAt: new Date().toISOString() })))
       if (data.documents) await db.documents.bulkPut(data.documents)
       if (data.deliveryCosts) await db.deliveryCosts.bulkPut(data.deliveryCosts)
+      if (data.contacts) await db.contacts.bulkPut(data.contacts.map((c: any) => ({ ...c, _synced: true, _updatedAt: new Date().toISOString() })))
+      if (data.contactInteractions) await db.contactInteractions.bulkPut(data.contactInteractions.map((i: any) => ({ ...i, _synced: true, _updatedAt: new Date().toISOString() })))
       await setLastSyncTime(new Date().toISOString())
-      return { pulled: (data.orders?.length || 0) + (data.sales?.length || 0) + (data.cashFlow?.length || 0) + (data.productions?.length || 0) + (data.ingredients?.length || 0) + (data.recipes?.length || 0) + (data.documents?.length || 0) + (data.deliveryCosts?.length || 0) }
+      return { pulled: (data.orders?.length || 0) + (data.sales?.length || 0) + (data.cashFlow?.length || 0) + (data.productions?.length || 0) + (data.ingredients?.length || 0) + (data.recipes?.length || 0) + (data.documents?.length || 0) + (data.deliveryCosts?.length || 0) + (data.contacts?.length || 0) + (data.contactInteractions?.length || 0) }
     }
   } catch (e) {
     console.error("Erro no pull:", e)
@@ -227,6 +229,30 @@ async function reconcileIds(tempId: string, realId: string) {
     } else {
       await db.deliveryCosts.delete(tempId)
       await db.deliveryCosts.put({ ...cost, id: realId, _synced: true })
+    }
+  }
+
+  const contact = await db.contacts.get(tempId)
+  if (contact) {
+    const existingReal = await db.contacts.get(realId)
+    if (existingReal) {
+      await db.contacts.delete(tempId)
+      await db.contactInteractions.where("contactId").equals(tempId).delete()
+    } else {
+      await db.contacts.delete(tempId)
+      await db.contactInteractions.where("contactId").equals(tempId).modify({ contactId: realId, _synced: true })
+      await db.contacts.put({ ...contact, id: realId, _synced: true })
+    }
+  }
+
+  const interaction = await db.contactInteractions.get(tempId)
+  if (interaction) {
+    const existingReal = await db.contactInteractions.get(realId)
+    if (existingReal) {
+      await db.contactInteractions.delete(tempId)
+    } else {
+      await db.contactInteractions.delete(tempId)
+      await db.contactInteractions.put({ ...interaction, id: realId, _synced: true })
     }
   }
 }

@@ -572,6 +572,105 @@ export const repository = {
     },
   },
 
+  contacts: {
+    async getAll() {
+      if (isOnline()) {
+        try {
+          const resp = await fetch("/api/contacts")
+          if (resp.ok) {
+            const data = await resp.json()
+            const realIds = new Set(data.map((c: any) => c.id))
+            const localOnly = await db.contacts.toArray()
+            for (const local of localOnly) {
+              if (local.id.startsWith("offline_") && !realIds.has(local.id)) {
+                await db.contacts.delete(local.id)
+                await db.contactInteractions.where("contactId").equals(local.id).delete()
+              }
+            }
+            const unsyncedIds = new Set((await db.contacts.where("_synced").equals(0).toArray()).map((c) => c.id))
+            await db.contacts.bulkPut(data.filter((c: any) => !unsyncedIds.has(c.id)).map((c: any) => ({ ...c, _synced: true, _updatedAt: now() })))
+
+            const allInteractions = data.flatMap((c: any) => (c.interactions || []).map((i: any) => ({ ...i, contactId: c.id })))
+            const unsyncedInteractionIds = new Set((await db.contactInteractions.where("_synced").equals(0).toArray()).map((i) => i.id))
+            const toUpsert = allInteractions
+              .filter((i: any) => !unsyncedInteractionIds.has(i.id))
+              .map((i: any) => ({ ...i, _synced: true, _updatedAt: now() }))
+            if (toUpsert.length) await db.contactInteractions.bulkPut(toUpsert)
+          }
+        } catch (e) {
+          console.error("Erro ao sync contacts:", e)
+        }
+      }
+      return db.contacts.toArray()
+    },
+
+    async create(data: { name: string; email?: string; phone?: string; type?: string; company?: string; notes?: string }) {
+      const id = generateTempId()
+      const contact = { ...data, id, type: data.type || "CLIENTE", createdAt: now(), updatedAt: now(), _synced: false, _updatedAt: now() }
+
+      await db.contacts.add(contact)
+      await addToSyncQueue({ action: "create", entity: "contact", data: contact, tempId: id, createdAt: now() })
+
+      scheduleSync()
+      return contact
+    },
+
+    async update(id: string, data: { name?: string; email?: string; phone?: string; type?: string; company?: string; notes?: string }) {
+      const updatedAt = now()
+      await db.contacts.update(id, { ...data, updatedAt, _synced: false, _updatedAt: updatedAt })
+      await addToSyncQueue({ action: "update", entity: "contact", data: { id, ...data }, createdAt: now() })
+      scheduleSync()
+    },
+
+    async delete(id: string) {
+      await db.contacts.delete(id)
+      await db.contactInteractions.where("contactId").equals(id).delete()
+      await addToSyncQueue({ action: "delete", entity: "contact", data: { id }, createdAt: now() })
+      scheduleSync()
+    },
+
+    async getInteractions(contactId: string) {
+      if (isOnline()) {
+        try {
+          const resp = await fetch(`/api/contacts/${contactId}/interactions`)
+          if (resp.ok) {
+            const data = await resp.json()
+            const realIds = new Set(data.map((i: any) => i.id))
+            const localOnly = await db.contactInteractions.where("contactId").equals(contactId).toArray()
+            for (const local of localOnly) {
+              if (local.id.startsWith("offline_") && !realIds.has(local.id)) {
+                await db.contactInteractions.delete(local.id)
+              }
+            }
+            const unsyncedIds = new Set((await db.contactInteractions.where("_synced").equals(0).toArray()).map((i) => i.id))
+            await db.contactInteractions.bulkPut(data.filter((i: any) => !unsyncedIds.has(i.id)).map((i: any) => ({ ...i, _synced: true, _updatedAt: now() })))
+          }
+        } catch (e) {
+          console.error("Erro ao sync interactions:", e)
+        }
+      }
+      const items = await db.contactInteractions.where("contactId").equals(contactId).toArray()
+      return items.sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+    },
+
+    async createInteraction(contactId: string, data: { type?: string; note: string }) {
+      const id = generateTempId()
+      const interaction = { ...data, id, contactId, type: data.type || "NOTA", createdAt: now(), _synced: false, _updatedAt: now() }
+
+      await db.contactInteractions.add(interaction)
+      await addToSyncQueue({ action: "create", entity: "contactInteraction", data: interaction, tempId: id, createdAt: now() })
+
+      scheduleSync()
+      return interaction
+    },
+
+    async deleteInteraction(id: string) {
+      await db.contactInteractions.delete(id)
+      await addToSyncQueue({ action: "delete", entity: "contactInteraction", data: { id }, createdAt: now() })
+      scheduleSync()
+    },
+  },
+
   async getUnsyncedCount() {
     return db.syncQueue.count()
   },

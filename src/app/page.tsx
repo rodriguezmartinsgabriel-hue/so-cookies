@@ -22,11 +22,13 @@ import {
   ArrowUpRight,
   ArrowDownLeft,
   Users,
+  BookUser,
 } from "lucide-react";
 import Link from "next/link";
 
 const modules = [
   { label: "Pedidos", icon: ShoppingBag, href: "/pedidos", color: "bg-info/10 text-info", desc: "Gerenciar pedidos" },
+  { label: "Contatos", icon: BookUser, href: "/contatos", color: "bg-info/10 text-info", desc: "Clientes e fornecedores" },
   { label: "Vendas", icon: DollarSign, href: "/vendas", color: "bg-success/10 text-success", desc: "Controle de vendas" },
   { label: "Receitas", icon: FileText, href: "/receitas", color: "bg-warning/10 text-warning", desc: "Fichas técnicas" },
   { label: "Insumos", icon: Package, href: "/estoque", color: "bg-danger/10 text-danger", desc: "Estoque e fornecedores" },

@@ -23,6 +23,9 @@ import {
   updatePriceTierSchema,
   createDeliveryCostSchema,
   updateDeliveryCostSchema,
+  createContactSchema,
+  updateContactSchema,
+  createInteractionSchema,
 } from "@/lib/validation"
 
 const ROLE_HIERARCHY: Record<string, number> = { ADMIN: 3, OPERACIONAL: 2, VISUALIZADOR: 1 }
@@ -70,6 +73,11 @@ const syncSchemas: Record<string, z.ZodTypeAny> = {
   "deliveryCost:create": createDeliveryCostSchema,
   "deliveryCost:update": updateDeliveryCostSchema.extend({ id: z.string().min(1) }),
   "deliveryCost:delete": idSchema,
+  "contact:create": createContactSchema,
+  "contact:update": updateContactSchema.extend({ id: z.string().min(1) }),
+  "contact:delete": idSchema,
+  "contactInteraction:create": createInteractionSchema.extend({ contactId: z.string().min(1) }),
+  "contactInteraction:delete": idSchema,
 }
 
 export async function POST(request: Request) {
@@ -369,6 +377,47 @@ export async function POST(request: Request) {
         }
         case "deliveryCost:delete": {
           await prisma.deliveryCost.delete({ where: { id: data.id } })
+          break
+        }
+        case "contact:create": {
+          const created = await prisma.contact.create({
+            data: {
+              name: data.name,
+              email: data.email || null,
+              phone: data.phone || null,
+              type: data.type || "CLIENTE",
+              company: data.company || null,
+              notes: data.notes || null,
+            },
+          })
+          if (change.tempId) mappings[change.tempId] = created.id
+          break
+        }
+        case "contact:update": {
+          const { id, ...updateData } = data
+          const patch: Record<string, unknown> = { ...updateData, updatedAt: new Date() }
+          if (updateData.email !== undefined) patch.email = updateData.email || null
+          if (updateData.phone !== undefined) patch.phone = updateData.phone || null
+          if (updateData.company !== undefined) patch.company = updateData.company || null
+          if (updateData.notes !== undefined) patch.notes = updateData.notes || null
+          await prisma.contact.update({ where: { id }, data: patch })
+          break
+        }
+        case "contact:delete": {
+          await prisma.contactInteraction.deleteMany({ where: { contactId: data.id } })
+          await prisma.contact.delete({ where: { id: data.id } })
+          break
+        }
+        case "contactInteraction:create": {
+          const { contactId, ...interactionData } = data
+          const created = await prisma.contactInteraction.create({
+            data: { contactId, type: interactionData.type || "NOTA", note: interactionData.note },
+          })
+          if (change.tempId) mappings[change.tempId] = created.id
+          break
+        }
+        case "contactInteraction:delete": {
+          await prisma.contactInteraction.delete({ where: { id: data.id } })
           break
         }
       }
