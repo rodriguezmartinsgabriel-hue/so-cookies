@@ -410,3 +410,13 @@ model SyncApply {
   @@unique([entity, tempId])
   @@index([appliedAt])
 }
+
+model SyncDelete {
+  id        String   @id @default(cuid())
+  entity    String
+  recordId  String
+  createdAt DateTime @default(now())
+
+  @@unique([entity, recordId])
+  @@index([createdAt])
+}

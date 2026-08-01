@@ -86,7 +86,20 @@ interface ProcessedEntry {
   ok: boolean
   tempId?: string
   realId?: string
+  notFound?: boolean
   error?: string
+}
+
+async function recordSyncDelete(entity: string, recordId: string) {
+  try {
+    await prisma.syncDelete.upsert({
+      where: { entity_recordId: { entity, recordId } },
+      update: {},
+      create: { entity, recordId },
+    })
+  } catch (e) {
+    console.error("Falha ao registrar exclusão:", e)
+  }
 }
 
 async function applyCreate(
@@ -194,6 +207,7 @@ export async function POST(request: Request) {
         }
         case "order:delete": {
           await runDelete(() => prisma.order.delete({ where: { id: data.id } }))
+          await recordSyncDelete("order", data.id)
           entry.ok = true
           break
         }
@@ -232,6 +246,7 @@ export async function POST(request: Request) {
           const sale = await prisma.sale.findUnique({ where: { id: data.id } })
           await prisma.saleItem.deleteMany({ where: { saleId: data.id } })
           await runDelete(() => prisma.sale.delete({ where: { id: data.id } }))
+          await recordSyncDelete("sale", data.id)
           if (sale?.orderId) {
             await prisma.order.update({ where: { id: sale.orderId }, data: { status: "PRONTO", updatedAt: new Date() } })
           }
@@ -268,6 +283,7 @@ export async function POST(request: Request) {
         }
         case "cashFlow:delete": {
           await runDelete(() => prisma.cashFlow.delete({ where: { id: data.id } }))
+          await recordSyncDelete("cashFlow", data.id)
           entry.ok = true
           break
         }
@@ -301,6 +317,7 @@ export async function POST(request: Request) {
         }
         case "production:delete": {
           await runDelete(() => prisma.production.delete({ where: { id: data.id } }))
+          await recordSyncDelete("production", data.id)
           entry.ok = true
           break
         }
@@ -337,6 +354,7 @@ export async function POST(request: Request) {
         }
         case "ingredient:delete": {
           await runDelete(() => prisma.ingredient.delete({ where: { id: data.id } }))
+          await recordSyncDelete("ingredient", data.id)
           entry.ok = true
           break
         }
@@ -377,6 +395,7 @@ export async function POST(request: Request) {
         }
         case "recipe:delete": {
           await runDelete(() => prisma.recipe.delete({ where: { id: data.id } }))
+          await recordSyncDelete("recipe", data.id)
           entry.ok = true
           break
         }
@@ -407,6 +426,7 @@ export async function POST(request: Request) {
         }
         case "document:delete": {
           await runDelete(() => prisma.document.delete({ where: { id: data.id } }))
+          await recordSyncDelete("document", data.id)
           entry.ok = true
           break
         }
@@ -425,6 +445,7 @@ export async function POST(request: Request) {
         }
         case "channel:delete": {
           await runDelete(() => prisma.saleChannel.delete({ where: { id: data.id } }))
+          await recordSyncDelete("channel", data.id)
           entry.ok = true
           break
         }
@@ -447,6 +468,7 @@ export async function POST(request: Request) {
         }
         case "priceTier:delete": {
           await runDelete(() => prisma.priceTier.delete({ where: { id: data.id } }))
+          await recordSyncDelete("priceTier", data.id)
           entry.ok = true
           break
         }
@@ -477,6 +499,7 @@ export async function POST(request: Request) {
         }
         case "deliveryCost:delete": {
           await runDelete(() => prisma.deliveryCost.delete({ where: { id: data.id } }))
+          await recordSyncDelete("deliveryCost", data.id)
           entry.ok = true
           break
         }
@@ -512,6 +535,7 @@ export async function POST(request: Request) {
         case "contact:delete": {
           await prisma.contactInteraction.deleteMany({ where: { contactId: data.id } })
           await runDelete(() => prisma.contact.delete({ where: { id: data.id } }))
+          await recordSyncDelete("contact", data.id)
           entry.ok = true
           break
         }
@@ -529,6 +553,7 @@ export async function POST(request: Request) {
         }
         case "contactInteraction:delete": {
           await runDelete(() => prisma.contactInteraction.delete({ where: { id: data.id } }))
+          await recordSyncDelete("contactInteraction", data.id)
           entry.ok = true
           break
         }
@@ -536,6 +561,10 @@ export async function POST(request: Request) {
     } catch (e) {
       console.error(`Sync error for ${key}`, e)
       entry.error = "Erro ao aplicar alteração"
+      if (e && typeof e === "object" && (e as { code?: unknown }).code === "P2025") {
+        entry.notFound = true
+        entry.error = "Registro não encontrado no servidor (pode estar pendente de sincronização anterior)"
+      }
     }
     if (entry.ok && entry.tempId && entry.realId) {
       sessionMap.set(entry.tempId, entry.realId)

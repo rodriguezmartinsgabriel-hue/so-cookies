@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest"
 import { db } from "@/lib/db-local"
 import { pushPendingChanges, pullChanges } from "@/lib/sync-service"
 import { repository, onDataRefresh } from "@/lib/repository"
+import { addSyncError, getLastSyncTime } from "@/lib/db-local"
 
 const iso = "2026-07-31T20:00:00.000Z"
 
@@ -84,8 +85,8 @@ describe("sync pipeline", () => {
     expect(rows.some((r: any) => r.id === "offline_x")).toBe(false)
   })
 
-  it("push descarta poison pill após 5 tentativas", async () => {
-    await db.syncQueue.add({ id: 7, action: "update", entity: "cashFlow", data: { id: "server-1", description: "" }, attempts: 4, createdAt: iso })
+  it("push mantém item falho na fila (não descarta) e aplica backoff", async () => {
+    await db.syncQueue.add({ id: 7, action: "update", entity: "cashFlow", data: { id: "server-1", description: "" }, attempts: 4, lastAttemptAt: "2020-01-01T00:00:00.000Z", createdAt: iso })
 
     vi.stubGlobal(
       "fetch",
@@ -96,7 +97,50 @@ describe("sync pipeline", () => {
 
     await pushPendingChanges()
     const queue = await db.syncQueue.toArray()
+    expect(queue).toHaveLength(1)
+    expect(queue[0].attempts).toBe(5)
+    expect(queue[0].lastAttemptAt).toBeDefined()
+  })
+
+  it("push respeita backoff: não envia item com última tentativa recente", async () => {
+    const recent = new Date(Date.now() - 2000).toISOString()
+    await db.syncQueue.add({ id: 8, action: "update", entity: "cashFlow", data: { id: "server-1", description: "" }, attempts: 3, lastAttemptAt: recent, createdAt: iso })
+
+    const fetchMock = vi.fn(async () => new Response(JSON.stringify({ ok: false, processed: [] }), { status: 200 }))
+    vi.stubGlobal("fetch", fetchMock)
+
+    const result = await pushPendingChanges()
+    expect(result.pushed).toBe(0)
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it("push limpa syncErrors do item após sucesso", async () => {
+    await db.syncQueue.add({ id: 30, action: "update", entity: "cashFlow", data: { id: "server-1", description: "" }, createdAt: iso })
+    await db.syncErrors.add({ entity: "cashFlow", action: "update", error: "Erro antigo", dropped: false, createdAt: iso, itemKey: "cashFlow:server-1" })
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => {
+        return new Response(JSON.stringify({ ok: false, processed: [{ queueId: 30, ok: true }] }), { status: 200 })
+      }),
+    )
+
+    await pushPendingChanges()
+
+    const errs = await db.syncErrors.toArray()
+    expect(errs).toHaveLength(0)
+
+    const queue = await db.syncQueue.toArray()
     expect(queue).toHaveLength(0)
+  })
+
+  it("addSyncError deduplica erros do mesmo item (itemKey)", async () => {
+    await addSyncError({ entity: "cashFlow", action: "update", error: "Erro A", itemKey: "cashFlow:server-1" })
+    await addSyncError({ entity: "cashFlow", action: "update", error: "Erro B", itemKey: "cashFlow:server-1" })
+
+    const errs = await db.syncErrors.toArray()
+    expect(errs).toHaveLength(1)
+    expect(errs[0].error).toBe("Erro B")
   })
 
   it("pull preserva linhas locais não sincronizadas e carimba as demais", async () => {
@@ -206,8 +250,8 @@ describe("sync pipeline", () => {
     expect(queue[0].attempts).toBe(1)
   })
 
-  it("push marca erro como descartado ao dropar poison pill", async () => {
-    await db.syncQueue.add({ id: 21, action: "update", entity: "cashFlow", data: { id: "server-1", description: "" }, attempts: 4, createdAt: iso })
+  it("push registra erro persistente (não descartado) para item com muitas tentativas", async () => {
+    await db.syncQueue.add({ id: 21, action: "update", entity: "cashFlow", data: { id: "server-1", description: "" }, attempts: 4, lastAttemptAt: "2020-01-01T00:00:00.000Z", createdAt: iso })
 
     vi.stubGlobal(
       "fetch",
@@ -220,9 +264,34 @@ describe("sync pipeline", () => {
 
     const errs = await db.syncErrors.toArray()
     expect(errs).toHaveLength(1)
-    expect(errs[0].dropped).toBe(true)
+    expect(errs[0].dropped).toBe(false)
+    expect(errs[0].itemKey).toBe("cashFlow:server-1")
 
     const queue = await db.syncQueue.toArray()
-    expect(queue).toHaveLength(0)
+    expect(queue).toHaveLength(1)
+    expect(queue[0].attempts).toBe(5)
+  })
+
+  it("pull propaga exclusões de outros dispositivos e preserva linhas locais não sincronizadas", async () => {
+    await db.ingredients.add({ id: "del-1", name: "Açúcar", stockKg: 0, minStockKg: 0, costPerKg: 1, supplier: "", _synced: true, _updatedAt: iso })
+    await db.ingredients.add({ id: "del-local", name: "Chocolate", stockKg: 0, minStockKg: 0, costPerKg: 1, supplier: "", _synced: false, _updatedAt: iso })
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => {
+        return new Response(
+          JSON.stringify({ ingredients: [], deletions: [{ entity: "ingredient", recordId: "del-1" }, { entity: "ingredient", recordId: "del-local" }], serverTime: "2026-08-01T00:00:00.000Z" }),
+          { status: 200 },
+        )
+      }),
+    )
+
+    const result = await pullChanges()
+    expect(result.pulled).toBe(1)
+
+    const rows = await db.ingredients.toArray()
+    expect(rows.some((r) => r.id === "del-1")).toBe(false)
+    expect(rows.some((r) => r.id === "del-local")).toBe(true)
+    expect(await getLastSyncTime()).toBe("2026-08-01T00:00:00.000Z")
   })
 })

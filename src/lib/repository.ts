@@ -1,5 +1,8 @@
 import { db, addToSyncQueue, getLastSyncTime } from "./db-local"
 import { scheduleSync } from "./sync-service"
+import { emitDataRefresh } from "./refresh-events"
+
+export { onDataRefresh } from "./refresh-events"
 
 const isOnline = () => navigator.onLine
 
@@ -11,9 +14,6 @@ function now() {
   return new Date().toISOString()
 }
 
-type RefreshListener = () => void
-let refreshListeners: RefreshListener[] = []
-
 const fetchThrottle = new Map<string, number>()
 
 function shouldFetch(url: string) {
@@ -22,17 +22,6 @@ function shouldFetch(url: string) {
   if (now - last < 2000) return false
   fetchThrottle.set(url, now)
   return true
-}
-
-export function onDataRefresh(fn: RefreshListener) {
-  refreshListeners.push(fn)
-  return () => {
-    refreshListeners = refreshListeners.filter((f) => f !== fn)
-  }
-}
-
-function emitDataRefresh() {
-  refreshListeners.forEach((fn) => fn())
 }
 
 async function getUnsyncedIds(table: { toArray(): Promise<{ id: string; _synced?: boolean }[]> }) {

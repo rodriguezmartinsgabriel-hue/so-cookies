@@ -17,7 +17,7 @@ export async function POST(request: Request) {
     const sinceDate = since ? new Date(since) : new Date(0)
     if (isNaN(sinceDate.getTime())) sinceDate.setTime(0)
 
-    const [orders, sales, cashFlow, productions, ingredients, recipes, documents, deliveryCosts, contacts, contactInteractions] = await Promise.all([
+    const [orders, sales, cashFlow, productions, ingredients, recipes, documents, deliveryCosts, contacts, contactInteractions, deletions] = await Promise.all([
       prisma.order.findMany({
         where: { updatedAt: { gt: sinceDate } },
         include: { items: true },
@@ -52,9 +52,13 @@ export async function POST(request: Request) {
       prisma.contactInteraction.findMany({
         where: { createdAt: { gt: sinceDate } },
       }),
+      prisma.syncDelete.findMany({
+        where: { createdAt: { gt: sinceDate } },
+        select: { entity: true, recordId: true },
+      }),
     ])
 
-    const data = { orders, sales, cashFlow, productions, ingredients, recipes, documents, deliveryCosts, contacts, contactInteractions }
+    const data = { orders, sales, cashFlow, productions, ingredients, recipes, documents, deliveryCosts, contacts, contactInteractions, deletions, serverTime: new Date().toISOString() }
 
     await runLazyReconcile().catch(() => {})
 

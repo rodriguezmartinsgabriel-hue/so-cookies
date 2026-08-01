@@ -197,6 +197,7 @@ export interface SyncQueueItem {
   tempId?: string
   createdAt: string
   attempts?: number
+  lastAttemptAt?: string
 }
 
 export interface SyncErrorItem {
@@ -206,6 +207,7 @@ export interface SyncErrorItem {
   error: string
   dropped: boolean
   createdAt: string
+  itemKey?: string
 }
 
 const db = new Dexie("SoManagerDB") as Dexie & {
@@ -329,12 +331,22 @@ export async function getPendingSyncCount(): Promise<number> {
 
 const SYNC_ERRORS_CAP = 100
 
-export async function addSyncError(data: { entity: string; action: string; error: string; dropped?: boolean }) {
+export async function addSyncError(data: { entity: string; action: string; error: string; dropped?: boolean; itemKey?: string }) {
+  if (data.itemKey) {
+    await clearSyncErrorsFor(data.itemKey)
+  }
   await db.syncErrors.add({ ...data, dropped: data.dropped || false, createdAt: new Date().toISOString() })
   const count = await db.syncErrors.count()
   if (count > SYNC_ERRORS_CAP) {
     const oldest = await db.syncErrors.orderBy("id").limit(count - SYNC_ERRORS_CAP).toArray()
     await db.syncErrors.bulkDelete(oldest.map((r) => r.id!).filter((id): id is number => id !== undefined))
+  }
+}
+
+export async function clearSyncErrorsFor(itemKey: string) {
+  const rows = await db.syncErrors.filter((e) => e.itemKey === itemKey).toArray()
+  if (rows.length) {
+    await db.syncErrors.bulkDelete(rows.map((r) => r.id!).filter((id): id is number => id !== undefined))
   }
 }
 

@@ -1,4 +1,5 @@
-import { db, getLastSyncTime, setLastSyncTime, addSyncError } from "./db-local"
+import { db, getLastSyncTime, setLastSyncTime, addSyncError, clearSyncErrorsFor } from "./db-local"
+import { emitDataRefresh } from "./refresh-events"
 
 const ENTITY_TABLES: Record<string, string> = {
   order: "orders",
@@ -15,8 +16,11 @@ const ENTITY_TABLES: Record<string, string> = {
   contactInteraction: "contactInteractions",
 }
 
+const SYNC_INTERVAL_MS = 25_000
+
 let syncLock = false
 let pendingSync: ReturnType<typeof setTimeout> | null = null
+let backgroundSyncRegistered = false
 
 async function acquireLock(): Promise<boolean> {
   if (syncLock) return false
@@ -28,6 +32,15 @@ function releaseLock() {
   syncLock = false
 }
 
+function itemKeyFor(item: { entity: string; data?: Record<string, unknown>; tempId?: string }): string | undefined {
+  const id = typeof item.data?.id === "string" ? item.data.id : item.tempId
+  return id ? `${item.entity}:${id}` : undefined
+}
+
+function backoffMs(attempts: number) {
+  return Math.min(Math.pow(attempts, 2) * 1000, 60_000)
+}
+
 export async function pushPendingChanges() {
   if (!navigator.onLine) return { pushed: 0 }
   if (!await acquireLock()) return { pushed: 0 }
@@ -36,10 +49,17 @@ export async function pushPendingChanges() {
     const pending = await db.syncQueue.toArray()
     if (pending.length === 0) return { pushed: 0 }
 
+    const nowMs = Date.now()
+    const eligible = pending.filter((item) => {
+      if (!item.lastAttemptAt) return true
+      return nowMs - new Date(item.lastAttemptAt).getTime() >= backoffMs(item.attempts || 1)
+    })
+    if (eligible.length === 0) return { pushed: 0 }
+
     const resp = await fetch("/api/sync/push", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ changes: pending }),
+      body: JSON.stringify({ changes: eligible }),
     })
     if (resp.ok) {
       const result = await resp.json()
@@ -48,25 +68,21 @@ export async function pushPendingChanges() {
       let pushed = 0
       const toDelete: number[] = []
       for (const p of processed) {
+        const item = typeof p.queueId === "number" ? pendingById.get(p.queueId) : undefined
+        const itemKey = item ? itemKeyFor(item) : undefined
         if (!p.ok) {
-          const item = typeof p.queueId === "number" ? await db.syncQueue.get(p.queueId) : undefined
-          const attempts = (item?.attempts || 0) + 1
-          const dropped = attempts >= 5
-          await addSyncError({ entity: item?.entity || "desconhecido", action: item?.action || "?", error: p.error || "Erro desconhecido", dropped })
           if (item && typeof p.queueId === "number") {
-            if (dropped) {
-              console.error(`Sync: descartando alteração após ${attempts} tentativas (${item.entity}:${item.action})`, p.error)
-              await db.syncQueue.delete(p.queueId)
-            } else {
-              await db.syncQueue.update(p.queueId, { attempts })
-            }
+            const attempts = (item.attempts || 0) + 1
+            await db.syncQueue.update(p.queueId, { attempts, lastAttemptAt: new Date().toISOString() })
           }
+          await addSyncError({ entity: item?.entity || "desconhecido", action: item?.action || "?", error: p.error || "Erro desconhecido", dropped: false, itemKey })
           continue
         }
         pushed++
+        if (itemKey) await clearSyncErrorsFor(itemKey)
         if (p.tempId && p.realId) await reconcileIds(p.tempId, p.realId)
         if (typeof p.queueId !== "number") continue
-        const queued = pendingById.get(p.queueId)
+        const queued = item
         if (queued?.action === "update") {
           const table = (db as any)[ENTITY_TABLES[queued.entity]]
           const id = queued.data?.id as string | undefined
@@ -92,6 +108,39 @@ export async function pushPendingChanges() {
 
 async function pullUnsyncedIds(table: any) {
   return new Set((await table.toArray()).filter((r: any) => r._synced === false).map((r: any) => r.id))
+}
+
+interface LocalSyncTable {
+  get(id: string): Promise<unknown>
+  toArray(): Promise<unknown[]>
+  delete(id: string): Promise<void>
+  update(id: number, changes: Record<string, unknown>): Promise<number>
+}
+
+function getLocalTable(entity: string): LocalSyncTable | undefined {
+  const tableName = ENTITY_TABLES[entity]
+  if (!tableName) return undefined
+  return (db as unknown as Record<string, LocalSyncTable | undefined>)[tableName]
+}
+
+async function applyLocalDelete(entity: string, recordId: string) {
+  const table = getLocalTable(entity)
+  if (!table) return
+  switch (entity) {
+    case "order":
+      await db.orderItems.where("orderId").equals(recordId).delete()
+      break
+    case "sale":
+      await db.saleItems.where("saleId").equals(recordId).delete()
+      break
+    case "recipe":
+      await db.recipeItems.where("recipeId").equals(recordId).delete()
+      break
+    case "contact":
+      await db.contactInteractions.where("contactId").equals(recordId).delete()
+      break
+  }
+  await table.delete(recordId)
 }
 
 export async function pullChanges() {
@@ -133,7 +182,37 @@ export async function pullChanges() {
           pulled += toWrite.length
         }
       }
-      await setLastSyncTime(new Date().toISOString())
+
+      const deletions = Array.isArray(data.deletions) ? data.deletions : []
+      if (deletions.length) {
+        const protectedIdsByEntity = new Map<string, Set<string>>()
+        const queuedIds = new Set((await db.syncQueue.toArray()).map((q) => q.data?.id as string).filter(Boolean))
+        for (const del of deletions) {
+          if (protectedIdsByEntity.has(del.entity)) continue
+          const table = getLocalTable(del.entity)
+          if (!table) continue
+          const rows = await table.toArray()
+          const unsynced = rows
+            .filter((r) => r && typeof r === "object" && (r as { _synced?: boolean })._synced === false)
+            .map((r) => (r as { id?: string }).id)
+            .filter((id): id is string => Boolean(id))
+          protectedIdsByEntity.set(del.entity, new Set(unsynced))
+        }
+        for (const del of deletions) {
+          const table = getLocalTable(del.entity)
+          if (!table) continue
+          if ((protectedIdsByEntity.get(del.entity) || new Set<string>()).has(del.recordId) || queuedIds.has(del.recordId)) continue
+          const local = await table.get(del.recordId)
+          if (local) {
+            await applyLocalDelete(del.entity, del.recordId)
+            pulled++
+          }
+        }
+      }
+
+      const serverTime = typeof data.serverTime === "string" ? data.serverTime : new Date().toISOString()
+      await setLastSyncTime(serverTime)
+      if (pulled > 0) emitDataRefresh()
       return { pulled }
     }
   } catch (e) {
@@ -160,6 +239,9 @@ export function scheduleSync() {
 }
 
 export function registerBackgroundSync() {
+  if (backgroundSyncRegistered) return
+  backgroundSyncRegistered = true
+
   if ("serviceWorker" in navigator && "sync" in window.ServiceWorkerRegistration.prototype) {
     navigator.serviceWorker.ready.then((reg) => {
       ;(reg as any).sync.register("sync-so-manager")
@@ -177,6 +259,12 @@ export function registerBackgroundSync() {
   window.addEventListener("focus", () => {
     if (navigator.onLine) scheduleSync()
   })
+
+  setInterval(async () => {
+    if (document.visibilityState === "visible" && navigator.onLine) {
+      await syncAll()
+    }
+  }, SYNC_INTERVAL_MS)
 }
 
 async function reconcileIds(tempId: string, realId: string) {
