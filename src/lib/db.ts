@@ -1,5 +1,6 @@
 import { prisma } from "./prisma";
 import type { Role, ContactType, InteractionType } from "@/generated/prisma/enums";
+import { pushOrderStatusToPlatform } from "./integrations/push";
 
 export function isNotFoundError(e: unknown): boolean {
   return typeof e === "object" && e !== null && "code" in e && (e as any).code === "P2025";
@@ -133,18 +134,30 @@ async function createSaleForOrder(
 }
 
 export async function applyOrderUpdate(id: string, data: Partial<{ channel: string; customer: string; notes: string; status: string }>) {
-  return prisma.$transaction(async (tx) => {
+  const order = await prisma.$transaction(async (tx) => {
     const updateData: Record<string, unknown> = { ...data, updatedAt: new Date() }
-    const order = await tx.order.update({
+    const updated = await tx.order.update({
       where: { id },
       data: updateData,
       include: { items: true, sale: true },
     })
-    if (data.status === "CONCLUIDO" && !order.sale && !order.platform) {
-      await createSaleForOrder(tx, order)
+    if (data.status === "CONCLUIDO" && !updated.sale && !updated.platform) {
+      await createSaleForOrder(tx, updated)
     }
-    return order
+    return updated
   })
+
+  let pushStatus: "ok" | "error" | null = null
+  if (order.platform && data.status) {
+    try {
+      await pushOrderStatusToPlatform(order.id)
+      pushStatus = "ok"
+    } catch {
+      pushStatus = "error"
+    }
+  }
+
+  return { ...order, pushStatus }
 }
 
 export async function updateOrder(id: string, data: Partial<{ channel: string; customer: string; notes: string; status: string }>) {
