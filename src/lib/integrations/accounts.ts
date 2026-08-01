@@ -69,3 +69,84 @@ export async function saveAccount(input: {
     select: { id: true },
   })
 }
+
+export type AccountView = {
+  id: string
+  platform: Platform
+  storeName: string | null
+  enabled: boolean
+  lastSyncAt: string | null
+  lastError: string | null
+  createdAt: string
+  credentials: { appId?: string; appShoppId?: string; clientId?: string }
+}
+
+export function webhookUrlFor(platform: Platform, origin: string): string {
+  const base = `${origin}/api/integrations`
+  return platform === "99FOOD" ? `${base}/99food/webhook` : `${base}/ifood/webhook`
+}
+
+export async function listAccountsForAdmin(): Promise<AccountView[]> {
+  const rows = await prisma.integrationAccount.findMany({ orderBy: { createdAt: "desc" } })
+  return rows.map((row) => {
+    const creds = decryptCredentials<AccountCredentials>(row.credentials)
+    const safe: AccountView["credentials"] = is99FoodCredentials(creds)
+      ? { appId: creds.appId, appShoppId: creds.appShoppId }
+      : { clientId: creds.clientId }
+    return {
+      id: row.id,
+      platform: row.platform as Platform,
+      storeName: row.storeName,
+      enabled: row.enabled,
+      lastSyncAt: row.lastSyncAt ? row.lastSyncAt.toISOString() : null,
+      lastError: row.lastError,
+      createdAt: row.createdAt.toISOString(),
+      credentials: safe,
+    }
+  })
+}
+
+export async function createAccount(input: {
+  platform: Platform
+  storeName: string
+  credentials: AccountCredentials
+  enabled?: boolean
+}): Promise<AccountView> {
+  const row = await prisma.integrationAccount.create({
+    data: {
+      platform: input.platform,
+      storeName: input.storeName,
+      credentials: encryptCredentials(input.credentials),
+      enabled: input.enabled ?? true,
+    },
+  })
+  const creds = decryptCredentials<AccountCredentials>(row.credentials)
+  const safe: AccountView["credentials"] = is99FoodCredentials(creds)
+    ? { appId: creds.appId, appShoppId: creds.appShoppId }
+    : { clientId: creds.clientId }
+  return {
+    id: row.id,
+    platform: row.platform as Platform,
+    storeName: row.storeName,
+    enabled: row.enabled,
+    lastSyncAt: row.lastSyncAt ? row.lastSyncAt.toISOString() : null,
+    lastError: row.lastError,
+    createdAt: row.createdAt.toISOString(),
+    credentials: safe,
+  }
+}
+
+export async function updateAccount(
+  id: string,
+  input: { storeName?: string; credentials?: AccountCredentials; enabled?: boolean },
+): Promise<{ id: string }> {
+  const data: Record<string, unknown> = {}
+  if (input.storeName !== undefined) data.storeName = input.storeName
+  if (input.enabled !== undefined) data.enabled = input.enabled
+  if (input.credentials) data.credentials = encryptCredentials(input.credentials)
+  return prisma.integrationAccount.update({ where: { id }, data, select: { id: true } })
+}
+
+export async function deleteAccount(id: string): Promise<void> {
+  await prisma.integrationAccount.delete({ where: { id } })
+}

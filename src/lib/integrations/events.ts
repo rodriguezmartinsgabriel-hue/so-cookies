@@ -21,17 +21,22 @@ export async function processInboundOrderEvent(input: {
   const existing = await prisma.inboundEvent.findUnique({
     where: { platform_eventId: { platform, eventId: event.eventId } },
   })
-  if (existing) return { duplicate: true }
+  if (existing && existing.status !== "ERROR") return { duplicate: true }
 
-  const record = await prisma.inboundEvent.create({
-    data: {
-      platform,
-      eventId: event.eventId,
-      type: event.eventType,
-      payload: JSON.stringify(event),
-      status: "RECEIVED",
-    },
-  })
+  const record = existing
+    ? await prisma.inboundEvent.update({
+        where: { id: existing.id },
+        data: { status: "RECEIVED", error: null },
+      })
+    : await prisma.inboundEvent.create({
+        data: {
+          platform,
+          eventId: event.eventId,
+          type: event.eventType,
+          payload: JSON.stringify(event),
+          status: "RECEIVED",
+        },
+      })
 
   try {
     const internalStatus = await applyOrderFromEvent({ platform, account, event })

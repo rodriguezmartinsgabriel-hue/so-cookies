@@ -6,14 +6,14 @@ import { verifyHmacSha256 } from "@/lib/integrations/signature"
 export async function POST(request: Request) {
   const raw = await request.text()
   const appId = request.headers.get("x-app-id")
-  const merchantId = request.headers.get("x-app-merchantid")
+  const shoppId = request.headers.get("x-app-shopp-id") || request.headers.get("x-app-merchantid")
   const signature = request.headers.get("x-app-signature")
 
-  if (!appId || !merchantId || !signature) {
+  if (!appId || !shoppId || !signature) {
     return new NextResponse(null, { status: 403 })
   }
 
-  const account = await find99FoodAccountByMerchant(merchantId)
+  const account = await find99FoodAccountByMerchant(shoppId)
   if (!account || !is99FoodCredentials(account.credentials)) {
     return new NextResponse(null, { status: 404 })
   }

@@ -72,6 +72,30 @@ describe("processInboundOrderEvent", () => {
     expect(mocks.inboundCreate).not.toHaveBeenCalled()
   })
 
+  it("reprocessa evento que falhou antes (status ERROR vira RECEIVED)", async () => {
+    mocks.inboundFindUnique.mockResolvedValue({ id: "evt-fail", status: "ERROR", error: "API fora" })
+    mocks.inboundUpdate.mockImplementation(async ({ where, data }: any) => ({ id: where.id, ...data }))
+    mocks.fetchNineFoodOrder.mockResolvedValue(nineFoodDetails)
+    mocks.upsertOrder.mockResolvedValue({ id: "ord-1" })
+
+    const result = await processInboundOrderEvent({
+      platform: "99FOOD",
+      account: account99,
+      event: { eventId: "e-retry", eventType: "CREATED", orderId: "ord-99-1", orderUrl: "http://x/orders/ord-99-1" },
+    })
+
+    expect(result).toEqual({ duplicate: false, internalStatus: "PENDENTE" })
+    expect(mocks.inboundUpdate).toHaveBeenCalledWith({
+      where: { id: "evt-fail" },
+      data: expect.objectContaining({ status: "RECEIVED", error: null }),
+    })
+    expect(mocks.inboundUpdate).toHaveBeenCalledWith({
+      where: { id: "evt-fail" },
+      data: expect.objectContaining({ status: "PROCESSED", orderId: "ord-99-1" }),
+    })
+    expect(mocks.inboundCreate).not.toHaveBeenCalled()
+  })
+
   it("processa evento 99Food novo e marca PROCESSED", async () => {
     mocks.inboundFindUnique.mockResolvedValue(null)
     mocks.inboundCreate.mockResolvedValue({ id: "evt-1" })
