@@ -16,7 +16,7 @@ import {
   Pie,
   Cell,
 } from "recharts";
-import { TrendingUp, DollarSign, ShoppingCart, Package } from "lucide-react";
+import { TrendingUp, DollarSign, ShoppingCart, Package, Truck } from "lucide-react";
 
 const COLORS = ["#C23B2E", "#E0A400", "#2F7A3E", "#111111"];
 const PERIODS = [
@@ -81,6 +81,10 @@ export default function RelatoriosPage() {
 
   const totalRevenue = filteredSales.reduce((sum: number, s: any) => sum + (s.total || 0), 0);
   const avgTicket = filteredSales.length > 0 ? totalRevenue / filteredSales.length : 0;
+
+  const deliveryOrders = filteredOrders.filter((o: any) => o.platform && o.status === "CONCLUIDO");
+  const deliveryRevenue = deliveryOrders.reduce((sum: number, o: any) => sum + (o.total || 0) - (o.platformFee || 0), 0);
+  const deliveryFees = deliveryOrders.reduce((sum: number, o: any) => sum + (o.platformFee || 0), 0);
 
   const channelCounts: Record<string, number> = {};
   filteredSales.forEach((s: any) => {
@@ -239,6 +243,29 @@ export default function RelatoriosPage() {
                   <span className="text-xs text-muted uppercase">Vendas</span>
                 </div>
                 <p className="text-2xl font-bold text-ink">{filteredSales.length}</p>
+              </div>
+            </div>
+
+            <div className="border border-line rounded-lg bg-paper p-4 shadow-card">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <Truck className="w-4 h-4 text-info" />
+                  <span className="text-xs text-muted uppercase">Receita Delivery (marketplaces)</span>
+                </div>
+                <div className="flex items-center gap-6">
+                  <div>
+                    <p className="text-lg font-bold text-ink">R$ {deliveryRevenue.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</p>
+                    <p className="text-xs text-muted">líquida de taxas</p>
+                  </div>
+                  <div>
+                    <p className="text-lg font-bold text-ink">{deliveryOrders.length}</p>
+                    <p className="text-xs text-muted">pedidos concluídos</p>
+                  </div>
+                  <div>
+                    <p className="text-lg font-bold text-danger">R$ {deliveryFees.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</p>
+                    <p className="text-xs text-muted">em taxas</p>
+                  </div>
+                </div>
               </div>
             </div>
 

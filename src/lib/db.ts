@@ -14,12 +14,16 @@ export async function getDashboardKpis() {
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
   const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-  const [sales, ordersCount, cashFlow, pendingOrders, monthSales] = await Promise.all([
+  const [sales, ordersCount, cashFlow, pendingOrders, monthSales, deliveryOrders] = await Promise.all([
     prisma.sale.aggregate({ _sum: { total: true }, where: { createdAt: { gte: monthStart } } }),
     prisma.order.count({ where: { createdAt: { gte: dayStart } } }),
     prisma.cashFlow.findMany({ where: { date: { gte: dayStart } } }),
     prisma.order.count({ where: { status: { in: ["PENDENTE"] } } }),
     prisma.sale.findMany({ where: { createdAt: { gte: monthStart } }, include: { items: { include: { product: true } } } }),
+    prisma.order.findMany({
+      where: { platform: { not: null }, status: "CONCLUIDO", createdAt: { gte: monthStart } },
+      select: { total: true, platformFee: true },
+    }),
   ]);
 
   const revenue = sales._sum.total || 0;
@@ -35,7 +39,10 @@ export async function getDashboardKpis() {
   const profit = revenue - totalCost;
   const margin = revenue > 0 ? (profit / revenue) * 100 : 0;
 
-  return { revenue, profit, margin, ordersToday: ordersCount, pendingOrders, todayIn, todayOut, todayBalance: todayIn - todayOut };
+  const deliveryRevenue = deliveryOrders.reduce((s, o) => s + o.total - (o.platformFee || 0), 0);
+  const deliveryFees = deliveryOrders.reduce((s, o) => s + (o.platformFee || 0), 0);
+
+  return { revenue, profit, margin, ordersToday: ordersCount, pendingOrders, todayIn, todayOut, todayBalance: todayIn - todayOut, deliveryRevenue, deliveryFees };
 }
 
 export async function getProducts() {
@@ -107,18 +114,20 @@ type Tx = Parameters<Parameters<typeof prisma.$transaction>[0]>[0]
 
 async function createSaleForOrder(
   tx: Tx,
-  order: { id: string; channel: string; total: number; items: { productId: string; qty: number; price: number }[] },
+  order: { id: string; channel: string; total: number; items: { productId: string | null; qty: number; price: number }[] },
 ) {
   const channels = await tx.saleChannel.findMany()
   const matchChannel = channels.find((c) => c.name.toLowerCase() === order.channel.toLowerCase())
   const channelId = matchChannel?.id || channels[0]?.id
   if (!channelId) return null
+  const saleItems = order.items.filter((item): item is { productId: string; qty: number; price: number } => Boolean(item.productId))
+  if (saleItems.length === 0) return null
   return tx.sale.create({
     data: {
       total: order.total,
       channelId,
       orderId: order.id,
-      items: { create: order.items.map((item) => ({ productId: item.productId, qty: item.qty, price: item.price })) },
+      items: { create: saleItems.map((item) => ({ productId: item.productId, qty: item.qty, price: item.price })) },
     },
   })
 }
@@ -131,7 +140,7 @@ export async function applyOrderUpdate(id: string, data: Partial<{ channel: stri
       data: updateData,
       include: { items: true, sale: true },
     })
-    if (data.status === "CONCLUIDO" && !order.sale) {
+    if (data.status === "CONCLUIDO" && !order.sale && !order.platform) {
       await createSaleForOrder(tx, order)
     }
     return order

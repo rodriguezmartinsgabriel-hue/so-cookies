@@ -50,6 +50,7 @@ model Product {
   recipes    Recipe[]
   priceTiers PriceTier[]
   productions Production[]
+  externalMappings ExternalItemMapping[]
 
   @@index([category])
   @@index([active])
@@ -166,23 +167,32 @@ model SaleItem {
 }
 
 model Order {
-  id        String      @id @default(cuid())
-  channel   String
-  customer  String
-  total     Float
-  status    OrderStatus @default(PENDENTE)
-  notes     String?
-  createdAt DateTime    @default(now())
-  updatedAt DateTime    @updatedAt
+  id              String      @id @default(cuid())
+  channel         String
+  customer        String
+  total           Float
+  status          OrderStatus @default(PENDENTE)
+  notes           String?
+  platform        String?
+  externalId      String?
+  externalStatus  String?
+  deliveryAddress String?
+  customerPhone   String?
+  platformFee     Float?
+  confirmBy       DateTime?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
 
   items OrderItem[]
   sale  Sale?
   deliveryCosts DeliveryCost[]
 
+  @@unique([platform, externalId])
   @@index([status])
   @@index([createdAt])
   @@index([updatedAt])
   @@index([channel])
+  @@index([platform])
 }
 
 enum OrderStatus {
@@ -196,14 +206,16 @@ enum OrderStatus {
 }
 
 model OrderItem {
-  id       String @id @default(cuid())
-  qty      Int
-  price    Float
+  id    String @id @default(cuid())
+  qty   Int
+  price Float
+  name  String?
+  notes String?
 
-  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  order     Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
   orderId   String
-  product   Product @relation(fields: [productId], references: [id])
-  productId String
+  product   Product?  @relation(fields: [productId], references: [id])
+  productId String?
 
   @@index([orderId])
   @@index([productId])
@@ -338,6 +350,54 @@ enum InteractionType {
   WHATSAPP
   VISITA
   OUTRO
+}
+
+model IntegrationAccount {
+  id          String    @id @default(cuid())
+  platform    String
+  storeName   String?
+  enabled     Boolean   @default(true)
+  credentials String
+  lastSyncAt  DateTime?
+  lastError   String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([platform, storeName])
+  @@index([platform])
+  @@index([enabled])
+}
+
+model ExternalItemMapping {
+  id             String   @id @default(cuid())
+  platform       String
+  externalItemId String
+  externalName   String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId String
+
+  @@unique([platform, externalItemId])
+  @@index([productId])
+}
+
+model InboundEvent {
+  id          String    @id @default(cuid())
+  platform    String
+  eventId     String
+  type        String
+  payload     String    @db.Text
+  status      String    @default("RECEIVED")
+  orderId     String?
+  error       String?
+  createdAt   DateTime  @default(now())
+  processedAt DateTime?
+
+  @@unique([platform, eventId])
+  @@index([platform, status])
+  @@index([createdAt])
 }
 
 model SyncApply {

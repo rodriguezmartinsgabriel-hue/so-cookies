@@ -193,6 +193,25 @@ export default function HomePage() {
           </div>
         </div>
 
+        <div className="border border-line rounded-lg bg-paper p-4 shadow-card">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <Truck className="w-4 h-4 text-info" strokeWidth={1.5} />
+              <span className="text-xs font-medium text-muted uppercase tracking-wide">Receita Delivery (marketplaces)</span>
+            </div>
+            <div className="flex items-center gap-5">
+              <div>
+                <p className="text-lg font-bold text-ink">R$ {kpis?.deliveryRevenue?.toFixed(0) || "0"}</p>
+                <p className="text-[10px] text-muted">líquida de taxas · mês atual</p>
+              </div>
+              <div>
+                <p className="text-lg font-bold text-danger">R$ {kpis?.deliveryFees?.toFixed(0) || "0"}</p>
+                <p className="text-[10px] text-muted">em taxas</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div>
           <h2 className="text-sm font-semibold text-ink uppercase tracking-wide mb-3">
             Módulos

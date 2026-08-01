@@ -370,7 +370,7 @@ export default function PedidosPage() {
                   <div className="space-y-1">
                     {(order.items || []).map((item: any, i: number) => (
                       <div key={i} className="flex items-center justify-between text-sm">
-                        <span className="text-ink">{item.qty}x {item.product?.name || item.productId}</span>
+                        <span className="text-ink">{item.qty}x {item.name || item.product?.name || "Item externo"}</span>
                         <span className="text-muted">R$ {(item.price * item.qty).toFixed(2)}</span>
                       </div>
                     ))}
