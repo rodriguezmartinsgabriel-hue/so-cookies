@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { createOrderSchema, createSaleSchema, createIngredientSchema, createCashFlowSchema, createRecipeSchema, updateRecipeSchema } from "@/lib/validation"
+import { createOrderSchema, createSaleSchema, createIngredientSchema, createCashFlowSchema, createRecipeSchema, updateRecipeSchema, createDocumentSchema, updateDocumentSchema } from "@/lib/validation"
 
 describe("createOrderSchema", () => {
   it("accepts valid order", () => {
@@ -129,5 +129,49 @@ describe("createCashFlowSchema", () => {
       description: "teste",
       amount: 100,
     })).toThrow()
+  })
+})
+
+describe("createDocumentSchema", () => {
+  it("accepts document with pdf attachment", () => {
+    const result = createDocumentSchema.parse({
+      title: "Ficha técnica Cookie",
+      category: "FICHA_TECNICA",
+      description: "Ficha oficial",
+      fileUrl: "data:application/pdf;base64,JVBERi0xLjQK",
+      tags: "cookie",
+    })
+    expect(result.title).toBe("Ficha técnica Cookie")
+    expect(result.fileUrl).toContain("data:application/pdf")
+  })
+
+  it("accepts document with photo attachment", () => {
+    const result = createDocumentSchema.parse({
+      title: "Higiene das mãos",
+      category: "HIGIENE",
+      fileUrl: "data:image/jpeg;base64,/9j/2Q==",
+    })
+    expect(result.fileUrl).toContain("data:image/jpeg")
+  })
+
+  it("rejects empty title", () => {
+    expect(() => createDocumentSchema.parse({ title: "", category: "OUTROS" })).toThrow()
+  })
+})
+
+describe("updateDocumentSchema", () => {
+  it("accepts partial update", () => {
+    const result = updateDocumentSchema.parse({ title: "Novo título" })
+    expect(result.title).toBe("Novo título")
+  })
+
+  it("accepts fileUrl update", () => {
+    const result = updateDocumentSchema.parse({ fileUrl: "data:image/png;base64,iVBORw0KGgo=" })
+    expect(result.fileUrl).toContain("data:image/png")
+  })
+
+  it("accepts null fileUrl to clear attachment", () => {
+    const result = updateDocumentSchema.parse({ fileUrl: null })
+    expect(result.fileUrl).toBeNull()
   })
 })

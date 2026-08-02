@@ -189,7 +189,7 @@ export const updateDocumentSchema = z.object({
   description: z.string().optional(),
   category: z.enum(["FICHA_TECNICA", "MODO_PREPARO", "HIGIENE", "MANIPULACAO", "TREINAMENTO", "OUTROS"]).optional(),
   content: z.string().optional(),
-  fileUrl: z.string().optional(),
+  fileUrl: z.string().nullable().optional(),
   tags: z.string().optional(),
 })
 

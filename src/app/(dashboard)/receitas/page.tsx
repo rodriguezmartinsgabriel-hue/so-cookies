@@ -11,6 +11,7 @@ import { ErrorState } from "@/components/ui/ErrorState";
 import { Plus, X, Edit, Trash2, ChevronDown, ChevronUp, ImagePlus } from "lucide-react";
 import NextImage from "next/image";
 import { repository } from "@/lib/repository";
+import { compressImage } from "@/lib/files";
 import type { Recipe, RecipeItem } from "@/lib/entity-types";
 
 export default function ReceitasPage() {
@@ -99,39 +100,6 @@ export default function ReceitasPage() {
       const qty = parseFloat(ing.qty) || 0;
       return sum + qty * ing.costPerUnit;
     }, 0);
-  }
-
-  async function compressImage(file: File, maxDim = 900, quality = 0.82): Promise<string> {
-    const loadImage = (): Promise<HTMLImageElement> =>
-      new Promise((resolve, reject) => {
-        const url = URL.createObjectURL(file);
-        const img = new Image();
-        img.onload = () => { URL.revokeObjectURL(url); resolve(img); };
-        img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("Falha ao carregar imagem")); };
-        img.src = url;
-      });
-
-    let source: HTMLImageElement | ImageBitmap;
-    try {
-      source = await createImageBitmap(file);
-    } catch {
-      source = await loadImage();
-    }
-
-    const width = (source as HTMLImageElement).naturalWidth || (source as ImageBitmap).width;
-    const height = (source as HTMLImageElement).naturalHeight || (source as ImageBitmap).height;
-    const scale = Math.min(1, maxDim / Math.max(width, height));
-    const canvas = document.createElement("canvas");
-    canvas.width = Math.max(1, Math.round(width * scale));
-    canvas.height = Math.max(1, Math.round(height * scale));
-    const ctx = canvas.getContext("2d");
-    if (!ctx) throw new Error("Canvas não suportado");
-    ctx.drawImage(source, 0, 0, canvas.width, canvas.height);
-    if ("close" in source && typeof (source as ImageBitmap).close === "function") {
-      (source as ImageBitmap).close();
-    }
-    const isPng = file.type === "image/png";
-    return canvas.toDataURL(isPng ? "image/png" : "image/jpeg", isPng ? undefined : quality);
   }
 
   async function handleImageSelect(e: React.ChangeEvent<HTMLInputElement>) {

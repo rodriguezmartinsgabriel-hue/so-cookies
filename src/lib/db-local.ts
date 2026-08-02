@@ -146,7 +146,7 @@ export interface LocalDocument {
   description?: string
   category: string
   content?: string
-  fileUrl?: string
+  fileUrl?: string | null
   tags?: string
   userId?: string
   createdAt: string

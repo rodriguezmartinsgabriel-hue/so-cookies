@@ -440,9 +440,9 @@ export const repository = {
       return cached
     },
 
-    async create(data: { title: string; description?: string; category: string; content?: string; fileUrl?: string; tags?: string; userId?: string }) {
+    async create(data: { title: string; description?: string; category: string; content?: string; fileUrl?: string | null; tags?: string; userId?: string }) {
       const id = generateTempId()
-      const doc = { ...data, id, createdAt: now(), updatedAt: now(), _synced: false, _updatedAt: now() }
+      const doc = { ...data, id, fileUrl: data.fileUrl ?? null, createdAt: now(), updatedAt: now(), _synced: false, _updatedAt: now() }
 
       await db.documents.add(doc)
       await addToSyncQueue({ action: "create", entity: "document", data: doc, tempId: id, createdAt: now() })
@@ -451,7 +451,7 @@ export const repository = {
       return doc
     },
 
-    async update(id: string, data: { title?: string; description?: string; category?: string; content?: string; fileUrl?: string; tags?: string }) {
+    async update(id: string, data: { title?: string; description?: string; category?: string; content?: string; fileUrl?: string | null; tags?: string }) {
       const updatedAt = now()
       await db.documents.update(id, { ...data, _synced: false, _updatedAt: updatedAt })
       await addToSyncQueue({ action: "update", entity: "document", data: { id, ...data }, createdAt: now() })
