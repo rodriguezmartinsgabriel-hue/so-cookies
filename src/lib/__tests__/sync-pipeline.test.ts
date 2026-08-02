@@ -9,7 +9,7 @@ const iso = "2026-07-31T20:00:00.000Z"
 
 beforeEach(async () => {
   Object.defineProperty(navigator, "onLine", { configurable: true, value: true })
-  await Promise.all([db.cashFlow.clear(), db.syncQueue.clear(), db.syncMeta.clear(), db.contacts.clear(), db.ingredients.clear(), db.documents.clear(), db.syncErrors.clear(), db.products.clear(), db.priceTiers.clear()])
+  await Promise.all([db.cashFlow.clear(), db.syncQueue.clear(), db.syncMeta.clear(), db.contacts.clear(), db.ingredients.clear(), db.documents.clear(), db.syncErrors.clear(), db.products.clear(), db.priceTiers.clear(), db.productions.clear(), db.recipes.clear(), db.recipeItems.clear()])
 })
 
 afterEach(() => {
@@ -508,5 +508,82 @@ describe("sync pipeline", () => {
     const row = await db.products.get("p1")
     expect(row?.name).toBe("Cookie Gourmet")
     expect(row?.margin).toBe(60)
+  })
+
+  it("create de produção reconcilia tempId e mantém status em minúsculas", async () => {
+    await db.syncQueue.add({ id: 70, action: "create", entity: "production", data: { id: "offline_pr", batchCode: "LOTE-1", productId: "p1", qty: 20, status: "em_producao", startTime: iso }, tempId: "offline_pr", createdAt: iso })
+    await db.productions.add({ id: "offline_pr", batchCode: "LOTE-1", productId: "p1", qty: 20, startTime: iso, status: "em_producao", _synced: false, _updatedAt: iso })
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => {
+        return new Response(
+          JSON.stringify({ ok: false, processed: [{ queueId: 70, ok: true, tempId: "offline_pr", realId: "real-pr" }] }),
+          { status: 200 },
+        )
+      }),
+    )
+
+    await pushPendingChanges()
+
+    const rows = await db.productions.toArray()
+    expect(rows.some((p) => p.id === "offline_pr")).toBe(false)
+    const real = rows.find((p) => p.id === "real-pr")
+    expect(real?._synced).toBe(true)
+    expect(real?.status).toBe("em_producao")
+  })
+
+  it("update de status de produção enfileira update com status em minúsculas", async () => {
+    await db.productions.add({ id: "pr1", batchCode: "LOTE-1", productId: "p1", qty: 20, startTime: iso, status: "pendente", _synced: true, _updatedAt: iso })
+
+    await repository.productions.updateStatus("pr1", "concluido", iso)
+
+    const queue = await db.syncQueue.toArray()
+    expect(queue).toHaveLength(1)
+    expect(queue[0].entity).toBe("production")
+    expect(queue[0].action).toBe("update")
+    expect(queue[0].data.status).toBe("concluido")
+    expect(queue[0].data.endTime).toBe(iso)
+  })
+
+  it("pull escreve priceTiers vindos do servidor marcando como sincronizados", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => {
+        return new Response(
+          JSON.stringify({ priceTiers: [{ id: "srv-t", name: "Assado 3un", minQty: 3, maxQty: 5, price: 8, productId: "p1" }] }),
+          { status: 200 },
+        )
+      }),
+    )
+
+    const result = await pullChanges()
+    expect(result.pulled).toBe(1)
+
+    const row = await db.priceTiers.get("srv-t")
+    expect(row?.name).toBe("Assado 3un")
+    expect(row?._synced).toBe(true)
+  })
+
+  it("delete de insumo limpa recipeItems locais e remove do JSON das receitas", async () => {
+    await db.ingredients.add({ id: "ing1", name: "Açúcar", stockKg: 1, minStockKg: 0, costPerKg: 5, supplier: "", _synced: true, _updatedAt: iso })
+    await db.recipes.add({ id: "rec1", name: "Cookie", yield: 11, yieldUnit: "un", totalCost: 5, ingredients: JSON.stringify([{ ingredientId: "ing1", qty: 2, unit: "g" }]), createdAt: iso, updatedAt: iso, _synced: true, _updatedAt: iso })
+    await db.recipeItems.add({ id: "ri1", recipeId: "rec1", ingredientId: "ing1", qty: 2, unit: "g", _synced: true })
+
+    await repository.ingredients.delete("ing1")
+
+    const ingredients = await db.ingredients.toArray()
+    expect(ingredients).toHaveLength(0)
+    const items = await db.recipeItems.toArray()
+    expect(items).toHaveLength(0)
+    const recipe = await db.recipes.get("rec1")
+    expect(recipe?.ingredients).toBe("[]")
+
+    const queue = await db.syncQueue.toArray()
+    expect(queue).toHaveLength(2)
+    expect(queue.some((q) => q.entity === "ingredient" && q.action === "delete")).toBe(true)
+    const recipeUpdate = queue.find((q) => q.entity === "recipe")
+    expect(recipeUpdate?.action).toBe("update")
+    expect(recipeUpdate?.data.ingredients).toEqual([])
   })
 })

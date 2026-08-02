@@ -19,7 +19,7 @@ const statusConfig: Record<string, { label: string; color: string; icon: typeof 
 }
 
 export default function ProducaoPage() {
-  const { canEdit } = useRole();
+  const { canEdit, isAdmin } = useRole();
   const { confirm, dialog } = useConfirm()
   const { data: batches, isLoading: loading, error: batchesError, invalidate } = useQueryData("productions")
   const { data: products, error: productsError } = useQueryData("products")
@@ -151,7 +151,9 @@ export default function ProducaoPage() {
                         {canEdit && (
                           <>
                             <button onClick={() => openEdit(batch)} aria-label="Editar" className="p-1.5 rounded-md hover:bg-cream text-muted"><Edit className="w-4 h-4" /></button>
-                            <button onClick={() => handleDelete(batch.id)} aria-label="Excluir" className="p-1.5 rounded-md hover:bg-cream text-danger"><Trash2 className="w-4 h-4" /></button>
+                            {isAdmin && (
+                              <button onClick={() => handleDelete(batch.id)} aria-label="Excluir" className="p-1.5 rounded-md hover:bg-cream text-danger"><Trash2 className="w-4 h-4" /></button>
+                            )}
                             {batch.status === "pendente" && (
                               <button onClick={() => handleStatusChange(batch.id, "em_producao")} className="text-xs px-3 py-1.5 bg-warning/10 text-warning rounded-lg font-medium hover:bg-warning/20 transition-colors">Iniciar</button>
                             )}

@@ -87,6 +87,8 @@ export type PriceTier = {
   maxQty: number | null
   price: number
   productId: string
+  createdAt: string
+  updatedAt: string
 }
 
 export type SaleChannel = {

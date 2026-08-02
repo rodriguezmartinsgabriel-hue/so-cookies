@@ -337,6 +337,21 @@ export const repository = {
     },
 
     async delete(id: string) {
+      const affected = await db.recipes.toArray()
+      const updatedAt = now()
+      for (const r of affected) {
+        try {
+          const items = JSON.parse(r.ingredients)
+          if (Array.isArray(items) && items.some((i: { ingredientId: string }) => i.ingredientId === id)) {
+            const remaining = items.filter((i: { ingredientId: string }) => i.ingredientId !== id)
+            await db.recipes.update(r.id, { ingredients: JSON.stringify(remaining), _synced: false, _updatedAt: updatedAt })
+            await addToSyncQueue({ action: "update", entity: "recipe", data: { id: r.id, ingredients: remaining }, createdAt: now() })
+          }
+        } catch {
+          /* JSON inválido local: ignora */
+        }
+      }
+      await db.recipeItems.where("ingredientId").equals(id).delete()
       await db.ingredients.delete(id)
       await addToSyncQueue({ action: "delete", entity: "ingredient", data: { id }, createdAt: now() })
       scheduleSync()
@@ -392,7 +407,7 @@ export const repository = {
 
     async create(data: { name: string; minQty: number; maxQty?: number; price: number; productId?: string }) {
       const id = generateTempId()
-      const tier = { ...data, id, _synced: false, _updatedAt: now() }
+      const tier = { ...data, id, createdAt: now(), updatedAt: now(), _synced: false, _updatedAt: now() }
 
       await db.priceTiers.add(tier)
       await addToSyncQueue({ action: "create", entity: "priceTier", data: tier, tempId: id, createdAt: now() })
@@ -403,8 +418,8 @@ export const repository = {
 
     async update(id: string, data: { name?: string; minQty?: number; maxQty?: number; price?: number; productId?: string }) {
       const updatedAt = now()
-      await db.priceTiers.update(id, { ...data, _synced: false, _updatedAt: updatedAt })
-      await addToSyncQueue({ action: "update", entity: "priceTier", data: { id, ...data }, createdAt: now() })
+      await db.priceTiers.update(id, { ...data, updatedAt, _synced: false, _updatedAt: updatedAt })
+      await addToSyncQueue({ action: "update", entity: "priceTier", data: { id, ...data, updatedAt }, createdAt: now() })
       scheduleSync()
     },
 

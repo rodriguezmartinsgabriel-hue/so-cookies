@@ -114,15 +114,18 @@ model RecipeItem {
 }
 
 model PriceTier {
-  id        String @id @default(cuid())
+  id        String   @id @default(cuid())
   name      String
   minQty    Int
   maxQty    Int?
   price     Float
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   productId String
   product   Product @relation(fields: [productId], references: [id])
+
+  @@index([updatedAt])
 }
 
 model SaleChannel {

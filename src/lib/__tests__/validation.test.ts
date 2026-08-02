@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { createOrderSchema, createSaleSchema, createIngredientSchema, createCashFlowSchema, createRecipeSchema, updateRecipeSchema, createDocumentSchema, updateDocumentSchema } from "@/lib/validation"
+import { createOrderSchema, createSaleSchema, createIngredientSchema, createCashFlowSchema, createRecipeSchema, updateRecipeSchema, createDocumentSchema, updateDocumentSchema, createProductionSchema, createPriceTierSchema } from "@/lib/validation"
 
 describe("createOrderSchema", () => {
   it("accepts valid order", () => {
@@ -173,5 +173,75 @@ describe("updateDocumentSchema", () => {
   it("accepts null fileUrl to clear attachment", () => {
     const result = updateDocumentSchema.parse({ fileUrl: null })
     expect(result.fileUrl).toBeNull()
+  })
+})
+
+describe("createProductionSchema", () => {
+  it("accepts valid production", () => {
+    const result = createProductionSchema.parse({
+      batchCode: "LOTE-20260724",
+      productId: "p1",
+      qty: 20,
+      status: "em_producao",
+      notes: "Forno 180°C",
+    })
+    expect(result.batchCode).toBe("LOTE-20260724")
+    expect(result.status).toBe("em_producao")
+  })
+
+  it("accepts production without status", () => {
+    const result = createProductionSchema.parse({
+      batchCode: "LOTE-20260724",
+      productId: "p1",
+      qty: 20,
+    })
+    expect(result.status).toBeUndefined()
+  })
+
+  it("rejects qty zero", () => {
+    expect(() => createProductionSchema.parse({
+      batchCode: "LOTE-20260724",
+      productId: "p1",
+      qty: 0,
+    })).toThrow()
+  })
+
+  it("rejects missing product", () => {
+    expect(() => createProductionSchema.parse({
+      batchCode: "LOTE-20260724",
+      qty: 20,
+    })).toThrow()
+  })
+})
+
+describe("createPriceTierSchema", () => {
+  it("accepts valid price tier", () => {
+    const result = createPriceTierSchema.parse({
+      productId: "p1",
+      name: "Assado 3un",
+      minQty: 3,
+      maxQty: 5,
+      price: 8,
+    })
+    expect(result.name).toBe("Assado 3un")
+  })
+
+  it("accepts tier without maxQty", () => {
+    const result = createPriceTierSchema.parse({
+      productId: "p1",
+      name: "Unitário",
+      minQty: 1,
+      price: 10,
+    })
+    expect(result.maxQty).toBeUndefined()
+  })
+
+  it("rejects negative price", () => {
+    expect(() => createPriceTierSchema.parse({
+      productId: "p1",
+      name: "Assado",
+      minQty: 1,
+      price: -5,
+    })).toThrow()
   })
 })

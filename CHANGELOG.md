@@ -4,6 +4,17 @@ Todas as mudanças notáveis deste projeto serão documentadas neste arquivo.
 
 O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o versionamento segue [SemVer](https://semver.org/lang/pt-BR/). A versão exibida no app vem de `src/lib/version.ts` (fonte: `package.json`). Tags git acompanham cada release (`vX.Y.Z`).
 
+## [0.4.0] - 2026-08-02
+
+### Corrigido (Consistência offline — Fase 2)
+- **Roles UI vs servidor**: a UI de Estoque (Insumos, Tabela de Preços e Aba Geral) agora só exibe ações de criar/editar/excluir para `ADMIN` — alinhado às rotas REST e ao sync push (antes, `OPERACIONAL` via botões e gerava 403/"Sem permissão" ao sincronizar). Em Produção, editar/mudar status continua `OPERACIONAL`, mas **excluir lote** passou a ser `ADMIN`-only (servidor já exigia).
+- **Status de produção normalizado (minúsculas canônico)**: `sync/push` não faz mais `.toUpperCase()` (criava `EM_PRODUCAO` divergente do client `em_producao`); migration `20260802120000` normaliza valores existentes com `lower(status)`.
+- **Delete de insumo limpa refs locais**: `repository.ingredients.delete` e o pull (`applyLocalDelete`) agora removem `recipeItems` do insumo e tiram a referência do JSON embutido das receitas (espelhando o `onDelete: Cascade` do servidor); novo índice `ingredientId` no schema Dexie (versão 5).
+- **`priceTiers` no sync pull**: campo `updatedAt` adicionado a `PriceTier` (migration + índice) para pull incremental; `pull/route.ts` e `pullChanges` agora trazem/gravam faixas de preço offline (antes chegavam só via fetch completo do `getAll`).
+
+### Adicionado
+- Testes: `createProductionSchema`, `createPriceTierSchema`, sync de produção (reconciliação de tempId, status minúsculas), pull de `priceTiers`, delete de insumo com limpeza de receitas.
+
 ## [0.3.0] - 2026-08-02
 
 ### Adicionado (Fase 1 — Catálogo de Produtos)

@@ -13,7 +13,7 @@ import type { Ingredient, PriceTier, Product, Recipe, RecipeItem } from "@/lib/e
 import { Plus, Search, Edit, Trash2, X, AlertTriangle } from "lucide-react";
 
 export default function EstoquePage() {
-  const { canEdit } = useRole();
+  const { isAdmin } = useRole();
   const { confirm, dialog } = useConfirm();
   const [search, setSearch] = useState("");
   const [showModal, setShowModal] = useState(false);
@@ -103,7 +103,7 @@ export default function EstoquePage() {
               {ingredients.length} insumos · Estoque total: R$ {totalValue.toFixed(2)}
             </p>
           </div>
-          {canEdit && (
+          {isAdmin && (
             <button
               onClick={() => { resetForm(); setShowModal(true); }}
               className="flex items-center gap-2 h-10 px-4 bg-ink text-paper rounded-lg text-sm font-medium hover:bg-ink/90 transition-colors"
@@ -182,7 +182,7 @@ export default function EstoquePage() {
                         <p className="text-xs text-muted">{item.supplier}</p>
                       </div>
                       <div className="flex gap-1">
-                        {canEdit && (
+                        {isAdmin && (
                           <>
                             <button onClick={() => openEdit(item)} aria-label="Editar" className="p-1.5 rounded-md hover:bg-cream text-muted"><Edit className="w-4 h-4" /></button>
                             <button onClick={() => handleDelete(item.id)} aria-label="Excluir" className="p-1.5 rounded-md hover:bg-cream text-danger"><Trash2 className="w-4 h-4" /></button>
@@ -243,7 +243,7 @@ export default function EstoquePage() {
                           <td className="px-4 py-3 text-sm font-semibold text-ink text-right">R$ {((item.stockKg || 0) * (item.costPerKg || 0)).toFixed(2)}</td>
                           <td className="px-4 py-3 text-center">
                             <div className="flex items-center justify-center gap-1">
-                              {canEdit && (
+                              {isAdmin && (
                                 <>
                                   <button onClick={() => openEdit(item)} aria-label="Editar" className="p-1.5 rounded-md hover:bg-cream text-muted"><Edit className="w-4 h-4" /></button>
                                   <button onClick={() => handleDelete(item.id)} aria-label="Excluir" className="p-1.5 rounded-md hover:bg-cream text-danger"><Trash2 className="w-4 h-4" /></button>
@@ -339,7 +339,7 @@ export default function EstoquePage() {
 }
 
 function PriceTiersTab() {
-  const { canEdit } = useRole();
+  const { isAdmin } = useRole();
   const { confirm, dialog } = useConfirm();
   const { data: tiers, isLoading: loading, error: tiersError, invalidate } = useQueryData("priceTiers");
   const { data: products, error: productsError } = useQueryData("products");
@@ -390,7 +390,7 @@ function PriceTiersTab() {
     <div className="space-y-4">
       {dialog}
       <div className="flex justify-end">
-        {canEdit && (
+        {isAdmin && (
           <button onClick={() => { setEditingTier(null); setForm({ name: "", minQty: "", maxQty: "", price: "", productId: "", type: "assado" }); setShowModal(true); }} className="flex items-center gap-2 h-10 px-4 bg-ink text-paper rounded-lg text-sm font-medium hover:bg-ink/90 transition-colors">
             <Plus className="w-4 h-4" /> Nova Faixa
           </button>
@@ -440,7 +440,7 @@ function PriceTiersTab() {
                       <td className="px-4 py-3 text-sm font-semibold text-ink text-right">R$ {tier.price.toFixed(2)}</td>
                       <td className="px-4 py-3 text-center">
                         <div className="flex items-center justify-center gap-1">
-                          {canEdit && (
+                          {isAdmin && (
                             <>
                               <button onClick={() => { setEditingTier(tier); setForm({ name: tier.name, minQty: String(tier.minQty), maxQty: tier.maxQty ? String(tier.maxQty) : "", price: String(tier.price), productId: tier.productId || "", type: "assado" }); setShowModal(true); }} aria-label="Editar" className="p-1.5 rounded-md hover:bg-cream text-muted"><Edit className="w-4 h-4" /></button>
                               <button onClick={() => handleDelete(tier.id)} aria-label="Excluir" className="p-1.5 rounded-md hover:bg-cream text-danger"><Trash2 className="w-4 h-4" /></button>
@@ -481,7 +481,7 @@ function PriceTiersTab() {
                       <td className="px-4 py-3 text-sm text-ink text-right">R$ {tier.price.toFixed(2)}</td>
                       <td className="px-4 py-3 text-center">
                         <div className="flex items-center justify-center gap-1">
-                          {canEdit && (
+                          {isAdmin && (
                             <>
                               <button onClick={() => { setEditingTier(tier); setForm({ name: tier.name, minQty: String(tier.minQty), maxQty: tier.maxQty ? String(tier.maxQty) : "", price: String(tier.price), productId: tier.productId || "", type: "congelado" }); setShowModal(true); }} aria-label="Editar" className="p-1.5 rounded-md hover:bg-cream text-muted"><Edit className="w-4 h-4" /></button>
                               <button onClick={() => handleDelete(tier.id)} aria-label="Excluir" className="p-1.5 rounded-md hover:bg-cream text-danger"><Trash2 className="w-4 h-4" /></button>
@@ -550,7 +550,7 @@ function PriceTiersTab() {
 }
 
 function GeralTab({ ingredients, recipes, onUpdate }: { ingredients: Ingredient[]; recipes: Recipe[]; onUpdate: () => void }) {
-  const { canEdit } = useRole();
+  const { isAdmin } = useRole();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editField, setEditField] = useState<"name" | "brand">("name");
   const [editValue, setEditValue] = useState("");
@@ -629,8 +629,8 @@ function GeralTab({ ingredients, recipes, onUpdate }: { ingredients: Ingredient[
                         />
                       ) : (
                         <span
-                          onClick={() => canEdit && startEdit(item.id, "name", item.name)}
-                          className={`text-sm font-medium text-ink px-1 rounded transition-colors ${canEdit ? "cursor-pointer hover:bg-info/10" : ""}`}
+                          onClick={() => isAdmin && startEdit(item.id, "name", item.name)}
+                          className={`text-sm font-medium text-ink px-1 rounded transition-colors ${isAdmin ? "cursor-pointer hover:bg-info/10" : ""}`}
                         >
                           {item.name}
                         </span>
@@ -649,8 +649,8 @@ function GeralTab({ ingredients, recipes, onUpdate }: { ingredients: Ingredient[
                         />
                       ) : (
                         <span
-                          onClick={() => canEdit && startEdit(item.id, "brand", item.brand || "")}
-                          className={`text-sm text-muted px-1 rounded transition-colors ${canEdit ? "cursor-pointer hover:bg-info/10" : ""}`}
+                          onClick={() => isAdmin && startEdit(item.id, "brand", item.brand || "")}
+                          className={`text-sm text-muted px-1 rounded transition-colors ${isAdmin ? "cursor-pointer hover:bg-info/10" : ""}`}
                         >
                           {item.brand || <span className="italic text-kraft">adicionar</span>}
                         </span>
@@ -676,7 +676,7 @@ function GeralTab({ ingredients, recipes, onUpdate }: { ingredients: Ingredient[
         </div>
       </div>
 
-      {canEdit && (
+      {isAdmin && (
         <div className="border border-dashed border-line rounded-lg bg-paper p-4">
           <p className="text-xs font-semibold text-muted uppercase tracking-wide mb-3">Adicionar Insumo</p>
           <div className="flex items-center gap-2">

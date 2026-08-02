@@ -1,5 +1,5 @@
 import type { EntityTable } from "dexie"
-import { db, getLastSyncTime, setLastSyncTime, addSyncError, clearSyncErrorsFor, type LocalOrder, type LocalSale, type LocalCashFlow, type LocalProduction, type LocalProduct, type LocalIngredient, type LocalRecipe, type LocalDocument, type LocalDeliveryCost, type LocalContact, type LocalContactInteraction, type SyncQueueItem } from "./db-local"
+import { db, getLastSyncTime, setLastSyncTime, addSyncError, clearSyncErrorsFor, type LocalOrder, type LocalSale, type LocalCashFlow, type LocalProduction, type LocalProduct, type LocalIngredient, type LocalRecipe, type LocalDocument, type LocalDeliveryCost, type LocalContact, type LocalContactInteraction, type LocalPriceTier, type SyncQueueItem } from "./db-local"
 import { emitDataRefresh } from "./refresh-events"
 import { MAX_PUSH_BODY } from "./files"
 
@@ -225,6 +225,21 @@ async function applyLocalDelete(entity: string, recordId: string) {
     case "product":
       await db.priceTiers.where("productId").equals(recordId).delete()
       break
+    case "ingredient": {
+      await db.recipeItems.where("ingredientId").equals(recordId).delete()
+      const affected = await db.recipes.toArray()
+      for (const r of affected) {
+        try {
+          const items = JSON.parse(r.ingredients)
+          if (Array.isArray(items) && items.some((i: { ingredientId: string }) => i.ingredientId === recordId)) {
+            await db.recipes.update(r.id, { ingredients: JSON.stringify(items.filter((i: { ingredientId: string }) => i.ingredientId !== recordId)) })
+          }
+        } catch {
+          /* JSON inválido local: ignora */
+        }
+      }
+      break
+    }
   }
   await table.delete(recordId)
 }
@@ -250,6 +265,7 @@ export async function pullChanges() {
       pulled += await writeRows(db.productions, data.productions as LocalProduction[] | undefined)
       pulled += await writeRows(db.products, data.products as LocalProduct[] | undefined)
       pulled += await writeRows(db.ingredients, data.ingredients as LocalIngredient[] | undefined)
+      pulled += await writeRows(db.priceTiers, data.priceTiers as LocalPriceTier[] | undefined)
       pulled += await writeRows(db.documents, data.documents as LocalDocument[] | undefined)
       pulled += await writeRows(db.deliveryCosts, data.deliveryCosts as LocalDeliveryCost[] | undefined)
       pulled += await writeRows(db.contacts, data.contacts as LocalContact[] | undefined)

@@ -297,7 +297,7 @@ export async function POST(request: Request) {
                 batchCode: data.batchCode,
                 productId: data.productId,
                 qty: data.qty,
-                status: (data.status || "AGENDADA").toUpperCase(),
+                status: (data.status || "pendente").toLowerCase(),
                 notes: data.notes,
               },
             })
@@ -310,7 +310,7 @@ export async function POST(request: Request) {
         case "production:update": {
           const { id, ...prodData } = data
           const patch: Record<string, unknown> = {}
-          if (prodData.status) patch.status = prodData.status.toUpperCase()
+          if (prodData.status) patch.status = prodData.status.toLowerCase()
           if (prodData.endTime) patch.endTime = new Date(prodData.endTime)
           if (prodData.notes !== undefined) patch.notes = prodData.notes
           if (prodData.qty !== undefined) patch.qty = prodData.qty
