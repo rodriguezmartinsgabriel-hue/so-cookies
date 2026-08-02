@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import Image from "next/image";
 import { useRole } from "@/hooks/useRole";
+import { APP_VERSION } from "@/lib/version";
 import {
   Home,
   ShoppingBag,
@@ -100,7 +101,7 @@ export function Sidebar() {
 
       {!collapsed && (
         <div className="p-3 border-t border-line">
-          <p className="text-xs text-muted text-center">Só Cookies v0.1</p>
+          <p className="text-xs text-muted text-center">Só Cookies v{APP_VERSION}</p>
         </div>
       )}
     </aside>

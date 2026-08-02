@@ -183,7 +183,7 @@ export const repository = {
 
     async create(data: { type: "ENTRADA" | "SAIDA"; category: string; description: string; amount: number; userId?: string; date?: string }) {
       const id = generateTempId()
-      const entry = { ...data, id, date: data.date || now(), _synced: false, _updatedAt: now() }
+      const entry = { ...data, amount: data.type === "SAIDA" ? -Math.abs(data.amount) : Math.abs(data.amount), id, date: data.date || now(), _synced: false, _updatedAt: now() }
 
       await db.cashFlow.add(entry)
       await addToSyncQueue({ action: "create", entity: "cashFlow", data: entry, tempId: id, createdAt: now() })
@@ -194,7 +194,11 @@ export const repository = {
 
     async update(id: string, data: { type?: "ENTRADA" | "SAIDA"; category?: string; description?: string; amount?: number; date?: string }) {
       const updatedAt = now()
-      await db.cashFlow.update(id, { ...data, _synced: false, _updatedAt: updatedAt })
+      const patch: Record<string, unknown> = { ...data, _synced: false, _updatedAt: updatedAt }
+      if (data.amount !== undefined) {
+        patch.amount = data.type === "SAIDA" ? -Math.abs(data.amount) : Math.abs(data.amount)
+      }
+      await db.cashFlow.update(id, patch)
       await addToSyncQueue({ action: "update", entity: "cashFlow", data: { id, ...data }, createdAt: now() })
       scheduleSync()
     },

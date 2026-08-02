@@ -2,9 +2,7 @@
 
 import { useEffect, useCallback, useState, useSyncExternalStore } from "react"
 import { syncAll, registerBackgroundSync } from "@/lib/sync-service"
-import { getPendingSyncCount, getSyncErrors, clearSyncErrors, getLastSyncTime, type SyncErrorItem } from "@/lib/db-local"
-
-const NEVER_SYNCED = "1970-01-01T00:00:00.000Z"
+import { getPendingSyncCount, getSyncErrors, clearSyncErrors, getLastSyncTime, NEVER_SYNCED, type SyncErrorItem } from "@/lib/db-local"
 
 function normalizeLastSync(iso: string): string | null {
   return iso && iso !== NEVER_SYNCED ? iso : null

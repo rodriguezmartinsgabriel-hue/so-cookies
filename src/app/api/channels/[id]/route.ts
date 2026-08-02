@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { requireAuth } from "@/lib/api-auth"
 import { isNotFoundError } from "@/lib/db"
+import { recordSyncDelete } from "@/lib/sync-deletes"
 import { updateChannelSchema, getZodIssues } from "@/lib/validation"
 
 export async function PUT(
@@ -32,6 +33,7 @@ export async function DELETE(
   try {
     const { id } = await params
     await prisma.saleChannel.delete({ where: { id } })
+    await recordSyncDelete("channel", id)
     return NextResponse.json({ ok: true })
   } catch (e) {
     if (isNotFoundError(e)) return NextResponse.json({ error: "Não encontrado" }, { status: 404 })

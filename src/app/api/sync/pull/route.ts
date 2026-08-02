@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { requireAuth } from "@/lib/api-auth"
-import { runLazyReconcile } from "@/lib/integrations/reconcile"
 
 export async function POST(request: Request) {
   const { error } = await requireAuth()
@@ -59,8 +58,6 @@ export async function POST(request: Request) {
     ])
 
     const data = { orders, sales, cashFlow, productions, ingredients, recipes, documents, deliveryCosts, contacts, contactInteractions, deletions, serverTime: new Date().toISOString() }
-
-    await runLazyReconcile().catch(() => {})
 
     return NextResponse.json(data)
   } catch {

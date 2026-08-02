@@ -327,9 +327,11 @@ db.version(4).stores({
 
 export { db }
 
+export const NEVER_SYNCED = "1970-01-01T00:00:00.000Z"
+
 export async function getLastSyncTime(): Promise<string> {
   const meta = await db.syncMeta.get("lastPullAt")
-  return meta?.value || "1970-01-01T00:00:00.000Z"
+  return meta?.value || NEVER_SYNCED
 }
 
 export async function setLastSyncTime(time: string) {

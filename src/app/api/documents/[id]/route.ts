@@ -48,8 +48,8 @@ export async function DELETE(
   if (error) return error
   try {
     const { id } = await params;
-    await recordSyncDelete("document", id);
     await prisma.document.delete({ where: { id } });
+    await recordSyncDelete("document", id);
     return NextResponse.json({ ok: true });
   } catch (e) {
     if (isNotFoundError(e)) return NextResponse.json({ error: "Não encontrado" }, { status: 404 });

@@ -11,7 +11,9 @@ export function proxy(request: NextRequest) {
     pathname === "/favicon.ico" ||
     pathname === "/manifest.webmanifest" ||
     pathname === "/~offline" ||
-    pathname.startsWith("/api/auth");
+    pathname.startsWith("/api/auth") ||
+    pathname.startsWith("/api/integrations/99food/webhook") ||
+    pathname.startsWith("/api/integrations/ifood/webhook");
 
   if (isPublicRoute) {
     return NextResponse.next();

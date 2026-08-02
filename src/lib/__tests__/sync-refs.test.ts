@@ -12,6 +12,11 @@ describe("resolveRefs", () => {
     expect(resolveRefs(data, map)).toEqual({ id: "real-1", orderId: "real-1", contactId: "real-2", ingredientId: "real-2" })
   })
 
+  it("resolve channelId e productId", () => {
+    const data = { channelId: "offline_1", productId: "offline_2" }
+    expect(resolveRefs(data, map)).toEqual({ channelId: "real-1", productId: "real-2" })
+  })
+
   it("resolve ingredientId dentro de array de ingredients", () => {
     const data = {
       ingredients: [

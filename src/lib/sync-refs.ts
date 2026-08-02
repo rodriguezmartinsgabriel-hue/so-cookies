@@ -1,4 +1,4 @@
-const REF_KEYS = new Set(["id", "orderId", "contactId", "ingredientId"])
+const REF_KEYS = new Set(["id", "orderId", "contactId", "ingredientId", "channelId", "productId"])
 
 export function resolveRefs(data: unknown, map: Map<string, string>): unknown {
   if (Array.isArray(data)) return data.map((v) => resolveRefs(v, map))

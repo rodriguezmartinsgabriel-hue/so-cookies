@@ -20,6 +20,8 @@ const ENTITY_TABLES: Record<string, string> = {
 
 const SYNC_INTERVAL_MS = 25_000
 
+const RECONCILE_INTERVAL_MS = 5 * 60 * 1000
+
 let syncLock = false
 let pendingSync: ReturnType<typeof setTimeout> | null = null
 let backgroundSyncRegistered = false
@@ -342,6 +344,12 @@ export function registerBackgroundSync() {
       await syncAll()
     }
   }, SYNC_INTERVAL_MS)
+
+  setInterval(() => {
+    if (document.visibilityState === "visible" && navigator.onLine) {
+      fetch("/api/integrations/reconcile", { method: "POST" }).catch(() => {})
+    }
+  }, RECONCILE_INTERVAL_MS)
 }
 
 async function reconcileIds(tempId: string, realId: string) {

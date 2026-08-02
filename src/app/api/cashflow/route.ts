@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { requireAuth } from "@/lib/api-auth"
+import { createCashEntry } from "@/lib/db"
 import { createCashFlowSchema, getZodIssues } from "@/lib/validation"
 
 export async function GET() {
@@ -20,9 +21,13 @@ export async function POST(request: Request) {
   try {
     const json = await request.json()
     const parsed = createCashFlowSchema.parse(json)
-    const { description, ...rest } = parsed
-    const data = await prisma.cashFlow.create({
-      data: { ...rest, description: (description ?? "").trim() || "Sem descrição" },
+    const data = await createCashEntry({
+      type: parsed.type,
+      category: parsed.category,
+      description: (parsed.description ?? "").trim() || "Sem descrição",
+      amount: parsed.amount,
+      userId: parsed.userId,
+      date: parsed.date,
     })
     return NextResponse.json(data)
   } catch (e) {

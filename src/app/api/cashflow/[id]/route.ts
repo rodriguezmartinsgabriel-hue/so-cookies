@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { requireAuth } from "@/lib/api-auth"
-import { isNotFoundError } from "@/lib/db"
+import { isNotFoundError, updateCashEntry } from "@/lib/db"
+import { recordSyncDelete } from "@/lib/sync-deletes"
 import { updateCashFlowSchema, getZodIssues } from "@/lib/validation"
 
 export async function GET(
@@ -30,7 +31,7 @@ export async function PUT(
     const { id } = await params
     const json = await request.json()
     const parsed = updateCashFlowSchema.parse(json)
-    const data = await prisma.cashFlow.update({ where: { id }, data: parsed })
+    const data = await updateCashEntry(id, parsed)
     return NextResponse.json(data)
   } catch (e) {
     const issues = getZodIssues(e)
@@ -48,6 +49,7 @@ export async function DELETE(
   try {
     const { id } = await params
     await prisma.cashFlow.delete({ where: { id } })
+    await recordSyncDelete("cashFlow", id)
     return NextResponse.json({ ok: true })
   } catch (e) {
     if (isNotFoundError(e)) return NextResponse.json({ error: "Não encontrado" }, { status: 404 })

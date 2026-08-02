@@ -7,7 +7,7 @@ export function isNotFoundError(e: unknown): boolean {
 }
 
 export function isConstraintError(e: unknown): boolean {
-  return typeof e === "object" && e !== null && "code" in e && e.code === "P2003";
+  return typeof e === "object" && e !== null && "code" in e && (e.code === "P2002" || e.code === "P2003");
 }
 
 export async function getDashboardKpis() {
@@ -256,18 +256,22 @@ export async function deleteRecipe(id: string) {
 }
 
 export async function updateRecipeIngredients(recipeId: string, ingredients: { ingredientId: string; qty: number; unit: string }[]) {
-  await prisma.recipeItem.deleteMany({ where: { recipeId } });
-  return prisma.recipeItem.createMany({
-    data: ingredients.map((ing) => ({ recipeId, ...ing })),
-  });
+  await prisma.$transaction(async (tx) => {
+    await tx.recipeItem.deleteMany({ where: { recipeId } })
+    await tx.recipeItem.createMany({
+      data: ingredients.map((ing) => ({ recipeId, ...ing })),
+    })
+  })
 }
 
+const userSafeSelect = { id: true, name: true, email: true, role: true }
+
 export async function getSales() {
-  return prisma.sale.findMany({ include: { channel: true, items: { include: { product: true } }, user: true }, orderBy: { createdAt: "desc" } });
+  return prisma.sale.findMany({ include: { channel: true, items: { include: { product: true } }, user: { select: userSafeSelect } }, orderBy: { createdAt: "desc" } });
 }
 
 export async function getSale(id: string) {
-  return prisma.sale.findUnique({ where: { id }, include: { channel: true, items: { include: { product: true } }, user: true } });
+  return prisma.sale.findUnique({ where: { id }, include: { channel: true, items: { include: { product: true } }, user: { select: userSafeSelect } } });
 }
 
 export async function createSale(data: { channelId: string; total: number; userId?: string; items: { productId: string; qty: number; price: number }[] }) {
@@ -357,11 +361,11 @@ export async function deletePriceTier(id: string) {
 
 export async function getDocuments(category?: string) {
   const where = category && category !== "ALL" ? { category: category as DocumentCategory } : {};
-  return prisma.document.findMany({ where, include: { user: true }, orderBy: { createdAt: "desc" } });
+  return prisma.document.findMany({ where, include: { user: { select: userSafeSelect } }, orderBy: { createdAt: "desc" } });
 }
 
 export async function getDocument(id: string) {
-  return prisma.document.findUnique({ where: { id }, include: { user: true } });
+  return prisma.document.findUnique({ where: { id }, include: { user: { select: userSafeSelect } } });
 }
 
 export async function createDocument(data: {

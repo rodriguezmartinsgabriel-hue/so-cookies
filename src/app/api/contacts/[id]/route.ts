@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { requireAuth } from "@/lib/api-auth"
 import { getContact, updateContact, deleteContact, isNotFoundError } from "@/lib/db"
+import { recordSyncDelete } from "@/lib/sync-deletes"
 import { updateContactSchema, getZodIssues } from "@/lib/validation"
 
 export async function GET(
@@ -48,6 +49,7 @@ export async function DELETE(
   try {
     const { id } = await params
     await deleteContact(id)
+    await recordSyncDelete("contact", id)
     return NextResponse.json({ ok: true })
   } catch (e) {
     if (isNotFoundError(e)) return NextResponse.json({ error: "Não encontrado" }, { status: 404 })

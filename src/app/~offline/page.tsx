@@ -3,9 +3,7 @@
 import { useEffect, useState } from "react"
 import Image from "next/image"
 import { WifiOff, RefreshCw, Cloud } from "lucide-react"
-import { getLastSyncTime, getPendingSyncCount } from "@/lib/db-local"
-
-const NEVER_SYNCED = "1970-01-01T00:00:00.000Z"
+import { getLastSyncTime, getPendingSyncCount, NEVER_SYNCED } from "@/lib/db-local"
 
 function formatSyncTime(iso: string) {
   const d = new Date(iso)

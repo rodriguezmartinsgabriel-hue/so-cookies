@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { requireAuth } from "@/lib/api-auth"
 import { isNotFoundError } from "@/lib/db"
+import { recordSyncDelete } from "@/lib/sync-deletes"
 import { updateRecipeSchema, getZodIssues } from "@/lib/validation"
 
 export async function GET(
@@ -34,18 +35,20 @@ export async function PUT(
     const json = await request.json()
     const parsed = updateRecipeSchema.parse(json)
     const { ingredients, ...recipeData } = parsed
-    await prisma.recipe.update({ where: { id }, data: recipeData })
-    if (ingredients && Array.isArray(ingredients)) {
-      await prisma.recipeItem.deleteMany({ where: { recipeId: id } })
-      await prisma.recipeItem.createMany({
-        data: ingredients.map((i: { ingredientId: string; qty: number; unit: string }) => ({
-          recipeId: id,
-          ingredientId: i.ingredientId,
-          qty: i.qty,
-          unit: i.unit,
-        })),
-      })
-    }
+    await prisma.$transaction(async (tx) => {
+      await tx.recipe.update({ where: { id }, data: recipeData })
+      if (ingredients && Array.isArray(ingredients)) {
+        await tx.recipeItem.deleteMany({ where: { recipeId: id } })
+        await tx.recipeItem.createMany({
+          data: ingredients.map((i: { ingredientId: string; qty: number; unit: string }) => ({
+            recipeId: id,
+            ingredientId: i.ingredientId,
+            qty: i.qty,
+            unit: i.unit,
+          })),
+        })
+      }
+    })
     const updated = await prisma.recipe.findUnique({
       where: { id },
       include: { ingredients: { include: { ingredient: true } } },
@@ -67,6 +70,7 @@ export async function DELETE(
   try {
     const { id } = await params
     await prisma.recipe.delete({ where: { id } })
+    await recordSyncDelete("recipe", id)
     return NextResponse.json({ ok: true })
   } catch (e) {
     if (isNotFoundError(e)) return NextResponse.json({ error: "Não encontrado" }, { status: 404 })

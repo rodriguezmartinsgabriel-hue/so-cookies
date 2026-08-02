@@ -34,8 +34,11 @@ import {
 
 const ROLE_HIERARCHY: Record<string, number> = { ADMIN: 3, OPERACIONAL: 2, VISUALIZADOR: 1 }
 
+const ADMIN_ENTITIES = new Set(["cashFlow", "ingredient", "recipe", "channel", "priceTier"])
+
 function minRoleFor(entity: string, action: string): "ADMIN" | "OPERACIONAL" {
   if (entity === "production" && action === "delete") return "ADMIN"
+  if (ADMIN_ENTITIES.has(entity)) return "ADMIN"
   return "OPERACIONAL"
 }
 
@@ -252,7 +255,7 @@ export async function POST(request: Request) {
                 type: data.type,
                 category: data.category,
                 description,
-                amount: data.amount,
+                amount: data.type === "SAIDA" ? -Math.abs(data.amount) : Math.abs(data.amount),
                 userId: data.userId,
                 date: data.date ? new Date(data.date) : new Date(),
               },
@@ -268,6 +271,9 @@ export async function POST(request: Request) {
           const patch: Record<string, unknown> = { ...cashData }
           if (cashData.date) patch.date = new Date(cashData.date)
           if (cashData.description !== undefined) patch.description = (cashData.description as string).trim() || "Sem descrição"
+          if (cashData.amount !== undefined && typeof cashData.type === "string") {
+            patch.amount = cashData.type === "SAIDA" ? -Math.abs(cashData.amount) : Math.abs(cashData.amount)
+          }
           await prisma.cashFlow.update({ where: { id }, data: patch })
           entry.ok = true
           break

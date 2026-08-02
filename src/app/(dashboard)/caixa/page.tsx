@@ -9,6 +9,7 @@ import { AppShell } from "@/components/layout/AppShell"
 import { Skeleton } from "@/components/ui/Skeleton"
 import { ErrorState } from "@/components/ui/ErrorState"
 import { repository } from "@/lib/repository"
+import { parseCurrencyPtBr } from "@/lib/utils"
 import { Plus, ArrowUpRight, ArrowDownLeft, X, Trash2, Edit } from "lucide-react"
 import type { CashFlow } from "@/lib/entity-types"
 
@@ -47,12 +48,13 @@ export default function CaixaPage() {
   const [editDate, setEditDate] = useState("")
 
   async function handleSave() {
-    if (!formCategory || !formAmount || !formDescription.trim()) return
+    const amount = parseCurrencyPtBr(formAmount)
+    if (!formCategory || !Number.isFinite(amount) || !formDescription.trim()) return
     await repository.cashFlow.create({
       type: formType,
       category: formCategory,
       description: formDescription.trim(),
-      amount: parseFloat(formAmount),
+      amount,
       date: formDate,
     })
     setShowModal(false)
@@ -75,11 +77,13 @@ export default function CaixaPage() {
 
   async function handleEditSave() {
     if (!editingEntry || !editCategory || !editAmount || !editDescription.trim()) return
+    const amount = parseCurrencyPtBr(editAmount)
+    if (!Number.isFinite(amount)) return
     await repository.cashFlow.update(editingEntry.id, {
       type: editType,
       category: editCategory,
       description: editDescription.trim(),
-      amount: parseFloat(editAmount),
+      amount,
       date: editDate,
     })
     setShowEditModal(false)
