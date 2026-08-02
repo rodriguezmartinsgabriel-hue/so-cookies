@@ -222,6 +222,7 @@ export type SyncedOrder = Synced<Order>
 export type SyncedSale = Synced<Sale>
 export type SyncedCashFlow = Synced<CashFlow>
 export type SyncedProduction = Synced<Production>
+export type SyncedProduct = Synced<Product>
 export type SyncedIngredient = Synced<Ingredient>
 export type SyncedRecipe = Synced<Recipe>
 export type SyncedDocument = Synced<Document>
@@ -236,7 +237,7 @@ export type EntityRowMap = {
   sales: Synced<Sale>
   cashFlow: Synced<CashFlow>
   productions: Synced<Production>
-  products: Product
+  products: Synced<Product>
   ingredients: Ingredient
   channels: SaleChannel
   priceTiers: PriceTier

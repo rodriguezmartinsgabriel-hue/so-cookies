@@ -514,7 +514,7 @@ function PriceTiersTab() {
                   className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink bg-paper focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink transition-colors"
                 >
                   <option value="">Selecione um produto</option>
-                  {products.map((p: Product) => (
+                  {products.filter((p: Product) => p.active).map((p: Product) => (
                     <option key={p.id} value={p.id}>{p.name}</option>
                   ))}
                 </select>

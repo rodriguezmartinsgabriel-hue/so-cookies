@@ -211,7 +211,7 @@ export default function ProducaoPage() {
                   <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Produto *</label>
                   <select value={formProduct} onChange={(e) => setFormProduct(e.target.value)} className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink bg-paper">
                     <option value="">Selecionar produto</option>
-                    {products.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                    {products.filter((p) => p.active).map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
                   </select>
                 </div>
                 <div className="grid grid-cols-2 gap-3">

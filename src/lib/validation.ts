@@ -74,6 +74,11 @@ export const createProductSchema = z.object({
   unit: z.string().optional(),
 })
 
+export const createProductSyncSchema = createProductSchema.extend({
+  image: z.string().nullable().optional(),
+  active: z.boolean().optional(),
+})
+
 export const createRecipeSchema = z.object({
   name: z.string().min(1, "Nome é obrigatório"),
   yield: z.number().int().min(1),
@@ -154,7 +159,7 @@ export const updateProductSchema = z.object({
   category: z.string().optional(),
   sku: z.string().optional(),
   unit: z.string().optional(),
-  image: z.string().optional(),
+  image: z.string().nullable().optional(),
 })
 
 export const updateChannelSchema = z.object({

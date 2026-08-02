@@ -20,6 +20,7 @@ import {
   Store,
   Users,
   BookUser,
+  Cookie,
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
@@ -30,6 +31,7 @@ const navItems = [
   { href: "/vendas", label: "Vendas", icon: Wallet },
   { href: "/contatos", label: "Contatos", icon: BookUser },
   { href: "/estoque", label: "Insumos", icon: Package },
+  { href: "/produtos", label: "Catálogo", icon: Cookie },
   { href: "/receitas", label: "Receitas", icon: FileText },
   { href: "/canais", label: "Canais", icon: Store },
   { href: "/caixa", label: "Caixa", icon: Wallet },

@@ -1,6 +1,7 @@
 import { prisma } from "./prisma";
 import type { Role, ContactType, InteractionType, DocumentCategory } from "@/generated/prisma/enums";
 import { pushOrderStatusToPlatform } from "./integrations/push";
+import { computeMargin } from "./utils";
 
 export function isNotFoundError(e: unknown): boolean {
   return typeof e === "object" && e !== null && "code" in e && e.code === "P2025";
@@ -47,7 +48,7 @@ export async function getDashboardKpis() {
 }
 
 export async function getProducts() {
-  return prisma.product.findMany({ where: { active: true }, orderBy: { name: "asc" } });
+  return prisma.product.findMany({ where: { deletedAt: null }, orderBy: { name: "asc" } });
 }
 
 export async function getAllProducts() {
@@ -58,17 +59,36 @@ export async function getProduct(id: string) {
   return prisma.product.findUnique({ where: { id } });
 }
 
-export async function createProduct(data: { name: string; sku: string; category: string; price: number; cost: number; unit?: string }) {
-  const margin = data.price > 0 ? ((data.price - data.cost) / data.price) * 100 : 0;
-  return prisma.product.create({ data: { ...data, margin, unit: data.unit || "un" } });
+export async function createProduct(data: { name: string; sku: string; category: string; price: number; cost: number; unit?: string; image?: string | null; active?: boolean }) {
+  return prisma.product.create({
+    data: {
+      name: data.name,
+      sku: data.sku,
+      category: data.category,
+      price: data.price,
+      cost: data.cost,
+      margin: computeMargin(data.price, data.cost),
+      unit: data.unit || "un",
+      image: data.image ?? null,
+      active: data.active ?? true,
+    },
+  });
 }
 
-export async function updateProduct(id: string, data: Partial<{ name: string; price: number; cost: number; margin: number; active: boolean; category: string }>) {
-  return prisma.product.update({ where: { id }, data });
+export async function updateProduct(id: string, data: Partial<{ name: string; sku: string; price: number; cost: number; margin: number; active: boolean; category: string; unit: string; image: string | null }>) {
+  const patch: Record<string, unknown> = { ...data };
+  if (data.image !== undefined) patch.image = data.image;
+  if ((typeof data.price === "number" || typeof data.cost === "number") && data.margin === undefined) {
+    const existing = await prisma.product.findUnique({ where: { id }, select: { price: true, cost: true } });
+    if (existing) {
+      patch.margin = computeMargin(data.price ?? existing.price, data.cost ?? existing.cost);
+    }
+  }
+  return prisma.product.update({ where: { id }, data: patch });
 }
 
 export async function deleteProduct(id: string) {
-  return prisma.product.delete({ where: { id } });
+  return prisma.product.update({ where: { id }, data: { active: false, deletedAt: new Date() } });
 }
 
 export async function getIngredients() {

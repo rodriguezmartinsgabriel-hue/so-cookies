@@ -1,6 +1,7 @@
 import { db, addToSyncQueue, clearSyncErrorsFor, type LocalContact, type LocalContactInteraction, type LocalProduct, type LocalRecipe } from "./db-local"
 import { scheduleSync } from "./sync-service"
 import { emitDataRefresh } from "./refresh-events"
+import { computeMargin } from "./utils"
 import type { EntityTable, IDType, UpdateSpec } from "dexie"
 
 export { onDataRefresh } from "./refresh-events"
@@ -257,16 +258,52 @@ export const repository = {
     async getAll() {
       const cached = await db.products.toArray()
       if (isOnline() && shouldFetch("/api/products")) {
-        fetch("/api/products")
-          .then(async (resp) => {
-            if (!resp.ok) return
-            const data = (await resp.json()) as LocalProduct[]
-            await db.products.bulkPut(data.map((p) => ({ ...p, _synced: true })))
-            emitDataRefresh()
-          })
-          .catch((e) => console.error("Erro ao sync:", e))
+        mergeTable(db.products, "/api/products")
+          .then(() => emitDataRefresh())
+          .catch((e) => console.error("Erro ao sync products:", e))
       }
       return cached
+    },
+
+    async create(data: { name: string; sku: string; category: string; price: number; cost: number; unit?: string; image?: string | null; active?: boolean }) {
+      const id = generateTempId()
+      const product = {
+        ...data,
+        id,
+        margin: computeMargin(data.price, data.cost),
+        unit: data.unit || "un",
+        active: data.active ?? true,
+        image: data.image ?? null,
+        createdAt: now(),
+        updatedAt: now(),
+        _synced: false,
+        _updatedAt: now(),
+      }
+
+      await db.products.add(product)
+      await addToSyncQueue({ action: "create", entity: "product", data: product, tempId: id, createdAt: now() })
+
+      scheduleSync()
+      return product
+    },
+
+    async update(id: string, data: { name?: string; sku?: string; category?: string; price?: number; cost?: number; unit?: string; image?: string | null; active?: boolean }) {
+      const updatedAt = now()
+      const patch: UpdateSpec<LocalProduct> = { ...data, _synced: false, _updatedAt: updatedAt }
+      if (typeof data.price === "number" || typeof data.cost === "number") {
+        const existing = await db.products.get(id)
+        patch.margin = computeMargin(data.price ?? existing?.price ?? 0, data.cost ?? existing?.cost ?? 0)
+      }
+      await db.products.update(id, patch)
+      await addToSyncQueue({ action: "update", entity: "product", data: { id, ...data }, createdAt: now() })
+      scheduleSync()
+    },
+
+    async delete(id: string) {
+      await db.products.delete(id)
+      await db.priceTiers.where("productId").equals(id).delete()
+      await addToSyncQueue({ action: "delete", entity: "product", data: { id }, createdAt: now() })
+      scheduleSync()
     },
   },
 

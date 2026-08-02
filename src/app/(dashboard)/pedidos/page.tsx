@@ -450,7 +450,7 @@ export default function PedidosPage() {
                       <div key={i} className="flex items-center gap-2 bg-cream/50 rounded-lg p-2">
                         <select value={item.productId} onChange={(e) => updateItem(i, "productId", e.target.value)} className="flex-1 h-9 px-2 border border-line rounded-lg text-xs text-ink bg-paper">
                           <option value="">Produto</option>
-                          {products.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                          {products.filter((p) => p.active).map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
                         </select>
                         <input type="number" min="1" value={item.qty} onChange={(e) => updateItem(i, "qty", e.target.value)} className="w-16 h-9 px-2 border border-line rounded-lg text-xs text-ink bg-paper" />
                         <input type="number" step="0.01" value={item.price} onChange={(e) => updateItem(i, "price", e.target.value)} className="w-24 h-9 px-2 border border-line rounded-lg text-xs text-ink bg-paper" />

@@ -4,6 +4,21 @@ Todas as mudanças notáveis deste projeto serão documentadas neste arquivo.
 
 O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o versionamento segue [SemVer](https://semver.org/lang/pt-BR/). A versão exibida no app vem de `src/lib/version.ts` (fonte: `package.json`). Tags git acompanham cada release (`vX.Y.Z`).
 
+## [0.3.0] - 2026-08-02
+
+### Adicionado (Fase 1 — Catálogo de Produtos)
+- **Página `/produtos`** (Catálogo offline-first): tabela com foto, preço, custo e margem; busca por nome/SKU/categoria; filtros TODOS/ATIVOS/INATIVOS; modal de novo/editar com input monetário pt-BR e prévia de margem; toggle ativo; exclusão confirmada.
+- **Entrada "Catálogo" na Sidebar** (ícone `Cookie`).
+- **CRUD offline completo de produtos**: `repository.products` (getAll/create/update/delete) com fila de sync (`product:*`), tempId→realId e remoção cascata de `priceTiers` locais ao excluir.
+- **Soft-delete de produto**: novo campo `Product.deletedAt` (migration `20260802100000_add_product_deleted_at`) preserva `SaleItem`/`PriceTier` (FK Restrict); `GET /api/products` retorna ativos + inativos; pull traz apenas `deletedAt: null`; deletes propagam por tombstone (`recordSyncDelete`).
+- **`computeMargin`** no servidor (`db.ts`), cliente (`repository.ts`) e sync (`push/route.ts`); **`formatBRL`**.
+- **Produtos NÃO são ADMIN-only**: REST e sync exigem apenas OPERACIONAL (`ADMIN_ENTITIES` não inclui `product`).
+- Dropdowns de venda/pedido/produção/estoque agora mostram apenas produtos ativos.
+- Testes: `computeMargin`, `formatBRL`, sync de produto (create com remapeamento de `priceTiers`, delete local, pull, margem preservada em update).
+
+### Corrigido
+- `computeMargin` retorna 0 para custo/preço negativos ou não finitos (evita margens absurdas tipo 150%).
+
 ## [0.2.0] - 2026-08-02
 
 ### Adicionado

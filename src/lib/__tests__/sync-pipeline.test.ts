@@ -9,7 +9,7 @@ const iso = "2026-07-31T20:00:00.000Z"
 
 beforeEach(async () => {
   Object.defineProperty(navigator, "onLine", { configurable: true, value: true })
-  await Promise.all([db.cashFlow.clear(), db.syncQueue.clear(), db.syncMeta.clear(), db.contacts.clear(), db.ingredients.clear(), db.documents.clear(), db.syncErrors.clear()])
+  await Promise.all([db.cashFlow.clear(), db.syncQueue.clear(), db.syncMeta.clear(), db.contacts.clear(), db.ingredients.clear(), db.documents.clear(), db.syncErrors.clear(), db.products.clear(), db.priceTiers.clear()])
 })
 
 afterEach(() => {
@@ -430,5 +430,83 @@ describe("sync pipeline", () => {
     const errs = await db.syncErrors.toArray()
     expect(errs).toHaveLength(1)
     expect(errs[0].itemKey).toBe("document:offline_huge")
+  })
+
+  it("create de produto recalcula margem, reconcilia tempId e remapeia priceTiers pendentes", async () => {
+    await db.syncQueue.bulkAdd([
+      { id: 60, action: "create", entity: "product", data: { id: "offline_p", name: "Cookie", sku: "ck-1", category: "Doces", price: 10, cost: 4, unit: "un", active: true }, tempId: "offline_p", createdAt: iso },
+      { id: 61, action: "create", entity: "priceTier", data: { name: "Assado", minQty: 3, maxQty: 5, price: 8, productId: "offline_p" }, tempId: "offline_t", createdAt: iso },
+    ])
+    await db.products.add({ id: "offline_p", name: "Cookie", sku: "ck-1", category: "Doces", price: 10, cost: 4, margin: 60, unit: "un", active: true, _synced: false, _updatedAt: iso })
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => {
+        return new Response(
+          JSON.stringify({ ok: false, processed: [{ queueId: 60, ok: true, tempId: "offline_p", realId: "real-p" }] }),
+          { status: 200 },
+        )
+      }),
+    )
+
+    await pushPendingChanges()
+
+    const products = await db.products.toArray()
+    expect(products.some((p) => p.id === "offline_p")).toBe(false)
+    const real = products.find((p) => p.id === "real-p")
+    expect(real?._synced).toBe(true)
+    expect(real?.margin).toBe(60)
+
+    const queue = await db.syncQueue.toArray()
+    const tier = queue.find((q) => q.id === 61)
+    expect(tier?.data.productId).toBe("real-p")
+    expect(queue.some((q) => q.id === 60)).toBe(false)
+  })
+
+  it("delete de produto remove priceTiers locais e enfileira exclusão", async () => {
+    await db.products.add({ id: "p1", name: "Cookie", sku: "ck-1", category: "Doces", price: 10, cost: 4, margin: 60, unit: "un", active: true, _synced: true, _updatedAt: iso })
+    await db.priceTiers.add({ id: "t1", name: "Assado", minQty: 3, maxQty: 5, price: 8, productId: "p1", _synced: true, _updatedAt: iso })
+
+    await repository.products.delete("p1")
+
+    const products = await db.products.toArray()
+    expect(products).toHaveLength(0)
+    const tiers = await db.priceTiers.toArray()
+    expect(tiers).toHaveLength(0)
+
+    const queue = await db.syncQueue.toArray()
+    expect(queue).toHaveLength(1)
+    expect(queue[0].action).toBe("delete")
+    expect(queue[0].entity).toBe("product")
+    expect(queue[0].data.id).toBe("p1")
+  })
+
+  it("pull escreve produtos vindos do servidor marcando como sincronizados", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => {
+        return new Response(
+          JSON.stringify({ products: [{ id: "srv-p", name: "Cookie", sku: "ck-2", category: "Doces", price: 12, cost: 5, margin: 58.33, unit: "un", active: true }] }),
+          { status: 200 },
+        )
+      }),
+    )
+
+    const result = await pullChanges()
+    expect(result.pulled).toBe(1)
+
+    const row = await db.products.get("srv-p")
+    expect(row?.name).toBe("Cookie")
+    expect(row?._synced).toBe(true)
+  })
+
+  it("update de produto sem preço/custo preserva margem existente", async () => {
+    await db.products.add({ id: "p1", name: "Cookie", sku: "ck-1", category: "Doces", price: 10, cost: 4, margin: 60, unit: "un", active: true, _synced: true, _updatedAt: iso })
+
+    await repository.products.update("p1", { name: "Cookie Gourmet" })
+
+    const row = await db.products.get("p1")
+    expect(row?.name).toBe("Cookie Gourmet")
+    expect(row?.margin).toBe(60)
   })
 })

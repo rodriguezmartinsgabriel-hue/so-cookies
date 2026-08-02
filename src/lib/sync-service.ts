@@ -1,5 +1,5 @@
 import type { EntityTable } from "dexie"
-import { db, getLastSyncTime, setLastSyncTime, addSyncError, clearSyncErrorsFor, type LocalOrder, type LocalSale, type LocalCashFlow, type LocalProduction, type LocalIngredient, type LocalRecipe, type LocalDocument, type LocalDeliveryCost, type LocalContact, type LocalContactInteraction, type SyncQueueItem } from "./db-local"
+import { db, getLastSyncTime, setLastSyncTime, addSyncError, clearSyncErrorsFor, type LocalOrder, type LocalSale, type LocalCashFlow, type LocalProduction, type LocalProduct, type LocalIngredient, type LocalRecipe, type LocalDocument, type LocalDeliveryCost, type LocalContact, type LocalContactInteraction, type SyncQueueItem } from "./db-local"
 import { emitDataRefresh } from "./refresh-events"
 import { MAX_PUSH_BODY } from "./files"
 
@@ -8,6 +8,7 @@ const ENTITY_TABLES: Record<string, string> = {
   sale: "sales",
   cashFlow: "cashFlow",
   production: "productions",
+  product: "products",
   ingredient: "ingredients",
   recipe: "recipes",
   document: "documents",
@@ -221,6 +222,9 @@ async function applyLocalDelete(entity: string, recordId: string) {
     case "contact":
       await db.contactInteractions.where("contactId").equals(recordId).delete()
       break
+    case "product":
+      await db.priceTiers.where("productId").equals(recordId).delete()
+      break
   }
   await table.delete(recordId)
 }
@@ -244,6 +248,7 @@ export async function pullChanges() {
       pulled += await writeRows(db.sales, data.sales as LocalSale[] | undefined)
       pulled += await writeRows(db.cashFlow, data.cashFlow as LocalCashFlow[] | undefined)
       pulled += await writeRows(db.productions, data.productions as LocalProduction[] | undefined)
+      pulled += await writeRows(db.products, data.products as LocalProduct[] | undefined)
       pulled += await writeRows(db.ingredients, data.ingredients as LocalIngredient[] | undefined)
       pulled += await writeRows(db.documents, data.documents as LocalDocument[] | undefined)
       pulled += await writeRows(db.deliveryCosts, data.deliveryCosts as LocalDeliveryCost[] | undefined)
@@ -414,6 +419,17 @@ async function reconcileIds(tempId: string, realId: string) {
     }
   }
 
+  const product = await db.products.get(tempId)
+  if (product) {
+    const existingReal = await db.products.get(realId)
+    if (existingReal) {
+      await db.products.delete(tempId)
+    } else {
+      await db.products.delete(tempId)
+      await db.products.put({ ...product, id: realId, _synced: true })
+    }
+  }
+
   const channel = await db.channels.get(tempId)
   if (channel) {
     const existingReal = await db.channels.get(realId)
@@ -511,6 +527,10 @@ async function reconcileIds(tempId: string, realId: string) {
     }
     if (next.contactId === tempId) {
       next.contactId = realId
+      changed = true
+    }
+    if (next.productId === tempId) {
+      next.productId = realId
       changed = true
     }
     if (Array.isArray(next.ingredients)) {

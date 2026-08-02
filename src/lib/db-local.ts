@@ -93,7 +93,11 @@ export interface LocalProduct {
   margin: number
   unit: string
   active: boolean
+  image?: string | null
+  createdAt?: string
+  updatedAt?: string
   _synced: boolean
+  _updatedAt?: string
 }
 
 export interface LocalIngredient {

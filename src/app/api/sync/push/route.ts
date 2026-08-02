@@ -6,6 +6,7 @@ import { requireAuth } from "@/lib/api-auth"
 import { applyOrderUpdate } from "@/lib/db"
 import { resolveRefs, runDelete } from "@/lib/sync-refs"
 import { recordSyncDelete } from "@/lib/sync-deletes"
+import { computeMargin } from "@/lib/utils"
 import {
   createOrderSchema,
   updateOrderSchema,
@@ -16,6 +17,8 @@ import {
   updateProductionSchema,
   createIngredientSchema,
   updateIngredientSchema,
+  createProductSyncSchema,
+  updateProductSchema,
   createRecipeSchema,
   updateRecipeSchema,
   createDocumentSchema,
@@ -59,6 +62,9 @@ const syncSchemas: Record<string, z.ZodType<any, any>> = {
   "production:create": createProductionSchema,
   "production:update": updateProductionSchema.extend({ id: z.string().min(1) }),
   "production:delete": idSchema,
+  "product:create": createProductSyncSchema,
+  "product:update": updateProductSchema.extend({ id: z.string().min(1) }),
+  "product:delete": idSchema,
   "ingredient:create": createIngredientSchema,
   "ingredient:update": updateIngredientSchema.extend({ id: z.string().min(1) }),
   "ingredient:delete": idSchema,
@@ -315,6 +321,47 @@ export async function POST(request: Request) {
         case "production:delete": {
           await runDelete(() => prisma.production.delete({ where: { id: data.id } }))
           await recordSyncDelete("production", data.id)
+          entry.ok = true
+          break
+        }
+        case "product:create": {
+          const realId = await applyCreate("product", tempId, (tx) =>
+            tx.product.create({
+              data: {
+                name: data.name,
+                sku: data.sku,
+                category: data.category,
+                price: data.price,
+                cost: data.cost,
+                margin: computeMargin(data.price, data.cost),
+                unit: data.unit || "un",
+                active: data.active ?? true,
+                image: data.image ?? null,
+              },
+            })
+          )
+          entry.ok = true
+          entry.tempId = tempId
+          entry.realId = realId
+          break
+        }
+        case "product:update": {
+          const { id, ...updateData } = data
+          const patch: Record<string, unknown> = { ...updateData }
+          if ((typeof updateData.price === "number" || typeof updateData.cost === "number") && updateData.margin === undefined) {
+            const existing = await prisma.product.findUnique({ where: { id }, select: { price: true, cost: true } })
+            if (existing) {
+              patch.margin = computeMargin(updateData.price ?? existing.price, updateData.cost ?? existing.cost)
+            }
+          }
+          if (updateData.image !== undefined) patch.image = updateData.image
+          await prisma.product.update({ where: { id }, data: { ...patch, updatedAt: new Date() } })
+          entry.ok = true
+          break
+        }
+        case "product:delete": {
+          await runDelete(() => prisma.product.update({ where: { id: data.id }, data: { active: false, deletedAt: new Date(), updatedAt: new Date() } }))
+          await recordSyncDelete("product", data.id)
           entry.ok = true
           break
         }

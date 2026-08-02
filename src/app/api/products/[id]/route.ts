@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { getProduct, updateProduct, deleteProduct, isNotFoundError } from "@/lib/db"
 import { requireAuth } from "@/lib/api-auth"
 import { updateProductSchema, getZodIssues } from "@/lib/validation"
+import { recordSyncDelete } from "@/lib/sync-deletes"
 
 export async function GET(
   request: Request,
@@ -48,6 +49,7 @@ export async function DELETE(
   try {
     const { id } = await params
     await deleteProduct(id)
+    await recordSyncDelete("product", id)
     return NextResponse.json({ ok: true })
   } catch (e) {
     if (isNotFoundError(e)) return NextResponse.json({ error: "Não encontrado" }, { status: 404 })

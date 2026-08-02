@@ -228,7 +228,7 @@ export default function VendasPage() {
                       <div key={i} className="flex items-center gap-2 bg-cream/50 rounded-lg p-2">
                         <select value={item.productId} onChange={(e) => updateItem(i, "productId", e.target.value)} className="flex-1 h-9 px-2 border border-line rounded-lg text-xs text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink bg-paper">
                           <option value="">Produto</option>
-                          {products.map((p) => (
+                          {products.filter((p) => p.active).map((p) => (
                             <option key={p.id} value={p.id}>{p.name}</option>
                           ))}
                         </select>
