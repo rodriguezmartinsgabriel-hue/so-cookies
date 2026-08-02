@@ -14,6 +14,8 @@ export interface LocalOrder {
   customerPhone?: string | null
   platformFee?: number | null
   confirmBy?: string | null
+  pickupCode?: string | null
+  customerId?: string | null
   items?: LocalOrderItem[]
   createdAt: string
   updatedAt: string

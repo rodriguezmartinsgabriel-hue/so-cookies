@@ -31,6 +31,21 @@ enum Role {
   VISUALIZADOR
 }
 
+model Customer {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  phone     String?
+  password  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  orders Order[]
+
+  @@index([email])
+  @@index([phone])
+}
+
 model Product {
   id        String   @id @default(cuid())
   name      String
@@ -187,6 +202,7 @@ model Order {
   customerPhone   String?
   platformFee     Float?
   confirmBy       DateTime?
+  pickupCode      String?
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
 
@@ -194,12 +210,16 @@ model Order {
   sale  Sale?
   deliveryCosts DeliveryCost[]
 
+  customerId   String?
+  customerRef  Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+
   @@unique([platform, externalId])
   @@index([status])
   @@index([createdAt])
   @@index([updatedAt])
   @@index([channel])
   @@index([platform])
+  @@index([customerId])
 }
 
 enum OrderStatus {

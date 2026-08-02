@@ -20,7 +20,7 @@ const statusConfig: Record<string, { label: string; color: string }> = {
   CONCLUIDO: { label: "Entregue", color: "text-muted bg-cream" },
 }
 
-const channelFilters = ["Todos", "99Food", "iFood", "Rappi", "WhatsApp", "Direto"]
+const channelFilters = ["Todos", "99Food", "iFood", "Rappi", "WhatsApp", "Só App", "Direto"]
 
 function formatSla(confirmBy: string | null | undefined): string {
   if (!confirmBy) return ""
@@ -177,6 +177,11 @@ export default function DeliveryPage() {
                       <p className="text-xs text-muted mt-1">
                         {(order.items || []).length} itens · {order.createdAt ? new Date(order.createdAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : ""}
                       </p>
+                      {order.pickupCode && (
+                        <p className="mt-1 text-xs font-bold text-ink tracking-wider">
+                          Retirada: <span className="text-base">{order.pickupCode}</span>
+                        </p>
+                      )}
                       {pending && isExternal && (
                         <p className={`mt-1 flex items-center gap-1 text-xs font-semibold ${isSlaUrgent(order.confirmBy) ? "text-danger" : "text-muted"}`}>
                           <Clock className="w-3 h-3" />

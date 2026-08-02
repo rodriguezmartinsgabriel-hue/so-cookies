@@ -2,10 +2,10 @@ import type { MetadataRoute } from "next"
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Só Manager",
+    name: "Só Cookies & Café",
     short_name: "Só",
-    description: "Gestão completa do seu negócio de cookies",
-    start_url: "/",
+    description: "Peça seus cookies para retirada na loja",
+    start_url: "/cardapio",
     display: "standalone",
     background_color: "#F7F3EC",
     theme_color: "#111111",

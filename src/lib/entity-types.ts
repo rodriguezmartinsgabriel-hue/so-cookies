@@ -142,6 +142,8 @@ export type Order = {
   customerPhone: string | null
   platformFee: number | null
   confirmBy: string | null
+  pickupCode: string | null
+  customerId: string | null
   createdAt: string
   updatedAt: string
   items?: OrderItem[]

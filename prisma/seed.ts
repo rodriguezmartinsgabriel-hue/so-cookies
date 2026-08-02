@@ -37,7 +37,8 @@ async function main() {
   await prisma.saleChannel.upsert({ where: { id: "ifood" }, update: {}, create: { id: "ifood", name: "iFood", commission: 0.23 } });
   await prisma.saleChannel.upsert({ where: { id: "rappi" }, update: {}, create: { id: "rappi", name: "Rappi", commission: 0.20 } });
   await prisma.saleChannel.upsert({ where: { id: "direto" }, update: {}, create: { id: "direto", name: "Direto", commission: 0 } });
-  console.log("  ✅ Sale Channels (4)");
+  await prisma.saleChannel.upsert({ where: { id: "soapp" }, update: {}, create: { id: "soapp", name: "Só App", commission: 0 } });
+  console.log("  ✅ Sale Channels (5)");
 
   // ─── Products (from Ficha Técnica) ───────────────────────────
   const prodClassico = await prisma.product.upsert({

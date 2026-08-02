@@ -256,3 +256,22 @@ export const createInteractionSchema = z.object({
   type: z.enum(INTERACTION_TYPES).default("NOTA"),
   note: z.string().min(1, "Descreva a interação"),
 })
+
+export const registerCustomerSchema = z.object({
+  name: z.string().min(1, "Nome é obrigatório"),
+  email: z.string().email("E-mail inválido"),
+  phone: z.string().optional(),
+  password: z.string().min(6, "Senha deve ter no mínimo 6 caracteres"),
+})
+
+export const loginCustomerSchema = z.object({
+  email: z.string().email("E-mail inválido"),
+  password: z.string().min(1, "Senha é obrigatória"),
+})
+
+export const createCustomerOrderSchema = z.object({
+  items: z.array(z.object({
+    productId: z.string().min(1),
+    qty: z.number().int().min(1).max(100, "Quantidade máxima por item é 100"),
+  })).min(1, "Adicione ao menos 1 item").max(50, "Máximo de 50 itens por pedido"),
+})
