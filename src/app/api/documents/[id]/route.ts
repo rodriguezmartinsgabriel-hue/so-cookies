@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/api-auth";
 import { isNotFoundError } from "@/lib/db";
+import { recordSyncDelete } from "@/lib/sync-deletes";
 import { updateDocumentSchema, getZodIssues } from "@/lib/validation";
 
 export async function GET(
@@ -47,6 +48,7 @@ export async function DELETE(
   if (error) return error
   try {
     const { id } = await params;
+    await recordSyncDelete("document", id);
     await prisma.document.delete({ where: { id } });
     return NextResponse.json({ ok: true });
   } catch (e) {

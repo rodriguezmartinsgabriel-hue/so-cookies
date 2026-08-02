@@ -5,6 +5,7 @@ import type { Prisma } from "@/generated/prisma/client"
 import { requireAuth } from "@/lib/api-auth"
 import { applyOrderUpdate } from "@/lib/db"
 import { resolveRefs, runDelete } from "@/lib/sync-refs"
+import { recordSyncDelete } from "@/lib/sync-deletes"
 import {
   createOrderSchema,
   updateOrderSchema,
@@ -89,18 +90,6 @@ interface ProcessedEntry {
   realId?: string
   notFound?: boolean
   error?: string
-}
-
-async function recordSyncDelete(entity: string, recordId: string) {
-  try {
-    await prisma.syncDelete.upsert({
-      where: { entity_recordId: { entity, recordId } },
-      update: {},
-      create: { entity, recordId },
-    })
-  } catch (e) {
-    console.error("Falha ao registrar exclusão:", e)
-  }
 }
 
 async function applyCreate(

@@ -8,7 +8,7 @@ const iso = "2026-07-31T20:00:00.000Z"
 
 beforeEach(async () => {
   Object.defineProperty(navigator, "onLine", { configurable: true, value: true })
-  await Promise.all([db.cashFlow.clear(), db.syncQueue.clear(), db.syncMeta.clear(), db.contacts.clear(), db.ingredients.clear(), db.syncErrors.clear()])
+  await Promise.all([db.cashFlow.clear(), db.syncQueue.clear(), db.syncMeta.clear(), db.contacts.clear(), db.ingredients.clear(), db.documents.clear(), db.syncErrors.clear()])
 })
 
 afterEach(() => {
@@ -293,5 +293,50 @@ describe("sync pipeline", () => {
     expect(rows.some((r) => r.id === "del-1")).toBe(false)
     expect(rows.some((r) => r.id === "del-local")).toBe(true)
     expect(await getLastSyncTime()).toBe("2026-08-01T00:00:00.000Z")
+  })
+
+  it("merge não ressuscita documento com exclusão pendente na fila", async () => {
+    await db.syncQueue.add({ id: 99, action: "delete", entity: "document", data: { id: "real-1" }, createdAt: iso })
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        expect(url).toBe("/api/documents")
+        return new Response(
+          JSON.stringify([{ id: "real-1", title: "Ficha", category: "FICHA_TECNICA", description: null, content: null, fileUrl: null, tags: null }]),
+          { status: 200 },
+        )
+      }),
+    )
+
+    const refreshed = new Promise<void>((resolve) => onDataRefresh(() => resolve()))
+    await repository.documents.getAll()
+    await refreshed
+
+    const rows = await db.documents.toArray()
+    expect(rows).toHaveLength(0)
+  })
+
+  it("delete de documento cancela create/update pendentes e limpa erros", async () => {
+    await db.documents.add({ id: "offline_x", title: "Ficha", category: "FICHA_TECNICA", fileUrl: "data:application/pdf;base64,JVBERi0xLjQK", createdAt: iso, updatedAt: iso, _synced: false, _updatedAt: iso })
+    await db.syncQueue.bulkAdd([
+      { id: 1, action: "create", entity: "document", data: { id: "offline_x", title: "Ficha", category: "FICHA_TECNICA", fileUrl: "data:application/pdf;base64,JVBERi0xLjQK" }, tempId: "offline_x", createdAt: iso },
+      { id: 2, action: "update", entity: "document", data: { id: "offline_x", title: "Ficha editada" }, createdAt: iso },
+    ])
+    await addSyncError({ entity: "document", action: "create", error: "Erro antigo", itemKey: "document:offline_x" })
+
+    await repository.documents.delete("offline_x")
+
+    const docs = await db.documents.toArray()
+    expect(docs.some((d) => d.id === "offline_x")).toBe(false)
+
+    const queue = await db.syncQueue.toArray()
+    expect(queue.some((q) => q.action === "create" || q.action === "update")).toBe(false)
+    expect(queue).toHaveLength(1)
+    expect(queue[0].action).toBe("delete")
+    expect(queue[0].data.id).toBe("offline_x")
+
+    const errs = await db.syncErrors.toArray()
+    expect(errs).toHaveLength(0)
   })
 })

@@ -1,4 +1,4 @@
-import { db, addToSyncQueue, type LocalContact, type LocalContactInteraction, type LocalProduct, type LocalRecipe } from "./db-local"
+import { db, addToSyncQueue, clearSyncErrorsFor, type LocalContact, type LocalContactInteraction, type LocalProduct, type LocalRecipe } from "./db-local"
 import { scheduleSync } from "./sync-service"
 import { emitDataRefresh } from "./refresh-events"
 import type { EntityTable, IDType, UpdateSpec } from "dexie"
@@ -61,7 +61,7 @@ async function mergeTable<TLocal extends { id: string; _synced?: boolean }>(
   }
 
   const toUpsert = data
-    .filter((r) => !unsyncedIds.has(r.id))
+    .filter((r) => !unsyncedIds.has(r.id) && !queuedIds.has(r.id))
     .map((r) => (options?.transform ? options.transform(r) : ({ ...r, _synced: true, _updatedAt: now() } as TLocal)))
   await table.bulkPut(toUpsert)
 }
@@ -459,6 +459,13 @@ export const repository = {
     },
 
     async delete(id: string) {
+      const queued = await db.syncQueue.toArray()
+      const stale = queued
+        .filter((q) => q.entity === "document" && q.action !== "delete" && (q.data?.id === id || q.tempId === id))
+        .map((q) => q.id!)
+        .filter((qid): qid is number => qid !== undefined)
+      if (stale.length) await db.syncQueue.bulkDelete(stale)
+      await clearSyncErrorsFor(`document:${id}`)
       await db.documents.delete(id)
       await addToSyncQueue({ action: "delete", entity: "document", data: { id }, createdAt: now() })
       scheduleSync()
