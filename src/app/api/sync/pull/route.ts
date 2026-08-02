@@ -20,11 +20,11 @@ export async function POST(request: Request) {
     const [orders, sales, cashFlow, productions, ingredients, recipes, documents, deliveryCosts, contacts, contactInteractions, deletions] = await Promise.all([
       prisma.order.findMany({
         where: { updatedAt: { gt: sinceDate } },
-        include: { items: true },
+        include: { items: { include: { product: { select: { id: true, name: true } } } } },
       }),
       prisma.sale.findMany({
         where: { updatedAt: { gt: sinceDate } },
-        include: { items: true },
+        include: { channel: true, items: { include: { product: { select: { id: true, name: true } } } } },
       }),
       prisma.cashFlow.findMany({
         where: { updatedAt: { gt: sinceDate } },

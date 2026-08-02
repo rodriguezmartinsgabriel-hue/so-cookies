@@ -7,6 +7,14 @@ export interface LocalOrder {
   total: number
   status: string
   notes?: string
+  platform?: string | null
+  externalId?: string | null
+  externalStatus?: string | null
+  deliveryAddress?: string | null
+  customerPhone?: string | null
+  platformFee?: number | null
+  confirmBy?: string | null
+  items?: LocalOrderItem[]
   createdAt: string
   updatedAt: string
   _synced: boolean
@@ -19,6 +27,10 @@ export interface LocalOrderItem {
   productId: string
   qty: number
   price: number
+  name?: string | null
+  notes?: string | null
+  product?: { id?: string; name?: string } | null
+  productName?: string | null
   _synced: boolean
 }
 
@@ -27,6 +39,9 @@ export interface LocalSale {
   channelId: string
   total: number
   userId?: string
+  channel?: { id?: string; name?: string } | string | null
+  channelName?: string
+  items?: LocalSaleItem[]
   createdAt: string
   _synced: boolean
   _updatedAt: string
@@ -38,6 +53,8 @@ export interface LocalSaleItem {
   productId: string
   qty: number
   price: number
+  product?: { id?: string; name?: string } | null
+  productName?: string | null
   _synced: boolean
 }
 

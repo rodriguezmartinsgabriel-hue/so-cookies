@@ -84,13 +84,16 @@ export const repository = {
 
     async create(data: { channel: string; customer: string; total: number; notes?: string; items: { productId: string; qty: number; price: number }[] }) {
       const id = generateTempId()
-      const order = { ...data, id, status: "PENDENTE", createdAt: now(), updatedAt: now(), _updatedAt: now(), _synced: false }
+      const products = await db.products.toArray()
+      const productNameById = new Map(products.map((p) => [p.id, p.name]))
       const items = data.items.map((item) => ({
         id: generateTempId(),
         orderId: id,
         ...item,
+        productName: productNameById.get(item.productId) || null,
         _synced: false,
       }))
+      const order = { ...data, id, status: "PENDENTE", createdAt: now(), updatedAt: now(), _updatedAt: now(), _synced: false, items }
 
       await db.orders.add(order)
       await db.orderItems.bulkAdd(items)
@@ -139,13 +142,17 @@ export const repository = {
 
     async create(data: { channelId: string; total: number; userId?: string; items: { productId: string; qty: number; price: number }[] }) {
       const id = generateTempId()
-      const sale = { ...data, id, createdAt: now(), _synced: false, _updatedAt: now() }
+      const channelRow = await db.channels.get(data.channelId)
+      const products = await db.products.toArray()
+      const productNameById = new Map(products.map((p) => [p.id, p.name]))
       const items = data.items.map((item) => ({
         id: generateTempId(),
         saleId: id,
         ...item,
+        productName: productNameById.get(item.productId) || null,
         _synced: false,
       }))
+      const sale = { ...data, id, channelName: channelRow?.name, createdAt: now(), _synced: false, _updatedAt: now(), items }
 
       await db.sales.add(sale)
       await db.saleItems.bulkAdd(items)
