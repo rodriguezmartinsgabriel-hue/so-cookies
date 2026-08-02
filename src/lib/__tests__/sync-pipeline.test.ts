@@ -3,6 +3,7 @@ import { db } from "@/lib/db-local"
 import { pushPendingChanges, pullChanges } from "@/lib/sync-service"
 import { repository, onDataRefresh } from "@/lib/repository"
 import { addSyncError, getLastSyncTime } from "@/lib/db-local"
+import { MAX_PUSH_BODY } from "@/lib/files"
 
 const iso = "2026-07-31T20:00:00.000Z"
 
@@ -338,5 +339,96 @@ describe("sync pipeline", () => {
 
     const errs = await db.syncErrors.toArray()
     expect(errs).toHaveLength(0)
+  })
+
+  it("push divide em lotes quando o corpo ultrapassa o limite da plataforma", async () => {
+    const big1 = "a".repeat(1_500_000)
+    const big2 = "b".repeat(1_500_000)
+    const big3 = "c".repeat(1_500_000)
+    await db.syncQueue.bulkAdd([
+      { id: 1, action: "create", entity: "document", data: { id: "offline_a", title: "A", category: "FICHA_TECNICA", fileUrl: `data:application/pdf;base64,${big1}` }, tempId: "offline_a", createdAt: iso },
+      { id: 2, action: "create", entity: "document", data: { id: "offline_b", title: "B", category: "FICHA_TECNICA", fileUrl: `data:application/pdf;base64,${big2}` }, tempId: "offline_b", createdAt: iso },
+      { id: 3, action: "create", entity: "document", data: { id: "offline_c", title: "C", category: "FICHA_TECNICA", fileUrl: `data:application/pdf;base64,${big3}` }, tempId: "offline_c", createdAt: iso },
+    ])
+
+    const seenSizes: number[] = []
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (_url: string, init: RequestInit) => {
+        seenSizes.push(String(init.body).length)
+        const body = JSON.parse(String(init.body))
+        return new Response(
+          JSON.stringify({ ok: true, processed: body.changes.map((c: { id: number }) => ({ queueId: c.id, ok: true })) }),
+          { status: 200 },
+        )
+      }),
+    )
+
+    const result = await pushPendingChanges()
+
+    expect(fetch).toHaveBeenCalledTimes(2)
+    expect(seenSizes.every((s) => s < MAX_PUSH_BODY)).toBe(true)
+    expect(result.pushed).toBe(3)
+    const queue = await db.syncQueue.toArray()
+    expect(queue).toHaveLength(0)
+  })
+
+  it("push registra erro e backoff quando o servidor responde 413 (payload grande)", async () => {
+    await db.syncQueue.add({ id: 40, action: "create", entity: "document", data: { id: "offline_big", title: "Big", category: "FICHA_TECNICA", fileUrl: `data:application/pdf;base64,${"d".repeat(3_900_000)}` }, tempId: "offline_big", createdAt: iso })
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => {
+        return new Response("FUNCTION_PAYLOAD_TOO_LARGE", { status: 413 })
+      }),
+    )
+
+    const result = await pushPendingChanges()
+    expect(result.pushed).toBe(0)
+    expect(fetch).toHaveBeenCalledTimes(1)
+
+    const errs = await db.syncErrors.toArray()
+    expect(errs).toHaveLength(1)
+    expect(errs[0].entity).toBe("document")
+    expect(errs[0].error).toContain("limite da plataforma")
+    expect(errs[0].itemKey).toBe("document:offline_big")
+
+    const queue = await db.syncQueue.toArray()
+    expect(queue).toHaveLength(1)
+    expect(queue[0].attempts).toBe(1)
+    expect(queue[0].lastAttemptAt).toBeDefined()
+  })
+
+  it("push envia item sobresize isolado e não trava os demais", async () => {
+    const huge = "e".repeat(3_900_000)
+    const small = "f".repeat(50)
+    await db.syncQueue.bulkAdd([
+      { id: 50, action: "create", entity: "document", data: { id: "offline_huge", title: "Huge", category: "FICHA_TECNICA", fileUrl: `data:application/pdf;base64,${huge}` }, tempId: "offline_huge", createdAt: iso },
+      { id: 51, action: "create", entity: "document", data: { id: "offline_small", title: "Small", category: "FICHA_TECNICA", fileUrl: `data:application/pdf;base64,${small}` }, tempId: "offline_small", createdAt: iso },
+    ])
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (_url: string, init: RequestInit) => {
+        const body = JSON.parse(String(init.body))
+        const first = body.changes[0]
+        if (first.id === 50) {
+          return new Response("FUNCTION_PAYLOAD_TOO_LARGE", { status: 413 })
+        }
+        return new Response(JSON.stringify({ ok: true, processed: body.changes.map((c: { id: number }) => ({ queueId: c.id, ok: true })) }), { status: 200 })
+      }),
+    )
+
+    const result = await pushPendingChanges()
+    expect(result.pushed).toBe(1)
+    expect(fetch).toHaveBeenCalledTimes(2)
+
+    const queue = await db.syncQueue.toArray()
+    expect(queue).toHaveLength(1)
+    expect(queue[0].id).toBe(50)
+
+    const errs = await db.syncErrors.toArray()
+    expect(errs).toHaveLength(1)
+    expect(errs[0].itemKey).toBe("document:offline_huge")
   })
 })

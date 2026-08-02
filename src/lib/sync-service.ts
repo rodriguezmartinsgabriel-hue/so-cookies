@@ -1,6 +1,7 @@
 import type { EntityTable } from "dexie"
-import { db, getLastSyncTime, setLastSyncTime, addSyncError, clearSyncErrorsFor, type LocalOrder, type LocalSale, type LocalCashFlow, type LocalProduction, type LocalIngredient, type LocalRecipe, type LocalDocument, type LocalDeliveryCost, type LocalContact, type LocalContactInteraction } from "./db-local"
+import { db, getLastSyncTime, setLastSyncTime, addSyncError, clearSyncErrorsFor, type LocalOrder, type LocalSale, type LocalCashFlow, type LocalProduction, type LocalIngredient, type LocalRecipe, type LocalDocument, type LocalDeliveryCost, type LocalContact, type LocalContactInteraction, type SyncQueueItem } from "./db-local"
 import { emitDataRefresh } from "./refresh-events"
+import { MAX_PUSH_BODY } from "./files"
 
 const ENTITY_TABLES: Record<string, string> = {
   order: "orders",
@@ -42,6 +43,58 @@ function backoffMs(attempts: number) {
   return Math.min(Math.pow(attempts, 2) * 1000, 60_000)
 }
 
+function estimateItemSize(item: SyncQueueItem) {
+  return JSON.stringify(item.data ?? {}).length + 256
+}
+
+function buildBatches(items: SyncQueueItem[]): SyncQueueItem[][] {
+  const batches: SyncQueueItem[][] = []
+  let current: SyncQueueItem[] = []
+  let size = 0
+  for (const item of items) {
+    const itemSize = estimateItemSize(item)
+    if (itemSize > MAX_PUSH_BODY) {
+      if (current.length) {
+        batches.push(current)
+        current = []
+        size = 0
+      }
+      batches.push([item])
+      continue
+    }
+    if (current.length && size + itemSize > MAX_PUSH_BODY) {
+      batches.push(current)
+      current = []
+      size = 0
+    }
+    current.push(item)
+    size += itemSize
+  }
+  if (current.length) batches.push(current)
+  return batches
+}
+
+function pushErrorForStatus(status: number): string {
+  if (status === 413) {
+    return "Arquivo grande demais para sincronizar (limite da plataforma). Reduza o anexo ou use um arquivo menor."
+  }
+  if (status === 401 || status === 403) {
+    return "Sessão expirada — faça login novamente."
+  }
+  return `Falha ao sincronizar com o servidor (status ${status}).`
+}
+
+async function recordBatchFailure(batch: SyncQueueItem[], status: number) {
+  const error = pushErrorForStatus(status)
+  for (const item of batch) {
+    const attempts = (item.attempts || 0) + 1
+    if (item.id !== undefined) {
+      await db.syncQueue.update(item.id, { attempts, lastAttemptAt: new Date().toISOString() })
+    }
+    await addSyncError({ entity: item.entity, action: item.action, error, itemKey: itemKeyFor(item) })
+  }
+}
+
 export async function pushPendingChanges() {
   if (!navigator.onLine) return { pushed: 0 }
   if (!await acquireLock()) return { pushed: 0 }
@@ -57,19 +110,24 @@ export async function pushPendingChanges() {
     })
     if (eligible.length === 0) return { pushed: 0 }
 
-    const resp = await fetch("/api/sync/push", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ changes: eligible }),
-    })
-    if (resp.ok) {
+    const batches = buildBatches(eligible)
+    let pushed = 0
+    for (const batch of batches) {
+      const resp = await fetch("/api/sync/push", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ changes: batch }),
+      })
+      if (!resp.ok) {
+        await recordBatchFailure(batch, resp.status)
+        continue
+      }
       const result = await resp.json()
       const processed = Array.isArray(result.processed) ? result.processed : []
-      const pendingById = new Map(pending.map((p) => [p.id, p]))
-      let pushed = 0
+      const batchById = new Map(batch.map((p) => [p.id, p]))
       const toDelete: number[] = []
       for (const p of processed) {
-        const item = typeof p.queueId === "number" ? pendingById.get(p.queueId) : undefined
+        const item = typeof p.queueId === "number" ? batchById.get(p.queueId) : undefined
         const itemKey = item ? itemKeyFor(item) : undefined
         if (!p.ok) {
           if (item && typeof p.queueId === "number") {
@@ -97,8 +155,8 @@ export async function pushPendingChanges() {
         toDelete.push(p.queueId)
       }
       if (toDelete.length) await db.syncQueue.bulkDelete(toDelete)
-      return { pushed }
     }
+    return { pushed }
   } catch (e) {
     console.error("Erro no push:", e)
   } finally {

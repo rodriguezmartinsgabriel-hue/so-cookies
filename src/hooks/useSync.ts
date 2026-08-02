@@ -81,5 +81,5 @@ export function useSync() {
     }
   }, [doSync])
 
-  return { isSyncing, pendingCount, isOnline, errors, lastSync, doSync, clearErrors }
+  return { isSyncing, pendingCount, isOnline, errors, lastSync, doSync, clearErrors, refresh: refreshState }
 }

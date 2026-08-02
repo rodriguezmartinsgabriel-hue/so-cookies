@@ -2,11 +2,18 @@
 
 import { useState } from "react"
 import { useSync } from "@/hooks/useSync"
+import { discardQueued } from "@/lib/db-local"
 import { WifiOff, RefreshCw, AlertTriangle } from "lucide-react"
 
 export function OfflineBanner() {
-  const { isOnline, isSyncing, pendingCount, errors, doSync, clearErrors } = useSync()
+  const { isOnline, isSyncing, pendingCount, errors, doSync, clearErrors, refresh } = useSync()
   const [showErrors, setShowErrors] = useState(false)
+
+  async function handleDiscard(itemKey?: string) {
+    if (!itemKey) return
+    await discardQueued(itemKey)
+    await refresh()
+  }
 
   return (
     <div className="fixed top-0 inset-x-0 z-50">
@@ -47,9 +54,16 @@ export function OfflineBanner() {
                     <p className="font-medium capitalize">{e.entity} · {e.action}</p>
                     <p className="text-muted">{e.error}</p>
                   </div>
-                  {e.dropped && (
-                    <span className="text-[10px] font-bold bg-danger/10 text-danger px-2 py-0.5 rounded-full shrink-0">Descartada</span>
-                  )}
+                  <div className="flex flex-col items-end gap-1 shrink-0">
+                    {e.dropped && (
+                      <span className="text-[10px] font-bold bg-danger/10 text-danger px-2 py-0.5 rounded-full">Descartada</span>
+                    )}
+                    {e.itemKey && (
+                      <button onClick={() => handleDiscard(e.itemKey)} className="text-[10px] font-semibold text-danger hover:underline">
+                        Descartar alteração
+                      </button>
+                    )}
+                  </div>
                 </div>
               ))}
               <div className="px-4 py-2 flex justify-end">

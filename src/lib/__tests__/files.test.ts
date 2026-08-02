@@ -7,7 +7,11 @@ import {
   formatBytes,
   dataUrlSize,
   fileNameFromDataUrl,
-  MAX_FILE_SIZE,
+  processAttachment,
+  MAX_IMAGE_UPLOAD,
+  MAX_PDF_UPLOAD,
+  MAX_SYNC_BASE64,
+  MAX_PUSH_BODY,
 } from "@/lib/files"
 
 const IMG_PNG = "data:image/png;base64,iVBORw0KGgo="
@@ -83,8 +87,31 @@ describe("fileNameFromDataUrl", () => {
   })
 })
 
-describe("MAX_FILE_SIZE", () => {
+describe("Limites de upload/sync", () => {
   it("é 15MB", () => {
-    expect(MAX_FILE_SIZE).toBe(15 * 1024 * 1024)
+    expect(MAX_IMAGE_UPLOAD).toBe(10 * 1024 * 1024)
+    expect(MAX_PDF_UPLOAD).toBe(2_500_000)
+    expect(MAX_SYNC_BASE64).toBe(3_400_000)
+    expect(MAX_PUSH_BODY).toBe(3_600_000)
+  })
+})
+
+describe("processAttachment", () => {
+  it("rejeita tipos não aceitos", async () => {
+    await expect(processAttachment(makeFile("texto.txt", "text/plain", 10))).rejects.toThrow("imagem ou PDF")
+  })
+
+  it("rejeita PDF acima do limite de upload", async () => {
+    await expect(processAttachment(makeFile("doc.pdf", "application/pdf", MAX_PDF_UPLOAD + 1))).rejects.toThrow("muito grande")
+  })
+
+  it("rejeita imagem acima do limite de upload", async () => {
+    await expect(processAttachment(makeFile("foto.jpg", "image/jpeg", MAX_IMAGE_UPLOAD + 1))).rejects.toThrow("muito grande")
+  })
+
+  it("aceita PDF pequeno e retorna data url", async () => {
+    const result = await processAttachment(makeFile("doc.pdf", "application/pdf", 100))
+    expect(result.kind).toBe("pdf")
+    expect(result.url.startsWith("data:application/pdf")).toBe(true)
   })
 })

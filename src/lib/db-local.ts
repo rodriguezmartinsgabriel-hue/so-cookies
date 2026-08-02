@@ -352,6 +352,20 @@ export async function clearSyncErrorsFor(itemKey: string) {
   }
 }
 
+export async function discardQueued(itemKey: string) {
+  const separator = itemKey.indexOf(":")
+  const entity = separator === -1 ? itemKey : itemKey.slice(0, separator)
+  const id = separator === -1 ? "" : itemKey.slice(separator + 1)
+  await clearSyncErrorsFor(itemKey)
+  if (!id) return
+  const queued = await db.syncQueue.toArray()
+  const stale = queued
+    .filter((q) => q.entity === entity && (q.data?.id === id || q.tempId === id))
+    .map((q) => q.id!)
+    .filter((qid): qid is number => qid !== undefined)
+  if (stale.length) await db.syncQueue.bulkDelete(stale)
+}
+
 export async function getSyncErrors(): Promise<SyncErrorItem[]> {
   return db.syncErrors.orderBy("id").reverse().limit(50).toArray()
 }

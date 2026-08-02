@@ -53,10 +53,12 @@ export default function DocumentosPage() {
   });
   const [fileLoading, setFileLoading] = useState(false);
   const [fileError, setFileError] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   function resetForm() {
     setForm({ title: "", description: "", category: "FICHA_TECNICA", content: "", tags: "", fileUrl: "", fileName: "", fileSize: 0 });
     setFileError(null);
+    setSaveError(null);
     setEditingDoc(null);
   }
 
@@ -108,27 +110,32 @@ export default function DocumentosPage() {
 
   async function handleSave() {
     if (!form.title) return;
-    const payload: { title: string; description?: string; category: string; content?: string; fileUrl?: string | null; tags?: string } = {
-      title: form.title,
-      description: form.description,
-      category: form.category,
-      content: form.content,
-      tags: form.tags,
-    };
-    if (form.fileUrl) {
-      payload.fileUrl = form.fileUrl;
-    } else if (editingDoc && editingDoc.fileUrl) {
-      payload.fileUrl = null;
-    }
+    setSaveError(null);
+    try {
+      const payload: { title: string; description?: string; category: string; content?: string; fileUrl?: string | null; tags?: string } = {
+        title: form.title,
+        description: form.description,
+        category: form.category,
+        content: form.content,
+        tags: form.tags,
+      };
+      if (form.fileUrl) {
+        payload.fileUrl = form.fileUrl;
+      } else if (editingDoc && editingDoc.fileUrl) {
+        payload.fileUrl = null;
+      }
 
-    if (editingDoc) {
-      await repository.documents.update(editingDoc.id, payload);
-    } else {
-      await repository.documents.create(payload);
+      if (editingDoc) {
+        await repository.documents.update(editingDoc.id, payload);
+      } else {
+        await repository.documents.create(payload);
+      }
+      setShowModal(false);
+      resetForm();
+      await invalidate();
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : "Não foi possível salvar o documento. Tente novamente.");
     }
-    setShowModal(false);
-    resetForm();
-    await invalidate();
   }
 
   async function handleDelete(id: string) {
@@ -425,7 +432,10 @@ export default function DocumentosPage() {
                   <input type="text" placeholder="Separar por vírgulas: cookie, higiene, EPI" value={form.tags} onChange={(e) => setForm({ ...form, tags: e.target.value })} className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink placeholder:text-kraft focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink transition-colors" />
                 </div>
               </div>
-              <div className="p-4 border-t border-line flex gap-2 sticky bottom-0 bg-paper">
+              <div className="p-4 border-t border-line flex flex-wrap gap-2 sticky bottom-0 bg-paper">
+                {saveError && (
+                  <p className="text-xs text-danger w-full">{saveError}</p>
+                )}
                 <button onClick={() => { setShowModal(false); resetForm(); }} className="flex-1 h-10 border border-line rounded-lg text-sm font-medium text-ink hover:bg-cream transition-colors">Cancelar</button>
                 <button onClick={handleSave} className="flex-1 h-10 bg-ink text-paper rounded-lg text-sm font-medium hover:bg-ink/90 transition-colors">
                   {editingDoc ? "Atualizar" : "Salvar"}

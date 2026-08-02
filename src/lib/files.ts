@@ -1,4 +1,10 @@
-export const MAX_FILE_SIZE = 15 * 1024 * 1024
+export const MAX_IMAGE_UPLOAD = 10 * 1024 * 1024
+
+export const MAX_PDF_UPLOAD = 2_500_000
+
+export const MAX_SYNC_BASE64 = 3_400_000
+
+export const MAX_PUSH_BODY = 3_600_000
 
 export const ACCEPTED_MIME_TYPES = ["image/png", "image/jpeg", "image/webp", "image/gif", "application/pdf"]
 
@@ -67,7 +73,7 @@ export function loadImageFromFile(file: File): Promise<HTMLImageElement> {
   })
 }
 
-export async function compressImage(file: File, maxDim = 900, quality = 0.82): Promise<string> {
+export async function compressImage(file: File, maxDim = 900, quality = 0.82, forceJpeg = false): Promise<string> {
   let source: HTMLImageElement | ImageBitmap
   try {
     source = await createImageBitmap(file)
@@ -87,8 +93,27 @@ export async function compressImage(file: File, maxDim = 900, quality = 0.82): P
   if ("close" in source && typeof (source as ImageBitmap).close === "function") {
     (source as ImageBitmap).close()
   }
-  const isPng = file.type === "image/png"
+  const isPng = !forceJpeg && file.type === "image/png"
   return canvas.toDataURL(isPng ? "image/png" : "image/jpeg", isPng ? undefined : quality)
+}
+
+const IMAGE_DIM_STEPS = [900, 720, 600]
+const IMAGE_QUALITY_STEPS = [0.82, 0.6, 0.45, 0.3]
+
+async function compressImageToFit(file: File): Promise<string> {
+  for (const dim of IMAGE_DIM_STEPS) {
+    for (const quality of IMAGE_QUALITY_STEPS) {
+      const url = await compressImage(file, dim, quality)
+      if (dataUrlSize(url) <= MAX_SYNC_BASE64) return url
+    }
+  }
+  if (file.type === "image/png") {
+    const jpeg = await compressImage(file, 600, 0.5, true)
+    if (dataUrlSize(jpeg) <= MAX_SYNC_BASE64) return jpeg
+  }
+  throw new Error(
+    `Imagem grande demais para sincronizar. Reduza a resolução ou use uma versão menor (máx. ${formatBytes(MAX_IMAGE_UPLOAD)}).`
+  )
 }
 
 export interface FileReadResult {
@@ -100,11 +125,17 @@ export async function processAttachment(file: File): Promise<FileReadResult> {
   if (!isAcceptedFile(file)) {
     throw new Error("Selecione um arquivo de imagem ou PDF válido.")
   }
-  if (file.size > MAX_FILE_SIZE) {
-    throw new Error(`O arquivo é muito grande (máx. ${formatBytes(MAX_FILE_SIZE)}).`)
+  const isPdf = file.type === "application/pdf"
+  const uploadLimit = isPdf ? MAX_PDF_UPLOAD : MAX_IMAGE_UPLOAD
+  if (file.size > uploadLimit) {
+    throw new Error(`O arquivo é muito grande (máx. ${formatBytes(uploadLimit)}).`)
   }
-  if (file.type === "application/pdf") {
-    return { url: await readFileAsDataUrl(file), kind: "pdf" }
+  if (isPdf) {
+    const url = await readFileAsDataUrl(file)
+    if (dataUrlSize(url) > MAX_SYNC_BASE64) {
+      throw new Error(`PDF grande demais para sincronizar (máx. ${formatBytes(MAX_PDF_UPLOAD)}). Use uma versão menor.`)
+    }
+    return { url, kind: "pdf" }
   }
-  return { url: await compressImage(file), kind: "image" }
+  return { url: await compressImageToFit(file), kind: "image" }
 }
