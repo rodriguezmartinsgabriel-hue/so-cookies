@@ -1,12 +1,14 @@
 "use client"
 
-import { useState, useEffect, useCallback, useRef } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useRole } from "@/hooks/useRole"
+import { useQueryData } from "@/hooks/useQueryData"
 import { AppShell } from "@/components/layout/AppShell"
 import { Skeleton } from "@/components/ui/Skeleton"
 import { ErrorState } from "@/components/ui/ErrorState"
 import { MapPin, Check, Clock, Store, Bell, BellOff } from "lucide-react"
-import { repository, onDataRefresh } from "@/lib/repository"
+import { repository } from "@/lib/repository"
+import type { Order } from "@/lib/entity-types"
 import { isSoundEnabled, setSoundEnabled, playNotificationSound } from "@/lib/sound"
 
 const statusConfig: Record<string, { label: string; color: string }> = {
@@ -36,58 +38,43 @@ function isSlaUrgent(confirmBy: string | null | undefined): boolean {
 
 export default function DeliveryPage() {
   const { canEdit } = useRole();
-  const [orders, setOrders] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const { data: orders, isLoading: loading, error: ordersError, invalidate } = useQueryData("orders")
+  const error = ordersError ? "Erro ao carregar entregas" : null
   const [activeFilter, setActiveFilter] = useState("Todos")
   const [soundOn, setSoundOn] = useState<boolean>(() => isSoundEnabled())
   const seenExternal = useRef<Set<string> | null>(null)
 
-  const loadOrders = useCallback(async () => {
-    try {
-      const data = await repository.orders.getAll()
-      setOrders(data)
+  useEffect(() => {
+    const interval = setInterval(() => { invalidate() }, 30_000)
+    return () => clearInterval(interval)
+  }, [invalidate])
 
-      const pendingExternal = data.filter((o: any) => o.platform && o.status === "PENDENTE")
-      if (seenExternal.current === null) {
-        seenExternal.current = new Set(pendingExternal.map((o: any) => o.id))
-      } else {
-        for (const o of pendingExternal) {
-          if (!seenExternal.current.has(o.id)) {
-            seenExternal.current.add(o.id)
-            playNotificationSound()
-          }
+  useEffect(() => {
+    const pendingExternal = orders.filter((o: Order) => o.platform && o.status === "PENDENTE")
+    if (seenExternal.current === null) {
+      seenExternal.current = new Set(pendingExternal.map((o: Order) => o.id))
+    } else {
+      for (const o of pendingExternal) {
+        if (!seenExternal.current.has(o.id)) {
+          seenExternal.current.add(o.id)
+          playNotificationSound()
         }
       }
-    } catch {
-      setError("Erro ao carregar entregas")
     }
-    setLoading(false)
-  }, [])
-
-  useEffect(() => { loadOrders() }, [loadOrders])
-
-  useEffect(() => {
-    return onDataRefresh(() => { loadOrders() })
-  }, [loadOrders])
-
-  useEffect(() => {
-    const interval = setInterval(loadOrders, 30_000)
-    return () => clearInterval(interval)
-  }, [loadOrders])
+  }, [orders])
 
   const deliveryOrders = orders
-    .filter((o: any) => ["PENDENTE", "CONFIRMADO", "PRODUCAO", "PRONTO", "ENTREGA", "CONCLUIDO"].includes(o.status))
-    .filter((o: any) => activeFilter === "Todos" || o.channel === activeFilter)
+    .filter((o: Order) => ["PENDENTE", "CONFIRMADO", "PRODUCAO", "PRONTO", "ENTREGA", "CONCLUIDO"].includes(o.status))
+    .filter((o: Order) => activeFilter === "Todos" || o.channel === activeFilter)
 
   async function handleMarkDelivered(id: string) {
     await repository.orders.updateStatus(id, "CONCLUIDO")
-    await loadOrders()
+    await invalidate()
   }
 
   async function handleAccept(id: string) {
     await repository.orders.updateStatus(id, "CONFIRMADO")
-    await loadOrders()
+    await invalidate()
   }
 
   function toggleSound() {
@@ -134,7 +121,7 @@ export default function DeliveryPage() {
         </div>
 
         {error && (
-          <ErrorState message={error} onRetry={loadOrders} />
+          <ErrorState message={error} onRetry={invalidate} />
         )}
 
         {loading ? (
@@ -160,7 +147,7 @@ export default function DeliveryPage() {
           </div>
         ) : (
           <div className="space-y-2">
-            {deliveryOrders.map((order: any) => {
+            {deliveryOrders.map((order: Order) => {
               const cfg = statusConfig[order.status] || statusConfig.PENDENTE
               const isExternal = Boolean(order.platform)
               const pending = order.status === "PENDENTE"

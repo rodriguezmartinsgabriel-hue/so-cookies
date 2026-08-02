@@ -63,7 +63,7 @@ export async function POST(request: Request) {
     await runLazyReconcile().catch(() => {})
 
     return NextResponse.json(data)
-  } catch (e) {
+  } catch {
     return NextResponse.json({ error: "Erro no sync pull" }, { status: 500 })
   }
 }

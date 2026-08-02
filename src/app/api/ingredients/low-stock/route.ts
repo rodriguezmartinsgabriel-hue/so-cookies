@@ -9,7 +9,7 @@ export async function GET() {
     const data = await prisma.ingredient.findMany()
     const lowStock = data.filter((i) => i.stockKg <= i.minStockKg)
     return NextResponse.json(lowStock)
-  } catch (e) {
+  } catch {
     return NextResponse.json({ error: "Erro ao buscar estoque baixo" }, { status: 500 })
   }
 }

@@ -30,7 +30,6 @@
   --color-info: var(--info);
 
   --font-ui: 'Space Grotesk', sans-serif;
-  --font-brand: 'Caveat', cursive;
 
   --radius-sm: var(--radius-sm);
   --radius-md: var(--radius-md);
@@ -41,6 +40,18 @@ body {
   background: var(--paper);
   color: var(--ink);
   font-family: var(--font-ui);
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+@media (max-width: 640px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

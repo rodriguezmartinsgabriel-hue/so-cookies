@@ -1,9 +1,11 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import { Bell, User, LogOut, AlertTriangle, Package, Truck, Check, X } from "lucide-react";
+import { useState, useRef, useEffect, useCallback, useSyncExternalStore } from "react";
+import { Bell, User, LogOut, AlertTriangle, Package, Truck, Check, X, ChevronLeft, Cloud } from "lucide-react";
 import { useNotifications, type Notification } from "@/lib/notifications";
+import { useSync } from "@/hooks/useSync";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 
 type User = {
   name?: string | null;
@@ -24,6 +26,15 @@ function NotifIcon({ type }: { type: Notification["type"] }) {
   }
 }
 
+function formatSyncTime(iso: string) {
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return "";
+  const now = new Date();
+  const time = d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+  if (d.toDateString() === now.toDateString()) return time;
+  return `${d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })} ${time}`;
+}
+
 export function Header({
   user,
   onLogout,
@@ -33,8 +44,22 @@ export function Header({
 }) {
   const [open, setOpen] = useState(false);
   const { notifications, unreadCount, markAsRead, markAllRead } = useNotifications();
+  const { isOnline, isSyncing, pendingCount, errors, lastSync } = useSync();
   const ref = useRef<HTMLDivElement>(null);
   const router = useRouter();
+
+  const showLastSync = isOnline && !isSyncing && pendingCount === 0 && errors.length === 0 && lastSync;
+
+  const subscribeHistory = useCallback((cb: () => void) => {
+    window.addEventListener("popstate", cb);
+    return () => window.removeEventListener("popstate", cb);
+  }, []);
+
+  const canGoBack = useSyncExternalStore(
+    subscribeHistory,
+    () => (window.history.state?.idx ?? 0) > 0,
+    () => false
+  );
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -52,10 +77,22 @@ export function Header({
 
   return (
     <header className="h-14 border-b border-line bg-paper flex items-center justify-between px-4 lg:px-6 shrink-0">
-      <div className="lg:hidden">
-        <img
-          src="/só logo sem fundo.svg"
+      <div className="lg:hidden flex items-center gap-1">
+        {canGoBack && (
+          <button
+            onClick={() => (window.history.length > 1 ? router.back() : router.push("/"))}
+            className="flex items-center justify-center min-w-[44px] min-h-[44px] rounded-lg hover:bg-cream text-ink transition-colors"
+            aria-label="Voltar"
+          >
+            <ChevronLeft className="w-6 h-6" strokeWidth={1.5} />
+          </button>
+        )}
+        <Image
+          src="/logo.svg"
           alt="Só Cookies & Café"
+          width={32}
+          height={32}
+          unoptimized
           className="h-8 w-auto"
         />
       </div>
@@ -63,11 +100,24 @@ export function Header({
       <div className="hidden lg:block" />
 
       <div className="flex items-center gap-3">
+        {showLastSync && (
+          <div
+            className="flex items-center gap-1.5 h-8 px-2.5 rounded-full bg-cream border border-line text-muted"
+            title={`Sincronizado às ${formatSyncTime(lastSync)}`}
+          >
+            <Cloud className="w-3.5 h-3.5 text-success shrink-0" strokeWidth={2} />
+            <span className="text-[11px] font-medium leading-none tabular-nums whitespace-nowrap">
+              <span className="hidden sm:inline">Sincronizado · </span>
+              {formatSyncTime(lastSync)}
+            </span>
+          </div>
+        )}
         <div ref={ref} className="relative">
           <button
             onClick={() => setOpen(!open)}
-            className="relative p-2 rounded-lg hover:bg-cream text-muted transition-colors"
+            className="relative flex items-center justify-center min-w-[44px] min-h-[44px] rounded-lg hover:bg-cream text-muted transition-colors"
             aria-label="Notificações"
+            aria-expanded={open}
           >
             <Bell className="w-5 h-5" strokeWidth={1.5} />
             {unreadCount > 0 && (
@@ -83,12 +133,12 @@ export function Header({
                 <h3 className="text-sm font-bold text-ink">Notificações</h3>
                 <div className="flex items-center gap-2">
                   {unreadCount > 0 && (
-                    <button onClick={markAllRead} className="text-[10px] text-info hover:text-info/80 transition-colors">
+                    <button onClick={markAllRead} className="px-2 py-2 text-[11px] text-info hover:text-info/80 transition-colors">
                       Marcar tudo lido
                     </button>
                   )}
-                  <button onClick={() => setOpen(false)} className="p-1 rounded hover:bg-cream text-muted">
-                    <X className="w-3.5 h-3.5" />
+                  <button onClick={() => setOpen(false)} className="flex items-center justify-center min-w-[44px] min-h-[44px] rounded hover:bg-cream text-muted">
+                    <X className="w-4 h-4" />
                   </button>
                 </div>
               </div>
@@ -136,8 +186,9 @@ export function Header({
           </span>
           <button
             onClick={onLogout}
-            className="p-1.5 rounded-md hover:bg-cream text-muted transition-colors ml-1"
+            className="flex items-center justify-center min-w-[44px] min-h-[44px] rounded-md hover:bg-cream text-muted transition-colors"
             title="Sair"
+            aria-label="Sair da conta"
           >
             <LogOut className="w-4 h-4" strokeWidth={1.5} />
           </button>

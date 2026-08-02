@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useConfirm } from "@/hooks/useConfirm";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { useRole } from "@/hooks/useRole";
 import { AppShell } from "@/components/layout/AppShell";
@@ -38,8 +39,20 @@ type CredForm = { appId: string; appShoppId: string; clientId: string; clientSec
 
 const EMPTY_CRED: CredForm = { appId: "", appShoppId: "", clientId: "", clientSecret: "" };
 
+async function fetchAccountsData(): Promise<{ accounts?: Account[]; error?: string }> {
+  try {
+    const resp = await fetch("/api/integrations/accounts");
+    if (resp.ok) return { accounts: (await resp.json()) as Account[] };
+    const data = (await resp.json().catch(() => null)) as { error?: string } | null;
+    return { error: data?.error || "Erro ao carregar contas" };
+  } catch {
+    return { error: "Erro ao carregar contas" };
+  }
+}
+
 export default function IntegracoesPage() {
   const { isAdmin } = useRole();
+  const { confirm, dialog } = useConfirm();
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -58,25 +71,25 @@ export default function IntegracoesPage() {
   const [editCred, setEditCred] = useState<CredForm>(EMPTY_CRED);
 
   const loadAccounts = useCallback(async () => {
-    setLoading(true);
-    try {
-      const resp = await fetch("/api/integrations/accounts");
-      if (resp.ok) {
-        setAccounts(await resp.json());
-      } else {
-        const data = await resp.json().catch(() => null);
-        setError(data?.error || "Erro ao carregar contas");
-      }
-    } catch {
-      setError("Erro ao carregar contas");
-    }
+    const result = await fetchAccountsData();
+    if (result.accounts) setAccounts(result.accounts);
+    else setError(result.error || "Erro ao carregar contas");
     setLoading(false);
   }, []);
 
   useEffect(() => {
-    if (isAdmin) loadAccounts();
-    else setLoading(false);
-  }, [isAdmin, loadAccounts]);
+    if (!isAdmin) return;
+    let ignore = false;
+    async function startFetching() {
+      const result = await fetchAccountsData();
+      if (ignore) return;
+      if (result.accounts) setAccounts(result.accounts);
+      else setError(result.error || "Erro ao carregar contas");
+      setLoading(false);
+    }
+    startFetching();
+    return () => { ignore = true };
+  }, [isAdmin]);
 
   function resetForm() {
     setForm({ platform: "99FOOD", storeName: "", enabled: true });
@@ -98,7 +111,7 @@ export default function IntegracoesPage() {
 
   async function handleCreate() {
     const creds = buildCredentials(form.platform, formCred);
-    const payload: any = { platform: form.platform, storeName: form.storeName, credentials: creds, enabled: form.enabled };
+    const payload = { platform: form.platform, storeName: form.storeName, credentials: creds, enabled: form.enabled };
     const resp = await fetch("/api/integrations/accounts", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -116,11 +129,11 @@ export default function IntegracoesPage() {
 
   async function handleEditSave() {
     if (!editing) return;
-    const payload: any = { storeName: editForm.storeName, enabled: editForm.enabled };
+    const payload: { storeName: string; enabled: boolean; credentials?: { appId: string; appShoppId: string; clientSecret: string } | { clientId: string; clientSecret: string } } = { storeName: editForm.storeName, enabled: editForm.enabled };
     if (editCred.clientSecret) {
       const creds = buildCredentials(editing.platform, editCred);
       const required = editing.platform === "99FOOD" ? ["appId", "appShoppId", "clientSecret"] : ["clientId", "clientSecret"];
-      if (required.some((k) => !(creds as any)[k])) {
+      if (required.some((k) => !(creds as Record<string, string | undefined>)[k])) {
         alert("Preencha todos os campos de credenciais para atualizar, ou deixe em branco para manter.");
         return;
       }
@@ -142,7 +155,7 @@ export default function IntegracoesPage() {
   }
 
   async function handleDelete(acc: Account) {
-    if (!confirm(`Excluir a conta ${acc.storeName || acc.platform}?`)) return;
+    if (!(await confirm(`Excluir a conta ${acc.storeName || acc.platform}?`))) return;
     const resp = await fetch(`/api/integrations/accounts/${acc.id}`, { method: "DELETE" });
     if (!resp.ok) {
       const data = await resp.json().catch(() => null);
@@ -242,7 +255,7 @@ export default function IntegracoesPage() {
 
         {error && <ErrorState message={error} onRetry={loadAccounts} />}
 
-        {loading ? (
+        {loading && isAdmin ? (
           <div className="space-y-2">
             {Array.from({ length: 2 }).map((_, i) => (
               <div key={i} className="border border-line rounded-lg bg-paper p-4 shadow-card">
@@ -432,6 +445,7 @@ export default function IntegracoesPage() {
           </div>
         )}
       </div>
+        {dialog}
     </AppShell>
   );
 }

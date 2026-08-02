@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { requireAuth } from "@/lib/api-auth"
 import { getContactInteractions, createContactInteraction } from "@/lib/db"
-import { createInteractionSchema } from "@/lib/validation"
+import { createInteractionSchema, getZodIssues } from "@/lib/validation"
 
 export async function GET(
   _request: Request,
@@ -30,9 +30,10 @@ export async function POST(
     const parsed = createInteractionSchema.parse(json)
     const data = await createContactInteraction(id, parsed)
     return NextResponse.json(data)
-  } catch (e: any) {
-    if (e?.issues) {
-      return NextResponse.json({ error: "Dados inválidos", details: e.issues }, { status: 400 })
+  } catch (e) {
+    const issues = getZodIssues(e)
+    if (issues) {
+      return NextResponse.json({ error: "Dados inválidos", details: issues }, { status: 400 })
     }
     return NextResponse.json({ error: "Erro ao criar interação" }, { status: 500 })
   }

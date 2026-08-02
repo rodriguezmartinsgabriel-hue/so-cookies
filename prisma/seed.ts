@@ -34,9 +34,9 @@ async function main() {
 
   // ─── Sale Channels ──────────────────────────────────────────
   const wpp = await prisma.saleChannel.upsert({ where: { id: "whatsapp" }, update: {}, create: { id: "whatsapp", name: "WhatsApp", commission: 0 } });
-  const ifood = await prisma.saleChannel.upsert({ where: { id: "ifood" }, update: {}, create: { id: "ifood", name: "iFood", commission: 0.23 } });
-  const rappi = await prisma.saleChannel.upsert({ where: { id: "rappi" }, update: {}, create: { id: "rappi", name: "Rappi", commission: 0.20 } });
-  const direto = await prisma.saleChannel.upsert({ where: { id: "direto" }, update: {}, create: { id: "direto", name: "Direto", commission: 0 } });
+  await prisma.saleChannel.upsert({ where: { id: "ifood" }, update: {}, create: { id: "ifood", name: "iFood", commission: 0.23 } });
+  await prisma.saleChannel.upsert({ where: { id: "rappi" }, update: {}, create: { id: "rappi", name: "Rappi", commission: 0.20 } });
+  await prisma.saleChannel.upsert({ where: { id: "direto" }, update: {}, create: { id: "direto", name: "Direto", commission: 0 } });
   console.log("  ✅ Sale Channels (4)");
 
   // ─── Products (from Ficha Técnica) ───────────────────────────
@@ -117,7 +117,7 @@ async function main() {
 
   // ─── Recipes (from Ficha Técnica) ──────────────────────────
   // Cookie Clássico — lote 10 cookies, rende ~11.35, custo R$29.21
-  const recClassico = await prisma.recipe.upsert({
+  await prisma.recipe.upsert({
     where: { id: "rec-classico" },
     update: {},
     create: {
@@ -140,7 +140,7 @@ async function main() {
     },
   });
   // Cookie Niño — lote 10 cookies, rende ~8.6, custo R$28.60
-  const recNino = await prisma.recipe.upsert({
+  await prisma.recipe.upsert({
     where: { id: "rec-nino" },
     update: {},
     create: {
@@ -162,7 +162,7 @@ async function main() {
     },
   });
   // Cookie 3 Chocolates — lote 10 cookies, rende ~10.81, custo R$32.73
-  const rec3Choc = await prisma.recipe.upsert({
+  await prisma.recipe.upsert({
     where: { id: "rec-3choc" },
     update: {},
     create: {

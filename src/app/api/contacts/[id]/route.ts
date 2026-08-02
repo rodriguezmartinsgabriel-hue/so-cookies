@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { requireAuth } from "@/lib/api-auth"
 import { getContact, updateContact, deleteContact, isNotFoundError } from "@/lib/db"
-import { updateContactSchema } from "@/lib/validation"
+import { updateContactSchema, getZodIssues } from "@/lib/validation"
 
 export async function GET(
   _request: Request,
@@ -31,8 +31,9 @@ export async function PATCH(
     const parsed = updateContactSchema.parse(json)
     const data = await updateContact(id, parsed)
     return NextResponse.json(data)
-  } catch (e: any) {
-    if (e?.issues) return NextResponse.json({ error: "Dados inválidos", details: e.issues }, { status: 400 })
+  } catch (e) {
+    const issues = getZodIssues(e)
+    if (issues) return NextResponse.json({ error: "Dados inválidos", details: issues }, { status: 400 })
     if (isNotFoundError(e)) return NextResponse.json({ error: "Não encontrado" }, { status: 404 })
     return NextResponse.json({ error: "Erro ao atualizar contato" }, { status: 500 })
   }

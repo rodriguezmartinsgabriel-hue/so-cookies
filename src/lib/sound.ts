@@ -16,7 +16,7 @@ let audioCtx: AudioContext | null = null
 
 function ensureAudioContext(): AudioContext | null {
   if (typeof window === "undefined") return null
-  const Ctx = window.AudioContext || (window as any).webkitAudioContext
+  const Ctx = window.AudioContext || (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
   if (!Ctx) return null
   if (!audioCtx) audioCtx = new Ctx()
   if (audioCtx.state === "suspended") audioCtx.resume().catch(() => {})

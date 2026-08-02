@@ -13,6 +13,7 @@
   "dependencies": {
     "@prisma/adapter-pg": "^7.9.0",
     "@prisma/client": "^7.9.0",
+    "@tanstack/react-query": "^5.101.4",
     "bcryptjs": "^3.0.3",
     "clsx": "^2.1.1",
     "dexie": "^4.4.4",
@@ -29,6 +30,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@next/bundle-analyzer": "^16.2.12",
     "@serwist/next": "^9.5.12",
     "@serwist/turbopack": "^9.5.12",
     "@tailwindcss/postcss": "^4",

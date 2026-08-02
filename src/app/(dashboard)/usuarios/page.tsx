@@ -1,12 +1,14 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useConfirm } from "@/hooks/useConfirm";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { useRole } from "@/hooks/useRole";
 import { AppShell } from "@/components/layout/AppShell";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { Plus, User, X, Trash2, Edit, Shield, ShieldCheck, Eye } from "lucide-react";
+import type { User as UserEntity } from "@/lib/entity-types";
 
 const ROLE_LABELS: Record<string, string> = {
   ADMIN: "Administrador",
@@ -14,7 +16,7 @@ const ROLE_LABELS: Record<string, string> = {
   VISUALIZADOR: "Visualizador",
 };
 
-const ROLE_ICONS: Record<string, any> = {
+const ROLE_ICONS: Record<string, typeof ShieldCheck> = {
   ADMIN: ShieldCheck,
   OPERACIONAL: Shield,
   VISUALIZADOR: Eye,
@@ -35,46 +37,58 @@ function roleBadge(role: string) {
   );
 }
 
+async function fetchUsersData(): Promise<{ users?: UserEntity[]; error?: string }> {
+  try {
+    const resp = await fetch("/api/users");
+    if (resp.ok) return { users: (await resp.json()) as UserEntity[] };
+    const data = (await resp.json().catch(() => null)) as { error?: string } | null;
+    return { error: data?.error || "Erro ao carregar usuários" };
+  } catch {
+    return { error: "Erro ao carregar usuários" };
+  }
+}
+
 export default function UsuariosPage() {
   const { isAdmin } = useRole();
-  const [users, setUsers] = useState<any[]>([]);
+  const { confirm, dialog } = useConfirm();
+  const [users, setUsers] = useState<UserEntity[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
   const createRef = useFocusTrap(showCreate);
   const [showEdit, setShowEdit] = useState(false);
   const editRef = useFocusTrap(showEdit);
-  const [editingUser, setEditingUser] = useState<any>(null);
+  const [editingUser, setEditingUser] = useState<UserEntity | null>(null);
 
   const [form, setForm] = useState({ name: "", email: "", password: "", role: "OPERACIONAL" });
   const [editForm, setEditForm] = useState({ name: "", role: "OPERACIONAL", password: "" });
 
   const loadUsers = useCallback(async () => {
-    setLoading(true);
-    try {
-      const resp = await fetch("/api/users");
-      if (resp.ok) {
-        setUsers(await resp.json());
-      } else {
-        const data = await resp.json().catch(() => null);
-        setError(data?.error || "Erro ao carregar usuários");
-      }
-    } catch {
-      setError("Erro ao carregar usuários");
-    }
+    const result = await fetchUsersData();
+    if (result.users) setUsers(result.users);
+    else setError(result.error || "Erro ao carregar usuários");
     setLoading(false);
   }, []);
 
   useEffect(() => {
-    if (isAdmin) loadUsers();
-    else setLoading(false);
-  }, [isAdmin, loadUsers]);
+    if (!isAdmin) return;
+    let ignore = false;
+    async function startFetching() {
+      const result = await fetchUsersData();
+      if (ignore) return;
+      if (result.users) setUsers(result.users);
+      else setError(result.error || "Erro ao carregar usuários");
+      setLoading(false);
+    }
+    startFetching();
+    return () => { ignore = true };
+  }, [isAdmin]);
 
   function resetForm() {
     setForm({ name: "", email: "", password: "", role: "OPERACIONAL" });
   }
 
-  function openEdit(user: any) {
+  function openEdit(user: UserEntity) {
     setEditingUser(user);
     setEditForm({ name: user.name || "", role: user.role || "OPERACIONAL", password: "" });
     setShowEdit(true);
@@ -99,7 +113,7 @@ export default function UsuariosPage() {
 
   async function handleEditSave() {
     if (!editingUser || !editForm.name) return;
-    const payload: any = { name: editForm.name, role: editForm.role };
+    const payload: { name: string; role: string; password?: string } = { name: editForm.name, role: editForm.role };
     if (editForm.password) payload.password = editForm.password;
     const resp = await fetch(`/api/users/${editingUser.id}`, {
       method: "PATCH",
@@ -117,7 +131,7 @@ export default function UsuariosPage() {
   }
 
   async function handleDelete(id: string) {
-    if (!confirm("Excluir este usuário?")) return;
+    if (!(await confirm("Excluir este usuário?"))) return;
     const resp = await fetch(`/api/users/${id}`, { method: "DELETE" });
     if (!resp.ok) {
       const data = await resp.json().catch(() => null);
@@ -161,7 +175,7 @@ export default function UsuariosPage() {
           <ErrorState message={error} onRetry={loadUsers} />
         )}
 
-        {loading ? (
+        {loading && isAdmin ? (
           <div className="space-y-2">
             {Array.from({ length: 3 }).map((_, i) => (
               <div key={i} className="border border-line rounded-lg bg-paper p-3 shadow-card">
@@ -172,7 +186,7 @@ export default function UsuariosPage() {
           </div>
         ) : (
           <div className="border border-line rounded-lg bg-paper shadow-card divide-y divide-line">
-            {users.map((u: any) => (
+            {users.map((u) => (
               <div key={u.id} className="flex items-center gap-3 p-3">
                 <div className="w-9 h-9 rounded-full bg-ink flex items-center justify-center shrink-0">
                   <User className="w-4 h-4 text-paper" strokeWidth={1.5} />
@@ -266,6 +280,7 @@ export default function UsuariosPage() {
           </div>
         )}
       </div>
+        {dialog}
     </AppShell>
   );
 }

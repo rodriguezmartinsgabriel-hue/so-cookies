@@ -3,6 +3,7 @@
 import { signIn } from "next-auth/react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -37,9 +38,12 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-paper p-4">
       <div className="w-full max-w-sm space-y-8">
         <div className="text-center mb-8">
-          <img
-            src="/só logo sem fundo.svg"
+          <Image
+            src="/logo.svg"
             alt="Só Cookies & Café"
+            width={80}
+            height={80}
+            unoptimized
             className="h-20 w-auto object-contain"
           />
           <p className="text-muted text-sm mt-2">cookies & café</p>

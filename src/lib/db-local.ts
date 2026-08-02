@@ -122,6 +122,8 @@ export interface LocalRecipe {
   yieldUnit: string
   totalCost: number
   productId?: string
+  preparation?: string
+  image?: string
   ingredients: string
   createdAt: string
   updatedAt: string

@@ -28,6 +28,7 @@ import {
   createContactSchema,
   updateContactSchema,
   createInteractionSchema,
+  getZodIssues,
 } from "@/lib/validation"
 
 const ROLE_HIERARCHY: Record<string, number> = { ADMIN: 3, OPERACIONAL: 2, VISUALIZADOR: 1 }
@@ -39,9 +40,9 @@ function minRoleFor(entity: string, action: string): "ADMIN" | "OPERACIONAL" {
 
 const idSchema = z.object({ id: z.string().min(1) })
 const saleItemSchema = z.array(z.object({ productId: z.string().min(1), qty: z.number().int().min(1), price: z.number().min(0) }))
-const ingredientItemSchema = z.array(z.object({ ingredientId: z.string().min(1), qty: z.number().min(0), unit: z.string() }))
 
-const syncSchemas: Record<string, z.ZodTypeAny> = {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const syncSchemas: Record<string, z.ZodType<any, any>> = {
   "order:create": createOrderSchema,
   "order:update": updateOrderSchema.extend({ id: z.string().min(1) }),
   "order:delete": idSchema,
@@ -166,11 +167,12 @@ export async function POST(request: Request) {
       continue
     }
 
-    let data: any
+    let data: ReturnType<(typeof syncSchemas)[string]["parse"]>
     try {
       data = syncSchemas[key].parse(change.data)
-    } catch (e: any) {
-      entry.error = e?.issues?.[0]?.message || "Dados inválidos"
+    } catch (e) {
+      const issues = getZodIssues(e)
+      entry.error = issues?.[0]?.message || "Dados inválidos"
       processed.push(entry)
       continue
     }
@@ -368,6 +370,8 @@ export async function POST(request: Request) {
                 yieldUnit: recipeData.yieldUnit || "un",
                 totalCost: recipeData.totalCost || 0,
                 productId: recipeData.productId,
+                preparation: recipeData.preparation,
+                image: recipeData.image,
                 ingredients: ingredients?.length
                   ? { create: ingredients.map((i: { ingredientId: string; qty: number; unit: string }) => ({ ingredientId: i.ingredientId, qty: i.qty, unit: i.unit })) }
                   : undefined,

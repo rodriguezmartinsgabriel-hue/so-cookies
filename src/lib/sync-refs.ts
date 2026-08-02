@@ -1,6 +1,6 @@
 const REF_KEYS = new Set(["id", "orderId", "contactId", "ingredientId"])
 
-export function resolveRefs(data: unknown, map: Map<string, string>): any {
+export function resolveRefs(data: unknown, map: Map<string, string>): unknown {
   if (Array.isArray(data)) return data.map((v) => resolveRefs(v, map))
   if (data && typeof data === "object") {
     const out: Record<string, unknown> = {}
@@ -19,8 +19,8 @@ export function resolveRefs(data: unknown, map: Map<string, string>): any {
 export async function runDelete<T>(op: () => Promise<T>): Promise<T | null> {
   try {
     return await op()
-  } catch (e: any) {
-    if (e?.code === "P2025") return null
+  } catch (e) {
+    if (e && typeof e === "object" && "code" in e && e.code === "P2025") return null
     throw e
   }
 }

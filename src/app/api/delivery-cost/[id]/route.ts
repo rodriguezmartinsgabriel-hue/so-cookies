@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { requireAuth } from "@/lib/api-auth"
 import { isNotFoundError } from "@/lib/db"
-import { updateDeliveryCostSchema } from "@/lib/validation"
+import { updateDeliveryCostSchema, getZodIssues } from "@/lib/validation"
 
 export async function PUT(
   request: Request,
@@ -16,8 +16,9 @@ export async function PUT(
     const parsed = updateDeliveryCostSchema.parse(json)
     const cost = await prisma.deliveryCost.update({ where: { id }, data: parsed })
     return NextResponse.json(cost)
-  } catch (e: any) {
-    if (e?.issues) return NextResponse.json({ error: "Dados inválidos", details: e.issues }, { status: 400 })
+  } catch (e) {
+    const issues = getZodIssues(e)
+    if (issues) return NextResponse.json({ error: "Dados inválidos", details: issues }, { status: 400 })
     return NextResponse.json({ error: "Erro ao atualizar custo de entrega" }, { status: 500 })
   }
 }

@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma"
+import type { OrderStatus } from "@/generated/prisma/enums"
 import { getAllEnabledAccounts } from "./accounts"
 import { fetchNineFoodOrder } from "./clients/ninefood"
 import { fetchIfoodOrder } from "./clients/ifood"
@@ -37,7 +38,7 @@ async function reconcileAccount(account: AccountRecord): Promise<void> {
     await prisma.order.update({
       where: { id: order.id },
       data: {
-        status: internalStatus as any,
+        status: internalStatus as OrderStatus,
         externalStatus,
         confirmBy: internalStatus === "PENDENTE" ? new Date(Date.now() + 8 * 60 * 1000) : null,
         updatedAt: new Date(),
@@ -58,7 +59,7 @@ export async function runLazyReconcile(): Promise<void> {
       } catch (e) {
         await prisma.integrationAccount.update({
           where: { id: account.id },
-          data: { lastError: String((e as any)?.message || e), lastSyncAt: null },
+          data: { lastError: String(e && typeof e === "object" && "message" in e ? e.message : e), lastSyncAt: null },
         })
       }
     }),

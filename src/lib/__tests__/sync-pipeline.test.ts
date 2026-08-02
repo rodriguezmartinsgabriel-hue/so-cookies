@@ -36,8 +36,8 @@ describe("sync pipeline", () => {
     await refreshed
 
     const rows = await db.cashFlow.toArray()
-    const server = rows.find((r: any) => r.id === "server-1")
-    const offline = rows.find((r: any) => r.id === "offline_1")
+    const server = rows.find((r) => r.id === "server-1")
+    const offline = rows.find((r) => r.id === "offline_1")
     expect(rows).toHaveLength(2)
     expect(server?.amount).toBe(20)
     expect(offline?.amount).toBe(99)
@@ -53,9 +53,9 @@ describe("sync pipeline", () => {
 
     vi.stubGlobal(
       "fetch",
-      vi.fn(async (url: string, init: any) => {
+      vi.fn(async (url: string, init: RequestInit) => {
         expect(url).toBe("/api/sync/push")
-        const body = JSON.parse(init.body)
+        const body = JSON.parse(String(init.body))
         expect(body.changes).toHaveLength(2)
         return new Response(
           JSON.stringify({
@@ -79,10 +79,10 @@ describe("sync pipeline", () => {
     expect(queue[0].attempts).toBe(1)
 
     const rows = await db.cashFlow.toArray()
-    const reconciled = rows.find((r: any) => r.id === "real-1")
+    const reconciled = rows.find((r) => r.id === "real-1")
     expect(reconciled?.amount).toBe(5)
     expect(reconciled?._synced).toBe(true)
-    expect(rows.some((r: any) => r.id === "offline_x")).toBe(false)
+    expect(rows.some((r) => r.id === "offline_x")).toBe(false)
   })
 
   it("push mantém item falho na fila (não descarta) e aplica backoff", async () => {
@@ -158,8 +158,8 @@ describe("sync pipeline", () => {
     expect(result.pulled).toBe(1)
 
     const rows = await db.cashFlow.toArray()
-    const server = rows.find((r: any) => r.id === "srv-2")
-    const offline = rows.find((r: any) => r.id === "offline_z")
+    const server = rows.find((r) => r.id === "srv-2")
+    const offline = rows.find((r) => r.id === "offline_z")
     expect(server?.amount).toBe(30)
     expect(server?._synced).toBe(true)
     expect(offline?.amount).toBe(77)

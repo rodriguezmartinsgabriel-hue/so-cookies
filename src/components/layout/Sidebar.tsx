@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
+import Image from "next/image";
 import { useRole } from "@/hooks/useRole";
 import {
   Home,
@@ -54,9 +55,12 @@ export function Sidebar() {
       <div className="flex items-center justify-between h-14 px-3 border-b border-line">
         {!collapsed && (
           <div className="flex items-center gap-2">
-            <img
-              src="/só logo sem fundo.svg"
+            <Image
+              src="/logo.svg"
               alt="Só Cookies & Café"
+              width={40}
+              height={40}
+              unoptimized
               className="h-10 w-auto"
             />
             <span className="text-sm font-medium text-muted hidden sm:block">

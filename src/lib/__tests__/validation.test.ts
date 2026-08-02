@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { createOrderSchema, createSaleSchema, createIngredientSchema, createCashFlowSchema } from "@/lib/validation"
+import { createOrderSchema, createSaleSchema, createIngredientSchema, createCashFlowSchema, createRecipeSchema, updateRecipeSchema } from "@/lib/validation"
 
 describe("createOrderSchema", () => {
   it("accepts valid order", () => {
@@ -57,6 +57,47 @@ describe("createIngredientSchema", () => {
       costPerKg: 5,
       supplier: "Fornecedor A",
     })).toThrow()
+  })
+})
+
+describe("createRecipeSchema", () => {
+  it("accepts recipe with preparation and image", () => {
+    const result = createRecipeSchema.parse({
+      name: "Cookie Clássico",
+      yield: 11,
+      yieldUnit: "un",
+      totalCost: 29.21,
+      preparation: "1. Misturar os secos.\n2. Adicionar manteiga.",
+      image: "data:image/jpeg;base64,/9j/2Q==",
+      ingredients: [{ ingredientId: "ing1", qty: 0.1, unit: "kg" }],
+    })
+    expect(result.preparation).toContain("Misturar")
+    expect(result.image).toContain("data:image/jpeg")
+  })
+
+  it("accepts recipe without optional fields", () => {
+    const result = createRecipeSchema.parse({
+      name: "Cookie Clássico",
+      yield: 11,
+      totalCost: 29.21,
+    })
+    expect(result.preparation).toBeUndefined()
+    expect(result.image).toBeUndefined()
+  })
+
+  it("rejects empty name", () => {
+    expect(() => createRecipeSchema.parse({ name: "", yield: 11, totalCost: 1 })).toThrow()
+  })
+})
+
+describe("updateRecipeSchema", () => {
+  it("accepts partial update with preparation and image", () => {
+    const result = updateRecipeSchema.parse({
+      preparation: "Assar a 180°C por 12 min.",
+      image: "data:image/png;base64,iVBORw0KGgo=",
+    })
+    expect(result.preparation).toContain("Assar")
+    expect(result.image).toContain("data:image/png")
   })
 })
 

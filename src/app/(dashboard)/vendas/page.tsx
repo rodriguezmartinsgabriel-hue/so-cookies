@@ -1,13 +1,18 @@
 "use client"
 
-import { useState, useCallback, useEffect } from "react"
+import { useState } from "react"
+import { useConfirm } from "@/hooks/useConfirm"
 import { useFocusTrap } from "@/hooks/useFocusTrap"
 import { useRole } from "@/hooks/useRole"
+import { useQueryData } from "@/hooks/useQueryData"
 import { AppShell } from "@/components/layout/AppShell"
 import { Skeleton } from "@/components/ui/Skeleton"
 import { ErrorState } from "@/components/ui/ErrorState"
-import { repository, onDataRefresh } from "@/lib/repository"
+import { repository } from "@/lib/repository"
 import { Plus, Search, X, Trash2 } from "lucide-react"
+import type { Sale, SaleChannel } from "@/lib/entity-types"
+
+type SaleRow = Sale & { channel?: SaleChannel | string | null; user?: { name?: string } | null }
 
 const channelColors: Record<string, string> = {
   iFood: "bg-danger/10 text-danger",
@@ -18,11 +23,12 @@ const channelColors: Record<string, string> = {
 
 export default function VendasPage() {
   const { canEdit } = useRole();
-  const [sales, setSales] = useState<any[]>([])
-  const [products, setProducts] = useState<any[]>([])
-  const [channels, setChannels] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const { confirm, dialog } = useConfirm()
+  const { data: sales, isLoading: salesLoading, error: salesError, invalidate } = useQueryData("sales")
+  const { data: products, error: productsError } = useQueryData("products")
+  const { data: channels, error: channelsError } = useQueryData("channels")
+  const loading = salesLoading
+  const error = salesError || productsError || channelsError ? "Erro ao carregar vendas" : null
   const [search, setSearch] = useState("")
   const [showModal, setShowModal] = useState(false)
   const modalRef = useFocusTrap(showModal)
@@ -31,35 +37,15 @@ export default function VendasPage() {
   const [formItems, setFormItems] = useState<{ productId: string; qty: string; price: string }[]>([])
   const [formTotal, setFormTotal] = useState(0)
 
-  const loadData = useCallback(async () => {
-    try {
-      const [salesData, prodsData, channelsData] = await Promise.allSettled([
-        repository.sales.getAll(),
-        repository.products.getAll(),
-        repository.channels.getAll(),
-      ])
-      if (salesData.status === "fulfilled") setSales(salesData.value)
-      if (prodsData.status === "fulfilled") setProducts(prodsData.value)
-      if (channelsData.status === "fulfilled") setChannels(channelsData.value)
-    } catch {
-      setError("Erro ao carregar vendas")
-    }
-    setLoading(false)
-  }, [])
-
-  useEffect(() => { loadData() }, [loadData])
-
-  useEffect(() => {
-    return onDataRefresh(() => { loadData() })
-  }, [loadData])
-
   const filtered = sales.filter(
-    (s: any) =>
-      (s.channel?.name || s.channel || channels.find((ch: any) => ch.id === s.channelId)?.name || "").toLowerCase().includes(search.toLowerCase()) ||
+    (s: SaleRow) =>
+      ((typeof s.channel === "object" && s.channel ? s.channel.name : s.channel) ||
+        channels.find((ch) => ch.id === s.channelId)?.name ||
+        "").toLowerCase().includes(search.toLowerCase()) ||
       (s.user?.name || "").toLowerCase().includes(search.toLowerCase())
   )
 
-  const totalRevenue = sales.reduce((sum: number, s: any) => sum + (s.total || 0), 0)
+  const totalRevenue = sales.reduce((sum: number, s) => sum + (s.total || 0), 0)
 
   function addItem() {
     setFormItems([...formItems, { productId: "", qty: "1", price: "" }])
@@ -72,11 +58,11 @@ export default function VendasPage() {
     calcTotal(updated)
   }
 
-  function updateItem(index: number, field: string, value: string) {
+  function updateItem(index: number, field: "productId" | "qty" | "price", value: string) {
     const updated = [...formItems]
-    ;(updated[index] as any)[field] = value
+    updated[index][field] = value
     if (field === "productId") {
-      const prod = products.find((p: any) => p.id === value)
+      const prod = products.find((p) => p.id === value)
       if (prod) updated[index].price = String(prod.price)
     }
     setFormItems(updated)
@@ -103,13 +89,13 @@ export default function VendasPage() {
     setFormChannel("")
     setFormItems([])
     setFormTotal(0)
-    await loadData()
+    await invalidate()
   }
 
   async function handleDeleteSale(id: string) {
-    if (!confirm("Excluir esta venda?")) return
+    if (!(await confirm("Excluir esta venda?"))) return
     await repository.sales.delete(id)
-    await loadData()
+    await invalidate()
   }
 
   return (
@@ -142,7 +128,7 @@ export default function VendasPage() {
         </div>
 
         {error && (
-          <ErrorState message={error} onRetry={loadData} />
+          <ErrorState message={error} onRetry={invalidate} />
         )}
 
         {loading ? (
@@ -183,8 +169,8 @@ export default function VendasPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-line">
-                  {filtered.map((sale: any) => {
-                    const channelName = sale.channel?.name || sale.channel || channels.find((ch: any) => ch.id === sale.channelId)?.name || "—"
+                  {filtered.map((sale: SaleRow) => {
+                    const channelName = (typeof sale.channel === "object" && sale.channel ? sale.channel.name : sale.channel) || channels.find((ch) => ch.id === sale.channelId)?.name || "—"
                     const channelStyle = channelColors[channelName] || "bg-cream text-muted"
                     return (
                       <tr key={sale.id} className="hover:bg-cream/50 transition-colors">
@@ -224,7 +210,7 @@ export default function VendasPage() {
                   <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Canal de Venda *</label>
                   <select value={formChannel} onChange={(e) => setFormChannel(e.target.value)} className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink transition-colors bg-paper">
                     <option value="">Selecionar canal</option>
-                    {channels.map((ch: any) => (
+                    {channels.map((ch) => (
                       <option key={ch.id} value={ch.id}>{ch.name}</option>
                     ))}
                   </select>
@@ -242,7 +228,7 @@ export default function VendasPage() {
                       <div key={i} className="flex items-center gap-2 bg-cream/50 rounded-lg p-2">
                         <select value={item.productId} onChange={(e) => updateItem(i, "productId", e.target.value)} className="flex-1 h-9 px-2 border border-line rounded-lg text-xs text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink bg-paper">
                           <option value="">Produto</option>
-                          {products.map((p: any) => (
+                          {products.map((p) => (
                             <option key={p.id} value={p.id}>{p.name}</option>
                           ))}
                         </select>
@@ -268,6 +254,7 @@ export default function VendasPage() {
           </div>
         )}
       </div>
+        {dialog}
     </AppShell>
   )
 }

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { getProducts, createProduct } from "@/lib/db"
 import { requireAuth } from "@/lib/api-auth"
-import { createProductSchema } from "@/lib/validation"
+import { createProductSchema, getZodIssues } from "@/lib/validation"
 
 export async function GET() {
   const { error } = await requireAuth()
@@ -18,9 +18,10 @@ export async function POST(request: Request) {
     const parsed = createProductSchema.parse(json)
     const product = await createProduct(parsed)
     return NextResponse.json(product)
-  } catch (e: any) {
-    if (e?.issues) {
-      return NextResponse.json({ error: "Dados inválidos", details: e.issues }, { status: 400 })
+  } catch (e) {
+    const issues = getZodIssues(e)
+    if (issues) {
+      return NextResponse.json({ error: "Dados inválidos", details: issues }, { status: 400 })
     }
     return NextResponse.json({ error: "Erro ao criar produto" }, { status: 500 })
   }

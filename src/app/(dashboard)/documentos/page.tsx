@@ -1,13 +1,16 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
+import { useConfirm } from "@/hooks/useConfirm";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { useRole } from "@/hooks/useRole";
+import { useQueryData } from "@/hooks/useQueryData";
 import { AppShell } from "@/components/layout/AppShell";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { Plus, X, Edit, Trash2, FileText, Search, ChevronDown, ChevronUp, Eye } from "lucide-react";
-import { repository, onDataRefresh } from "@/lib/repository";
+import { repository } from "@/lib/repository";
+import type { Document } from "@/lib/entity-types";
 
 const CATEGORIES = [
   { value: "FICHA_TECNICA", label: "Fichas Técnicas", color: "bg-ink" },
@@ -24,16 +27,16 @@ const CATEGORY_MAP: Record<string, typeof CATEGORIES[number]> = Object.fromEntri
 
 export default function DocumentosPage() {
   const { canEdit } = useRole();
-  const [documents, setDocuments] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { confirm, dialog } = useConfirm();
+  const { data: documents, isLoading: loading, error: documentsError, invalidate } = useQueryData("documents");
+  const error = documentsError ? "Erro ao carregar documentos" : null;
   const [filter, setFilter] = useState("ALL");
   const [search, setSearch] = useState("");
   const [expanded, setExpanded] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
   const modalRef = useFocusTrap(showModal);
-  const [editingDoc, setEditingDoc] = useState<any>(null);
-  const [viewingDoc, setViewingDoc] = useState<any>(null);
+  const [editingDoc, setEditingDoc] = useState<Document | null>(null);
+  const [viewingDoc, setViewingDoc] = useState<Document | null>(null);
   const viewRef = useFocusTrap(!!viewingDoc);
 
   const [form, setForm] = useState({
@@ -43,22 +46,6 @@ export default function DocumentosPage() {
     content: "",
     tags: "",
   });
-
-  const loadDocs = useCallback(async () => {
-    try {
-      const data = await repository.documents.getAll();
-      setDocuments(data);
-    } catch {
-      setError("Erro ao carregar documentos");
-    }
-    setLoading(false);
-  }, []);
-
-  useEffect(() => { loadDocs(); }, [loadDocs]);
-
-  useEffect(() => {
-    return onDataRefresh(() => { loadDocs(); });
-  }, [loadDocs]);
 
   function resetForm() {
     setForm({ title: "", description: "", category: "FICHA_TECNICA", content: "", tags: "" });
@@ -70,7 +57,7 @@ export default function DocumentosPage() {
     setShowModal(true);
   }
 
-  function openEdit(doc: any) {
+  function openEdit(doc: Document) {
     setEditingDoc(doc);
     setForm({
       title: doc.title || "",
@@ -82,7 +69,7 @@ export default function DocumentosPage() {
     setShowModal(true);
   }
 
-  function openView(doc: any) {
+  function openView(doc: Document) {
     setViewingDoc(doc);
   }
 
@@ -97,13 +84,13 @@ export default function DocumentosPage() {
     }
     setShowModal(false);
     resetForm();
-    await loadDocs();
+    await invalidate();
   }
 
   async function handleDelete(id: string) {
-    if (!confirm("Excluir este documento?")) return;
+    if (!(await confirm("Excluir este documento?"))) return;
     await repository.documents.delete(id);
-    await loadDocs();
+    await invalidate();
   }
 
   const filtered = documents.filter((doc) => {
@@ -180,7 +167,7 @@ export default function DocumentosPage() {
         </div>
 
         {error && (
-          <ErrorState message={error} onRetry={loadDocs} />
+          <ErrorState message={error} onRetry={invalidate} />
         )}
 
         {loading ? (
@@ -389,6 +376,7 @@ export default function DocumentosPage() {
           </div>
         )}
       </div>
+        {dialog}
     </AppShell>
   );
 }

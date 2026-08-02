@@ -39,65 +39,70 @@ function clearOldReads(currentIds: string[]) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify([...readIds]))
 }
 
+async function buildNotifications(): Promise<Notification[]> {
+  const [ingredientsResp, ordersResp] = await Promise.all([
+    fetch("/api/ingredients"),
+    fetch("/api/orders"),
+  ])
+
+  const ingredients: { id: string; name: string; stockKg?: number; minStockKg?: number }[] =
+    ingredientsResp.ok ? await ingredientsResp.json() : []
+  const orders: { status: string }[] = ordersResp.ok ? await ordersResp.json() : []
+
+  const readIds = getReadIds()
+  const notifs: Notification[] = []
+
+  for (const ing of ingredients) {
+    if ((ing.stockKg || 0) <= (ing.minStockKg || 0) && (ing.minStockKg ?? 0) > 0) {
+      const id = `low-stock-${ing.id}`
+      notifs.push({
+        id,
+        type: "low_stock",
+        title: "Estoque baixo",
+        message: `${ing.name} com ${ing.stockKg}kg (mínimo: ${ing.minStockKg}kg)`,
+        read: readIds.has(id),
+        createdAt: new Date().toISOString(),
+        href: "/estoque",
+      })
+    }
+  }
+
+  const pendingOrders = orders.filter((o) => o.status === "PENDENTE")
+  if (pendingOrders.length > 0) {
+    notifs.push({
+      id: "pending-orders",
+      type: "pending_order",
+      title: `${pendingOrders.length} pedido(s) pendente(s)`,
+      message: `${pendingOrders.length} aguardando produção`,
+      read: readIds.has("pending-orders"),
+      createdAt: new Date().toISOString(),
+      href: "/pedidos",
+    })
+  }
+
+  const readyOrders = orders.filter((o) => o.status === "PRONTO")
+  if (readyOrders.length > 0) {
+    notifs.push({
+      id: "ready-orders",
+      type: "ready_order",
+      title: `${readyOrders.length} pedido(s) pronto(s)`,
+      message: "Aguardando entrega",
+      read: readIds.has("ready-orders"),
+      createdAt: new Date().toISOString(),
+      href: "/pedidos",
+    })
+  }
+
+  return notifs
+}
+
 export function useNotifications() {
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [loading, setLoading] = useState(true)
 
   const load = useCallback(async () => {
-    setLoading(true)
     try {
-      const [ingredientsResp, ordersResp] = await Promise.all([
-        fetch("/api/ingredients"),
-        fetch("/api/orders"),
-      ])
-
-      const ingredients = ingredientsResp.ok ? await ingredientsResp.json() : []
-      const orders = ordersResp.ok ? await ordersResp.json() : []
-
-      const readIds = getReadIds()
-      const notifs: Notification[] = []
-
-      for (const ing of ingredients) {
-        if ((ing.stockKg || 0) <= (ing.minStockKg || 0) && ing.minStockKg > 0) {
-          const id = `low-stock-${ing.id}`
-          notifs.push({
-            id,
-            type: "low_stock",
-            title: "Estoque baixo",
-            message: `${ing.name} com ${ing.stockKg}kg (mínimo: ${ing.minStockKg}kg)`,
-            read: readIds.has(id),
-            createdAt: new Date().toISOString(),
-            href: "/estoque",
-          })
-        }
-      }
-
-      const pendingOrders = orders.filter((o: any) => o.status === "PENDENTE")
-      if (pendingOrders.length > 0) {
-        notifs.push({
-          id: "pending-orders",
-          type: "pending_order",
-          title: `${pendingOrders.length} pedido(s) pendente(s)`,
-          message: `${pendingOrders.length} aguardando produção`,
-          read: readIds.has("pending-orders"),
-          createdAt: new Date().toISOString(),
-          href: "/pedidos",
-        })
-      }
-
-      const readyOrders = orders.filter((o: any) => o.status === "PRONTO")
-      if (readyOrders.length > 0) {
-        notifs.push({
-          id: "ready-orders",
-          type: "ready_order",
-          title: `${readyOrders.length} pedido(s) pronto(s)`,
-          message: "Aguardando entrega",
-          read: readIds.has("ready-orders"),
-          createdAt: new Date().toISOString(),
-          href: "/pedidos",
-        })
-      }
-
+      const notifs = await buildNotifications()
       clearOldReads(notifs.map((n) => n.id))
       setNotifications(notifs)
     } catch (e) {
@@ -106,7 +111,22 @@ export function useNotifications() {
     setLoading(false)
   }, [])
 
-  useEffect(() => { load() }, [load])
+  useEffect(() => {
+    let ignore = false
+    async function loadOnce() {
+      try {
+        const notifs = await buildNotifications()
+        if (ignore) return
+        clearOldReads(notifs.map((n) => n.id))
+        setNotifications(notifs)
+      } catch (e) {
+        console.error("Erro ao carregar notificações:", e)
+      }
+      if (!ignore) setLoading(false)
+    }
+    loadOnce()
+    return () => { ignore = true }
+  }, [])
 
   useEffect(() => {
     const interval = setInterval(load, 60000)

@@ -22,9 +22,17 @@ export async function POST(request: Request) {
     return new NextResponse(null, { status: 403 })
   }
 
-  let payload: any
+  type WebhookEvent = {
+    eventId?: unknown
+    eventType?: unknown
+    orderId?: unknown
+    orderURL?: unknown
+    createdAt?: unknown
+  }
+
+  let payload: WebhookEvent
   try {
-    payload = JSON.parse(raw)
+    payload = JSON.parse(raw) as WebhookEvent
   } catch {
     return new NextResponse(null, { status: 400 })
   }

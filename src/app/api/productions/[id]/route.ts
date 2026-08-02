@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { requireAuth } from "@/lib/api-auth"
 import { isNotFoundError } from "@/lib/db"
-import { updateProductionSchema } from "@/lib/validation"
+import { updateProductionSchema, getZodIssues } from "@/lib/validation"
 
 export async function PATCH(
   request: Request,
@@ -16,8 +16,9 @@ export async function PATCH(
     const parsed = updateProductionSchema.parse(json)
     const data = await prisma.production.update({ where: { id }, data: parsed, include: { product: true } })
     return NextResponse.json(data)
-  } catch (e: any) {
-    if (e?.issues) return NextResponse.json({ error: "Dados inválidos", details: e.issues }, { status: 400 })
+  } catch (e) {
+    const issues = getZodIssues(e)
+    if (issues) return NextResponse.json({ error: "Dados inválidos", details: issues }, { status: 400 })
     return NextResponse.json({ error: "Erro ao atualizar produção" }, { status: 500 })
   }
 }

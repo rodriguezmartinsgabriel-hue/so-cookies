@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import Image from "next/image"
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>
@@ -9,17 +10,9 @@ interface BeforeInstallPromptEvent extends Event {
 
 export function InstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null)
-  const [isStandalone, setIsStandalone] = useState(false)
-  const [dismissed, setDismissed] = useState(false)
-  const [isIOS, setIsIOS] = useState(false)
-
-  useEffect(() => {
-    const standalone = window.matchMedia("(display-mode: standalone)").matches
-    const iOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !("MSStream" in window)
-    setIsStandalone(standalone)
-    setIsIOS(iOS)
-    setDismissed(localStorage.getItem("pwa-dismissed") === "true")
-  }, [])
+  const [isStandalone] = useState(() => typeof window !== "undefined" && window.matchMedia("(display-mode: standalone)").matches)
+  const [dismissed, setDismissed] = useState(() => typeof window !== "undefined" && localStorage.getItem("pwa-dismissed") === "true")
+  const [isIOS] = useState(() => typeof window !== "undefined" && /iPad|iPhone|iPod/.test(navigator.userAgent) && !("MSStream" in window))
 
   useEffect(() => {
     const handler = (e: BeforeInstallPromptEvent) => {
@@ -48,13 +41,16 @@ export function InstallPrompt() {
   if (isStandalone || dismissed) return null
 
   return (
-    <div className="fixed inset-x-0 bottom-0 z-50 p-4">
+    <div className="fixed inset-x-0 bottom-0 z-50 p-4 pb-[max(env(safe-area-inset-bottom),1rem)]">
       <div className="mx-auto max-w-md rounded-2xl bg-ink p-6 text-paper shadow-lg">
         <div className="space-y-4">
           <div className="space-y-2 text-center">
-            <img
-              src="/só logo sem fundo.svg"
+            <Image
+              src="/logo.svg"
               alt="Só"
+              width={64}
+              height={64}
+              unoptimized
               className="h-16 w-auto mx-auto"
             />
             <p className="text-sm opacity-80">

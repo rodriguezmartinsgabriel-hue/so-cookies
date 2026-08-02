@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import { hash } from "bcryptjs"
 import { requireAuth } from "@/lib/api-auth"
 import { getUserById, updateUser, deleteUser, isNotFoundError, isConstraintError } from "@/lib/db"
-import { updateUserSchema } from "@/lib/validation"
+import { updateUserSchema, getZodIssues } from "@/lib/validation"
 
 export async function PATCH(
   request: Request,
@@ -20,9 +20,10 @@ export async function PATCH(
     if (parsed.password) data.password = await hash(parsed.password, 10)
     const user = await updateUser(id, data)
     return NextResponse.json({ id: user.id, name: user.name, email: user.email, role: user.role })
-  } catch (e: any) {
-    if (e?.issues) {
-      return NextResponse.json({ error: "Dados inválidos", details: e.issues }, { status: 400 })
+  } catch (e) {
+    const issues = getZodIssues(e)
+    if (issues) {
+      return NextResponse.json({ error: "Dados inválidos", details: issues }, { status: 400 })
     }
     if (isNotFoundError(e)) return NextResponse.json({ error: "Não encontrado" }, { status: 404 })
     return NextResponse.json({ error: "Erro ao atualizar usuário" }, { status: 500 })

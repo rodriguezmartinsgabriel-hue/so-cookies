@@ -1,5 +1,6 @@
 import { is99FoodCredentials } from "../accounts"
 import type { AccountRecord } from "../types"
+import type { PlatformOrderDetails } from "../normalize"
 
 const DEFAULT_BASE = "https://openapi.didi-food.com"
 
@@ -31,13 +32,13 @@ export function resolveNineFoodOrderUrl(account: AccountRecord, orderUrlOrId: st
   return `${baseUrl()}/orders/${orderUrlOrId}`
 }
 
-export async function fetchNineFoodOrder(account: AccountRecord, orderUrlOrId: string): Promise<any> {
+export async function fetchNineFoodOrder(account: AccountRecord, orderUrlOrId: string): Promise<PlatformOrderDetails> {
   const token = await getNineFoodToken(account)
   const res = await fetch(resolveNineFoodOrderUrl(account, orderUrlOrId), {
     headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
   })
   if (!res.ok) throw new Error(`99Food pedido falhou (${res.status})`)
-  return res.json()
+  return res.json() as Promise<PlatformOrderDetails>
 }
 
 export async function updateNineFoodOrderStatus(account: AccountRecord, orderId: string, operation: string): Promise<void> {

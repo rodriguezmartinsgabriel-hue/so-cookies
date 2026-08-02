@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/api-auth";
 import { isNotFoundError } from "@/lib/db";
-import { updateDocumentSchema } from "@/lib/validation";
+import { updateDocumentSchema, getZodIssues } from "@/lib/validation";
 
 export async function GET(
   request: Request,
@@ -15,7 +15,7 @@ export async function GET(
     const document = await prisma.document.findUnique({ where: { id } });
     if (!document) return NextResponse.json({ error: "Não encontrado" }, { status: 404 });
     return NextResponse.json(document);
-  } catch (e) {
+  } catch {
     return NextResponse.json({ error: "Erro ao buscar documento" }, { status: 500 });
   }
 }
@@ -32,8 +32,9 @@ export async function PUT(
     const parsed = updateDocumentSchema.parse(json);
     const document = await prisma.document.update({ where: { id }, data: parsed });
     return NextResponse.json(document);
-  } catch (e: any) {
-    if (e?.issues) return NextResponse.json({ error: "Dados inválidos", details: e.issues }, { status: 400 });
+  } catch (e) {
+    const issues = getZodIssues(e)
+    if (issues) return NextResponse.json({ error: "Dados inválidos", details: issues }, { status: 400 });
     return NextResponse.json({ error: "Erro ao atualizar documento" }, { status: 500 });
   }
 }

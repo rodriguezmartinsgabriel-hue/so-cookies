@@ -1,6 +1,5 @@
 import "dotenv/config";
 import { defineConfig } from 'prisma/config'
-import { PrismaClient } from '@prisma/client'
 
 function cleanUrl(url: string | undefined): string {
   return (url || '').replace(/[?&]uselibpqcompat=true/g, '').replace(/\?$/, '')

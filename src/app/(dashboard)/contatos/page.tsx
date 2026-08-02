@@ -1,12 +1,16 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
+import { useConfirm } from "@/hooks/useConfirm";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { useRole } from "@/hooks/useRole";
+import { useQueryData } from "@/hooks/useQueryData";
 import { AppShell } from "@/components/layout/AppShell";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { ErrorState } from "@/components/ui/ErrorState";
-import { repository, onDataRefresh } from "@/lib/repository";
+import { repository } from "@/lib/repository";
+import type { Contact } from "@/lib/entity-types";
+import type { LocalContactInteraction } from "@/lib/db-local";
 import {
   BookUser,
   Plus,
@@ -31,7 +35,7 @@ const TYPE_CONFIG: Record<string, { label: string; className: string }> = {
   OUTRO: { label: "Outro", className: "bg-muted/10 text-muted" },
 };
 
-const INTERACTION_CONFIG: Record<string, { label: string; icon: any }> = {
+const INTERACTION_CONFIG: Record<string, { label: string; icon: typeof StickyNote }> = {
   NOTA: { label: "Nota", icon: StickyNote },
   LIGACAO: { label: "Ligação", icon: PhoneCall },
   EMAIL: { label: "E-mail", icon: Mail },
@@ -52,18 +56,18 @@ const inputClass = "w-full h-10 px-3 border border-line rounded-lg text-sm text-
 
 export default function ContatosPage() {
   const { canEdit } = useRole();
-  const [contacts, setContacts] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { confirm, dialog } = useConfirm();
+  const { data: contacts, isLoading: loading, error: contactsError, invalidate } = useQueryData("contacts");
+  const error = contactsError ? "Erro ao carregar contatos" : null;
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("ALL");
   const [showModal, setShowModal] = useState(false);
   const modalRef = useFocusTrap(showModal);
   const [form, setForm] = useState({ name: "", email: "", phone: "", type: "CLIENTE", company: "", notes: "" });
 
-  const [selectedContact, setSelectedContact] = useState<any>(null);
+  const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
   const detailRef = useFocusTrap(!!selectedContact);
-  const [interactions, setInteractions] = useState<any[]>([]);
+  const [interactions, setInteractions] = useState<LocalContactInteraction[]>([]);
   const [interactionForm, setInteractionForm] = useState({ type: "NOTA", note: "" });
 
   const [editingField, setEditingField] = useState<{ id: string; field: string } | null>(null);
@@ -71,29 +75,13 @@ export default function ContatosPage() {
   const [editingNotes, setEditingNotes] = useState(false);
   const [notesValue, setNotesValue] = useState("");
 
-  const loadData = useCallback(async () => {
-    try {
-      const data = await repository.contacts.getAll();
-      setContacts(data);
-    } catch {
-      setError("Erro ao carregar contatos");
-    }
-    setLoading(false);
-  }, []);
-
-  useEffect(() => { loadData(); }, [loadData]);
-
-  useEffect(() => {
-    return onDataRefresh(() => { loadData(); });
-  }, [loadData]);
-
   useEffect(() => {
     if (selectedContact) {
       repository.contacts.getInteractions(selectedContact.id).then(setInteractions).catch(() => setInteractions([]));
     }
   }, [selectedContact]);
 
-  const filtered = contacts.filter((c: any) => {
+  const filtered = contacts.filter((c) => {
     const matchesFilter = filter === "ALL" || c.type === filter;
     const q = search.toLowerCase();
     const matchesSearch = !q ||
@@ -105,7 +93,8 @@ export default function ContatosPage() {
   });
 
   const typeCounts = contacts.reduce<Record<string, number>>((acc, c) => {
-    acc[c.type] = (acc[c.type] || 0) + 1;
+    const type = c.type;
+    if (type) acc[type] = (acc[type] || 0) + 1;
     return acc;
   }, {});
 
@@ -115,7 +104,7 @@ export default function ContatosPage() {
 
   async function handleCreate() {
     if (!form.name.trim()) return;
-    const created = await repository.contacts.create({
+    await repository.contacts.create({
       name: form.name.trim(),
       email: form.email.trim() || undefined,
       phone: form.phone.trim() || undefined,
@@ -125,13 +114,13 @@ export default function ContatosPage() {
     });
     setShowModal(false);
     resetForm();
-    setContacts((prev) => [created, ...prev]);
+    await invalidate();
   }
 
   async function handleDelete(id: string) {
-    if (!confirm("Excluir este contato?")) return;
+    if (!(await confirm("Excluir este contato?"))) return;
     await repository.contacts.delete(id);
-    setContacts((prev) => prev.filter((c) => c.id !== id));
+    await invalidate();
     if (selectedContact?.id === id) setSelectedContact(null);
   }
 
@@ -152,10 +141,10 @@ export default function ContatosPage() {
       return;
     }
     const value = editValue.trim();
-    const payload: any = { [field]: value || undefined };
+    const payload = { [field]: value || undefined };
     await repository.contacts.update(id, payload);
-    setContacts((prev) => prev.map((c: any) => (c.id === id ? { ...c, ...payload, updatedAt: new Date().toISOString() } : c)));
-    if (selectedContact?.id === id) setSelectedContact((prev: any) => ({ ...prev, ...payload }));
+    await invalidate();
+    if (selectedContact?.id === id) setSelectedContact((prev) => ({ ...(prev ?? selectedContact), ...payload }));
     cancelEdit();
   }
 
@@ -175,8 +164,8 @@ export default function ContatosPage() {
     if (!selectedContact) return;
     const notes = notesValue.trim() || undefined;
     await repository.contacts.update(selectedContact.id, { notes });
-    setContacts((prev) => prev.map((c) => (c.id === selectedContact.id ? { ...c, notes } : c)));
-    setSelectedContact({ ...selectedContact, notes });
+    await invalidate();
+    setSelectedContact({ ...selectedContact, notes: notes ?? null });
     setEditingNotes(false);
   }
 
@@ -191,7 +180,7 @@ export default function ContatosPage() {
   }
 
   async function handleDeleteInteraction(id: string) {
-    if (!confirm("Excluir esta interação?")) return;
+    if (!(await confirm("Excluir esta interação?"))) return;
     await repository.contacts.deleteInteraction(id);
     setInteractions((prev) => prev.filter((i) => i.id !== id));
   }
@@ -242,7 +231,7 @@ export default function ContatosPage() {
           />
         </div>
 
-        {error && <ErrorState message={error} onRetry={loadData} />}
+        {error && <ErrorState message={error} onRetry={invalidate} />}
 
         {loading ? (
           <div className="space-y-2">
@@ -267,7 +256,7 @@ export default function ContatosPage() {
           </div>
         ) : (
           <div className="space-y-2">
-            {filtered.map((c: any) => {
+            {filtered.map((c) => {
               const cfg = TYPE_CONFIG[c.type] || TYPE_CONFIG.OUTRO;
               return (
                 <div key={c.id} className="border border-line rounded-lg bg-paper p-4 shadow-card">
@@ -526,7 +515,7 @@ export default function ContatosPage() {
                     </div>
                   ) : (
                     <div className="space-y-2">
-                      {interactions.map((it: any) => {
+                      {interactions.map((it) => {
                         const cfg = INTERACTION_CONFIG[it.type] || INTERACTION_CONFIG.OUTRO;
                         const Icon = cfg.icon;
                         return (
@@ -564,6 +553,7 @@ export default function ContatosPage() {
           </div>
         )}
       </div>
+        {dialog}
     </AppShell>
   );
 }

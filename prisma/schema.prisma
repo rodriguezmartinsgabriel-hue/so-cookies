@@ -92,6 +92,8 @@ model Recipe {
   productId  String?
   ingredients RecipeItem[]
   totalCost  Float          @default(0)
+  preparation String?
+  image      String?
 
   @@index([name])
 }

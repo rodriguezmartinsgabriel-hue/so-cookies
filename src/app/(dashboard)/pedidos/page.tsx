@@ -1,13 +1,16 @@
 "use client"
 
-import { useState, useCallback, useEffect } from "react"
+import { useState } from "react"
+import { useConfirm } from "@/hooks/useConfirm"
 import { useFocusTrap } from "@/hooks/useFocusTrap"
 import { useRole } from "@/hooks/useRole"
+import { useQueryData } from "@/hooks/useQueryData"
 import { AppShell } from "@/components/layout/AppShell"
 import { Skeleton } from "@/components/ui/Skeleton"
 import { ErrorState } from "@/components/ui/ErrorState"
-import { repository, onDataRefresh } from "@/lib/repository"
+import { repository } from "@/lib/repository"
 import { Clock, ChefHat, Package, Truck, X, Plus, Check, Edit, Trash2, Ban, ChevronDown, ChevronRight } from "lucide-react"
+import type { Order, OrderItem } from "@/lib/entity-types"
 
 const columns = [
   { id: "PENDENTE", label: "Pendente", icon: Clock, color: "text-warning", bg: "bg-warning/10" },
@@ -51,15 +54,20 @@ function canCancel(status: string) {
 
 export default function PedidosPage() {
   const { canEdit } = useRole();
-  const [orders, setOrders] = useState<any[]>([])
-  const [products, setProducts] = useState<any[]>([])
-  const [channels, setChannels] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const { confirm, dialog } = useConfirm()
+  const {
+    data: orders,
+    isLoading: loading,
+    error: ordersError,
+    invalidate,
+  } = useQueryData("orders");
+  const { data: products, error: productsError } = useQueryData("products");
+  const { data: channels, error: channelsError } = useQueryData("channels");
+  const error = ordersError || productsError || channelsError ? "Erro ao carregar pedidos" : null
   const [selectedOrder, setSelectedOrder] = useState<string | null>(null)
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
-  const [editingOrder, setEditingOrder] = useState<any>(null)
+  const [editingOrder, setEditingOrder] = useState<Order | null>(null)
   const [view, setView] = useState<"kanban" | "list">("kanban")
   const [showCompleted, setShowCompleted] = useState(false)
 
@@ -74,44 +82,22 @@ export default function PedidosPage() {
 
   const [editForm, setEditForm] = useState({ customer: "", notes: "" })
 
-  const loadData = useCallback(async () => {
-    try {
-      const [ordersData, prodsData, channelsData] = await Promise.allSettled([
-        repository.orders.getAll(),
-        repository.products.getAll(),
-        repository.channels.getAll(),
-      ])
-      if (ordersData.status === "fulfilled") setOrders(ordersData.value)
-      if (prodsData.status === "fulfilled") setProducts(prodsData.value)
-      if (channelsData.status === "fulfilled") setChannels(channelsData.value)
-    } catch {
-      setError("Erro ao carregar pedidos")
-    }
-    setLoading(false)
-  }, [])
-
-  useEffect(() => { loadData() }, [loadData])
-
-  useEffect(() => {
-    return onDataRefresh(() => { loadData() })
-  }, [loadData])
-
-  const order = orders.find((o: any) => o.id === selectedOrder)
+  const order = orders.find((o) => o.id === selectedOrder)
 
   async function handleStatusChange(orderId: string, newStatus: string) {
     await repository.orders.updateStatus(orderId, newStatus)
     setSelectedOrder(null)
-    await loadData()
+    await invalidate()
   }
 
   async function handleDeleteOrder(id: string) {
-    if (!confirm("Excluir este pedido?")) return
+    if (!(await confirm("Excluir este pedido?"))) return
     await repository.orders.delete(id)
     setSelectedOrder(null)
-    await loadData()
+    await invalidate()
   }
 
-  function openEditModal(o: any) {
+  function openEditModal(o: Order) {
     setEditingOrder(o)
     setEditForm({ customer: o.customer || "", notes: o.notes || "" })
     setShowEditModal(true)
@@ -122,7 +108,7 @@ export default function PedidosPage() {
     await repository.orders.update(editingOrder.id, editForm)
     setShowEditModal(false)
     setEditingOrder(null)
-    await loadData()
+    await invalidate()
   }
 
   function addItem() {
@@ -136,11 +122,11 @@ export default function PedidosPage() {
     calcTotal(updated)
   }
 
-  function updateItem(index: number, field: string, value: string) {
+  function updateItem(index: number, field: "productId" | "qty" | "price", value: string) {
     const updated = [...formItems]
-    ;(updated[index] as any)[field] = value
+    updated[index][field] = value
     if (field === "productId") {
-      const prod = products.find((p: any) => p.id === value)
+      const prod = products.find((p) => p.id === value)
       if (prod) updated[index].price = String(prod.price)
     }
     setFormItems(updated)
@@ -153,7 +139,7 @@ export default function PedidosPage() {
 
   async function handleCreateOrder() {
     if (!formChannel || !formCustomer || formItems.length === 0) return
-    const channelName = channels.find((c: any) => c.id === formChannel)?.name || formChannel
+    const channelName = channels.find((c) => c.id === formChannel)?.name || formChannel
     await repository.orders.create({
       channel: channelName,
       customer: formCustomer,
@@ -169,7 +155,7 @@ export default function PedidosPage() {
     setFormCustomer("")
     setFormItems([])
     setFormTotal(0)
-    await loadData()
+    await invalidate()
   }
 
   return (
@@ -192,7 +178,7 @@ export default function PedidosPage() {
         </div>
 
         {error && (
-          <ErrorState message={error} onRetry={loadData} />
+          <ErrorState message={error} onRetry={invalidate} />
         )}
 
         {loading ? (
@@ -217,7 +203,7 @@ export default function PedidosPage() {
         ) : view === "kanban" ? (
           <div className="space-y-4">
             {columns.filter((c) => c.id !== "CONCLUIDO" && c.id !== "CANCELADO").map((col) => {
-              const colOrders = orders.filter((o: any) => o.status === col.id)
+              const colOrders = orders.filter((o) => o.status === col.id)
               return (
                 <div key={col.id} className="border border-line rounded-lg bg-paper shadow-card overflow-hidden">
                   <div className={`flex items-center gap-2 px-4 py-3 border-b border-line ${col.bg}`}>
@@ -226,7 +212,7 @@ export default function PedidosPage() {
                     <span className="text-xs text-muted bg-paper px-2 py-0.5 rounded-full">{colOrders.length}</span>
                   </div>
                   <div className="p-2 space-y-2">
-                    {colOrders.map((o: any) => (
+                    {colOrders.map((o) => (
                       <button
                         key={o.id}
                         onClick={() => setSelectedOrder(o.id)}
@@ -252,8 +238,8 @@ export default function PedidosPage() {
             })}
 
             {(() => {
-              const concludedCount = orders.filter((o: any) => o.status === "CONCLUIDO").length
-              const cancelledCount = orders.filter((o: any) => o.status === "CANCELADO").length
+              const concludedCount = orders.filter((o) => o.status === "CONCLUIDO").length
+              const cancelledCount = orders.filter((o) => o.status === "CANCELADO").length
               if (concludedCount === 0 && cancelledCount === 0) return null
               return (
                 <div className="border border-line rounded-lg bg-paper shadow-card overflow-hidden">
@@ -267,7 +253,7 @@ export default function PedidosPage() {
                   </button>
                   {showCompleted && (
                     <div className="border-t border-line p-2 space-y-2">
-                      {orders.filter((o: any) => o.status === "CONCLUIDO" || o.status === "CANCELADO").map((o: any) => (
+                      {orders.filter((o) => o.status === "CONCLUIDO" || o.status === "CANCELADO").map((o) => (
                         <button
                           key={o.id}
                           onClick={() => setSelectedOrder(o.id)}
@@ -305,7 +291,7 @@ export default function PedidosPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-line">
-                  {orders.map((o: any) => (
+                  {orders.map((o) => (
                     <tr key={o.id} className="hover:bg-cream/50 transition-colors">
                       <td className="px-4 py-3 text-sm font-medium text-ink">#{o.id.slice(0, 6)}</td>
                       <td className="px-4 py-3 text-sm text-ink">{o.customer}</td>
@@ -368,7 +354,7 @@ export default function PedidosPage() {
                 <div>
                   <p className="text-xs text-muted uppercase tracking-wide mb-1">Itens</p>
                   <div className="space-y-1">
-                    {(order.items || []).map((item: any, i: number) => (
+                    {(order.items || []).map((item: OrderItem, i: number) => (
                       <div key={i} className="flex items-center justify-between text-sm">
                         <span className="text-ink">{item.qty}x {item.name || item.product?.name || "Item externo"}</span>
                         <span className="text-muted">R$ {(item.price * item.qty).toFixed(2)}</span>
@@ -446,7 +432,7 @@ export default function PedidosPage() {
                     <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Canal *</label>
                     <select value={formChannel} onChange={(e) => setFormChannel(e.target.value)} className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink bg-paper">
                       <option value="">Selecionar</option>
-                      {channels.map((ch: any) => <option key={ch.id} value={ch.id}>{ch.name}</option>)}
+                      {channels.map((ch) => <option key={ch.id} value={ch.id}>{ch.name}</option>)}
                     </select>
                   </div>
                   <div>
@@ -464,7 +450,7 @@ export default function PedidosPage() {
                       <div key={i} className="flex items-center gap-2 bg-cream/50 rounded-lg p-2">
                         <select value={item.productId} onChange={(e) => updateItem(i, "productId", e.target.value)} className="flex-1 h-9 px-2 border border-line rounded-lg text-xs text-ink bg-paper">
                           <option value="">Produto</option>
-                          {products.map((p: any) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                          {products.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
                         </select>
                         <input type="number" min="1" value={item.qty} onChange={(e) => updateItem(i, "qty", e.target.value)} className="w-16 h-9 px-2 border border-line rounded-lg text-xs text-ink bg-paper" />
                         <input type="number" step="0.01" value={item.price} onChange={(e) => updateItem(i, "price", e.target.value)} className="w-24 h-9 px-2 border border-line rounded-lg text-xs text-ink bg-paper" />
@@ -486,6 +472,7 @@ export default function PedidosPage() {
           </div>
         )}
       </div>
+        {dialog}
     </AppShell>
   )
 }

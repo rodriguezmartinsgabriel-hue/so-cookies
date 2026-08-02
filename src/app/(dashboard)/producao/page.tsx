@@ -1,13 +1,16 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState } from "react"
+import { useConfirm } from "@/hooks/useConfirm"
 import { useFocusTrap } from "@/hooks/useFocusTrap"
 import { useRole } from "@/hooks/useRole"
+import { useQueryData } from "@/hooks/useQueryData"
 import { AppShell } from "@/components/layout/AppShell"
 import { Skeleton } from "@/components/ui/Skeleton"
 import { ErrorState } from "@/components/ui/ErrorState"
-import { repository, onDataRefresh } from "@/lib/repository"
-import { ChefHat, Clock, CheckCircle, Plus, X, Edit, Trash2 } from "lucide-react"
+import { repository } from "@/lib/repository"
+import { ChefHat, Clock, CheckCircle, X, Edit, Trash2 } from "lucide-react"
+import type { Production } from "@/lib/entity-types"
 
 const statusConfig: Record<string, { label: string; color: string; icon: typeof Clock }> = {
   concluido: { label: "Concluído", color: "text-success bg-success/10", icon: CheckCircle },
@@ -17,15 +20,15 @@ const statusConfig: Record<string, { label: string; color: string; icon: typeof 
 
 export default function ProducaoPage() {
   const { canEdit } = useRole();
-  const [batches, setBatches] = useState<any[]>([])
-  const [products, setProducts] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const { confirm, dialog } = useConfirm()
+  const { data: batches, isLoading: loading, error: batchesError, invalidate } = useQueryData("productions")
+  const { data: products, error: productsError } = useQueryData("products")
+  const error = batchesError || productsError ? "Erro ao carregar produção" : null
   const [showCreateModal, setShowCreateModal] = useState(false)
   const createModalRef = useFocusTrap(showCreateModal)
   const [showEditModal, setShowEditModal] = useState(false)
   const editModalRef = useFocusTrap(showEditModal)
-  const [editingBatch, setEditingBatch] = useState<any>(null)
+  const [editingBatch, setEditingBatch] = useState<Production | null>(null)
   const [formProduct, setFormProduct] = useState("")
   const [formQty, setFormQty] = useState("")
   const [formBatchCode, setFormBatchCode] = useState("")
@@ -33,39 +36,19 @@ export default function ProducaoPage() {
 
   const [editForm, setEditForm] = useState({ qty: "", notes: "" })
 
-  const loadData = useCallback(async () => {
-    try {
-      const [batchesData, prodsData] = await Promise.allSettled([
-        repository.productions.getAll(),
-        repository.products.getAll(),
-      ])
-      if (batchesData.status === "fulfilled") setBatches(batchesData.value)
-      if (prodsData.status === "fulfilled") setProducts(prodsData.value)
-    } catch {
-      setError("Erro ao carregar produção")
-    }
-    setLoading(false)
-  }, [])
-
-  useEffect(() => { loadData() }, [loadData])
-
-  useEffect(() => {
-    return onDataRefresh(() => { loadData() })
-  }, [loadData])
-
   async function handleStatusChange(id: string, newStatus: string) {
     const endTime = newStatus === "concluido" ? new Date().toISOString() : undefined
     await repository.productions.updateStatus(id, newStatus, endTime)
-    await loadData()
+    await invalidate()
   }
 
   async function handleDelete(id: string) {
-    if (!confirm("Excluir este lote?")) return
+    if (!(await confirm("Excluir este lote?"))) return
     await repository.productions.delete(id)
-    await loadData()
+    await invalidate()
   }
 
-  function openEdit(batch: any) {
+  function openEdit(batch: Production) {
     setEditingBatch(batch)
     setEditForm({ qty: String(batch.qty ?? ""), notes: batch.notes || "" })
     setShowEditModal(true)
@@ -79,7 +62,7 @@ export default function ProducaoPage() {
     })
     setShowEditModal(false)
     setEditingBatch(null)
-    await loadData()
+    await invalidate()
   }
 
   async function handleCreateBatch() {
@@ -96,12 +79,12 @@ export default function ProducaoPage() {
     setFormQty("")
     setFormBatchCode("")
     setFormNotes("")
-    await loadData()
+    await invalidate()
   }
 
-  const pendingCount = batches.filter((b: any) => b.status === "pendente").length
-  const inProgressCount = batches.filter((b: any) => b.status === "em_producao").length
-  const doneCount = batches.filter((b: any) => b.status === "concluido").length
+  const pendingCount = batches.filter((b) => b.status === "pendente").length
+  const inProgressCount = batches.filter((b) => b.status === "em_producao").length
+  const doneCount = batches.filter((b) => b.status === "concluido").length
 
   return (
     <AppShell>
@@ -122,7 +105,7 @@ export default function ProducaoPage() {
         </div>
 
         {error && (
-          <ErrorState message={error} onRetry={loadData} />
+          <ErrorState message={error} onRetry={invalidate} />
         )}
 
         {loading ? (
@@ -146,7 +129,7 @@ export default function ProducaoPage() {
           </div>
         ) : (
           <div className="space-y-2">
-            {batches.map((batch: any) => {
+            {batches.map((batch) => {
               const cfg = statusConfig[batch.status] || statusConfig.pendente
               const Icon = cfg.icon
               return (
@@ -228,7 +211,7 @@ export default function ProducaoPage() {
                   <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Produto *</label>
                   <select value={formProduct} onChange={(e) => setFormProduct(e.target.value)} className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink bg-paper">
                     <option value="">Selecionar produto</option>
-                    {products.map((p: any) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                    {products.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
                   </select>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
@@ -254,6 +237,7 @@ export default function ProducaoPage() {
           </div>
         )}
       </div>
+        {dialog}
     </AppShell>
   )
 }

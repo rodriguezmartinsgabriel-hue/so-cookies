@@ -2,13 +2,13 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/api-auth";
 import { isNotFoundError } from "@/lib/db";
-import { updatePriceTierSchema } from "@/lib/validation";
+import { updatePriceTierSchema, getZodIssues } from "@/lib/validation";
 
 export async function PUT(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { error } = await requireAuth("OPERACIONAL")
+  const { error } = await requireAuth("ADMIN")
   if (error) return error
   try {
     const { id } = await params
@@ -16,8 +16,9 @@ export async function PUT(
     const parsed = updatePriceTierSchema.parse(json)
     const tier = await prisma.priceTier.update({ where: { id }, data: parsed })
     return NextResponse.json(tier)
-  } catch (e: any) {
-    if (e?.issues) return NextResponse.json({ error: "Dados inválidos", details: e.issues }, { status: 400 })
+  } catch (e) {
+    const issues = getZodIssues(e)
+    if (issues) return NextResponse.json({ error: "Dados inválidos", details: issues }, { status: 400 })
     return NextResponse.json({ error: "Erro ao atualizar faixa de preço" }, { status: 500 })
   }
 }
@@ -26,7 +27,7 @@ export async function DELETE(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { error } = await requireAuth("OPERACIONAL")
+  const { error } = await requireAuth("ADMIN")
   if (error) return error
   try {
     const { id } = await params

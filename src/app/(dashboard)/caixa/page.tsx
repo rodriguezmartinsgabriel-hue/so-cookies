@@ -1,13 +1,16 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState } from "react"
+import { useConfirm } from "@/hooks/useConfirm"
 import { useFocusTrap } from "@/hooks/useFocusTrap"
 import { useRole } from "@/hooks/useRole"
+import { useQueryData } from "@/hooks/useQueryData"
 import { AppShell } from "@/components/layout/AppShell"
 import { Skeleton } from "@/components/ui/Skeleton"
 import { ErrorState } from "@/components/ui/ErrorState"
-import { repository, onDataRefresh } from "@/lib/repository"
+import { repository } from "@/lib/repository"
 import { Plus, ArrowUpRight, ArrowDownLeft, X, Trash2, Edit } from "lucide-react"
+import type { CashFlow } from "@/lib/entity-types"
 
 function localDateString(d: Date) {
   const pad = (n: number) => String(n).padStart(2, "0")
@@ -23,14 +26,14 @@ function displayDate(date: string) {
 
 export default function CaixaPage() {
   const { canEdit } = useRole();
+  const { confirm, dialog } = useConfirm()
   const [showModal, setShowModal] = useState(false)
   const modalRef = useFocusTrap(showModal)
   const [showEditModal, setShowEditModal] = useState(false)
   const editModalRef = useFocusTrap(showEditModal)
-  const [editingEntry, setEditingEntry] = useState<any>(null)
-  const [entries, setEntries] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const [editingEntry, setEditingEntry] = useState<CashFlow | null>(null)
+  const { data: entries, isLoading: loading, error: entriesError, invalidate } = useQueryData("cashFlow")
+  const error = entriesError ? "Erro ao carregar caixa" : null
   const [formType, setFormType] = useState<"ENTRADA" | "SAIDA">("ENTRADA")
   const [formCategory, setFormCategory] = useState("")
   const [formDescription, setFormDescription] = useState("")
@@ -42,22 +45,6 @@ export default function CaixaPage() {
   const [editDescription, setEditDescription] = useState("")
   const [editAmount, setEditAmount] = useState("")
   const [editDate, setEditDate] = useState("")
-
-  const loadEntries = useCallback(async () => {
-    try {
-      const data = await repository.cashFlow.getAll()
-      setEntries(data)
-    } catch {
-      setError("Erro ao carregar caixa")
-    }
-    setLoading(false)
-  }, [])
-
-  useEffect(() => { loadEntries() }, [loadEntries])
-
-  useEffect(() => {
-    return onDataRefresh(() => { loadEntries() })
-  }, [loadEntries])
 
   async function handleSave() {
     if (!formCategory || !formAmount || !formDescription.trim()) return
@@ -73,10 +60,10 @@ export default function CaixaPage() {
     setFormDescription("")
     setFormAmount("")
     setFormDate(localDateString(new Date()))
-    await loadEntries()
+    await invalidate()
   }
 
-  function openEdit(entry: any) {
+  function openEdit(entry: CashFlow) {
     setEditingEntry(entry)
     setEditType(entry.type)
     setEditCategory(entry.category || "")
@@ -97,30 +84,30 @@ export default function CaixaPage() {
     })
     setShowEditModal(false)
     setEditingEntry(null)
-    await loadEntries()
+    await invalidate()
   }
 
   async function handleDelete(id: string) {
-    if (!confirm("Excluir este lançamento?")) return
+    if (!(await confirm("Excluir este lançamento?"))) return
     await repository.cashFlow.delete(id)
-    await loadEntries()
+    await invalidate()
   }
 
   const today = localDateString(new Date())
   const todayIn = entries
-    .filter((e: any) => e.type === "ENTRADA" && e.date?.startsWith(today))
-    .reduce((sum: number, e: any) => sum + (e.amount || 0), 0)
+    .filter((e) => e.type === "ENTRADA" && e.date?.startsWith(today))
+    .reduce((sum: number, e) => sum + (e.amount || 0), 0)
   const todayOut = entries
-    .filter((e: any) => e.type === "SAIDA" && e.date?.startsWith(today))
-    .reduce((sum: number, e: any) => sum + Math.abs(e.amount || 0), 0)
+    .filter((e) => e.type === "SAIDA" && e.date?.startsWith(today))
+    .reduce((sum: number, e) => sum + Math.abs(e.amount || 0), 0)
   const todayBalance = todayIn - todayOut
 
   const monthIn = entries
-    .filter((e: any) => e.type === "ENTRADA" && e.date?.startsWith(today.slice(0, 7)))
-    .reduce((sum: number, e: any) => sum + (e.amount || 0), 0)
+    .filter((e) => e.type === "ENTRADA" && e.date?.startsWith(today.slice(0, 7)))
+    .reduce((sum: number, e) => sum + (e.amount || 0), 0)
   const monthOut = entries
-    .filter((e: any) => e.type === "SAIDA" && e.date?.startsWith(today.slice(0, 7)))
-    .reduce((sum: number, e: any) => sum + Math.abs(e.amount || 0), 0)
+    .filter((e) => e.type === "SAIDA" && e.date?.startsWith(today.slice(0, 7)))
+    .reduce((sum: number, e) => sum + Math.abs(e.amount || 0), 0)
 
   return (
     <AppShell>
@@ -155,7 +142,7 @@ export default function CaixaPage() {
         </div>
 
         {error && (
-          <ErrorState message={error} onRetry={loadEntries} />
+          <ErrorState message={error} onRetry={invalidate} />
         )}
 
         {loading ? (
@@ -192,7 +179,7 @@ export default function CaixaPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-line">
-                  {entries.map((entry: any) => (
+                  {entries.map((entry) => (
                     <tr key={entry.id} className="hover:bg-cream/50 transition-colors">
                       <td className="px-4 py-3">
                         {entry.type === "ENTRADA" ? <ArrowUpRight className="w-4 h-4 text-success" /> : <ArrowDownLeft className="w-4 h-4 text-danger" />}
@@ -308,6 +295,7 @@ export default function CaixaPage() {
           </div>
         )}
       </div>
+        {dialog}
     </AppShell>
   )
 }

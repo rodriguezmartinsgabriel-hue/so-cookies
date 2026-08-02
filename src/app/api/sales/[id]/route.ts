@@ -13,7 +13,7 @@ export async function GET(
     const sale = await getSale(id)
     if (!sale) return NextResponse.json({ error: "Não encontrado" }, { status: 404 })
     return NextResponse.json(sale)
-  } catch (e) {
+  } catch {
     return NextResponse.json({ error: "Erro ao buscar venda" }, { status: 500 })
   }
 }

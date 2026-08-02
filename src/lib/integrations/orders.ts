@@ -1,7 +1,8 @@
 import { prisma } from "@/lib/prisma"
+import type { OrderStatus } from "@/generated/prisma/enums"
 import { MARKETPLACE_SLA_MINUTES, type NormalizedOrder, type Platform } from "./types"
 
-function confirmDeadline(createdAt?: string): Date | null {
+function confirmDeadline(): Date {
   return new Date(Date.now() + MARKETPLACE_SLA_MINUTES * 60_000)
 }
 
@@ -23,7 +24,7 @@ export async function upsertOrder(input: {
     return prisma.order.update({
       where: { id: existing.id },
       data: {
-        status: input.internalStatus as any,
+        status: input.internalStatus as OrderStatus,
         externalStatus: input.externalStatus,
         customer: input.order.customer || existing.customer,
         customerPhone: input.order.customerPhone ?? existing.customerPhone,
@@ -41,7 +42,7 @@ export async function upsertOrder(input: {
       channel: input.order.channel,
       customer: input.order.customer || "Cliente",
       total: input.order.total,
-      status: input.internalStatus as any,
+      status: input.internalStatus as OrderStatus,
       notes: input.order.notes,
       platform: input.platform,
       externalId: input.externalId,

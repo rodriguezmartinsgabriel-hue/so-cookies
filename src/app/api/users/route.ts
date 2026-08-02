@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import { hash } from "bcryptjs"
 import { requireAuth } from "@/lib/api-auth"
 import { getUsers, createUser, getUserByEmail } from "@/lib/db"
-import { createUserSchema } from "@/lib/validation"
+import { createUserSchema, getZodIssues } from "@/lib/validation"
 
 export async function GET() {
   const { error } = await requireAuth("ADMIN")
@@ -28,9 +28,10 @@ export async function POST(request: Request) {
     const password = await hash(parsed.password, 10)
     const user = await createUser({ ...parsed, password })
     return NextResponse.json({ id: user.id, name: user.name, email: user.email, role: user.role, createdAt: user.createdAt })
-  } catch (e: any) {
-    if (e?.issues) {
-      return NextResponse.json({ error: "Dados inválidos", details: e.issues }, { status: 400 })
+  } catch (e) {
+    const issues = getZodIssues(e)
+    if (issues) {
+      return NextResponse.json({ error: "Dados inválidos", details: issues }, { status: 400 })
     }
     return NextResponse.json({ error: "Erro ao criar usuário" }, { status: 500 })
   }

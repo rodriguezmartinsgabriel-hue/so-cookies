@@ -11,14 +11,14 @@ export function OfflineBanner() {
   return (
     <div className="fixed top-0 inset-x-0 z-50">
       {!isOnline && (
-        <div className="bg-warning/90 text-ink px-4 py-2 text-center text-sm font-medium flex items-center justify-center gap-2">
+        <div className="bg-warning/90 text-ink px-4 pt-[env(safe-area-inset-top)] py-2 text-center text-sm font-medium flex items-center justify-center gap-2">
           <WifiOff className="w-4 h-4" />
           Sem conexão — dados serão sincronizados quando voltar online
         </div>
       )}
 
       {isOnline && pendingCount > 0 && (
-        <div className="bg-info/90 text-paper px-4 py-2 text-center text-sm font-medium flex items-center justify-center gap-2">
+        <div className="bg-info/90 text-paper px-4 pt-[env(safe-area-inset-top)] py-2 text-center text-sm font-medium flex items-center justify-center gap-2">
           {isSyncing ? (
             <>
               <RefreshCw className="w-4 h-4 animate-spin" />
@@ -35,7 +35,7 @@ export function OfflineBanner() {
 
       {errors.length > 0 && (
         <div className="bg-danger/90 text-paper">
-          <button onClick={() => setShowErrors((v) => !v)} className="w-full px-4 py-2 text-center text-sm font-medium flex items-center justify-center gap-2">
+          <button onClick={() => setShowErrors((v) => !v)} className="w-full px-4 pt-[env(safe-area-inset-top)] py-2 text-center text-sm font-medium flex items-center justify-center gap-2">
             <AlertTriangle className="w-4 h-4" />
             {errors.length} alteração{errors.length > 1 ? "ões" : ""} falhou{errors.length > 1 ? "ram" : ""} — ver detalhes
           </button>

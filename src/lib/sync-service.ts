@@ -1,4 +1,5 @@
-import { db, getLastSyncTime, setLastSyncTime, addSyncError, clearSyncErrorsFor } from "./db-local"
+import type { EntityTable } from "dexie"
+import { db, getLastSyncTime, setLastSyncTime, addSyncError, clearSyncErrorsFor, type LocalOrder, type LocalSale, type LocalCashFlow, type LocalProduction, type LocalIngredient, type LocalRecipe, type LocalDocument, type LocalDeliveryCost, type LocalContact, type LocalContactInteraction } from "./db-local"
 import { emitDataRefresh } from "./refresh-events"
 
 const ENTITY_TABLES: Record<string, string> = {
@@ -84,11 +85,11 @@ export async function pushPendingChanges() {
         if (typeof p.queueId !== "number") continue
         const queued = item
         if (queued?.action === "update") {
-          const table = (db as any)[ENTITY_TABLES[queued.entity]]
+          const table = getLocalTable(queued.entity)
           const id = queued.data?.id as string | undefined
-          if (table?.get && id) {
+          if (table && id) {
             const local = await table.get(id)
-            if (local && local._updatedAt <= queued.createdAt) {
+            if (local && local._updatedAt && local._updatedAt <= queued.createdAt) {
               await table.update(id, { _synced: true })
             }
           }
@@ -106,15 +107,36 @@ export async function pushPendingChanges() {
   return { pushed: 0 }
 }
 
-async function pullUnsyncedIds(table: any) {
-  return new Set((await table.toArray()).filter((r: any) => r._synced === false).map((r: any) => r.id))
+interface LocalSyncRow {
+  id: string
+  _synced?: boolean
+  _updatedAt?: string
+  ingredients?: unknown
 }
 
 interface LocalSyncTable {
-  get(id: string): Promise<unknown>
-  toArray(): Promise<unknown[]>
+  get(id: string): Promise<LocalSyncRow | undefined>
+  toArray(): Promise<LocalSyncRow[]>
   delete(id: string): Promise<void>
-  update(id: number, changes: Record<string, unknown>): Promise<number>
+  update(id: string, changes: Partial<LocalSyncRow>): Promise<number>
+}
+
+async function pullUnsyncedIds<T extends { id: string; _synced?: boolean }>(table: { toArray(): Promise<T[]> }) {
+  return new Set((await table.toArray()).filter((r) => r._synced === false).map((r) => r.id))
+}
+
+async function writeRows<TLocal extends LocalSyncRow>(
+  table: EntityTable<TLocal, "id">,
+  rows: TLocal[] | undefined,
+) {
+  if (!rows?.length) return 0
+  const skip = await pullUnsyncedIds(table)
+  const toWrite = rows
+    .filter((r) => !skip.has(r.id))
+    .map((r) => ({ ...r, _synced: true, _updatedAt: new Date().toISOString() } as TLocal))
+  if (!toWrite.length) return 0
+  await table.bulkPut(toWrite)
+  return toWrite.length
 }
 
 function getLocalTable(entity: string): LocalSyncTable | undefined {
@@ -156,29 +178,26 @@ export async function pullChanges() {
     })
     if (resp.ok) {
       const data = await resp.json()
-      const tables: { key: string; table: any; map?: (r: any) => any }[] = [
-        { key: "orders", table: db.orders },
-        { key: "sales", table: db.sales },
-        { key: "cashFlow", table: db.cashFlow },
-        { key: "productions", table: db.productions },
-        { key: "ingredients", table: db.ingredients },
-        { key: "recipes", table: db.recipes, map: (r) => ({ ...r, ingredients: JSON.stringify(r.ingredients || []) }) },
-        { key: "documents", table: db.documents },
-        { key: "deliveryCosts", table: db.deliveryCosts },
-        { key: "contacts", table: db.contacts },
-        { key: "contactInteractions", table: db.contactInteractions },
-      ]
-
       let pulled = 0
-      for (const { key, table, map } of tables) {
-        const rows = data[key]
-        if (!rows?.length) continue
-        const skip = await pullUnsyncedIds(table)
-        const toWrite = rows
-          .filter((r: any) => !skip.has(r.id))
-          .map((r: any) => ({ ...(map ? map(r) : r), _synced: true, _updatedAt: new Date().toISOString() }))
+
+      pulled += await writeRows(db.orders, data.orders as LocalOrder[] | undefined)
+      pulled += await writeRows(db.sales, data.sales as LocalSale[] | undefined)
+      pulled += await writeRows(db.cashFlow, data.cashFlow as LocalCashFlow[] | undefined)
+      pulled += await writeRows(db.productions, data.productions as LocalProduction[] | undefined)
+      pulled += await writeRows(db.ingredients, data.ingredients as LocalIngredient[] | undefined)
+      pulled += await writeRows(db.documents, data.documents as LocalDocument[] | undefined)
+      pulled += await writeRows(db.deliveryCosts, data.deliveryCosts as LocalDeliveryCost[] | undefined)
+      pulled += await writeRows(db.contacts, data.contacts as LocalContact[] | undefined)
+      pulled += await writeRows(db.contactInteractions, data.contactInteractions as LocalContactInteraction[] | undefined)
+
+      const recipeRows = data.recipes as Array<Omit<LocalRecipe, "ingredients"> & { ingredients?: unknown }> | undefined
+      if (recipeRows?.length) {
+        const skip = await pullUnsyncedIds(db.recipes)
+        const toWrite = recipeRows
+          .filter((r) => !skip.has(r.id))
+          .map((r) => ({ ...r, ingredients: JSON.stringify(r.ingredients || []), _synced: true, _updatedAt: new Date().toISOString() }))
         if (toWrite.length) {
-          await table.bulkPut(toWrite)
+          await db.recipes.bulkPut(toWrite)
           pulled += toWrite.length
         }
       }
@@ -244,7 +263,7 @@ export function registerBackgroundSync() {
 
   if ("serviceWorker" in navigator && "sync" in window.ServiceWorkerRegistration.prototype) {
     navigator.serviceWorker.ready.then((reg) => {
-      ;(reg as any).sync.register("sync-so-manager")
+      ;(reg as ServiceWorkerRegistration & { sync?: { register(tag: string): Promise<void> } }).sync?.register("sync-so-manager")
     })
   }
 

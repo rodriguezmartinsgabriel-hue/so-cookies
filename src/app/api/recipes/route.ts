@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { requireAuth } from "@/lib/api-auth"
-import { createRecipeSchema } from "@/lib/validation"
+import { createRecipeSchema, getZodIssues } from "@/lib/validation"
 
 export async function GET() {
   const { error } = await requireAuth()
@@ -9,7 +9,7 @@ export async function GET() {
   try {
     const data = await prisma.recipe.findMany({ include: { ingredients: { include: { ingredient: true } } } })
     return NextResponse.json(data)
-  } catch (e) {
+  } catch {
     return NextResponse.json({ error: "Erro ao buscar receitas" }, { status: 500 })
   }
 }
@@ -31,9 +31,10 @@ export async function POST(request: Request) {
       include: { ingredients: { include: { ingredient: true } } },
     })
     return NextResponse.json(data)
-  } catch (e: any) {
-    if (e?.issues) {
-      return NextResponse.json({ error: "Dados inválidos", details: e.issues }, { status: 400 })
+  } catch (e) {
+    const issues = getZodIssues(e)
+    if (issues) {
+      return NextResponse.json({ error: "Dados inválidos", details: issues }, { status: 400 })
     }
     return NextResponse.json({ error: "Erro ao criar receita" }, { status: 500 })
   }

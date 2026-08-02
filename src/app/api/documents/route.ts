@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/api-auth";
-import { createDocumentSchema } from "@/lib/validation";
+import { createDocumentSchema, getZodIssues } from "@/lib/validation";
+import type { DocumentCategory } from "@/generated/prisma/enums";
 
 export async function GET(request: Request) {
   const { error } = await requireAuth()
@@ -10,10 +11,10 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const categoryParam = searchParams.get("category")
     const documents = categoryParam && categoryParam !== "ALL"
-      ? await prisma.document.findMany({ where: { category: categoryParam as any } })
+      ? await prisma.document.findMany({ where: { category: categoryParam as DocumentCategory } })
       : await prisma.document.findMany()
     return NextResponse.json(documents);
-  } catch (e) {
+  } catch {
     return NextResponse.json({ error: "Erro ao buscar documentos" }, { status: 500 });
   }
 }
@@ -26,9 +27,10 @@ export async function POST(request: Request) {
     const parsed = createDocumentSchema.parse(json);
     const document = await prisma.document.create({ data: parsed });
     return NextResponse.json(document);
-  } catch (e: any) {
-    if (e?.issues) {
-      return NextResponse.json({ error: "Dados inválidos", details: e.issues }, { status: 400 });
+  } catch (e) {
+    const issues = getZodIssues(e)
+    if (issues) {
+      return NextResponse.json({ error: "Dados inválidos", details: issues }, { status: 400 });
     }
     return NextResponse.json({ error: "Erro ao criar documento" }, { status: 500 });
   }

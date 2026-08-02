@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest"
+import type { AccountRecord } from "@/lib/integrations/types"
 
 const mocks = vi.hoisted(() => ({
   accountsFindMany: vi.fn(),
@@ -71,7 +72,7 @@ describe("runLazyReconcile", () => {
       { id: "ord-1", externalId: "e-1", status: "PENDENTE" },
       { id: "ord-2", externalId: "e-2", status: "CONFIRMADO" },
     ])
-    mocks.fetchNineFoodOrder.mockImplementation(async (_acc: any, id: string) =>
+    mocks.fetchNineFoodOrder.mockImplementation(async (_acc: AccountRecord, id: string) =>
       id === "e-1" ? { id: "e-1", status: "CONFIRMED" } : { id: "e-2", status: "READY_FOR_PICKUP" },
     )
     mocks.ordersUpdate.mockResolvedValue({})

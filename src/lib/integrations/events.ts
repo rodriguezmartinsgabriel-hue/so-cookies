@@ -48,7 +48,7 @@ export async function processInboundOrderEvent(input: {
   } catch (e) {
     await prisma.inboundEvent.update({
       where: { id: record.id },
-      data: { status: "ERROR", error: String((e as any)?.message || e) },
+      data: { status: "ERROR", error: String(e && typeof e === "object" && "message" in e ? e.message : e) },
     })
     throw e
   }

@@ -8,7 +8,7 @@ export async function GET() {
   try {
     const kpis = await getDashboardKpis()
     return NextResponse.json(kpis)
-  } catch (e) {
+  } catch {
     return NextResponse.json({ error: "Erro ao buscar KPIs" }, { status: 500 })
   }
 }

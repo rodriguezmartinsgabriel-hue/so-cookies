@@ -1,5 +1,12 @@
 import { z } from "zod"
 
+export function getZodIssues(e: unknown): z.ZodIssue[] | null {
+  if (e && typeof e === "object" && "issues" in e && Array.isArray(e.issues)) {
+    return e.issues as z.ZodIssue[]
+  }
+  return null
+}
+
 export const createOrderSchema = z.object({
   channel: z.string().min(1, "Canal é obrigatório"),
   customer: z.string().min(1, "Cliente é obrigatório"),
@@ -73,6 +80,8 @@ export const createRecipeSchema = z.object({
   yieldUnit: z.string().optional(),
   productId: z.string().optional(),
   totalCost: z.number().min(0),
+  preparation: z.string().optional(),
+  image: z.string().optional(),
   ingredients: z.array(z.object({
     ingredientId: z.string().min(1),
     qty: z.number().min(0),
@@ -166,6 +175,8 @@ export const updateRecipeSchema = z.object({
   yieldUnit: z.string().optional(),
   productId: z.string().optional(),
   totalCost: z.number().min(0).optional(),
+  preparation: z.string().optional(),
+  image: z.string().optional(),
   ingredients: z.array(z.object({
     ingredientId: z.string().min(1),
     qty: z.number().min(0),

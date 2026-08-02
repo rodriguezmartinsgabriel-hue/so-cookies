@@ -1,55 +1,42 @@
 "use client"
 
-import { useState, useEffect } from "react"
 import { AppShell } from "@/components/layout/AppShell"
 import { Skeleton } from "@/components/ui/Skeleton"
 import { ErrorState } from "@/components/ui/ErrorState"
+import { useQueryData } from "@/hooks/useQueryData"
+import type { Ingredient, Product, Recipe, Sale, SaleItem } from "@/lib/entity-types"
 import { TrendingUp, AlertTriangle, Package, DollarSign, Percent, Wallet } from "lucide-react"
 
 export default function IndicadoresPage() {
-  const [ingredients, setIngredients] = useState<any[]>([])
-  const [sales, setSales] = useState<any[]>([])
-  const [products, setProducts] = useState<any[]>([])
-  const [recipes, setRecipes] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const ingredients = useQueryData("ingredients")
+  const sales = useQueryData("sales")
+  const products = useQueryData("products")
+  const recipes = useQueryData("recipes")
 
-  useEffect(() => {
-    async function load() {
-      setLoading(true)
-      try {
-        const [ingResp, salesResp, prodsResp, recipesResp] = await Promise.allSettled([
-          fetch("/api/ingredients"),
-          fetch("/api/sales"),
-          fetch("/api/products"),
-          fetch("/api/recipes"),
-        ])
-        if (ingResp.status === "fulfilled" && ingResp.value.ok) setIngredients(await ingResp.value.json())
-        if (salesResp.status === "fulfilled" && salesResp.value.ok) setSales(await salesResp.value.json())
-        if (prodsResp.status === "fulfilled" && prodsResp.value.ok) setProducts(await prodsResp.value.json())
-        if (recipesResp.status === "fulfilled" && recipesResp.value.ok) setRecipes(await recipesResp.value.json())
-      } catch {
-        setError("Erro ao carregar dados")
-      }
-      setLoading(false)
-    }
-    load()
-  }, [])
+  const loading = ingredients.isLoading || sales.isLoading || products.isLoading || recipes.isLoading
+  const error = ingredients.error || sales.error || products.error || recipes.error ? "Erro ao carregar dados" : null
 
-  const lowStockItems = ingredients.filter((i: any) => (i.stockKg || 0) <= (i.minStockKg || 0))
-  const totalRevenue = sales.reduce((sum: number, s: any) => sum + (s.total || 0), 0)
-  const totalCost = sales.reduce((sum: number, s: any) => sum + (s.items || []).reduce((acc: number, it: any) => acc + (it.product?.cost || 0) * it.qty, 0), 0)
+  const retryAll = () => {
+    ingredients.refetch()
+    sales.refetch()
+    products.refetch()
+    recipes.refetch()
+  }
+
+  const lowStockItems = ingredients.data.filter((i: Ingredient) => (i.stockKg || 0) <= (i.minStockKg || 0))
+  const totalRevenue = sales.data.reduce((sum: number, s: Sale) => sum + (s.total || 0), 0)
+  const totalCost = sales.data.reduce((sum: number, s: Sale) => sum + (s.items || []).reduce((acc: number, it: SaleItem) => acc + (it.product?.cost || 0) * it.qty, 0), 0)
   const profit = totalRevenue - totalCost
   const margin = totalRevenue > 0 ? (profit / totalRevenue) * 100 : 0
-  const avgTicket = sales.length > 0 ? totalRevenue / sales.length : 0
-  const activeProducts = products.filter((p: any) => p.active)
+  const avgTicket = sales.data.length > 0 ? totalRevenue / sales.data.length : 0
+  const activeProducts = products.data.filter((p: Product) => p.active)
 
   const kpis = [
-    { icon: DollarSign, label: "Receita", value: `R$ ${totalRevenue.toFixed(0)}`, sub: `${sales.length} venda(s) registrada(s)` },
+    { icon: DollarSign, label: "Receita", value: `R$ ${totalRevenue.toFixed(0)}`, sub: `${sales.data.length} venda(s) registrada(s)` },
     { icon: Wallet, label: "Lucro Estimado", value: `R$ ${profit.toFixed(0)}`, sub: "receita − custo dos produtos" },
     { icon: Percent, label: "Margem", value: `${margin.toFixed(1)}%`, sub: "sobre a receita total" },
     { icon: TrendingUp, label: "Ticket Médio", value: `R$ ${avgTicket.toFixed(2)}`, sub: "receita ÷ nº de vendas" },
-    { icon: Package, label: "Sabores Ativos", value: String(activeProducts.length), sub: activeProducts.map((p: any) => p.name).join(", ") || "Nenhum produto cadastrado" },
+    { icon: Package, label: "Sabores Ativos", value: String(activeProducts.length), sub: activeProducts.map((p: Product) => p.name).join(", ") || "Nenhum produto cadastrado" },
   ]
 
   return (
@@ -63,7 +50,7 @@ export default function IndicadoresPage() {
         </div>
 
         {error && (
-          <ErrorState message={error} onRetry={() => window.location.reload()} />
+          <ErrorState message={error} onRetry={retryAll} />
         )}
 
         {loading ? (
@@ -109,7 +96,7 @@ export default function IndicadoresPage() {
                   Alertas de Estoque
                 </h2>
                 <div className="space-y-2">
-                  {lowStockItems.map((item: any) => (
+                  {lowStockItems.map((item: Ingredient) => (
                     <div key={item.id} className="flex items-center justify-between p-2 bg-paper rounded-lg">
                       <div>
                         <p className="text-sm font-medium text-ink">{item.name}</p>
@@ -130,7 +117,7 @@ export default function IndicadoresPage() {
                 Custos por Receita
               </h2>
               <div className="space-y-2">
-                {recipes.length > 0 ? recipes.map((r: any) => (
+                {recipes.data.length > 0 ? recipes.data.map((r: Recipe) => (
                   <div key={r.id} className="flex items-center justify-between p-2 rounded-lg hover:bg-cream transition-colors">
                     <span className="text-sm text-ink">{r.name}</span>
                     <div className="flex items-center gap-3">
@@ -159,7 +146,7 @@ export default function IndicadoresPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-line">
-                    {activeProducts.length > 0 ? activeProducts.map((p: any) => (
+                    {activeProducts.length > 0 ? activeProducts.map((p: Product) => (
                       <tr key={p.id}>
                         <td className="px-2 py-2 text-ink font-medium">{p.name}</td>
                         <td className="px-2 py-2 text-right text-ink">R$ {(p.price || 0).toFixed(2)}</td>

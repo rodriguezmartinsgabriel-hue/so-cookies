@@ -1,6 +1,7 @@
-import { db, addToSyncQueue, getLastSyncTime } from "./db-local"
+import { db, addToSyncQueue, type LocalContact, type LocalContactInteraction, type LocalProduct, type LocalRecipe } from "./db-local"
 import { scheduleSync } from "./sync-service"
 import { emitDataRefresh } from "./refresh-events"
+import type { EntityTable, IDType, UpdateSpec } from "dexie"
 
 export { onDataRefresh } from "./refresh-events"
 
@@ -33,19 +34,19 @@ async function getQueuedIds() {
   return new Set(queued.map((q) => (q.tempId || (q.data && (q.data.id as string))) as string).filter(Boolean))
 }
 
-async function mergeTable(
-  table: any,
+async function mergeTable<TLocal extends { id: string; _synced?: boolean }>(
+  table: EntityTable<TLocal, "id">,
   url: string,
   options?: {
-    transform?: (row: any) => any
-    scope?: (row: any) => boolean
-    onDelete?: (row: any) => Promise<void>
+    transform?: (row: TLocal) => TLocal
+    scope?: (row: TLocal) => boolean
+    onDelete?: (row: TLocal) => Promise<void>
   },
 ) {
   const resp = await fetch(url)
   if (!resp.ok) return
-  const data = await resp.json()
-  const realIds = new Set(data.map((r: any) => r.id))
+  const data = (await resp.json()) as TLocal[]
+  const realIds = new Set(data.map((r) => r.id))
   const unsyncedIds = await getUnsyncedIds(table)
   const queuedIds = await getQueuedIds()
 
@@ -55,13 +56,13 @@ async function mergeTable(
     if (options?.scope && !options.scope(local)) continue
     if (unsyncedIds.has(local.id)) continue
     if (queuedIds.has(local.id)) continue
-    await table.delete(local.id)
+    await table.delete(local.id as IDType<TLocal, "id">)
     if (options?.onDelete) await options.onDelete(local)
   }
 
   const toUpsert = data
-    .filter((r: any) => !unsyncedIds.has(r.id))
-    .map((r: any) => (options?.transform ? options.transform(r) : { ...r, _synced: true, _updatedAt: now() }))
+    .filter((r) => !unsyncedIds.has(r.id))
+    .map((r) => (options?.transform ? options.transform(r) : ({ ...r, _synced: true, _updatedAt: now() } as TLocal)))
   await table.bulkPut(toUpsert)
 }
 
@@ -248,8 +249,8 @@ export const repository = {
         fetch("/api/products")
           .then(async (resp) => {
             if (!resp.ok) return
-            const data = await resp.json()
-            await db.products.bulkPut(data.map((p: any) => ({ ...p, _synced: true })))
+            const data = (await resp.json()) as LocalProduct[]
+            await db.products.bulkPut(data.map((p) => ({ ...p, _synced: true })))
             emitDataRefresh()
           })
           .catch((e) => console.error("Erro ao sync:", e))
@@ -371,7 +372,7 @@ export const repository = {
       const cached = (await db.recipes.toArray()).map((r) => ({ ...r, ingredients: JSON.parse(r.ingredients) }))
       if (isOnline() && shouldFetch("/api/recipes")) {
         mergeTable(db.recipes, "/api/recipes", {
-          transform: (r: any) => ({ ...r, ingredients: JSON.stringify(r.ingredients || []), _synced: true, _updatedAt: now() }),
+          transform: (r) => ({ ...r, ingredients: JSON.stringify(r.ingredients || []), _synced: true, _updatedAt: now() }),
           onDelete: async (r) => {
             await db.recipeItems.where("recipeId").equals(r.id).delete()
           },
@@ -382,7 +383,7 @@ export const repository = {
       return cached
     },
 
-    async create(data: { name: string; yield: number; yieldUnit?: string; totalCost?: number; productId?: string; ingredients: { ingredientId: string; qty: number; unit: string }[] }) {
+    async create(data: { name: string; yield: number; yieldUnit?: string; totalCost?: number; productId?: string; preparation?: string; image?: string; ingredients: { ingredientId: string; qty: number; unit: string }[] }) {
       const id = generateTempId()
       const recipe = {
         ...data,
@@ -410,10 +411,11 @@ export const repository = {
       return { ...recipe, ingredients: JSON.parse(recipe.ingredients) }
     },
 
-    async update(id: string, data: { name?: string; yield?: number; yieldUnit?: string; totalCost?: number; productId?: string; ingredients?: { ingredientId: string; qty: number; unit: string }[] }) {
+    async update(id: string, data: { name?: string; yield?: number; yieldUnit?: string; totalCost?: number; productId?: string; preparation?: string; image?: string; ingredients?: { ingredientId: string; qty: number; unit: string }[] }) {
       const updatedAt = now()
-      const patch: any = { ...data, _synced: false, _updatedAt: updatedAt }
-      if (data.ingredients) patch.ingredients = JSON.stringify(data.ingredients)
+      const { ingredients, ...rest } = data
+      const patch: UpdateSpec<LocalRecipe> = { ...rest, _synced: false, _updatedAt: updatedAt }
+      if (ingredients) patch.ingredients = JSON.stringify(ingredients)
       await db.recipes.update(id, patch)
       await addToSyncQueue({ action: "update", entity: "recipe", data: { id, ...data }, createdAt: now() })
       scheduleSync()
@@ -506,8 +508,8 @@ export const repository = {
         fetch("/api/contacts")
           .then(async (resp) => {
             if (!resp.ok) return
-            const data = await resp.json()
-            const realIds = new Set(data.map((c: any) => c.id))
+            const data = (await resp.json()) as Array<LocalContact & { interactions?: LocalContactInteraction[] }>
+            const realIds = new Set(data.map((c) => c.id))
             const unsyncedIds = await getUnsyncedIds(db.contacts)
             const queuedIds = await getQueuedIds()
 
@@ -522,15 +524,15 @@ export const repository = {
 
             await db.contacts.bulkPut(
               data
-                .filter((c: any) => !unsyncedIds.has(c.id))
-                .map((c: any) => ({ ...c, _synced: true, _updatedAt: now() })),
+                .filter((c) => !unsyncedIds.has(c.id))
+                .map((c) => ({ ...c, _synced: true, _updatedAt: now() })),
             )
 
-            const allInteractions = data.flatMap((c: any) => (c.interactions || []).map((i: any) => ({ ...i, contactId: c.id })))
+            const allInteractions = data.flatMap((c) => (c.interactions || []).map((i) => ({ ...i, contactId: c.id })))
             const unsyncedInteractionIds = await getUnsyncedIds(db.contactInteractions)
             const toUpsert = allInteractions
-              .filter((i: any) => !unsyncedInteractionIds.has(i.id))
-              .map((i: any) => ({ ...i, _synced: true, _updatedAt: now() }))
+              .filter((i) => !unsyncedInteractionIds.has(i.id))
+              .map((i) => ({ ...i, _synced: true, _updatedAt: now() }))
             if (toUpsert.length) await db.contactInteractions.bulkPut(toUpsert)
             emitDataRefresh()
           })

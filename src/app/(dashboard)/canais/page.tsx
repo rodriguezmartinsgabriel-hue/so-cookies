@@ -1,41 +1,28 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState } from "react"
+import { useConfirm } from "@/hooks/useConfirm"
 import { useFocusTrap } from "@/hooks/useFocusTrap"
 import { useRole } from "@/hooks/useRole"
+import { useQueryData } from "@/hooks/useQueryData"
 import { AppShell } from "@/components/layout/AppShell"
 import { Skeleton } from "@/components/ui/Skeleton"
 import { ErrorState } from "@/components/ui/ErrorState"
-import { repository, onDataRefresh } from "@/lib/repository"
+import { repository } from "@/lib/repository"
+import type { SaleChannel } from "@/lib/entity-types"
 import { Plus, Edit, Trash2, X, Store } from "lucide-react"
 
 export default function CanaisPage() {
   const { canEdit } = useRole();
-  const [channels, setChannels] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const { confirm, dialog } = useConfirm()
+  const { data: channels, isLoading: loading, error: channelsError, invalidate } = useQueryData("channels")
+  const error = channelsError ? "Erro ao carregar canais" : null
   const [showModal, setShowModal] = useState(false)
   const modalRef = useFocusTrap(showModal)
-  const [editingItem, setEditingItem] = useState<any>(null)
+  const [editingItem, setEditingItem] = useState<SaleChannel | null>(null)
   const [form, setForm] = useState({ name: "", commission: "" })
 
-  const loadData = useCallback(async () => {
-    try {
-      const data = await repository.channels.getAll()
-      setChannels(data)
-    } catch {
-      setError("Erro ao carregar canais")
-    }
-    setLoading(false)
-  }, [])
-
-  useEffect(() => { loadData() }, [loadData])
-
-  useEffect(() => {
-    return onDataRefresh(() => { loadData() })
-  }, [loadData])
-
-  function openEdit(item: any) {
+  function openEdit(item: SaleChannel) {
     setEditingItem(item)
     setForm({ name: item.name || "", commission: String(item.commission ?? 0) })
     setShowModal(true)
@@ -59,13 +46,13 @@ export default function CanaisPage() {
     }
     setShowModal(false)
     resetForm()
-    await loadData()
+    await invalidate()
   }
 
   async function handleDelete(id: string) {
-    if (!confirm("Excluir este canal?")) return
+    if (!(await confirm("Excluir este canal?"))) return
     await repository.channels.delete(id)
-    await loadData()
+    await invalidate()
   }
 
   return (
@@ -88,7 +75,7 @@ export default function CanaisPage() {
         </div>
 
         {error && (
-          <ErrorState message={error} onRetry={loadData} />
+          <ErrorState message={error} onRetry={invalidate} />
         )}
 
         {loading ? (
@@ -130,7 +117,7 @@ export default function CanaisPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-line">
-                  {channels.map((ch: any) => (
+                  {channels.map((ch: SaleChannel) => (
                     <tr key={ch.id} className="hover:bg-cream/50 transition-colors">
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-3">
@@ -187,6 +174,7 @@ export default function CanaisPage() {
           </div>
         )}
       </div>
+        {dialog}
     </AppShell>
   )
 }

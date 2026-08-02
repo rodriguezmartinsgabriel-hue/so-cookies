@@ -1,21 +1,10 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
+import dynamic from "next/dynamic";
 import { AppShell } from "@/components/layout/AppShell";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { ErrorState } from "@/components/ui/ErrorState";
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-} from "recharts";
+import { useQueryData } from "@/hooks/useQueryData";
 import { TrendingUp, DollarSign, ShoppingCart, Package, Truck } from "lucide-react";
 
 const COLORS = ["#C23B2E", "#E0A400", "#2F7A3E", "#111111"];
@@ -35,31 +24,45 @@ const STATUS_LABELS: Record<string, string> = {
   CANCELADO: "Cancelado",
 };
 
+type Sale = {
+  id: string;
+  createdAt: string;
+  total: number;
+  channel?: { name?: string } | string;
+  items?: { product?: { name?: string }; qty: number; price: number }[];
+};
+
+type Order = {
+  id: string;
+  createdAt: string;
+  status: string;
+  platform?: string;
+  total: number;
+  platformFee?: number;
+};
+
+const ReportCharts = dynamic(() => import("@/components/charts/ReportCharts"), {
+  ssr: false,
+  loading: () => (
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      {Array.from({ length: 2 }).map((_, i) => (
+        <div key={i} className="border border-line rounded-lg bg-paper p-4 shadow-card">
+          <Skeleton className="h-4 w-32 mb-4" />
+          <Skeleton className="h-48" />
+        </div>
+      ))}
+    </div>
+  ),
+});
+
 export default function RelatoriosPage() {
-  const [sales, setSales] = useState<any[]>([]);
-  const [orders, setOrders] = useState<any[]>([]);
+  const { data: salesData, isLoading: salesLoading } = useQueryData("sales");
+  const { data: ordersData, isLoading: ordersLoading } = useQueryData("orders");
   const [period, setPeriod] = useState(30);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    load();
-  }, []);
-
-  async function load() {
-    setLoading(true);
-    try {
-      const [salesResp, ordersResp] = await Promise.all([
-        fetch("/api/sales"),
-        fetch("/api/orders"),
-      ]);
-      if (salesResp.ok) setSales(await salesResp.json());
-      if (ordersResp.ok) setOrders(await ordersResp.json());
-    } catch {
-      setError("Erro ao carregar relatórios");
-    }
-    setLoading(false);
-  }
+  const sales = salesData as Sale[];
+  const orders = ordersData as Order[];
+  const loading = salesLoading || ordersLoading;
 
   const cutoff = useMemo(() => {
     if (!period) return null;
@@ -71,24 +74,24 @@ export default function RelatoriosPage() {
 
   const filteredSales = useMemo(() => {
     if (!cutoff) return sales;
-    return sales.filter((s: any) => new Date(s.createdAt) >= cutoff);
+    return sales.filter((s) => new Date(s.createdAt) >= cutoff);
   }, [sales, cutoff]);
 
   const filteredOrders = useMemo(() => {
     if (!cutoff) return orders;
-    return orders.filter((o: any) => new Date(o.createdAt) >= cutoff);
+    return orders.filter((o) => new Date(o.createdAt) >= cutoff);
   }, [orders, cutoff]);
 
-  const totalRevenue = filteredSales.reduce((sum: number, s: any) => sum + (s.total || 0), 0);
+  const totalRevenue = filteredSales.reduce((sum, s) => sum + (s.total || 0), 0);
   const avgTicket = filteredSales.length > 0 ? totalRevenue / filteredSales.length : 0;
 
-  const deliveryOrders = filteredOrders.filter((o: any) => o.platform && o.status === "CONCLUIDO");
-  const deliveryRevenue = deliveryOrders.reduce((sum: number, o: any) => sum + (o.total || 0) - (o.platformFee || 0), 0);
-  const deliveryFees = deliveryOrders.reduce((sum: number, o: any) => sum + (o.platformFee || 0), 0);
+  const deliveryOrders = filteredOrders.filter((o) => o.platform && o.status === "CONCLUIDO");
+  const deliveryRevenue = deliveryOrders.reduce((sum, o) => sum + (o.total || 0) - (o.platformFee || 0), 0);
+  const deliveryFees = deliveryOrders.reduce((sum, o) => sum + (o.platformFee || 0), 0);
 
   const channelCounts: Record<string, number> = {};
-  filteredSales.forEach((s: any) => {
-    const ch = s.channel?.name || s.channel || "Direto";
+  filteredSales.forEach((s) => {
+    const ch = (typeof s.channel === "string" ? s.channel : s.channel?.name) || "Direto";
     channelCounts[ch] = (channelCounts[ch] || 0) + 1;
   });
   const channelNames = Object.keys(channelCounts);
@@ -99,8 +102,8 @@ export default function RelatoriosPage() {
   }));
 
   const productCounts: Record<string, { sold: number; revenue: number }> = {};
-  filteredSales.forEach((s: any) => {
-    (s.items || []).forEach((item: any) => {
+  filteredSales.forEach((s) => {
+    (s.items || []).forEach((item) => {
       const name = item.product?.name || "Produto";
       if (!productCounts[name]) productCounts[name] = { sold: 0, revenue: 0 };
       productCounts[name].sold += item.qty;
@@ -113,7 +116,7 @@ export default function RelatoriosPage() {
     .slice(0, 5);
 
   const statusCounts: Record<string, number> = {};
-  filteredOrders.forEach((o: any) => {
+  filteredOrders.forEach((o) => {
     statusCounts[o.status] = (statusCounts[o.status] || 0) + 1;
   });
   const statusData = Object.entries(statusCounts)
@@ -123,7 +126,7 @@ export default function RelatoriosPage() {
   const salesPerDay = useMemo(() => {
     if (!cutoff) {
       const byMonth: Record<string, number> = {};
-      sales.forEach((s: any) => {
+      sales.forEach((s) => {
         const d = new Date(s.createdAt);
         const key = `${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`;
         byMonth[key] = (byMonth[key] || 0) + (s.total || 0);
@@ -144,7 +147,7 @@ export default function RelatoriosPage() {
         }
         byWeek[weekIndex].total = 0;
       }
-      filteredSales.forEach((s: any) => {
+      filteredSales.forEach((s) => {
         const d = new Date(s.createdAt);
         d.setHours(0, 0, 0, 0);
         const daysDiff = Math.floor((cutoff.getTime() - d.getTime()) / 86400000);
@@ -162,7 +165,7 @@ export default function RelatoriosPage() {
       d.setDate(d.getDate() - (days - 1 - i));
       byDay.push({ name: `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}`, total: 0, index: i });
     }
-    filteredSales.forEach((s: any) => {
+    filteredSales.forEach((s) => {
       const d = new Date(s.createdAt);
       d.setHours(0, 0, 0, 0);
       const daysDiff = Math.floor((cutoff.getTime() - d.getTime()) / 86400000);
@@ -189,10 +192,6 @@ export default function RelatoriosPage() {
             ))}
           </div>
         </div>
-
-        {error && (
-          <ErrorState message={error} onRetry={load} />
-        )}
 
         {loading ? (
           <div className="space-y-6">
@@ -269,76 +268,7 @@ export default function RelatoriosPage() {
               </div>
             </div>
 
-            <div className="border border-line rounded-lg bg-paper p-4 shadow-card">
-              <h2 className="text-sm font-semibold text-ink uppercase tracking-wide mb-4">
-                Vendas por Dia
-              </h2>
-              {salesPerDay.length > 0 && salesPerDay.some((d: any) => d.total > 0) ? (
-                <div className="h-56">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={salesPerDay} margin={{ top: 4, right: 8, bottom: 0, left: 8 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#E5DCCB" />
-                      <XAxis dataKey="name" tick={{ fontSize: 10, fill: "#6B6156" }} tickLine={false} />
-                      <YAxis tick={{ fontSize: 10, fill: "#6B6156" }} tickLine={false} width={54} />
-                      <Tooltip formatter={(value: any) => [`R$ ${Number(value).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`, "Receita"]} labelStyle={{ color: "#111111" }} />
-                      <Bar dataKey="total" fill="#111111" radius={[4, 4, 0, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              ) : (
-                <p className="text-center text-muted text-sm py-8">Sem vendas no período</p>
-              )}
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              <div className="border border-line rounded-lg bg-paper p-4 shadow-card">
-                <h2 className="text-sm font-semibold text-ink uppercase tracking-wide mb-4">
-                  Vendas por Canal
-                </h2>
-                {channelData.length > 0 ? (
-                  <div className="h-48">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie
-                          data={channelData}
-                          cx="50%"
-                          cy="50%"
-                          innerRadius={50}
-                          outerRadius={80}
-                          dataKey="value"
-                          label={({ name, value }) => `${name} ${value}%`}
-                        >
-                          {channelData.map((entry, index) => (
-                            <Cell key={index} fill={entry.color} />
-                          ))}
-                        </Pie>
-                        <Tooltip />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  </div>
-                ) : (
-                  <p className="text-center text-muted text-sm py-8">Sem dados</p>
-                )}
-              </div>
-
-              <div className="border border-line rounded-lg bg-paper p-4 shadow-card">
-                <h2 className="text-sm font-semibold text-ink uppercase tracking-wide mb-4">
-                  Pedidos por Status
-                </h2>
-                {statusData.length > 0 ? (
-                  <div className="space-y-2">
-                    {statusData.map((item) => (
-                      <div key={item.status} className="flex items-center justify-between">
-                        <span className="text-sm text-ink">{item.label}</span>
-                        <span className="text-sm font-semibold text-ink">{item.count}</span>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-center text-muted text-sm py-8">Sem dados</p>
-                )}
-              </div>
-            </div>
+            <ReportCharts salesPerDay={salesPerDay} channelData={channelData} statusData={statusData} />
 
             <div className="border border-line rounded-lg bg-paper p-4 shadow-card">
               <h2 className="text-sm font-semibold text-ink uppercase tracking-wide mb-4">

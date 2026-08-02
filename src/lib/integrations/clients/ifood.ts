@@ -1,5 +1,6 @@
 import { is99FoodCredentials } from "../accounts"
 import type { AccountRecord } from "../types"
+import type { PlatformOrderDetails } from "../normalize"
 
 const IFOOD_TOKEN_URL = "https://merchant-api.ifood.com.br/authentication/v1.0/oauth/token"
 export const IFOOD_ORDER_BASE = "https://merchant-api.ifood.com.br/order/v1.0"
@@ -19,13 +20,13 @@ export async function getIfoodToken(account: AccountRecord): Promise<string> {
   return token
 }
 
-export async function fetchIfoodOrder(account: AccountRecord, orderId: string): Promise<any> {
+export async function fetchIfoodOrder(account: AccountRecord, orderId: string): Promise<PlatformOrderDetails> {
   const token = await getIfoodToken(account)
   const res = await fetch(`${IFOOD_ORDER_BASE}/orders/${orderId}`, {
     headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
   })
   if (!res.ok) throw new Error(`iFood pedido falhou (${res.status})`)
-  return res.json()
+  return res.json() as Promise<PlatformOrderDetails>
 }
 
 export async function updateIfoodOrderStatus(account: AccountRecord, orderId: string, operation: string): Promise<void> {

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { requireAuth } from "@/lib/api-auth"
-import { createIngredientSchema } from "@/lib/validation"
+import { createIngredientSchema, getZodIssues } from "@/lib/validation"
 
 export async function GET() {
   const { error } = await requireAuth()
@@ -9,7 +9,7 @@ export async function GET() {
   try {
     const data = await prisma.ingredient.findMany()
     return NextResponse.json(data)
-  } catch (e) {
+  } catch {
     return NextResponse.json({ error: "Erro ao buscar ingredientes" }, { status: 500 })
   }
 }
@@ -22,9 +22,10 @@ export async function POST(request: Request) {
     const parsed = createIngredientSchema.parse(json)
     const data = await prisma.ingredient.create({ data: parsed })
     return NextResponse.json(data)
-  } catch (e: any) {
-    if (e?.issues) {
-      return NextResponse.json({ error: "Dados inválidos", details: e.issues }, { status: 400 })
+  } catch (e) {
+    const issues = getZodIssues(e)
+    if (issues) {
+      return NextResponse.json({ error: "Dados inválidos", details: issues }, { status: 400 })
     }
     return NextResponse.json({ error: "Erro ao criar ingrediente" }, { status: 500 })
   }

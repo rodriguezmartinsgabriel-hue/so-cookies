@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { getOrder, applyOrderUpdate, deleteOrder, isNotFoundError } from "@/lib/db"
 import { requireAuth } from "@/lib/api-auth"
-import { updateOrderSchema } from "@/lib/validation"
+import { updateOrderSchema, getZodIssues } from "@/lib/validation"
 
 export async function GET(
   request: Request,
@@ -14,7 +14,7 @@ export async function GET(
     const order = await getOrder(id)
     if (!order) return NextResponse.json({ error: "Não encontrado" }, { status: 404 })
     return NextResponse.json(order)
-  } catch (e) {
+  } catch {
     return NextResponse.json({ error: "Erro ao buscar pedido" }, { status: 500 })
   }
 }
@@ -31,8 +31,9 @@ export async function PUT(
     const parsed = updateOrderSchema.parse(json)
     const order = await applyOrderUpdate(id, parsed)
     return NextResponse.json(order)
-  } catch (e: any) {
-    if (e?.issues) return NextResponse.json({ error: "Dados inválidos", details: e.issues }, { status: 400 })
+  } catch (e) {
+    const issues = getZodIssues(e)
+    if (issues) return NextResponse.json({ error: "Dados inválidos", details: issues }, { status: 400 })
     return NextResponse.json({ error: "Erro ao atualizar pedido" }, { status: 500 })
   }
 }

@@ -74,7 +74,7 @@ describe("processInboundOrderEvent", () => {
 
   it("reprocessa evento que falhou antes (status ERROR vira RECEIVED)", async () => {
     mocks.inboundFindUnique.mockResolvedValue({ id: "evt-fail", status: "ERROR", error: "API fora" })
-    mocks.inboundUpdate.mockImplementation(async ({ where, data }: any) => ({ id: where.id, ...data }))
+    mocks.inboundUpdate.mockImplementation(async ({ where, data }: { where: { id: string }; data: Record<string, unknown> }) => ({ id: where.id, ...data }))
     mocks.fetchNineFoodOrder.mockResolvedValue(nineFoodDetails)
     mocks.upsertOrder.mockResolvedValue({ id: "ord-1" })
 

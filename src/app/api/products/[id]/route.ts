@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { getProduct, updateProduct, deleteProduct, isNotFoundError } from "@/lib/db"
 import { requireAuth } from "@/lib/api-auth"
-import { updateProductSchema } from "@/lib/validation"
+import { updateProductSchema, getZodIssues } from "@/lib/validation"
 
 export async function GET(
   request: Request,
@@ -14,7 +14,7 @@ export async function GET(
     const product = await getProduct(id)
     if (!product) return NextResponse.json({ error: "Não encontrado" }, { status: 404 })
     return NextResponse.json(product)
-  } catch (e) {
+  } catch {
     return NextResponse.json({ error: "Erro ao buscar produto" }, { status: 500 })
   }
 }
@@ -31,8 +31,9 @@ export async function PUT(
     const parsed = updateProductSchema.parse(json)
     const product = await updateProduct(id, parsed)
     return NextResponse.json(product)
-  } catch (e: any) {
-    if (e?.issues) return NextResponse.json({ error: "Dados inválidos", details: e.issues }, { status: 400 })
+  } catch (e) {
+    const issues = getZodIssues(e)
+    if (issues) return NextResponse.json({ error: "Dados inválidos", details: issues }, { status: 400 })
     if (isNotFoundError(e)) return NextResponse.json({ error: "Não encontrado" }, { status: 404 })
     return NextResponse.json({ error: "Erro ao atualizar produto" }, { status: 500 })
   }

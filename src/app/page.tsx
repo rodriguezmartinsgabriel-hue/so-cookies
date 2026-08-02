@@ -2,11 +2,14 @@
 
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
+import Image from "next/image";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { onDataRefresh } from "@/lib/refresh-events";
 import { useRole } from "@/hooks/useRole";
+import { useQueryData } from "@/hooks/useQueryData";
 import { AppShell } from "@/components/layout/AppShell";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { ErrorState } from "@/components/ui/ErrorState";
 import {
   ShoppingBag,
   Package,
@@ -25,6 +28,7 @@ import {
   BookUser,
 } from "lucide-react";
 import Link from "next/link";
+import type { Ingredient } from "@/lib/entity-types";
 
 const modules = [
   { label: "Pedidos", icon: ShoppingBag, href: "/pedidos", color: "bg-info/10 text-info", desc: "Gerenciar pedidos" },
@@ -41,15 +45,31 @@ const modules = [
   { label: "Usuários", icon: Users, href: "/usuarios", color: "bg-muted/10 text-muted", desc: "Acesso e permissões", adminOnly: true },
 ];
 
+async function fetchJson<T>(url: string): Promise<T> {
+  const resp = await fetch(url);
+  if (!resp.ok) throw new Error(`HTTP ${resp.status} ${url}`);
+  return resp.json();
+}
+
 export default function HomePage() {
   const { data: session, status } = useSession();
   const { isAdmin } = useRole();
   const router = useRouter();
-  const [kpis, setKpis] = useState<any>(null);
-  const [lowStock, setLowStock] = useState<any[]>([]);
-  const [recentOrders, setRecentOrders] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+
+  const { data: orders, isLoading: ordersLoading } = useQueryData("orders");
+
+  const kpisQuery = useQuery({
+    queryKey: ["dashboard-kpis"],
+    queryFn: () => fetchJson("/api/dashboard/kpis"),
+    staleTime: 30_000,
+  });
+
+  const lowStockQuery = useQuery({
+    queryKey: ["low-stock"],
+    queryFn: () => fetchJson("/api/ingredients/low-stock"),
+    staleTime: 30_000,
+  });
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -58,47 +78,23 @@ export default function HomePage() {
   }, [status, router]);
 
   useEffect(() => {
-    if (status === "authenticated") {
-      loadData();
-    }
-  }, [status]);
-
-  async function loadData() {
-    setLoading(true);
-    try {
-      const [kpisResp, ordersResp, lowStockResp] = await Promise.allSettled([
-        fetch("/api/dashboard/kpis"),
-        fetch("/api/orders"),
-        fetch("/api/ingredients/low-stock"),
-      ]);
-
-      if (kpisResp.status === "fulfilled" && kpisResp.value.ok) {
-        setKpis(await kpisResp.value.json());
-      } else {
-        setKpis(null);
-      }
-
-      if (ordersResp.status === "fulfilled" && ordersResp.value.ok) {
-        const orders = await ordersResp.value.json();
-        setRecentOrders(orders.slice(0, 5));
-      }
-
-      if (lowStockResp.status === "fulfilled" && lowStockResp.value.ok) {
-        setLowStock(await lowStockResp.value.json());
-      }
-    } catch {
-      setError("Erro ao carregar dashboard");
-    }
-    setLoading(false);
-  }
+    if (status !== "authenticated") return;
+    return onDataRefresh(() => {
+      queryClient.invalidateQueries({ queryKey: ["dashboard-kpis"] });
+      queryClient.invalidateQueries({ queryKey: ["low-stock"] });
+    });
+  }, [status, queryClient]);
 
   if (status === "loading" || status === "unauthenticated") {
     return (
       <div className="h-screen flex items-center justify-center bg-paper">
         <div className="flex items-center gap-4">
-          <img
-            src="/só logo sem fundo.svg"
+          <Image
+            src="/logo.svg"
             alt="Só"
+            width={40}
+            height={40}
+            unoptimized
             className="h-10 w-auto"
           />
           <Skeleton className="h-4 w-24 mx-auto mt-2" />
@@ -106,6 +102,11 @@ export default function HomePage() {
       </div>
     );
   }
+
+  const kpis = kpisQuery.data as Record<string, number> | undefined;
+  const lowStock = (lowStockQuery.data ?? []) as Ingredient[];
+  const recentOrders = orders.slice(0, 5);
+  const loading = ordersLoading || kpisQuery.isLoading;
 
   return (
     <AppShell>
@@ -118,10 +119,6 @@ export default function HomePage() {
             Painel de gestão — Só Cookies & Café
           </p>
         </div>
-
-        {error && (
-          <ErrorState message={error} onRetry={loadData} />
-        )}
 
         {loading ? (
           <div className="space-y-6">
@@ -242,7 +239,7 @@ export default function HomePage() {
               Estoque Baixo
             </h2>
             <div className="border border-line rounded-lg bg-paper shadow-card divide-y divide-line">
-              {lowStock.slice(0, 5).map((item: any) => (
+              {lowStock.slice(0, 5).map((item: Ingredient) => (
                 <div key={item.id} className="flex items-center gap-3 p-3">
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-ink">{item.name}</p>
@@ -264,7 +261,7 @@ export default function HomePage() {
               Pedidos Recentes
             </h2>
             <div className="border border-line rounded-lg bg-paper shadow-card divide-y divide-line">
-              {recentOrders.map((order: any) => (
+              {recentOrders.map((order) => (
                 <div key={order.id} className="flex items-center gap-3 p-3">
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-ink truncate">

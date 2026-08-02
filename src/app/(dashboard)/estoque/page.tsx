@@ -1,24 +1,28 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useRef } from "react";
+import { useConfirm } from "@/hooks/useConfirm";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { useRole } from "@/hooks/useRole";
+import { useQueryData } from "@/hooks/useQueryData";
 import { AppShell } from "@/components/layout/AppShell";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { ErrorState } from "@/components/ui/ErrorState";
-import { repository, onDataRefresh } from "@/lib/repository";
-import { Plus, Search, Package, Edit, Trash2, X, AlertTriangle } from "lucide-react";
+import { repository } from "@/lib/repository";
+import type { Ingredient, PriceTier, Product, Recipe, RecipeItem } from "@/lib/entity-types";
+import { Plus, Search, Edit, Trash2, X, AlertTriangle } from "lucide-react";
 
 export default function EstoquePage() {
   const { canEdit } = useRole();
+  const { confirm, dialog } = useConfirm();
   const [search, setSearch] = useState("");
   const [showModal, setShowModal] = useState(false);
   const modalRef = useFocusTrap(showModal);
-  const [editingItem, setEditingItem] = useState<any>(null);
-  const [ingredients, setIngredients] = useState<any[]>([]);
-  const [recipes, setRecipes] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [editingItem, setEditingItem] = useState<Ingredient | null>(null);
+  const { data: ingredients, isLoading: ingredientsLoading, error: ingredientsError, invalidate } = useQueryData("ingredients");
+  const { data: recipes, error: recipesError } = useQueryData("recipes");
+  const loading = ingredientsLoading;
+  const error = ingredientsError || recipesError ? "Erro ao carregar insumos" : null;
   const [tab, setTab] = useState<"insumos" | "precos" | "geral">("insumos");
 
   const [form, setForm] = useState({
@@ -26,32 +30,12 @@ export default function EstoquePage() {
     caloriesPer100g: "", proteinPer100g: "", carbsPer100g: "", fatPer100g: "",
   });
 
-  const loadIngredients = useCallback(async () => {
-    try {
-      const [ingredientsData, recipesData] = await Promise.all([
-        repository.ingredients.getAll(),
-        repository.recipes.getAll(),
-      ]);
-      setIngredients(ingredientsData);
-      setRecipes(recipesData);
-    } catch {
-      setError("Erro ao carregar insumos");
-    }
-    setLoading(false);
-  }, []);
-
-  useEffect(() => { loadIngredients(); }, [loadIngredients]);
-
-  useEffect(() => {
-    return onDataRefresh(() => { loadIngredients(); });
-  }, [loadIngredients]);
-
   function resetForm() {
     setForm({ name: "", brand: "", stockKg: "", minStockKg: "", costPerKg: "", supplier: "", caloriesPer100g: "", proteinPer100g: "", carbsPer100g: "", fatPer100g: "" });
     setEditingItem(null);
   }
 
-  function openEdit(item: any) {
+  function openEdit(item: Ingredient) {
     setEditingItem(item);
     setForm({
       name: item.name || "",
@@ -70,7 +54,7 @@ export default function EstoquePage() {
 
   async function handleSave() {
     if (!form.name || !form.costPerKg) return;
-    const payload: any = {
+    const payload: Parameters<typeof repository.ingredients.create>[0] = {
       name: form.name,
       brand: form.brand || undefined,
       stockKg: parseFloat(form.stockKg) || 0,
@@ -90,24 +74,24 @@ export default function EstoquePage() {
     }
     setShowModal(false);
     resetForm();
-    await loadIngredients();
+    await invalidate();
   }
 
   async function handleDelete(id: string) {
-    if (typeof window !== "undefined" && !window.confirm("Excluir este insumo?")) return;
+    if (!(await confirm("Excluir este insumo?"))) return;
     await repository.ingredients.delete(id);
-    await loadIngredients();
+    await invalidate();
   }
 
   const filtered = ingredients.filter(
-    (i: any) =>
+    (i: Ingredient) =>
       i.name?.toLowerCase().includes(search.toLowerCase()) ||
       i.supplier?.toLowerCase().includes(search.toLowerCase()) ||
       i.brand?.toLowerCase().includes(search.toLowerCase())
   );
 
-  const lowStockItems = filtered.filter((i: any) => (i.stockKg || 0) <= (i.minStockKg || 0));
-  const totalValue = filtered.reduce((sum: number, i: any) => sum + ((i.stockKg || 0) * (i.costPerKg || 0)), 0);
+  const lowStockItems = filtered.filter((i: Ingredient) => (i.stockKg || 0) <= (i.minStockKg || 0));
+  const totalValue = filtered.reduce((sum: number, i: Ingredient) => sum + ((i.stockKg || 0) * (i.costPerKg || 0)), 0);
 
   return (
     <AppShell>
@@ -163,7 +147,7 @@ export default function EstoquePage() {
         )}
 
         {error && (
-          <ErrorState message={error} onRetry={loadIngredients} />
+          <ErrorState message={error} onRetry={invalidate} />
         )}
 
         {tab === "insumos" ? (
@@ -189,7 +173,7 @@ export default function EstoquePage() {
           ) : (
             <>
               <div className="lg:hidden space-y-2">
-                {filtered.map((item: any) => (
+                {filtered.map((item: Ingredient) => (
                   <div key={item.id} className="border border-line rounded-lg bg-paper p-3 shadow-card">
                     <div className="flex items-start justify-between">
                       <div>
@@ -242,7 +226,7 @@ export default function EstoquePage() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-line">
-                      {filtered.map((item: any) => (
+                      {filtered.map((item: Ingredient) => (
                         <tr key={item.id} className="hover:bg-cream/50 transition-colors">
                           <td className="px-4 py-3">
                             <p className="text-sm font-medium text-ink">{item.name}</p>
@@ -276,7 +260,7 @@ export default function EstoquePage() {
             </>
           )
         ) : tab === "geral" ? (
-          <GeralTab ingredients={ingredients} recipes={recipes} onUpdate={loadIngredients} />
+          <GeralTab ingredients={ingredients} recipes={recipes} onUpdate={invalidate} />
         ) : (
           <PriceTiersTab />
         )}
@@ -349,42 +333,24 @@ export default function EstoquePage() {
           </div>
         )}
       </div>
+        {dialog}
     </AppShell>
   );
 }
 
 function PriceTiersTab() {
   const { canEdit } = useRole();
-  const [tiers, setTiers] = useState<any[]>([]);
-  const [products, setProducts] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { confirm, dialog } = useConfirm();
+  const { data: tiers, isLoading: loading, error: tiersError, invalidate } = useQueryData("priceTiers");
+  const { data: products, error: productsError } = useQueryData("products");
+  const error = tiersError || productsError ? "Erro ao carregar faixas de preço" : null;
   const [showModal, setShowModal] = useState(false);
   const priceModalRef = useFocusTrap(showModal);
-  const [editingTier, setEditingTier] = useState<any>(null);
+  const [editingTier, setEditingTier] = useState<PriceTier | null>(null);
   const [form, setForm] = useState({ name: "", minQty: "", maxQty: "", price: "", productId: "", type: "assado" });
 
-  useEffect(() => {
-    async function load() {
-      try {
-        const [tiersData, prodsData] = await Promise.allSettled([
-          repository.priceTiers.getAll(),
-          repository.products.getAll(),
-        ]);
-        if (tiersData.status === "fulfilled") setTiers(tiersData.value);
-        if (prodsData.status === "fulfilled") setProducts(prodsData.value);
-      } catch {
-        setError("Erro ao carregar faixas de preço");
-      }
-      setLoading(false);
-    }
-    load();
-    const unsub = onDataRefresh(() => { load(); });
-    return () => { unsub(); };
-  }, []);
-
-  function productName(tier: any) {
-    return products.find((p: any) => p.id === tier.productId)?.name || "—";
+  function productName(tier: PriceTier) {
+    return products.find((p: Product) => p.id === tier.productId)?.name || "—";
   }
 
   async function handleSave() {
@@ -408,22 +374,21 @@ function PriceTiersTab() {
     setShowModal(false);
     setEditingTier(null);
     setForm({ name: "", minQty: "", maxQty: "", price: "", productId: "", type: "assado" });
-    const data = await repository.priceTiers.getAll();
-    setTiers(data);
+    await invalidate();
   }
 
   async function handleDelete(id: string) {
-    if (!confirm("Excluir esta faixa de preço?")) return;
+    if (!(await confirm("Excluir esta faixa de preço?"))) return;
     await repository.priceTiers.delete(id);
-    const data = await repository.priceTiers.getAll();
-    setTiers(data);
+    await invalidate();
   }
 
-  const assadoTiers = tiers.filter((t: any) => t.name?.toLowerCase().includes("assado"));
-  const congeladoTiers = tiers.filter((t: any) => t.name?.toLowerCase().includes("congelado"));
+  const assadoTiers = tiers.filter((t: PriceTier) => t.name?.toLowerCase().includes("assado"));
+  const congeladoTiers = tiers.filter((t: PriceTier) => t.name?.toLowerCase().includes("congelado"));
 
   return (
     <div className="space-y-4">
+      {dialog}
       <div className="flex justify-end">
         {canEdit && (
           <button onClick={() => { setEditingTier(null); setForm({ name: "", minQty: "", maxQty: "", price: "", productId: "", type: "assado" }); setShowModal(true); }} className="flex items-center gap-2 h-10 px-4 bg-ink text-paper rounded-lg text-sm font-medium hover:bg-ink/90 transition-colors">
@@ -432,7 +397,7 @@ function PriceTiersTab() {
         )}
       </div>
 
-      {error && <ErrorState message={error} onRetry={() => window.location.reload()} />}
+      {error && <ErrorState message={error} onRetry={invalidate} />}
 
       {loading ? (
         <div className="space-y-4">
@@ -466,7 +431,7 @@ function PriceTiersTab() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-line">
-                  {assadoTiers.map((tier: any) => (
+                  {assadoTiers.map((tier: PriceTier) => (
                     <tr key={tier.id} className="hover:bg-cream/50">
                       <td className="px-4 py-3 text-sm text-muted">{productName(tier)}</td>
                       <td className="px-4 py-3 text-sm font-medium text-ink">{tier.name}</td>
@@ -507,7 +472,7 @@ function PriceTiersTab() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-line">
-                  {congeladoTiers.map((tier: any) => (
+                  {congeladoTiers.map((tier: PriceTier) => (
                     <tr key={tier.id} className="hover:bg-cream/50">
                       <td className="px-4 py-3 text-sm text-muted">{productName(tier)}</td>
                       <td className="px-4 py-3 text-sm font-medium text-ink">{tier.name}</td>
@@ -549,7 +514,7 @@ function PriceTiersTab() {
                   className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink bg-paper focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink transition-colors"
                 >
                   <option value="">Selecione um produto</option>
-                  {products.map((p: any) => (
+                  {products.map((p: Product) => (
                     <option key={p.id} value={p.id}>{p.name}</option>
                   ))}
                 </select>
@@ -584,7 +549,7 @@ function PriceTiersTab() {
   );
 }
 
-function GeralTab({ ingredients, recipes, onUpdate }: { ingredients: any[]; recipes: any[]; onUpdate: () => void }) {
+function GeralTab({ ingredients, recipes, onUpdate }: { ingredients: Ingredient[]; recipes: Recipe[]; onUpdate: () => void }) {
   const { canEdit } = useRole();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editField, setEditField] = useState<"name" | "brand">("name");
@@ -594,8 +559,8 @@ function GeralTab({ ingredients, recipes, onUpdate }: { ingredients: any[]; reci
   const lastSaved = useRef<{ id: string; field: string; value: string } | null>(null);
 
   function ingredientUsage(ingredientId: string) {
-    return recipes.filter((r: any) =>
-      (r.ingredients || []).some((ri: any) => ri.ingredientId === ingredientId || ri.ingredient?.id === ingredientId)
+    return recipes.filter((r: Recipe) =>
+      (r.ingredients || []).some((ri: RecipeItem) => ri.ingredientId === ingredientId || ri.ingredient?.id === ingredientId)
     );
   }
 
@@ -647,7 +612,7 @@ function GeralTab({ ingredients, recipes, onUpdate }: { ingredients: any[]; reci
               </tr>
             </thead>
             <tbody className="divide-y divide-line">
-              {ingredients.map((item: any) => {
+              {ingredients.map((item: Ingredient) => {
                 const usage = ingredientUsage(item.id);
                 return (
                   <tr key={item.id} className="hover:bg-cream/50 transition-colors">
@@ -693,7 +658,7 @@ function GeralTab({ ingredients, recipes, onUpdate }: { ingredients: any[]; reci
                     </td>
                     <td className="px-4 py-2">
                       <div className="flex flex-wrap gap-1">
-                        {usage.length > 0 ? usage.map((r: any) => (
+                        {usage.length > 0 ? usage.map((r: Recipe) => (
                           <span key={r.id} className="text-[10px] bg-cream text-muted px-1.5 py-0.5 rounded border border-line">
                             {r.name}
                           </span>

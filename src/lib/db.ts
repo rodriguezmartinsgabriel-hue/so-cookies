@@ -1,13 +1,13 @@
 import { prisma } from "./prisma";
-import type { Role, ContactType, InteractionType } from "@/generated/prisma/enums";
+import type { Role, ContactType, InteractionType, DocumentCategory } from "@/generated/prisma/enums";
 import { pushOrderStatusToPlatform } from "./integrations/push";
 
 export function isNotFoundError(e: unknown): boolean {
-  return typeof e === "object" && e !== null && "code" in e && (e as any).code === "P2025";
+  return typeof e === "object" && e !== null && "code" in e && e.code === "P2025";
 }
 
 export function isConstraintError(e: unknown): boolean {
-  return typeof e === "object" && e !== null && "code" in e && (e as any).code === "P2003";
+  return typeof e === "object" && e !== null && "code" in e && e.code === "P2003";
 }
 
 export async function getDashboardKpis() {
@@ -356,7 +356,7 @@ export async function deletePriceTier(id: string) {
 }
 
 export async function getDocuments(category?: string) {
-  const where = category && category !== "ALL" ? { category: category as any } : {};
+  const where = category && category !== "ALL" ? { category: category as DocumentCategory } : {};
   return prisma.document.findMany({ where, include: { user: true }, orderBy: { createdAt: "desc" } });
 }
 
@@ -373,7 +373,7 @@ export async function createDocument(data: {
   tags?: string;
   userId?: string;
 }) {
-  return prisma.document.create({ data: { ...data, category: data.category as any } });
+  return prisma.document.create({ data: { ...data, category: data.category as DocumentCategory } });
 }
 
 export async function updateDocument(id: string, data: Partial<{

@@ -1,54 +1,43 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
+import { useConfirm } from "@/hooks/useConfirm";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { useRole } from "@/hooks/useRole";
+import { useQueryData } from "@/hooks/useQueryData";
 import { AppShell } from "@/components/layout/AppShell";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { ErrorState } from "@/components/ui/ErrorState";
-import { Plus, X, Edit, Trash2, ChevronDown, ChevronUp } from "lucide-react";
-import { repository, onDataRefresh } from "@/lib/repository";
+import { Plus, X, Edit, Trash2, ChevronDown, ChevronUp, ImagePlus } from "lucide-react";
+import NextImage from "next/image";
+import { repository } from "@/lib/repository";
+import type { Recipe, RecipeItem } from "@/lib/entity-types";
 
 export default function ReceitasPage() {
   const { canEdit } = useRole();
-  const [recipes, setRecipes] = useState<any[]>([]);
-  const [ingredients, setIngredients] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { confirm, dialog } = useConfirm();
+  const { data: recipes, isLoading: loading, error: recipesError, invalidate } = useQueryData("recipes");
+  const { data: ingredients, error: ingredientsError } = useQueryData("ingredients");
+  const error = recipesError || ingredientsError ? "Erro ao carregar receitas" : null;
   const [expanded, setExpanded] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
   const modalRef = useFocusTrap(showModal);
-  const [editingRecipe, setEditingRecipe] = useState<any>(null);
+  const [editingRecipe, setEditingRecipe] = useState<Recipe | null>(null);
 
   const [form, setForm] = useState({
     name: "",
     yield: "",
     yieldUnit: "un",
+    preparation: "",
+    image: "",
     ingredients: [] as { ingredientId: string; name: string; qty: string; unit: string; costPerUnit: number }[],
   });
-
-  const loadAll = useCallback(async () => {
-    try {
-      const [recipesResp, ingredientsResp] = await Promise.all([
-        repository.recipes.getAll(),
-        repository.ingredients.getAll(),
-      ]);
-      setRecipes(recipesResp);
-      setIngredients(ingredientsResp);
-    } catch {
-      setError("Erro ao carregar receitas");
-    }
-    setLoading(false);
-  }, []);
-
-  useEffect(() => { loadAll(); }, [loadAll]);
-
-  useEffect(() => {
-    return onDataRefresh(() => { loadAll(); });
-  }, [loadAll]);
+  const [imageLoading, setImageLoading] = useState(false);
+  const [imageError, setImageError] = useState<string | null>(null);
 
   function resetForm() {
-    setForm({ name: "", yield: "", yieldUnit: "un", ingredients: [] });
+    setForm({ name: "", yield: "", yieldUnit: "un", preparation: "", image: "", ingredients: [] });
+    setImageError(null);
     setEditingRecipe(null);
   }
 
@@ -57,15 +46,17 @@ export default function ReceitasPage() {
     setShowModal(true);
   }
 
-  function openEdit(recipe: any) {
+  function openEdit(recipe: Recipe) {
     setEditingRecipe(recipe);
     setForm({
       name: recipe.name || "",
       yield: String(recipe.yield || ""),
       yieldUnit: recipe.yieldUnit || "un",
-      ingredients: (recipe.ingredients || []).map((ing: any) => ({
+      preparation: recipe.preparation || "",
+      image: recipe.image || "",
+      ingredients: (recipe.ingredients || []).map((ing) => ({
         ingredientId: ing.ingredientId || ing.ingredient?.id || "",
-        name: ing.ingredient?.name || ing.name || "",
+        name: ing.ingredient?.name || "",
         qty: String(ing.qty || ""),
         unit: ing.unit || "g",
         costPerUnit: ing.ingredient?.costPerKg || 0,
@@ -87,10 +78,10 @@ export default function ReceitasPage() {
     setForm({ ...form, ingredients: updated });
   }
 
-  function updateIngredient(index: number, field: string, value: string) {
+  function updateIngredient(index: number, field: "ingredientId" | "qty" | "unit", value: string) {
     const updated = [...form.ingredients];
     if (field === "ingredientId") {
-      const ing = ingredients.find((i: any) => i.id === value);
+      const ing = ingredients.find((i) => i.id === value);
       updated[index] = {
         ...updated[index],
         ingredientId: value,
@@ -98,7 +89,7 @@ export default function ReceitasPage() {
         costPerUnit: ing?.costPerKg || 0,
       };
     } else {
-      (updated[index] as any)[field] = value;
+      updated[index][field] = value;
     }
     setForm({ ...form, ingredients: updated });
   }
@@ -108,6 +99,68 @@ export default function ReceitasPage() {
       const qty = parseFloat(ing.qty) || 0;
       return sum + qty * ing.costPerUnit;
     }, 0);
+  }
+
+  async function compressImage(file: File, maxDim = 900, quality = 0.82): Promise<string> {
+    const loadImage = (): Promise<HTMLImageElement> =>
+      new Promise((resolve, reject) => {
+        const url = URL.createObjectURL(file);
+        const img = new Image();
+        img.onload = () => { URL.revokeObjectURL(url); resolve(img); };
+        img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("Falha ao carregar imagem")); };
+        img.src = url;
+      });
+
+    let source: HTMLImageElement | ImageBitmap;
+    try {
+      source = await createImageBitmap(file);
+    } catch {
+      source = await loadImage();
+    }
+
+    const width = (source as HTMLImageElement).naturalWidth || (source as ImageBitmap).width;
+    const height = (source as HTMLImageElement).naturalHeight || (source as ImageBitmap).height;
+    const scale = Math.min(1, maxDim / Math.max(width, height));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.round(width * scale));
+    canvas.height = Math.max(1, Math.round(height * scale));
+    const ctx = canvas.getContext("2d");
+    if (!ctx) throw new Error("Canvas não suportado");
+    ctx.drawImage(source, 0, 0, canvas.width, canvas.height);
+    if ("close" in source && typeof (source as ImageBitmap).close === "function") {
+      (source as ImageBitmap).close();
+    }
+    const isPng = file.type === "image/png";
+    return canvas.toDataURL(isPng ? "image/png" : "image/jpeg", isPng ? undefined : quality);
+  }
+
+  async function handleImageSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      setImageError("Selecione um arquivo de imagem válido.");
+      return;
+    }
+    if (file.size > 15 * 1024 * 1024) {
+      setImageError("A imagem é muito grande (máx. 15MB).");
+      return;
+    }
+    setImageLoading(true);
+    setImageError(null);
+    try {
+      const dataUrl = await compressImage(file);
+      setForm({ ...form, image: dataUrl });
+    } catch {
+      setImageError("Não foi possível processar a imagem.");
+    } finally {
+      setImageLoading(false);
+    }
+  }
+
+  function removeImage() {
+    setForm({ ...form, image: "" });
+    setImageError(null);
   }
 
   async function handleSave() {
@@ -120,6 +173,8 @@ export default function ReceitasPage() {
       yield: yieldNum,
       yieldUnit: form.yieldUnit,
       totalCost,
+      preparation: form.preparation,
+      image: form.image,
       ingredients: form.ingredients
         .filter((ing) => ing.ingredientId && ing.qty)
         .map((ing) => ({
@@ -136,13 +191,13 @@ export default function ReceitasPage() {
     }
     setShowModal(false);
     resetForm();
-    await loadAll();
+    await invalidate();
   }
 
   async function handleDelete(id: string) {
-    if (!confirm("Excluir esta receita?")) return;
+    if (!(await confirm("Excluir esta receita?"))) return;
     await repository.recipes.delete(id);
-    await loadAll();
+    await invalidate();
   }
 
   return (
@@ -167,7 +222,7 @@ export default function ReceitasPage() {
         </div>
 
         {error && (
-          <ErrorState message={error} onRetry={loadAll} />
+          <ErrorState message={error} onRetry={invalidate} />
         )}
 
         {loading ? (
@@ -185,20 +240,29 @@ export default function ReceitasPage() {
           </div>
         ) : (
           <div className="space-y-2">
-            {recipes.map((recipe: any) => {
+            {recipes.map((recipe) => {
               const costPerUnit = recipe.yield > 0 ? (recipe.totalCost / recipe.yield) : 0;
               return (
                 <div key={recipe.id} className="border border-line rounded-lg bg-paper shadow-card overflow-hidden">
                   <div className="flex items-center gap-2 p-4">
                     <button
                       onClick={() => setExpanded(expanded === recipe.id ? null : recipe.id)}
-                      className="flex-1 text-left flex items-center justify-between hover:bg-cream/50 transition-colors -m-1 p-1 rounded-lg"
+                      className="flex-1 text-left flex items-center gap-3 justify-between hover:bg-cream/50 transition-colors -m-1 p-1 rounded-lg"
                     >
-                      <div>
-                        <p className="text-sm font-semibold text-ink">{recipe.name}</p>
-                        <p className="text-xs text-muted">
-                          Rende {recipe.yield} {recipe.yieldUnit} · Custo total: R$ {(recipe.totalCost || 0).toFixed(2)} · Custo/un: R$ {costPerUnit.toFixed(3)}
-                        </p>
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 rounded-lg overflow-hidden bg-cream border border-line shrink-0 flex items-center justify-center">
+                          {recipe.image ? (
+                            <NextImage src={recipe.image} alt={recipe.name} width={48} height={48} unoptimized className="w-full h-full object-cover" />
+                          ) : (
+                            <ImagePlus className="w-5 h-5 text-kraft" />
+                          )}
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold text-ink">{recipe.name}</p>
+                          <p className="text-xs text-muted">
+                            Rende {recipe.yield} {recipe.yieldUnit} · Custo total: R$ {(recipe.totalCost || 0).toFixed(2)} · Custo/un: R$ {costPerUnit.toFixed(3)}
+                          </p>
+                        </div>
                       </div>
                       {expanded === recipe.id ? (
                         <ChevronUp className="w-5 h-5 text-muted shrink-0" />
@@ -222,14 +286,19 @@ export default function ReceitasPage() {
 
                   {expanded === recipe.id && (
                     <div className="border-t border-line p-4 space-y-3 bg-cream/30">
+                      {recipe.image && (
+                        <div className="rounded-lg overflow-hidden border border-line bg-paper">
+                          <NextImage src={recipe.image} alt={recipe.name} width={600} height={400} unoptimized className="w-full max-h-72 object-cover" />
+                        </div>
+                      )}
                       <p className="text-xs font-semibold text-muted uppercase tracking-wide">Ingredientes</p>
                       <div className="space-y-2">
-                        {(recipe.ingredients || []).map((ing: any, i: number) => {
+                        {(recipe.ingredients || []).map((ing: RecipeItem, i: number) => {
                           const cost = (ing.ingredient?.costPerKg || 0) * ing.qty;
                           return (
                             <div key={i} className="flex items-center justify-between text-sm bg-paper rounded-lg px-3 py-2 border border-line">
                               <div className="flex items-center gap-2">
-                                <span className="text-ink font-medium">{ing.ingredient?.name || ing.name}</span>
+                                <span className="text-ink font-medium">{ing.ingredient?.name}</span>
                                 {ing.ingredient?.brand && <span className="text-[10px] text-muted bg-cream px-1.5 py-0.5 rounded">{ing.ingredient.brand}</span>}
                               </div>
                               <div className="flex items-center gap-4">
@@ -241,6 +310,14 @@ export default function ReceitasPage() {
                           );
                         })}
                       </div>
+                      {recipe.preparation && (
+                        <div>
+                          <p className="text-xs font-semibold text-muted uppercase tracking-wide mb-1">Modo de Preparo</p>
+                          <div className="text-sm text-ink whitespace-pre-wrap bg-paper rounded-lg p-3 border border-line max-h-64 overflow-y-auto">
+                            {recipe.preparation}
+                          </div>
+                        </div>
+                      )}
                       <div className="border-t border-line pt-3 flex items-center justify-between">
                         <div>
                           <span className="text-sm font-semibold text-ink">Custo Total</span>
@@ -255,7 +332,7 @@ export default function ReceitasPage() {
             })}
             {recipes.length === 0 && (
               <div className="text-center py-8 text-muted border border-dashed border-line rounded-lg">
-                Nenhuma receita cadastrada. Clique em "Nova Receita" para começar.
+                Nenhuma receita cadastrada. Clique em &quot;Nova Receita&quot; para começar.
               </div>
             )}
           </div>
@@ -288,6 +365,37 @@ export default function ReceitasPage() {
                   </div>
                 </div>
 
+                <div>
+                  <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Foto do produto finalizado</label>
+                  <div className="flex items-center gap-3">
+                    <div className="w-20 h-20 rounded-lg overflow-hidden bg-cream border border-line flex items-center justify-center shrink-0">
+                      {form.image ? (
+                        <NextImage src={form.image} alt="Prévia da receita" width={80} height={80} unoptimized className="w-full h-full object-cover" />
+                      ) : (
+                        <ImagePlus className="w-6 h-6 text-kraft" />
+                      )}
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      <label className="flex items-center gap-2 h-9 px-3 rounded-lg border border-line text-xs font-medium text-ink hover:bg-cream transition-colors cursor-pointer">
+                        <ImagePlus className="w-4 h-4" />
+                        {imageLoading ? "Processando..." : form.image ? "Trocar foto" : "Enviar foto"}
+                        <input type="file" accept="image/*" onChange={handleImageSelect} className="hidden" disabled={imageLoading} />
+                      </label>
+                      {form.image && (
+                        <button onClick={removeImage} className="flex items-center gap-1 text-xs font-medium text-danger hover:underline">
+                          <Trash2 className="w-3.5 h-3.5" /> Remover foto
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  {imageError && <p className="text-xs text-danger mt-2">{imageError}</p>}
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Modo de Preparo</label>
+                  <textarea placeholder="Passo a passo do preparo..." value={form.preparation} onChange={(e) => setForm({ ...form, preparation: e.target.value })} rows={5} className="w-full px-3 py-2 border border-line rounded-lg text-sm text-ink placeholder:text-kraft focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink transition-colors resize-none" />
+                </div>
+
                 <div className="border-t border-line pt-4">
                   <div className="flex items-center justify-between mb-3">
                     <label className="text-xs font-semibold text-muted uppercase tracking-wide">Ingredientes</label>
@@ -300,8 +408,8 @@ export default function ReceitasPage() {
                       <div key={i} className="flex items-center gap-2 bg-cream/50 rounded-lg p-2">
                         <select value={ing.ingredientId} onChange={(e) => updateIngredient(i, "ingredientId", e.target.value)} className="flex-1 h-9 px-2 border border-line rounded-lg text-xs text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink bg-paper">
                           <option value="">Selecionar ingrediente</option>
-                          {ingredients.map((item: any) => (
-                            <option key={item.id} value={item.id}>{item.name} (R$ {(item.costPerKg || 0).toFixed(2)}/{item.unit || "g"})</option>
+                          {ingredients.map((item) => (
+                            <option key={item.id} value={item.id}>{item.name} (R$ {(item.costPerKg || 0).toFixed(2)}/g)</option>
                           ))}
                         </select>
                         <input type="number" step="0.1" placeholder="Qtd" value={ing.qty} onChange={(e) => updateIngredient(i, "qty", e.target.value)} className="w-20 h-9 px-2 border border-line rounded-lg text-xs text-ink placeholder:text-kraft focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink bg-paper" />
@@ -337,6 +445,7 @@ export default function ReceitasPage() {
           </div>
         )}
       </div>
+        {dialog}
     </AppShell>
   );
 }
