@@ -5,7 +5,8 @@ import { Skeleton } from "@/components/ui/Skeleton"
 import { ErrorState } from "@/components/ui/ErrorState"
 import { useQueryData } from "@/hooks/useQueryData"
 import type { Ingredient, Product, Recipe, Sale, SaleItem } from "@/lib/entity-types"
-import { TrendingUp, AlertTriangle, Package, DollarSign, Percent, Wallet } from "lucide-react"
+import { csvFromSections, downloadCsv, fileStamp } from "@/lib/csv"
+import { TrendingUp, AlertTriangle, Package, DollarSign, Percent, Wallet, FileSpreadsheet } from "lucide-react"
 
 export default function IndicadoresPage() {
   const ingredients = useQueryData("ingredients")
@@ -39,14 +40,63 @@ export default function IndicadoresPage() {
     { icon: Package, label: "Sabores Ativos", value: String(activeProducts.length), sub: activeProducts.map((p: Product) => p.name).join(", ") || "Nenhum produto cadastrado" },
   ]
 
+  function fmtMoney(value: number): string {
+    return value.toFixed(2).replace(".", ",")
+  }
+
+  function handleExportCsv() {
+    const sections = [
+      {
+        title: "Indicadores",
+        headers: ["Métrica", "Valor"],
+        rows: [
+          ["Receita", fmtMoney(totalRevenue)],
+          ["Lucro estimado", fmtMoney(profit)],
+          ["Margem", `${margin.toFixed(1).replace(".", ",")}%`],
+          ["Ticket médio", fmtMoney(avgTicket)],
+          ["Sabores ativos", activeProducts.length],
+        ],
+      },
+      {
+        title: "Alertas de estoque",
+        headers: ["Insumo", "Fornecedor", "Estoque (kg)", "Mínimo (kg)"],
+        rows: lowStockItems.map((i: Ingredient) => [i.name, i.supplier, i.stockKg, i.minStockKg]),
+      },
+      {
+        title: "Custos por receita",
+        headers: ["Receita", "Rendimento", "Custo por unidade"],
+        rows: recipes.data.map((r: Recipe) => [
+          r.name,
+          `${r.yield} ${r.yieldUnit}`,
+          fmtMoney(r.yield > 0 ? r.totalCost / r.yield : 0),
+        ]),
+      },
+      {
+        title: "Margens por produto",
+        headers: ["Produto", "Preço", "Custo", "Margem"],
+        rows: activeProducts.map((p: Product) => [p.name, fmtMoney(p.price || 0), fmtMoney(p.cost || 0), `${(p.margin || 0).toFixed(1).replace(".", ",")}%`]),
+      },
+    ]
+    downloadCsv(`indicadores-${fileStamp(new Date())}.csv`, csvFromSections(sections))
+  }
+
   return (
     <AppShell>
       <div className="space-y-4">
-        <div>
-          <h1 className="text-2xl font-bold text-ink">Indicadores</h1>
-          <p className="text-sm text-muted">
-            Análise baseada nos dados reais do negócio
-          </p>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h1 className="text-2xl font-bold text-ink">Indicadores</h1>
+            <p className="text-sm text-muted">
+              Análise baseada nos dados reais do negócio
+            </p>
+          </div>
+          <button
+            onClick={handleExportCsv}
+            className="flex items-center gap-2 h-8 px-3 rounded-md text-sm font-medium bg-ink/10 text-ink hover:bg-ink/20 transition-colors"
+          >
+            <FileSpreadsheet className="w-4 h-4" />
+            Exportar Planilha
+          </button>
         </div>
 
         {error && (

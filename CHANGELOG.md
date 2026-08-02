@@ -4,6 +4,16 @@ Todas as mudanças notáveis deste projeto serão documentadas neste arquivo.
 
 O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o versionamento segue [SemVer](https://semver.org/lang/pt-BR/). A versão exibida no app vem de `src/lib/version.ts` (fonte: `package.json`). Tags git acompanham cada release (`vX.Y.Z`).
 
+## [0.5.0] - 2026-08-02
+
+### Adicionado (Relatórios/UX — Fase 3)
+- **Exportação em planilha (CSV)**: novos botões "Exportar Planilha" em **Relatórios** e **Indicadores** baixam `.csv` (compatível com Excel — separador `;`, decimal `,`, BOM UTF-8 para acentuação, quebras CRLF).
+  - Em Relatórios: dados do período ativo (Resumo, Delivery, Vendas por período, Canais, Top produtos, Pedidos por status).
+  - Em Indicadores: KPIs, Alertas de estoque, Custos por receita e Margens por produto.
+- **Gerador CSV leve** (`src/lib/csv.ts`): sem dependências, sem biblioteca de planilha; funções puras testadas (`csvEscape`, `csvRow`, `csvFromSections`, `buildReportCsv`, `fileStamp`) e `downloadCsv` (Blob + BOM, funciona no iOS/PWA).
+- **Removida a dependência vulnerável `xlsx` 0.18.5** (sem fix disponível); a exportação agora usa o gerador próprio — nenhum `import "xlsx"` restava no código.
+- Testes: `csv.test.ts` (escape de separador/aspas/quebra, montagem de seções, formatação pt-BR, 7 seções do relatório).
+
 ## [0.4.0] - 2026-08-02
 
 ### Corrigido (Consistência offline — Fase 2)

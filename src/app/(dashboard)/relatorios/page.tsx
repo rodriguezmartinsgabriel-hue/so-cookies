@@ -7,7 +7,8 @@ import { Skeleton } from "@/components/ui/Skeleton"
 import { ErrorState } from "@/components/ui/ErrorState"
 import { useQueryData } from "@/hooks/useQueryData"
 import { REPORT_PERIODS, buildReportSummary } from "@/lib/reports"
-import { TrendingUp, DollarSign, ShoppingCart, Package, Truck, FileDown, Loader2 } from "lucide-react"
+import { buildReportCsv, downloadCsv, fileStamp } from "@/lib/csv"
+import { TrendingUp, DollarSign, ShoppingCart, Package, Truck, FileDown, FileSpreadsheet, Loader2 } from "lucide-react"
 
 const COLORS = ["#C23B2E", "#E0A400", "#2F7A3E", "#111111"]
 
@@ -55,14 +56,16 @@ export default function RelatoriosPage() {
     setExporting(true)
     try {
       const { downloadReportPdf } = await import("@/lib/report-pdf")
-      const d = new Date()
-      const stamp = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
-      downloadReportPdf(summary, `relatorio-${period.key}-${stamp}.pdf`)
+      downloadReportPdf(summary, `relatorio-${period.key}-${fileStamp(new Date())}.pdf`)
     } catch (e) {
       console.error("Erro ao gerar PDF:", e)
     } finally {
       setExporting(false)
     }
+  }
+
+  function handleExportCsv() {
+    downloadCsv(`relatorio-${period.key}-${fileStamp(new Date())}.csv`, buildReportCsv(summary))
   }
 
   return (
@@ -92,6 +95,13 @@ export default function RelatoriosPage() {
             >
               {exporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileDown className="w-4 h-4" />}
               Exportar PDF
+            </button>
+            <button
+              onClick={handleExportCsv}
+              className="flex items-center gap-2 h-8 px-3 rounded-md text-sm font-medium bg-ink/10 text-ink hover:bg-ink/20 transition-colors"
+            >
+              <FileSpreadsheet className="w-4 h-4" />
+              Exportar Planilha
             </button>
           </div>
         </div>
