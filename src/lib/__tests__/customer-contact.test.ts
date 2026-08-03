@@ -118,4 +118,32 @@ describe("syncCustomerToContact", () => {
     expect(contact.phone).toBe("11999999999")
     expect(contact.notes).toBe("nota do manager")
   })
+
+  it("tenta novamente quando o create falha na primeira vez", async () => {
+    const originalCreate = store.mockPrisma.contact.create
+    let calls = 0
+    store.mockPrisma.contact.create = async (args) => {
+      calls++
+      if (calls === 1) throw new Error("boom")
+      return originalCreate(args)
+    }
+    const logSpy = vi.spyOn(console, "error").mockImplementation(() => {})
+    const result = await syncCustomerToContact({ id: "cust-1", name: "Maria", email: "maria@test.com" })
+    expect(calls).toBe(2)
+    expect(result.created).toBe(true)
+    expect(logSpy).toHaveBeenCalled()
+    logSpy.mockRestore()
+  })
+
+  it("lança após falhar as duas tentativas", async () => {
+    const originalCreate = store.mockPrisma.contact.create
+    store.mockPrisma.contact.create = async () => {
+      throw new Error("boom")
+    }
+    const logSpy = vi.spyOn(console, "error").mockImplementation(() => {})
+    await expect(syncCustomerToContact({ id: "cust-1", name: "Maria", email: "maria@test.com" })).rejects.toThrow("boom")
+    expect(logSpy).toHaveBeenCalled()
+    logSpy.mockRestore()
+    store.mockPrisma.contact.create = originalCreate
+  })
 })
