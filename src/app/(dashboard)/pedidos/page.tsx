@@ -223,6 +223,9 @@ export default function PedidosPage() {
                           <span className="text-xs text-muted">{o.createdAt ? new Date(o.createdAt).toLocaleDateString("pt-BR") : ""}</span>
                         </div>
                         <p className="text-sm font-medium text-ink truncate">{o.customer}</p>
+                        {o.pickupCode && (
+                          <p className="text-xs font-bold text-ink tracking-wider mt-1">Retirada: {o.pickupCode}</p>
+                        )}
                         <div className="flex items-center justify-between mt-2">
                           <span className="text-xs text-muted">{o.channel} · {(o.items || []).length} itens</span>
                           <span className="text-sm font-bold text-ink">R$ {o.total}</span>
@@ -295,7 +298,10 @@ export default function PedidosPage() {
                     <tr key={o.id} className="hover:bg-cream/50 transition-colors">
                       <td className="px-4 py-3 text-sm font-medium text-ink">#{o.id.slice(0, 6)}</td>
                       <td className="px-4 py-3 text-sm text-ink">{o.customer}</td>
-                      <td className="px-4 py-3 text-sm text-muted">{o.channel}</td>
+                      <td className="px-4 py-3 text-sm text-muted">
+                        {o.channel}
+                        {o.pickupCode && <span className="ml-2 font-bold text-ink tracking-wider">#{o.pickupCode}</span>}
+                      </td>
                       <td className="px-4 py-3 text-sm font-semibold text-ink text-right">R$ {o.total}</td>
                       <td className="px-4 py-3">
                         <span className="text-xs font-medium text-muted bg-cream px-2 py-1 rounded-full">{o.status}</span>
@@ -351,6 +357,12 @@ export default function PedidosPage() {
                   <p className="text-xs text-muted uppercase tracking-wide mb-1">Status</p>
                   <span className="text-xs font-medium text-muted bg-cream px-2 py-1 rounded-full">{order.status}</span>
                 </div>
+                {order.pickupCode && (
+                  <div>
+                    <p className="text-xs text-muted uppercase tracking-wide mb-1">Código de retirada</p>
+                    <p className="text-sm font-bold text-ink tracking-[0.2em]">{order.pickupCode}</p>
+                  </div>
+                )}
                 <div>
                   <p className="text-xs text-muted uppercase tracking-wide mb-1">Itens</p>
                   <div className="space-y-1">

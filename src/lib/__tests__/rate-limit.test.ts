@@ -36,4 +36,12 @@ describe("rateLimit", () => {
     await new Promise((r) => setTimeout(r, 60))
     expect(rateLimit(req("5.5.5.5"), 5, 50).ok).toBe(true)
   })
+
+  it("tracks routes independently for the same client", () => {
+    const register = new Request("http://localhost/api/public/auth/register", { headers: { "x-forwarded-for": "6.6.6.6" } })
+    const login = new Request("http://localhost/api/public/auth/login", { headers: { "x-forwarded-for": "6.6.6.6" } })
+    for (let i = 0; i < 5; i++) rateLimit(register, 5, 60_000)
+    expect(rateLimit(register, 5, 60_000).ok).toBe(false)
+    expect(rateLimit(login, 5, 60_000).ok).toBe(true)
+  })
 })

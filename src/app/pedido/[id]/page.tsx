@@ -23,7 +23,7 @@ type PublicOrder = {
   items: PublicOrderItem[]
 }
 
-const statusOrder = ["PENDENTE", "CONFIRMADO", "PRODUCAO", "PRONTO", "CONCLUIDO"]
+const statusOrder = ["PENDENTE", "CONFIRMADO", "PRODUCAO", "PRONTO", "ENTREGA", "CONCLUIDO"]
 
 const statusLabel: Record<string, string> = {
   PENDENTE: "Recebido",

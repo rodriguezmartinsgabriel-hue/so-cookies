@@ -19,8 +19,18 @@ function getClientIp(request: Request): string {
   return request.headers.get("x-real-ip") || "unknown"
 }
 
+function getRateLimitKey(request: Request): string {
+  let pathname = "unknown"
+  try {
+    pathname = new URL(request.url).pathname || "unknown"
+  } catch {
+    pathname = "unknown"
+  }
+  return `${pathname}:${getClientIp(request)}`
+}
+
 export function rateLimit(request: Request, limit: number, windowMs: number): RateLimitResult {
-  const key = getClientIp(request)
+  const key = getRateLimitKey(request)
   const now = Date.now()
   sweepExpired(now)
 

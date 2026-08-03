@@ -4,6 +4,15 @@ Todas as mudanças notáveis deste projeto serão documentadas neste arquivo.
 
 O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o versionamento segue [SemVer](https://semver.org/lang/pt-BR/). A versão exibida no app vem de `src/lib/version.ts` (fonte: `package.json`). Tags git acompanham cada release (`vX.Y.Z`).
 
+## [0.7.1] - 2026-08-02
+
+### Corrigido (Polimento da loja do cliente)
+- **Stepper do pedido**: a etapa `ENTREGA` foi adicionada a `statusOrder` em `/pedido/[id]`, então o cliente vê o avanço correto quando o pedido sai para entrega (antes o passo final pulava direto de "Pronto" para "Concluído").
+- **Som de novo pedido no Delivery**: o filtro passou a considerar também pedidos com código de retirada (canal "Só App") — `(o.platform || o.pickupCode) && o.status === "PENDENTE"` — para que o toque dispare para pedidos da loja e não só de plataformas externas.
+- **Código de retirada visível em Pedidos**: card do Kanban mostra `Retirada: <código>`, o modal de detalhe ganhou o bloco "Código de retirada" e a Lista exibe `#<código>` ao lado do canal.
+- **Conferência de retirada no Delivery**: ao marcar "Entregue" em pedido com código de retirada, abre modal mostrando o código esperado; o atendente digita o código apresentado pelo cliente (comparação case-insensitive); conferência confirma e marca `CONCLUIDO`, divergência exibe erro e mantém o pedido pendente; pedidos sem código seguem marcados diretamente.
+- **Rate limit por rota**: o limite agora é isolado por `pathname:ip` em `src/lib/rate-limit.ts`, então estouros em `/register` não derrubam `/login` nem `/orders` (e vice-versa); novo teste de isolamento por rota.
+
 ## [0.5.0] - 2026-08-02
 
 ### Adicionado (Relatórios/UX — Fase 3)
