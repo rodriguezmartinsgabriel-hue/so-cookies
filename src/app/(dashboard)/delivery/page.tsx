@@ -47,6 +47,8 @@ export default function DeliveryPage() {
   const { data: orders, isLoading: loading, error: ordersError, invalidate } = useQueryData("orders")
   const error = ordersError ? "Erro ao carregar entregas" : null
   const [activeFilter, setActiveFilter] = useState("Todos")
+  const [routes, setRoutes] = useState<{ id: string; name: string; active: boolean }[]>([])
+  const [routeFilter, setRouteFilter] = useState<string>("all")
   const [soundOn, setSoundOn] = useState<boolean>(() => isSoundEnabled())
   const [pickupCheck, setPickupCheck] = useState<Order | null>(null)
   const [pickupInput, setPickupInput] = useState("")
@@ -58,6 +60,15 @@ export default function DeliveryPage() {
     const interval = setInterval(() => { invalidate() }, 30_000)
     return () => clearInterval(interval)
   }, [invalidate])
+
+  useEffect(() => {
+    fetch("/api/delivery-routes")
+      .then((r) => (r.ok ? r.json() : []))
+      .then((data) => setRoutes(data))
+      .catch(() => {})
+  }, [])
+
+  const routeName = (id: string | null | undefined) => routes.find((r) => r.id === id)?.name ?? null
 
   useEffect(() => {
     const pendingNew = orders.filter((o: Order) => (o.platform || o.pickupCode) && o.status === "PENDENTE")
@@ -76,6 +87,7 @@ export default function DeliveryPage() {
   const deliveryOrders = orders
     .filter((o: Order) => ["PENDENTE", "CONFIRMADO", "PRODUCAO", "PRONTO", "ENTREGA", "CONCLUIDO"].includes(o.status))
     .filter((o: Order) => activeFilter === "Todos" || o.channel === activeFilter)
+    .filter((o: Order) => routeFilter === "all" || o.deliveryRouteId === routeFilter)
 
   async function handleMarkDelivered(id: string) {
     await repository.orders.updateStatus(id, "CONCLUIDO")
@@ -159,6 +171,19 @@ export default function DeliveryPage() {
               {ch}
             </button>
           ))}
+          {routes.filter((r) => r.active).map((r) => (
+            <button
+              key={r.id}
+              onClick={() => setRouteFilter(routeFilter === r.id ? "all" : r.id)}
+              className={`h-8 px-3 border rounded-full text-xs font-medium transition-colors shrink-0 ${
+                routeFilter === r.id
+                  ? "border-ink bg-ink text-paper"
+                  : "border-line text-ink hover:bg-cream"
+              }`}
+            >
+              {r.name}
+            </button>
+          ))}
         </div>
 
         {error && (
@@ -214,7 +239,11 @@ export default function DeliveryPage() {
                         <MapPin className="w-3 h-3" />
                         {order.channel}
                         {order.deliveryAddress ? ` · ${order.deliveryAddress}` : ""}
+                        {order.deliveryDate ? ` · ${new Date(order.deliveryDate).toLocaleDateString("pt-BR")}` : ""}
                       </p>
+                      {routeName(order.deliveryRouteId) && (
+                        <p className="text-xs font-medium text-info mt-1">{routeName(order.deliveryRouteId)}</p>
+                      )}
                       <p className="text-xs text-muted mt-1">
                         {(order.items || []).length} itens · {order.createdAt ? new Date(order.createdAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : ""}
                       </p>

@@ -32,13 +32,20 @@ enum Role {
 }
 
 model Customer {
-  id        String   @id @default(cuid())
-  name      String
-  email     String   @unique
-  phone     String?
-  password  String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                String   @id @default(cuid())
+  name              String
+  email             String   @unique
+  phone             String?
+  password          String?
+  addressCep        String?
+  addressStreet     String?
+  addressNumber     String?
+  addressComplement String?
+  addressNeighborhood String?
+  addressCity       String?
+  addressState      String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 
   orders   Order[]
   accounts CustomerAccount[]
@@ -216,6 +223,14 @@ model Order {
   externalId      String?
   externalStatus  String?
   deliveryAddress String?
+  deliveryCep        String?
+  deliveryStreet     String?
+  deliveryNumber     String?
+  deliveryComplement String?
+  deliveryNeighborhood String?
+  deliveryCity       String?
+  deliveryState      String?
+  deliveryDate      DateTime?  @db.Date
   customerPhone   String?
   platformFee     Float?
   confirmBy       DateTime?
@@ -230,6 +245,11 @@ model Order {
   customerId   String?
   customerRef  Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
 
+  deliveryRoute   DeliveryRoute? @relation(fields: [deliveryRouteId], references: [id], onDelete: SetNull)
+  deliveryRouteId String?
+  deliveryZone    DeliveryZone?  @relation(fields: [deliveryZoneId], references: [id], onDelete: SetNull)
+  deliveryZoneId  String?
+
   @@unique([platform, externalId])
   @@index([status])
   @@index([createdAt])
@@ -237,6 +257,9 @@ model Order {
   @@index([channel])
   @@index([platform])
   @@index([customerId])
+  @@index([deliveryDate])
+  @@index([deliveryRouteId])
+  @@index([deliveryZoneId])
 }
 
 enum OrderStatus {
@@ -263,6 +286,63 @@ model OrderItem {
 
   @@index([orderId])
   @@index([productId])
+}
+
+model DeliveryZone {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  routes DeliveryRoute[]
+  blockedDates DeliveryBlockedDate[]
+  orders Order[]
+
+  @@index([active])
+  @@index([name])
+}
+
+model DeliveryRoute {
+  id               String    @id @default(cuid())
+  name             String
+  zoneId           String
+  recurring        Boolean   @default(true)
+  dayOfWeek        Int?      // 1=seg .. 7=dom (null p/ rota extraordinária)
+  date             DateTime? @db.Date // data fixa (rota extraordinária)
+  startDate        DateTime? @db.Date
+  endDate          DateTime? @db.Date
+  cutoffTime       String    @default("18:00") // HH:mm em America/Sao_Paulo
+  cutoffOffsetDays Int       @default(1) // dias antes da rota para fechar pedidos
+  capacityEnabled  Boolean   @default(false)
+  maxOrders        Int?
+  maxItems         Int?      // total de unidades por rota/data
+  active           Boolean   @default(true)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  zone   DeliveryZone @relation(fields: [zoneId], references: [id], onDelete: Cascade)
+  orders Order[]
+
+  @@index([zoneId])
+  @@index([active])
+  @@index([recurring])
+  @@index([dayOfWeek])
+  @@index([date])
+}
+
+model DeliveryBlockedDate {
+  id        String   @id @default(cuid())
+  zoneId    String
+  date      DateTime @db.Date
+  reason    String?
+  createdAt DateTime @default(now())
+
+  zone DeliveryZone @relation(fields: [zoneId], references: [id], onDelete: Cascade)
+
+  @@unique([zoneId, date])
+  @@index([zoneId])
+  @@index([date])
 }
 
 model CashFlow {
@@ -296,6 +376,7 @@ model Production {
   endTime   DateTime?
   status    String   @default("pendente")
   notes     String?
+  deliveryDate DateTime? @db.Date
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -305,6 +386,7 @@ model Production {
   @@index([status])
   @@index([startTime])
   @@index([productId])
+  @@index([deliveryDate])
 }
 
 model DeliveryCost {

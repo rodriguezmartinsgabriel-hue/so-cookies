@@ -139,6 +139,17 @@ export type Order = {
   externalId: string | null
   externalStatus: string | null
   deliveryAddress: string | null
+  deliveryCep: string | null
+  deliveryStreet: string | null
+  deliveryNumber: string | null
+  deliveryComplement: string | null
+  deliveryNeighborhood: string | null
+  deliveryCity: string | null
+  deliveryState: string | null
+  deliveryDate: string | null
+  deliveryRouteId: string | null
+  deliveryZoneId: string | null
+  deliveryRouteName?: string | null
   customerPhone: string | null
   platformFee: number | null
   confirmBy: string | null

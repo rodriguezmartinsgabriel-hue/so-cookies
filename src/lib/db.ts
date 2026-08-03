@@ -137,9 +137,31 @@ export async function getOrder(id: string) {
   });
 }
 
-export async function createOrder(data: { channel: string; customer: string; total: number; notes?: string; items: { productId: string; qty: number; price: number }[] }) {
+export async function createOrder(data: { channel: string; customer: string; total: number; notes?: string; items: { productId: string; qty: number; price: number }[]; deliveryDate?: string | null; deliveryRouteId?: string | null; deliveryCep?: string | null; deliveryStreet?: string | null; deliveryNumber?: string | null; deliveryComplement?: string | null; deliveryNeighborhood?: string | null; deliveryCity?: string | null; deliveryState?: string | null }) {
+  let deliveryZoneId: string | null = null
+  if (data.deliveryRouteId) {
+    const route = await prisma.deliveryRoute.findUnique({ where: { id: data.deliveryRouteId } })
+    deliveryZoneId = route?.zoneId ?? null
+  }
   return prisma.order.create({
-    data: { channel: data.channel, customer: data.customer, total: data.total, notes: data.notes, status: "PENDENTE", items: { create: data.items } },
+    data: {
+      channel: data.channel,
+      customer: data.customer,
+      total: data.total,
+      notes: data.notes,
+      status: "PENDENTE",
+      deliveryDate: data.deliveryDate ? new Date(`${data.deliveryDate}T00:00:00.000Z`) : null,
+      deliveryRouteId: data.deliveryRouteId ?? null,
+      deliveryZoneId,
+      deliveryCep: data.deliveryCep,
+      deliveryStreet: data.deliveryStreet,
+      deliveryNumber: data.deliveryNumber,
+      deliveryComplement: data.deliveryComplement,
+      deliveryNeighborhood: data.deliveryNeighborhood,
+      deliveryCity: data.deliveryCity,
+      deliveryState: data.deliveryState,
+      items: { create: data.items },
+    },
     include: { items: true },
   });
 }
@@ -166,9 +188,12 @@ async function createSaleForOrder(
   })
 }
 
-export async function applyOrderUpdate(id: string, data: Partial<{ channel: string; customer: string; notes: string; status: string }>) {
+export async function applyOrderUpdate(id: string, data: Partial<{ channel: string; customer: string; notes: string; status: string; deliveryDate?: string | null; deliveryRouteId?: string | null; deliveryCep?: string | null; deliveryStreet?: string | null; deliveryNumber?: string | null; deliveryComplement?: string | null; deliveryNeighborhood?: string | null; deliveryCity?: string | null; deliveryState?: string | null }>) {
   const order = await prisma.$transaction(async (tx) => {
     const updateData: Record<string, unknown> = { ...data, updatedAt: new Date() }
+    if ("deliveryDate" in updateData) {
+      updateData.deliveryDate = updateData.deliveryDate ? new Date(`${updateData.deliveryDate}T00:00:00.000Z`) : null
+    }
     const updated = await tx.order.update({
       where: { id },
       data: updateData,
@@ -193,12 +218,17 @@ export async function applyOrderUpdate(id: string, data: Partial<{ channel: stri
   return { ...order, pushStatus }
 }
 
-export async function updateOrder(id: string, data: Partial<{ channel: string; customer: string; notes: string; status: string }>) {
+export async function updateOrder(id: string, data: Partial<{ channel: string; customer: string; notes: string; status: string; deliveryDate?: string | null; deliveryRouteId?: string | null; deliveryCep?: string | null; deliveryStreet?: string | null; deliveryNumber?: string | null; deliveryComplement?: string | null; deliveryNeighborhood?: string | null; deliveryCity?: string | null; deliveryState?: string | null }>) {
   const updateData: Record<string, unknown> = {}
   if (data.channel) updateData.channel = data.channel
   if (data.customer) updateData.customer = data.customer
   if (data.notes !== undefined) updateData.notes = data.notes
   if (data.status) updateData.status = data.status
+  if ("deliveryDate" in data) updateData.deliveryDate = data.deliveryDate ? new Date(`${data.deliveryDate}T00:00:00.000Z`) : null
+  if ("deliveryRouteId" in data) updateData.deliveryRouteId = data.deliveryRouteId || null
+  for (const field of ["deliveryCep", "deliveryStreet", "deliveryNumber", "deliveryComplement", "deliveryNeighborhood", "deliveryCity", "deliveryState"] as const) {
+    if (field in data && data[field] !== undefined) updateData[field] = data[field] || null
+  }
   return prisma.order.update({ where: { id }, data: updateData, include: { items: { include: { product: true } } } })
 }
 

@@ -58,6 +58,42 @@ async function main() {
   });
   console.log("  ✅ Products (3)");
 
+  // ─── Delivery Zones & Routes ─────────────────────────────────
+  const zoneCentro = await prisma.deliveryZone.upsert({
+    where: { id: "zone-centro" },
+    update: {},
+    create: { id: "zone-centro", name: "São Paulo", active: true },
+  });
+  console.log("  ✅ Delivery Zone (1)");
+
+  const routeDefs = [
+    { id: "route-terca", name: "Rota Terça", dayOfWeek: 2 },
+    { id: "route-sexta", name: "Rota Sexta", dayOfWeek: 5 },
+  ];
+  for (const def of routeDefs) {
+    await prisma.deliveryRoute.upsert({
+      where: { id: def.id },
+      update: {},
+      create: {
+        id: def.id,
+        name: def.name,
+        zoneId: zoneCentro.id,
+        recurring: true,
+        dayOfWeek: def.dayOfWeek,
+        date: null,
+        startDate: null,
+        endDate: null,
+        cutoffTime: "18:00",
+        cutoffOffsetDays: 1,
+        capacityEnabled: false,
+        maxOrders: null,
+        maxItems: null,
+        active: true,
+      },
+    });
+  }
+  console.log("  ✅ Delivery Routes (2)");
+
   // ─── Price Tiers ─────────────────────────────────────────────
   // From Tabela de Preços: same tiers for all products
   const tierDefs = [

@@ -14,8 +14,27 @@ type Profile = {
   name: string
   email: string
   phone: string | null
+  addressCep?: string | null
+  addressStreet?: string | null
+  addressNumber?: string | null
+  addressComplement?: string | null
+  addressNeighborhood?: string | null
+  addressCity?: string | null
+  addressState?: string | null
   hasPassword?: boolean
 }
+
+type AddressState = {
+  cep: string
+  street: string
+  number: string
+  complement: string
+  neighborhood: string
+  city: string
+  state: string
+}
+
+const EMPTY_ADDRESS: AddressState = { cep: "", street: "", number: "", complement: "", neighborhood: "", city: "", state: "" }
 
 type PublicOrderItem = {
   id: string
@@ -56,6 +75,7 @@ export default function PerfilPage() {
   const [editing, setEditing] = useState(false)
   const [editName, setEditName] = useState("")
   const [editPhone, setEditPhone] = useState("")
+  const [editAddress, setEditAddress] = useState<AddressState>(EMPTY_ADDRESS)
   const [pwCurrent, setPwCurrent] = useState("")
   const [pwNew, setPwNew] = useState("")
   const [saving, setSaving] = useState(false)
@@ -82,6 +102,15 @@ export default function PerfilPage() {
   function startEdit() {
     setEditName(profile?.name || "")
     setEditPhone(profile?.phone || "")
+    setEditAddress({
+      cep: profile?.addressCep || "",
+      street: profile?.addressStreet || "",
+      number: profile?.addressNumber || "",
+      complement: profile?.addressComplement || "",
+      neighborhood: profile?.addressNeighborhood || "",
+      city: profile?.addressCity || "",
+      state: profile?.addressState || "",
+    })
     setMessage(null)
     setEditing(true)
   }
@@ -94,7 +123,17 @@ export default function PerfilPage() {
       const resp = await fetch("/api/public/auth/me", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: editName.trim(), phone: editPhone.trim() || null }),
+        body: JSON.stringify({
+          name: editName.trim(),
+          phone: editPhone.trim() || null,
+          addressCep: editAddress.cep.trim() || null,
+          addressStreet: editAddress.street.trim() || null,
+          addressNumber: editAddress.number.trim() || null,
+          addressComplement: editAddress.complement.trim() || null,
+          addressNeighborhood: editAddress.neighborhood.trim() || null,
+          addressCity: editAddress.city.trim() || null,
+          addressState: editAddress.state.trim() || null,
+        }),
       })
       const data = await resp.json()
       if (!resp.ok) {
@@ -167,6 +206,42 @@ export default function PerfilPage() {
                   <FormField label="Telefone">
                     <Input type="text" value={editPhone} onChange={(e) => setEditPhone(e.target.value)} placeholder="(11) 99999-9999" />
                   </FormField>
+                  <div>
+                    <p className="text-xs font-medium text-muted uppercase tracking-wide mb-2">Endereço de entrega</p>
+                    <div className="space-y-3">
+                      <div className="grid grid-cols-3 gap-2">
+                        <FormField label="CEP">
+                          <Input type="text" inputMode="numeric" value={editAddress.cep} onChange={(e) => setEditAddress({ ...editAddress, cep: e.target.value })} placeholder="00000-000" />
+                        </FormField>
+                        <div className="col-span-2">
+                          <FormField label="Cidade">
+                            <Input type="text" value={editAddress.city} onChange={(e) => setEditAddress({ ...editAddress, city: e.target.value })} />
+                          </FormField>
+                        </div>
+                      </div>
+                      <FormField label="Rua">
+                        <Input type="text" value={editAddress.street} onChange={(e) => setEditAddress({ ...editAddress, street: e.target.value })} />
+                      </FormField>
+                      <div className="grid grid-cols-2 gap-2">
+                        <FormField label="Número">
+                          <Input type="text" value={editAddress.number} onChange={(e) => setEditAddress({ ...editAddress, number: e.target.value })} />
+                        </FormField>
+                        <FormField label="Complemento">
+                          <Input type="text" value={editAddress.complement} onChange={(e) => setEditAddress({ ...editAddress, complement: e.target.value })} />
+                        </FormField>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2">
+                        <div className="col-span-2">
+                          <FormField label="Bairro">
+                            <Input type="text" value={editAddress.neighborhood} onChange={(e) => setEditAddress({ ...editAddress, neighborhood: e.target.value })} />
+                          </FormField>
+                        </div>
+                        <FormField label="UF">
+                          <Input type="text" maxLength={2} placeholder="SP" value={editAddress.state} onChange={(e) => setEditAddress({ ...editAddress, state: e.target.value.toUpperCase() })} />
+                        </FormField>
+                      </div>
+                    </div>
+                  </div>
                   <div className="flex gap-2">
                     <Button
                       variant="secondary"
@@ -194,6 +269,11 @@ export default function PerfilPage() {
                       <p className="font-semibold text-ink">{profile.name}</p>
                       <p className="text-sm text-muted truncate">{profile.email}</p>
                       {profile.phone && <p className="text-sm text-muted">{profile.phone}</p>}
+                      {(profile.addressStreet || profile.addressCity) && (
+                        <p className="text-sm text-muted mt-0.5">
+                          {[profile.addressStreet && profile.addressNumber ? `${profile.addressStreet}, ${profile.addressNumber}` : profile.addressStreet, profile.addressComplement, profile.addressNeighborhood, profile.addressCity && profile.addressState ? `${profile.addressCity} - ${profile.addressState}` : profile.addressCity].filter(Boolean).join(" · ")}
+                        </p>
+                      )}
                     </div>
                     <Button
                       variant="secondary"

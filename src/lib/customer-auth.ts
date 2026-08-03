@@ -11,6 +11,13 @@ export const customerSafeSelect = {
   name: true,
   email: true,
   phone: true,
+  addressCep: true,
+  addressStreet: true,
+  addressNumber: true,
+  addressComplement: true,
+  addressNeighborhood: true,
+  addressCity: true,
+  addressState: true,
   createdAt: true,
 } as const
 

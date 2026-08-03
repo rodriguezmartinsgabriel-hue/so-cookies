@@ -37,6 +37,7 @@ const navItems = [
   { href: "/canais", label: "Canais", icon: Store },
   { href: "/caixa", label: "Caixa", icon: Wallet },
   { href: "/delivery", label: "Delivery", icon: Truck },
+  { href: "/rotas", label: "Rotas de entrega", icon: Truck, adminOnly: true },
   { href: "/integracoes", label: "Integrações", icon: Plug, adminOnly: true },
   { href: "/producao", label: "Produção", icon: Factory },
   { href: "/documentos", label: "Documentos", icon: BookOpen },

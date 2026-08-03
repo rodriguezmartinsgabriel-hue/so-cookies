@@ -1,5 +1,6 @@
 import { prisma } from "./prisma"
 import { toCatalogProduct, type CatalogProduct } from "./utils"
+import { assertSlotAvailable, SlotError } from "./delivery-scheduling"
 
 const PICKUP_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
 
@@ -13,6 +14,25 @@ export function generatePickupCode(): string {
 
 export type { CatalogProduct }
 
+export type DeliveryAddressInput = {
+  deliveryCep?: string | null
+  deliveryStreet?: string | null
+  deliveryNumber?: string | null
+  deliveryComplement?: string | null
+  deliveryNeighborhood?: string | null
+  deliveryCity?: string | null
+  deliveryState?: string | null
+}
+
+export function formatDeliveryAddress(a: DeliveryAddressInput): string | null {
+  if (!a.deliveryStreet && !a.deliveryCity) return null
+  const street = [a.deliveryStreet, a.deliveryNumber].filter(Boolean).join(", ")
+  const area = [a.deliveryNeighborhood, a.deliveryCity].filter(Boolean).join(" - ")
+  const state = a.deliveryState ? ` - ${a.deliveryState}` : ""
+  const lines = [street, `${area}${state}`].filter(Boolean).join(" · ")
+  return [lines, a.deliveryComplement, a.deliveryCep ? `CEP ${a.deliveryCep}` : ""].filter(Boolean).join(" · ") || null
+}
+
 export async function getCustomerCatalog(): Promise<CatalogProduct[]> {
   const products = await prisma.product.findMany({
     where: { active: true, deletedAt: null },
@@ -24,7 +44,18 @@ export async function getCustomerCatalog(): Promise<CatalogProduct[]> {
 
 export async function createCustomerOrder(
   customerId: string,
-  input: { items: { productId: string; qty: number }[] },
+  input: {
+    items: { productId: string; qty: number }[]
+    deliveryDate?: string | null
+    deliveryRouteId?: string | null
+    deliveryCep?: string | null
+    deliveryStreet?: string | null
+    deliveryNumber?: string | null
+    deliveryComplement?: string | null
+    deliveryNeighborhood?: string | null
+    deliveryCity?: string | null
+    deliveryState?: string | null
+  },
 ) {
   const productIds = [...new Set(input.items.map((i) => i.productId))]
   const products = await prisma.product.findMany({
@@ -46,8 +77,41 @@ export async function createCustomerOrder(
   })
 
   const total = items.reduce((sum, i) => sum + i.price * i.qty, 0)
+  const totalItems = items.reduce((sum, i) => sum + i.qty, 0)
   const customer = await prisma.customer.findUnique({ where: { id: customerId } })
   if (!customer) throw new Error("Cliente não encontrado")
+
+  const isDelivery = Boolean(input.deliveryDate && input.deliveryRouteId)
+
+  let deliveryDate: Date | null = null
+  let deliveryRouteId: string | null = null
+  let deliveryZoneId: string | null = null
+  let address: DeliveryAddressInput = {}
+  let pickupCode: string | null = null
+
+  if (isDelivery) {
+    await assertSlotAvailable({
+      routeId: input.deliveryRouteId!,
+      date: input.deliveryDate!,
+      newItems: totalItems,
+    })
+    const route = await prisma.deliveryRoute.findUnique({ where: { id: input.deliveryRouteId! } })
+    if (!route) throw new SlotError("ROUTE_UNAVAILABLE", "Rota de entrega não encontrada")
+    deliveryDate = new Date(`${input.deliveryDate}T00:00:00.000Z`)
+    deliveryRouteId = route.id
+    deliveryZoneId = route.zoneId
+    address = {
+      deliveryCep: input.deliveryCep ?? customer.addressCep,
+      deliveryStreet: input.deliveryStreet ?? customer.addressStreet,
+      deliveryNumber: input.deliveryNumber ?? customer.addressNumber,
+      deliveryComplement: input.deliveryComplement ?? customer.addressComplement,
+      deliveryNeighborhood: input.deliveryNeighborhood ?? customer.addressNeighborhood,
+      deliveryCity: input.deliveryCity ?? customer.addressCity,
+      deliveryState: input.deliveryState ?? customer.addressState,
+    }
+  } else {
+    pickupCode = generatePickupCode()
+  }
 
   return prisma.order.create({
     data: {
@@ -57,24 +121,150 @@ export async function createCustomerOrder(
       customerId,
       total,
       status: "PENDENTE",
-      pickupCode: generatePickupCode(),
+      pickupCode,
+      deliveryDate,
+      deliveryRouteId,
+      deliveryZoneId,
+      deliveryAddress: formatDeliveryAddress(address),
+      deliveryCep: address.deliveryCep,
+      deliveryStreet: address.deliveryStreet,
+      deliveryNumber: address.deliveryNumber,
+      deliveryComplement: address.deliveryComplement,
+      deliveryNeighborhood: address.deliveryNeighborhood,
+      deliveryCity: address.deliveryCity,
+      deliveryState: address.deliveryState,
       items: { create: items },
     },
-    include: { items: { include: { product: true } } },
+    include: { items: { include: { product: true } }, deliveryRoute: true, deliveryZone: true },
+  })
+}
+
+export async function updateCustomerOrder(
+  customerId: string,
+  orderId: string,
+  input: {
+    deliveryDate?: string | null
+    deliveryRouteId?: string | null
+    deliveryCep?: string | null
+    deliveryStreet?: string | null
+    deliveryNumber?: string | null
+    deliveryComplement?: string | null
+    deliveryNeighborhood?: string | null
+    deliveryCity?: string | null
+    deliveryState?: string | null
+  },
+) {
+  const existing = await prisma.order.findFirst({
+    where: { id: orderId, customerId },
+    include: { items: { select: { qty: true } } },
+  })
+  if (!existing) throw new SlotError("NOT_FOUND", "Pedido não encontrado")
+  if (existing.status !== "PENDENTE") {
+    throw new SlotError("ORDER_LOCKED", "Este pedido já foi confirmado e não pode mais ter a data alterada")
+  }
+
+  const totalItems = existing.items.reduce((s, i) => s + i.qty, 0)
+
+  const switchToDelivery = input.deliveryDate && input.deliveryRouteId
+  const switchToPickup = input.deliveryDate === null || input.deliveryRouteId === null
+
+  let data: Record<string, unknown> = {}
+
+  if (switchToDelivery) {
+    await assertSlotAvailable({
+      routeId: input.deliveryRouteId!,
+      date: input.deliveryDate!,
+      newItems: totalItems,
+      excludeOrderId: orderId,
+    })
+    const route = await prisma.deliveryRoute.findUnique({ where: { id: input.deliveryRouteId! } })
+    if (!route) throw new SlotError("ROUTE_UNAVAILABLE", "Rota de entrega não encontrada")
+    const address: DeliveryAddressInput = {
+      deliveryCep: input.deliveryCep ?? existing.deliveryCep,
+      deliveryStreet: input.deliveryStreet ?? existing.deliveryStreet,
+      deliveryNumber: input.deliveryNumber ?? existing.deliveryNumber,
+      deliveryComplement: input.deliveryComplement ?? existing.deliveryComplement,
+      deliveryNeighborhood: input.deliveryNeighborhood ?? existing.deliveryNeighborhood,
+      deliveryCity: input.deliveryCity ?? existing.deliveryCity,
+      deliveryState: input.deliveryState ?? existing.deliveryState,
+    }
+    data = {
+      deliveryDate: new Date(`${input.deliveryDate}T00:00:00.000Z`),
+      deliveryRouteId: route.id,
+      deliveryZoneId: route.zoneId,
+      pickupCode: null,
+      deliveryAddress: formatDeliveryAddress(address),
+      deliveryCep: address.deliveryCep,
+      deliveryStreet: address.deliveryStreet,
+      deliveryNumber: address.deliveryNumber,
+      deliveryComplement: address.deliveryComplement,
+      deliveryNeighborhood: address.deliveryNeighborhood,
+      deliveryCity: address.deliveryCity,
+      deliveryState: address.deliveryState,
+    }
+  } else if (switchToPickup) {
+    data = {
+      deliveryDate: null,
+      deliveryRouteId: null,
+      deliveryZoneId: null,
+      deliveryAddress: null,
+      deliveryCep: null,
+      deliveryStreet: null,
+      deliveryNumber: null,
+      deliveryComplement: null,
+      deliveryNeighborhood: null,
+      deliveryCity: null,
+      deliveryState: null,
+      pickupCode: generatePickupCode(),
+    }
+  } else {
+    const address: DeliveryAddressInput = {
+      deliveryCep: input.deliveryCep ?? existing.deliveryCep,
+      deliveryStreet: input.deliveryStreet ?? existing.deliveryStreet,
+      deliveryNumber: input.deliveryNumber ?? existing.deliveryNumber,
+      deliveryComplement: input.deliveryComplement ?? existing.deliveryComplement,
+      deliveryNeighborhood: input.deliveryNeighborhood ?? existing.deliveryNeighborhood,
+      deliveryCity: input.deliveryCity ?? existing.deliveryCity,
+      deliveryState: input.deliveryState ?? existing.deliveryState,
+    }
+    data = {
+      deliveryCep: address.deliveryCep,
+      deliveryStreet: address.deliveryStreet,
+      deliveryNumber: address.deliveryNumber,
+      deliveryComplement: address.deliveryComplement,
+      deliveryNeighborhood: address.deliveryNeighborhood,
+      deliveryCity: address.deliveryCity,
+      deliveryState: address.deliveryState,
+      deliveryAddress: formatDeliveryAddress(address),
+    }
+  }
+
+  return prisma.order.update({
+    where: { id: orderId },
+    data,
+    include: { items: { include: { product: true } }, deliveryRoute: true, deliveryZone: true },
   })
 }
 
 export async function getCustomerOrder(customerId: string, orderId: string) {
   return prisma.order.findFirst({
     where: { id: orderId, customerId },
-    include: { items: { include: { product: true } } },
+    include: {
+      items: { include: { product: true } },
+      deliveryRoute: { select: { id: true, name: true } },
+      deliveryZone: { select: { id: true, name: true } },
+    },
   })
 }
 
 export async function getCustomerOrders(customerId: string) {
   return prisma.order.findMany({
     where: { customerId },
-    include: { items: { include: { product: true } } },
+    include: {
+      items: { include: { product: true } },
+      deliveryRoute: { select: { id: true, name: true } },
+      deliveryZone: { select: { id: true, name: true } },
+    },
     orderBy: { createdAt: "desc" },
   })
 }

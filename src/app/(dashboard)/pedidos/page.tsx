@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useConfirm } from "@/hooks/useConfirm"
 import { useRole } from "@/hooks/useRole"
 import { useQueryData } from "@/hooks/useQueryData"
@@ -76,6 +76,17 @@ export default function PedidosPage() {
   const [editingOrder, setEditingOrder] = useState<Order | null>(null)
   const [view, setView] = useState<"kanban" | "list">("kanban")
   const [showCompleted, setShowCompleted] = useState(false)
+  const [routes, setRoutes] = useState<{ id: string; name: string; active: boolean }[]>([])
+  const [routeFilter, setRouteFilter] = useState<string>("all")
+
+  useEffect(() => {
+    fetch("/api/delivery-routes")
+      .then((r) => (r.ok ? r.json() : []))
+      .then((data) => setRoutes(data))
+      .catch(() => {})
+  }, [])
+
+  const routeName = (id: string | null | undefined) => routes.find((r) => r.id === id)?.name ?? null
 
   const [formChannel, setFormChannel] = useState("")
   const [formCustomer, setFormCustomer] = useState("")
@@ -183,6 +194,30 @@ export default function PedidosPage() {
           <ErrorState message={error} onRetry={invalidate} />
         )}
 
+        {routes.length > 0 && (
+          <div className="flex gap-2 overflow-x-auto pb-1">
+            <button
+              onClick={() => setRouteFilter("all")}
+              className={`h-8 px-3 border rounded-full text-xs font-medium transition-colors shrink-0 ${
+                routeFilter === "all" ? "border-ink bg-ink text-paper" : "border-line text-ink hover:bg-cream"
+              }`}
+            >
+              Todas
+            </button>
+            {routes.filter((r) => r.active).map((r) => (
+              <button
+                key={r.id}
+                onClick={() => setRouteFilter(routeFilter === r.id ? "all" : r.id)}
+                className={`h-8 px-3 border rounded-full text-xs font-medium transition-colors shrink-0 ${
+                  routeFilter === r.id ? "border-ink bg-ink text-paper" : "border-line text-ink hover:bg-cream"
+                }`}
+              >
+                {r.name}
+              </button>
+            ))}
+          </div>
+        )}
+
         {loading ? (
           <div className="space-y-4">
             {Array.from({ length: 5 }).map((_, i) => (
@@ -205,7 +240,7 @@ export default function PedidosPage() {
         ) : view === "kanban" ? (
           <div className="space-y-4">
             {columns.filter((c) => c.id !== "CONCLUIDO" && c.id !== "CANCELADO").map((col) => {
-              const colOrders = orders.filter((o) => o.status === col.id)
+              const colOrders = orders.filter((o) => o.status === col.id && (routeFilter === "all" || o.deliveryRouteId === routeFilter))
               return (
                 <Card key={col.id} padded={false} className="overflow-hidden">
                   <div className={`flex items-center gap-2 px-4 py-3 border-b border-line ${col.bg}`}>
@@ -234,6 +269,12 @@ export default function PedidosPage() {
                         </div>
                         {o.pickupCode && (
                           <p className="text-xs font-bold text-ink tracking-wider mt-1">Retirada: {o.pickupCode}</p>
+                        )}
+                        {o.deliveryDate && (
+                          <p className="text-xs text-muted mt-1">
+                            Entrega: {new Date(o.deliveryDate).toLocaleDateString("pt-BR")}
+                            {routeName(o.deliveryRouteId) ? ` · ${routeName(o.deliveryRouteId)}` : ""}
+                          </p>
                         )}
                         <div className="flex items-center justify-between mt-2">
                           <span className="text-xs text-muted">{o.channel} · {(o.items || []).length} itens</span>
@@ -325,6 +366,9 @@ export default function PedidosPage() {
                     <Td className="text-sm text-muted">
                       {o.channel}
                       {o.pickupCode && <span className="ml-2 font-bold text-ink tracking-wider">#{o.pickupCode}</span>}
+                      {routeName(o.deliveryRouteId) && (
+                        <span className="ml-2 text-xs font-medium text-ink">{routeName(o.deliveryRouteId)}</span>
+                      )}
                     </Td>
                     <Td className="text-sm font-semibold text-ink text-right">R$ {o.total}</Td>
                     <Td>

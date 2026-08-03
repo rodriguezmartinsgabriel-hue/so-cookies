@@ -31,6 +31,9 @@ export async function PATCH(request: Request) {
     const data: Record<string, unknown> = {}
     if (parsed.name !== undefined) data.name = parsed.name
     if (parsed.phone !== undefined) data.phone = parsed.phone || null
+    for (const field of ["addressCep", "addressStreet", "addressNumber", "addressComplement", "addressNeighborhood", "addressCity", "addressState"] as const) {
+      if (parsed[field] !== undefined) data[field] = parsed[field] || null
+    }
 
     if (parsed.newPassword) {
       const full = await prisma.customer.findUnique({

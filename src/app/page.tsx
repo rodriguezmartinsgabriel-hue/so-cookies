@@ -40,6 +40,7 @@ const modules = [
   { label: "Produção", icon: Factory, href: "/producao", color: "bg-ink/10 text-ink", desc: "Lotes e perdas" },
   { label: "Caixa", icon: DollarSign, href: "/caixa", color: "bg-success/10 text-success", desc: "Fluxo de caixa" },
   { label: "Delivery", icon: Truck, href: "/delivery", color: "bg-info/10 text-info", desc: "Entregas" },
+  { label: "Rotas", icon: Truck, href: "/rotas", color: "bg-info/10 text-info", desc: "Rotas de entrega", adminOnly: true },
   { label: "Relatórios", icon: BarChart3, href: "/relatorios", color: "bg-muted/10 text-muted", desc: "Análises" },
   { label: "Indicadores", icon: ClipboardList, href: "/indicadores", color: "bg-warning/10 text-warning", desc: "Indicadores do negócio" },
   { label: "Canais", icon: Store, href: "/canais", color: "bg-info/10 text-info", desc: "Canais de venda" },
@@ -108,6 +109,20 @@ export default function HomePage() {
   const lowStock = (lowStockQuery.data ?? []) as Ingredient[];
   const recentOrders = orders.slice(0, 5);
   const loading = ordersLoading || kpisQuery.isLoading;
+
+  const tomorrowKey = (() => {
+    const t = new Date();
+    t.setDate(t.getDate() + 1);
+    return t.toLocaleDateString("pt-BR");
+  })();
+  const tomorrowDeliveries = orders.filter(
+    (o) =>
+      o.deliveryDate &&
+      !o.pickupCode &&
+      o.status !== "CANCELADO" &&
+      o.status !== "CONCLUIDO" &&
+      new Date(o.deliveryDate).toLocaleDateString("pt-BR") === tomorrowKey,
+  );
 
   return (
     <AppShell>
@@ -252,6 +267,31 @@ export default function HomePage() {
                   <div className="text-right shrink-0">
                     <p className="text-sm font-semibold text-danger">{item.stockKg} kg</p>
                     <p className="text-xs text-muted">mín: {item.minStockKg} kg</p>
+                  </div>
+                </div>
+              ))}
+            </Card>
+          </div>
+        )}
+
+        {tomorrowDeliveries.length > 0 && (
+          <div>
+            <h2 className="text-sm font-semibold text-ink uppercase tracking-wide mb-3 flex items-center gap-2">
+              <Truck className="w-4 h-4 text-info" />
+              Entregas de amanhã ({tomorrowDeliveries.length})
+            </h2>
+            <Card padded={false} className="divide-y divide-line overflow-hidden">
+              {tomorrowDeliveries.map((order) => (
+                <div key={order.id} className="flex items-center gap-3 p-3">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-ink truncate">
+                      {order.customer} — {order.channel}
+                    </p>
+                    <p className="text-xs text-muted">{(order.items || []).length} itens · R$ {order.total}</p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="text-sm font-bold text-ink">R$ {order.total}</p>
+                    <p className="text-xs text-muted">{order.status?.toLowerCase()}</p>
                   </div>
                 </div>
               ))}
