@@ -20,7 +20,8 @@
       }
     ],
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@so-cookies/pricing": ["./pricing"]
     }
   },
   "include": [

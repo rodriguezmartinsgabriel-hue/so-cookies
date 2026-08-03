@@ -6,6 +6,7 @@ import { Minus, Plus, Trash2, ArrowRight, ShoppingBag, Cookie, Truck, Store, Clo
 import NextImage from "next/image"
 import { CustomerShell } from "@/components/customer/CustomerShell"
 import { useCart } from "@/hooks/useCart"
+import { usePricing } from "@/hooks/usePricing"
 import { useCountdown } from "@/hooks/useCountdown"
 import { Card } from "@/components/ui/Card"
 import { Button } from "@/components/ui/Button"
@@ -60,6 +61,7 @@ const formatBRL = (v: number) =>
 export default function CarrinhoPage() {
   const router = useRouter()
   const { items, setQty, removeItem, clear, count } = useCart()
+  const { result, loading: pricingLoading, error: pricingError, formatBRL } = usePricing()
   const [products, setProducts] = useState<Record<string, CatalogProduct>>({})
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
@@ -144,7 +146,9 @@ export default function CarrinhoPage() {
   const lines = items
     .map((i) => ({ ...i, product: products[i.productId] }))
     .filter((l) => l.product)
-  const total = lines.reduce((s, l) => s + l.product.price * l.qty, 0)
+
+  // Usar Pricing Engine v2 quando disponível, caso contrário usar cálculo simples
+  const total = pricingResult?.total ?? lines.reduce((s, l) => s + l.product.price * l.qty, 0)
 
   function setField<K extends keyof AddressState>(key: K, value: string) {
     setAddress((prev) => ({ ...prev, [key]: value }))
@@ -210,6 +214,7 @@ export default function CarrinhoPage() {
         </div>
 
         {loading && <div className="text-center py-12 text-muted">Carregando...</div>}
+        {pricingLoading && <div className="text-center py-12 text-muted">Calculando preço...</div>}
 
         {!loading && lines.length === 0 && (
           <Card padded={false} className="text-center py-12">
@@ -366,6 +371,7 @@ export default function CarrinhoPage() {
             </div>
 
             {error && <p className="text-sm text-danger">{error}</p>}
+            {pricingError && <p className="text-sm text-danger">{pricingError}</p>}
 
             <Button size="lg" variant="primary" className="w-full" onClick={handleCheckout} disabled={submitting}>
               {submitting

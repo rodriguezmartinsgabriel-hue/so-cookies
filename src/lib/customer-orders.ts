@@ -1,6 +1,17 @@
 import { prisma } from "./prisma"
 import { toCatalogProduct, type CatalogProduct } from "./utils"
 import { assertSlotAvailable, SlotError } from "./delivery-scheduling"
+import { PricingEngine } from "@so-cookies/pricing"
+import { ProductRepository } from "@so-cookies/pricing"
+import { CouponRepository } from "@so-cookies/pricing"
+import { CampaignRepository } from "@so-cookies/pricing"
+import { ShippingRepository } from "@so-cookies/pricing"
+import { PricingRepository } from "@so-cookies/pricing"
+import { RuleRegistry } from "@so-cookies/pricing"
+import { EventBus } from "@so-cookies/pricing"
+import { PricingAudit } from "@so-cookies/pricing"
+import { PriceTierRule } from "@so-cookies/pricing"
+import { PricingContext } from "@so-cookies/pricing"
 
 const PICKUP_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
 
@@ -68,16 +79,21 @@ export async function createCustomerOrder(
     qtyByProduct.set(i.productId, (qtyByProduct.get(i.productId) || 0) + i.qty)
   }
 
-  const items = [...qtyByProduct.entries()].map(([productId, qty]) => {
-    const product = productMap.get(productId)
-    if (!product) {
-      throw new Error("Produto indisponível")
-    }
-    return { productId: product.id, qty, price: product.price }
-  })
+  // Inicializar Pricing Engine v2
+  const productRepo = new ProductRepository(prisma)
+  const couponRepo = new CouponRepository(prisma)
+  const campaignRepo = new CampaignRepository(prisma)
+  const shippingRepo = new ShippingRepository(prisma)
+  const pricingRepo = new PricingRepository(prisma)
 
-  const total = items.reduce((sum, i) => sum + i.price * i.qty, 0)
-  const totalItems = items.reduce((sum, i) => sum + i.qty, 0)
+  const registry = new RuleRegistry()
+  registry.register('price-tier', new PriceTierRule(productRepo, { log: () => {} }))
+
+  const eventBus = new EventBus()
+  const audit = new PricingAudit(prisma, eventBus)
+  const engine = new PricingEngine(prisma, registry, { log: () => {} }, { record: () => {} })
+
+  const totalItems = [...qtyByProduct.values()].reduce((sum, qty) => sum + qty, 0)
   const customer = await prisma.customer.findUnique({ where: { id: customerId } })
   if (!customer) throw new Error("Cliente não encontrado")
 
@@ -112,6 +128,51 @@ export async function createCustomerOrder(
   } else {
     pickupCode = generatePickupCode()
   }
+
+  // Preparar itens para o Pricing Engine
+  const pricingItems = [...qtyByProduct.entries()].map(([productId, qty]) => {
+    const product = productMap.get(productId)
+    if (!product) {
+      throw new Error("Produto indisponível")
+    }
+    return {
+      productId: product.id,
+      qty,
+      basePrice: product.price,
+      name: product.name
+    }
+  })
+
+  // Calcular preço com Pricing Engine v2
+  const pricingContext: PricingContext = {
+    items: pricingItems,
+    channel: 'app',
+    customerType: 'customer',
+    coupon: null,
+    shippingMethod: isDelivery ? 'delivery' : 'pickup',
+    shippingAddress: isDelivery ? {
+      cep: address.deliveryCep || '',
+      city: address.deliveryCity || '',
+      state: address.deliveryState || ''
+    } : {
+      cep: '',
+      city: '',
+      state: ''
+    },
+    deliveryDate: deliveryDate,
+    pickupCode: pickupCode
+  }
+
+  const pricingResult = await engine.calculatePrice(pricingContext)
+
+  // Criar itens com preços calculados pelo Pricing Engine
+  const items = pricingResult.state.items.map((pricingItem) => ({
+    productId: pricingItem.productId,
+    qty: pricingItem.qty,
+    price: pricingItem.calculatedPrice
+  }))
+
+  const total = pricingResult.total
 
   return prisma.order.create({
     data: {

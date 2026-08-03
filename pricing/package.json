@@ -1,0 +1,28 @@
+{
+  "name": "@so-cookies/pricing",
+  "version": "1.0.0",
+  "description": "Pricing Engine v2 - Sistema de precificação modular e extensível",
+  "main": "index.ts",
+  "types": "index.ts",
+  "scripts": {
+    "build": "tsc --noEmit",
+    "test": "echo \"No tests yet\" && exit 0"
+  },
+  "keywords": [
+    "pricing",
+    "engine",
+    "ecommerce",
+    "nodejs",
+    "typescript"
+  ],
+  "author": "So Cookies",
+  "license": "MIT",
+  "peerDependencies": {
+    "@prisma/client": "^7.9.0",
+    "prisma": "^7.9.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "typescript": "^5"
+  }
+}
