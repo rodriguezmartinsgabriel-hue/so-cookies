@@ -1,0 +1,551 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider     = "postgresql"
+  relationMode = "prisma"
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      Role     @default(OPERACIONAL)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  sales     Sale[]
+  cashFlow  CashFlow[]
+  documents Document[]
+
+  @@index([email])
+  @@index([role])
+}
+
+enum Role {
+  ADMIN
+  OPERACIONAL
+  VISUALIZADOR
+}
+
+model Customer {
+  id                String   @id @default(cuid())
+  name              String
+  email             String   @unique
+  phone             String?
+  password          String?
+  addressCep        String?
+  addressStreet     String?
+  addressNumber     String?
+  addressComplement String?
+  addressNeighborhood String?
+  addressCity       String?
+  addressState      String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  orders   Order[]
+  accounts CustomerAccount[]
+  contact  Contact?
+
+  @@index([email])
+  @@index([phone])
+}
+
+model CustomerAccount {
+  id                String   @id @default(cuid())
+  provider          String
+  providerAccountId String
+  email             String?
+  createdAt         DateTime @default(now())
+
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  customerId String
+
+  @@unique([provider, providerAccountId])
+  @@index([customerId])
+  @@index([email])
+}
+
+model Product {
+  id        String   @id @default(cuid())
+  name      String
+  sku       String   @unique
+  category  String
+  price     Float
+  cost      Float
+  margin    Float
+  unit      String   @default("un")
+  active    Boolean  @default(true)
+  image     String?
+  deletedAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  orderItems OrderItem[]
+  saleItems  SaleItem[]
+  recipes    Recipe[]
+  priceTiers PriceTier[]
+  productions Production[]
+  externalMappings ExternalItemMapping[]
+
+  @@index([category])
+  @@index([active])
+  @@index([name])
+  @@index([deletedAt])
+}
+
+model Ingredient {
+  id              String   @id @default(cuid())
+  name            String
+  brand           String?
+  stockKg         Float    @default(0)
+  minStockKg      Float    @default(0)
+  costPerKg       Float
+  supplier        String
+  lastPurchase    DateTime?
+  caloriesPer100g Float?
+  proteinPer100g  Float?
+  carbsPer100g    Float?
+  fatPer100g      Float?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  recipeItems RecipeItem[]
+
+  @@index([name])
+  @@index([supplier])
+  @@index([stockKg])
+}
+
+model Recipe {
+  id        String   @id @default(cuid())
+  name      String
+  yield     Int
+  yieldUnit String   @default("un")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  product    Product?       @relation(fields: [productId], references: [id], onDelete: SetNull)
+  productId  String?
+  ingredients RecipeItem[]
+  totalCost  Float          @default(0)
+  preparation String?
+  image      String?
+
+  @@index([name])
+}
+
+model RecipeItem {
+  id           String @id @default(cuid())
+  qty          Float
+  unit         String @default("kg")
+
+  recipe       Recipe     @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  recipeId     String
+  ingredient   Ingredient @relation(fields: [ingredientId], references: [id], onDelete: Cascade)
+  ingredientId String
+
+  @@unique([recipeId, ingredientId])
+}
+
+model PriceTier {
+  id        String   @id @default(cuid())
+  name      String
+  minQty    Int
+  maxQty    Int?
+  price     Float
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+
+  @@index([updatedAt])
+}
+
+model SaleChannel {
+  id         String @id @default(cuid())
+  name       String
+  commission Float  @default(0)
+
+  sales Sale[]
+
+  @@index([name])
+}
+
+model Sale {
+  id        String   @id @default(cuid())
+  total     Float
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  channel   SaleChannel @relation(fields: [channelId], references: [id])
+  channelId String
+  user      User?       @relation(fields: [userId], references: [id])
+  userId    String?
+  items     SaleItem[]
+
+  order   Order? @relation(fields: [orderId], references: [id])
+  orderId String? @unique
+
+  @@index([channelId])
+  @@index([createdAt])
+  @@index([updatedAt])
+  @@index([userId])
+}
+
+model SaleItem {
+  id       String @id @default(cuid())
+  qty      Int
+  price    Float
+
+  sale      Sale    @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  saleId    String
+  product   Product @relation(fields: [productId], references: [id])
+  productId String
+
+  @@index([saleId])
+  @@index([productId])
+}
+
+model Order {
+  id              String      @id @default(cuid())
+  channel         String
+  customer        String
+  total           Float
+  status          OrderStatus @default(PENDENTE)
+  notes           String?
+  platform        String?
+  externalId      String?
+  externalStatus  String?
+  deliveryAddress String?
+  deliveryCep        String?
+  deliveryStreet     String?
+  deliveryNumber     String?
+  deliveryComplement String?
+  deliveryNeighborhood String?
+  deliveryCity       String?
+  deliveryState      String?
+  deliveryDate      DateTime?  @db.Date
+  customerPhone   String?
+  platformFee     Float?
+  confirmBy       DateTime?
+  pickupCode      String?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  items OrderItem[]
+  sale  Sale?
+  deliveryCosts DeliveryCost[]
+
+  customerId   String?
+  customerRef  Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+
+  deliveryRoute   DeliveryRoute? @relation(fields: [deliveryRouteId], references: [id], onDelete: SetNull)
+  deliveryRouteId String?
+  deliveryZone    DeliveryZone?  @relation(fields: [deliveryZoneId], references: [id], onDelete: SetNull)
+  deliveryZoneId  String?
+
+  @@unique([platform, externalId])
+  @@index([status])
+  @@index([createdAt])
+  @@index([updatedAt])
+  @@index([channel])
+  @@index([platform])
+  @@index([customerId])
+  @@index([deliveryDate])
+  @@index([deliveryRouteId])
+  @@index([deliveryZoneId])
+}
+
+enum OrderStatus {
+  PENDENTE
+  CONFIRMADO
+  PRODUCAO
+  PRONTO
+  ENTREGA
+  CONCLUIDO
+  CANCELADO
+}
+
+model OrderItem {
+  id    String @id @default(cuid())
+  qty   Int
+  price Float
+  name  String?
+  notes String?
+
+  order     Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderId   String
+  product   Product?  @relation(fields: [productId], references: [id])
+  productId String?
+
+  @@index([orderId])
+  @@index([productId])
+}
+
+model DeliveryZone {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  routes DeliveryRoute[]
+  blockedDates DeliveryBlockedDate[]
+  orders Order[]
+
+  @@index([active])
+  @@index([name])
+}
+
+model DeliveryRoute {
+  id               String    @id @default(cuid())
+  name             String
+  zoneId           String
+  recurring        Boolean   @default(true)
+  dayOfWeek        Int?      // 1=seg .. 7=dom (null p/ rota extraordinária)
+  date             DateTime? @db.Date // data fixa (rota extraordinária)
+  startDate        DateTime? @db.Date
+  endDate          DateTime? @db.Date
+  cutoffTime       String    @default("18:00") // HH:mm em America/Sao_Paulo
+  cutoffOffsetDays Int       @default(1) // dias antes da rota para fechar pedidos
+  capacityEnabled  Boolean   @default(false)
+  maxOrders        Int?
+  maxItems         Int?      // total de unidades por rota/data
+  active           Boolean   @default(true)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  zone   DeliveryZone @relation(fields: [zoneId], references: [id], onDelete: Cascade)
+  orders Order[]
+
+  @@index([zoneId])
+  @@index([active])
+  @@index([recurring])
+  @@index([dayOfWeek])
+  @@index([date])
+}
+
+model DeliveryBlockedDate {
+  id        String   @id @default(cuid())
+  zoneId    String
+  date      DateTime @db.Date
+  reason    String?
+  createdAt DateTime @default(now())
+
+  zone DeliveryZone @relation(fields: [zoneId], references: [id], onDelete: Cascade)
+
+  @@unique([zoneId, date])
+  @@index([zoneId])
+  @@index([date])
+}
+
+model CashFlow {
+  id          String      @id @default(cuid())
+  type        CashType
+  category    String
+  description String
+  amount      Float
+  date        DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  user   User? @relation(fields: [userId], references: [id])
+  userId String?
+
+  @@index([type])
+  @@index([category])
+  @@index([date])
+  @@index([updatedAt])
+}
+
+enum CashType {
+  ENTRADA
+  SAIDA
+}
+
+model Production {
+  id        String   @id @default(cuid())
+  batchCode String   @unique
+  qty       Int
+  startTime DateTime @default(now())
+  endTime   DateTime?
+  status    String   @default("pendente")
+  notes     String?
+  deliveryDate DateTime? @db.Date
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@index([startTime])
+  @@index([productId])
+  @@index([deliveryDate])
+}
+
+model DeliveryCost {
+  id        String   @id @default(cuid())
+  date      DateTime @default(now())
+  channel   String
+  orderId   String?
+  amount    Float
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  order Order? @relation(fields: [orderId], references: [id])
+
+  @@index([date])
+  @@index([updatedAt])
+}
+
+model Document {
+  id          String       @id @default(cuid())
+  title       String
+  description String?
+  category    DocumentCategory
+  content     String?
+  fileUrl     String?
+  tags        String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  userId String?
+  user   User? @relation(fields: [userId], references: [id])
+
+  @@index([category])
+  @@index([userId])
+}
+
+enum DocumentCategory {
+  FICHA_TECNICA
+  MODO_PREPARO
+  HIGIENE
+  MANIPULACAO
+  TREINAMENTO
+  OUTROS
+}
+
+model Contact {
+  id           String                @id @default(cuid())
+  name         String
+  email        String?
+  phone        String?
+  type         ContactType           @default(CLIENTE)
+  company      String?
+  notes        String?
+  createdAt    DateTime              @default(now())
+  updatedAt    DateTime              @updatedAt
+
+  interactions ContactInteraction[]
+
+  customer   Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  customerId String?   @unique
+
+  @@index([name])
+  @@index([type])
+}
+
+model ContactInteraction {
+  id        String         @id @default(cuid())
+  type      InteractionType
+  note      String
+  createdAt DateTime       @default(now())
+
+  contact   Contact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  contactId String
+
+  @@index([contactId])
+  @@index([createdAt])
+}
+
+enum ContactType {
+  CLIENTE
+  FORNECEDOR
+  LEAD
+  OUTRO
+}
+
+enum InteractionType {
+  NOTA
+  LIGACAO
+  EMAIL
+  WHATSAPP
+  VISITA
+  OUTRO
+}
+
+model IntegrationAccount {
+  id          String    @id @default(cuid())
+  platform    String
+  storeName   String?
+  enabled     Boolean   @default(true)
+  credentials String
+  lastSyncAt  DateTime?
+  lastError   String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([platform, storeName])
+  @@index([platform])
+  @@index([enabled])
+}
+
+model ExternalItemMapping {
+  id             String   @id @default(cuid())
+  platform       String
+  externalItemId String
+  externalName   String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId String
+
+  @@unique([platform, externalItemId])
+  @@index([productId])
+}
+
+model InboundEvent {
+  id          String    @id @default(cuid())
+  platform    String
+  eventId     String
+  type        String
+  payload     String    @db.Text
+  status      String    @default("RECEIVED")
+  orderId     String?
+  error       String?
+  createdAt   DateTime  @default(now())
+  processedAt DateTime?
+
+  @@unique([platform, eventId])
+  @@index([platform, status])
+  @@index([createdAt])
+}
+
+model SyncApply {
+  id        String   @id @default(cuid())
+  entity    String
+  tempId    String
+  realId    String
+  appliedAt DateTime @default(now())
+
+  @@unique([entity, tempId])
+  @@index([appliedAt])
+}
+
+model SyncDelete {
+  id        String   @id @default(cuid())
+  entity    String
+  recordId  String
+  createdAt DateTime @default(now())
+
+  @@unique([entity, recordId])
+  @@index([createdAt])
+}

@@ -1,0 +1,14 @@
+import { PrismaClient } from "./src/generated/prisma/client.js";
+import { PrismaPg } from "@prisma/adapter-pg";
+const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
+const prisma = new PrismaClient({ adapter });
+console.log("Users:", await prisma.user.count());
+console.log("Products:", await prisma.product.count());
+console.log("Ingredients:", await prisma.ingredient.count());
+console.log("Recipes:", await prisma.recipe.count());
+console.log("Price Tiers:", await prisma.priceTier.count());
+console.log("Sales:", await prisma.sale.count());
+console.log("Orders:", await prisma.order.count());
+console.log("Cash Flow:", await prisma.cashFlow.count());
+console.log("Productions:", await prisma.production.count());
+await prisma.$disconnect();
