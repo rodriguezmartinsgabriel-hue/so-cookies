@@ -215,6 +215,7 @@ export type Contact = {
   type: ContactType
   company: string | null
   notes: string | null
+  customerId?: string | null
   createdAt: string
   updatedAt: string
   interactions?: ContactInteraction[]

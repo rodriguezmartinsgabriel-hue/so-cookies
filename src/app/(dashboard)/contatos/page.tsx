@@ -26,6 +26,7 @@ import {
   Calendar,
   Send,
   Eye,
+  Smartphone,
 } from "lucide-react";
 
 const TYPE_CONFIG: Record<string, { label: string; className: string }> = {
@@ -46,6 +47,7 @@ const INTERACTION_CONFIG: Record<string, { label: string; icon: typeof StickyNot
 
 const FILTERS = [
   { value: "ALL", label: "Todos" },
+  { value: "APP", label: "Do app" },
   { value: "CLIENTE", label: "Clientes" },
   { value: "FORNECEDOR", label: "Fornecedores" },
   { value: "LEAD", label: "Leads" },
@@ -82,7 +84,7 @@ export default function ContatosPage() {
   }, [selectedContact]);
 
   const filtered = contacts.filter((c) => {
-    const matchesFilter = filter === "ALL" || c.type === filter;
+    const matchesFilter = filter === "ALL" || (filter === "APP" ? !!c.customerId : c.type === filter);
     const q = search.toLowerCase();
     const matchesSearch = !q ||
       (c.name || "").toLowerCase().includes(q) ||
@@ -97,6 +99,7 @@ export default function ContatosPage() {
     if (type) acc[type] = (acc[type] || 0) + 1;
     return acc;
   }, {});
+  const appCount = contacts.filter((c) => !!c.customerId).length;
 
   function resetForm() {
     setForm({ name: "", email: "", phone: "", type: "CLIENTE", company: "", notes: "" });
@@ -215,7 +218,7 @@ export default function ContatosPage() {
                 filter === f.value ? "bg-ink text-paper" : "bg-cream text-muted hover:bg-kraft/50"
               }`}
             >
-              {f.label} ({f.value === "ALL" ? contacts.length : typeCounts[f.value] || 0})
+              {f.label} ({f.value === "ALL" ? contacts.length : f.value === "APP" ? appCount : typeCounts[f.value] || 0})
             </button>
           ))}
         </div>
@@ -307,7 +310,7 @@ export default function ContatosPage() {
                         )}
                       </div>
                     </div>
-                    <div className="shrink-0">
+                    <div className="shrink-0 flex items-center gap-1.5">
                       {isEditing(c.id, "type") ? (
                         <select
                           autoFocus
@@ -327,6 +330,14 @@ export default function ContatosPage() {
                           className={`text-xs font-medium px-2 py-1 rounded-full ${cfg.className} ${canEdit ? "cursor-pointer hover:ring-1 hover:ring-ink" : ""}`}
                         >
                           {cfg.label}
+                        </span>
+                      )}
+                      {c.customerId && (
+                        <span
+                          className="inline-flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full bg-info/10 text-info"
+                          title="Cliente cadastrado pelo app"
+                        >
+                          <Smartphone className="w-3 h-3" /> App
                         </span>
                       )}
                     </div>
@@ -446,7 +457,17 @@ export default function ContatosPage() {
                   </div>
                   <div>
                     <h3 id="contact-detail-title" className="text-lg font-bold text-ink">{selectedContact.name}</h3>
-                    <p className="text-xs text-muted">{TYPE_CONFIG[selectedContact.type]?.label}{selectedContact.company ? ` · ${selectedContact.company}` : ""}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-xs text-muted">{TYPE_CONFIG[selectedContact.type]?.label}{selectedContact.company ? ` · ${selectedContact.company}` : ""}</p>
+                      {selectedContact.customerId && (
+                        <span
+                          className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-info/10 text-info"
+                          title="Cliente cadastrado pelo app"
+                        >
+                          <Smartphone className="w-3 h-3" /> Do app
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
                 <button onClick={() => setSelectedContact(null)} data-close-modal aria-label="Fechar" className="p-1.5 rounded-md hover:bg-cream text-muted"><X className="w-5 h-5" /></button>

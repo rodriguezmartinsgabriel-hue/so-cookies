@@ -200,6 +200,7 @@ export interface LocalContact {
   type: string
   company?: string
   notes?: string
+  customerId?: string
   createdAt: string
   updatedAt: string
   _synced: boolean
