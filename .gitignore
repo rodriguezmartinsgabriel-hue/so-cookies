@@ -30,8 +30,10 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
+# env files
 .env*
+!.env.example
+!.env.production.example
 
 # vercel
 .vercel
@@ -51,9 +53,6 @@ next-env.d.ts
 # serwist
 public/sw*
 public/swe-worker*
-
-# env files
-.env*
 
 # planilhas exportadas
 parsed_output.txt

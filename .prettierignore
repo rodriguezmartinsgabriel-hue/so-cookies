@@ -1,0 +1,17 @@
+.next
+.generated
+node_modules
+dist
+coverage
+public/sw*
+public/swe-worker*
+*.svg
+*.png
+*.jpg
+*.ico
+*.webp
+*.xml
+*.wasm
+*.mjs
+src/generated
+package-lock.json
