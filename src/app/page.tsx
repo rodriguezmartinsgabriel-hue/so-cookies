@@ -129,7 +129,7 @@ export default function HomePage() {
       <div className="space-y-6">
         <div>
           <h1 className="text-2xl font-bold text-ink">
-            Olá, {session?.user?.name || "Usuário"} 👋
+            Olá, {session?.user?.name || "Usuário"} <span aria-hidden="true">👋</span>
           </h1>
           <p className="text-sm text-muted mt-1">
             Painel de gestão — Só Cookies & Café

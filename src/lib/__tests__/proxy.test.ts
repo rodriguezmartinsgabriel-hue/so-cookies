@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { describe, it, expect, beforeEach, afterEach } from "vitest"
 import { NextRequest } from "next/server"
-import { proxy } from "@/proxy"
+import { proxy } from "@/lib/proxy"
 
 function req(url: string): NextRequest {
   return new NextRequest(url)
