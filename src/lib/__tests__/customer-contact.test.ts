@@ -23,8 +23,13 @@ const store = vi.hoisted(() => {
               if (hit) return hit
             }
             if (cond?.email && cond.type) {
+              const emailCond = cond.email as string | { equals: string }
+              const targetEmail =
+                typeof emailCond === "object" && emailCond !== null
+                  ? emailCond.equals.toLowerCase()
+                  : String(emailCond).toLowerCase()
               const hit = [...contacts.values()].find(
-                (c) => c.email === cond.email && c.type === cond.type,
+                (c) => String(c.email ?? "").toLowerCase() === targetEmail && c.type === cond.type,
               )
               if (hit) return hit
             }

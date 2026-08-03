@@ -1,5 +1,6 @@
 import { prisma } from "./prisma";
 import type { Role, ContactType, InteractionType, DocumentCategory } from "@/generated/prisma/enums";
+import type { Prisma } from "@/generated/prisma/client";
 import { pushOrderStatusToPlatform } from "./integrations/push";
 import { computeMargin } from "./utils";
 
@@ -494,7 +495,56 @@ export async function createContact(data: {
   company?: string;
   notes?: string;
 }) {
-  return prisma.contact.create({
+  const { contact } = await findOrCreateContact(prisma, data);
+  return contact;
+}
+
+export async function findOrCreateContact(
+  db: Prisma.TransactionClient | typeof prisma,
+  data: {
+    name: string;
+    email?: string;
+    phone?: string;
+    type?: ContactType;
+    company?: string;
+    notes?: string;
+    customerId?: string;
+  },
+) {
+  const email = (data.email || "").trim().toLowerCase();
+  const phone = (data.phone || "").trim();
+  const name = (data.name || "").trim().toLowerCase();
+
+  const or: Prisma.ContactWhereInput[] = [];
+  if (email) or.push({ email: { equals: email, mode: "insensitive" } });
+  if (phone && name) {
+    or.push({
+      phone: { equals: phone, mode: "insensitive" },
+      name: { equals: name, mode: "insensitive" },
+    });
+  }
+  if (data.customerId) or.push({ customerId: data.customerId });
+
+  const include = { interactions: { orderBy: { createdAt: "desc" as const } } };
+  const existing =
+    or.length > 0 ? await db.contact.findFirst({ where: { OR: or }, include }) : null;
+
+  if (existing) {
+    const patch: Record<string, unknown> = {};
+    if (!existing.name && data.name) patch.name = data.name;
+    if (!existing.email && data.email) patch.email = data.email;
+    if (!existing.phone && data.phone) patch.phone = data.phone;
+    if (!existing.company && data.company) patch.company = data.company;
+    if (!existing.notes && data.notes) patch.notes = data.notes;
+    if (data.customerId && existing.customerId !== data.customerId) patch.customerId = data.customerId;
+    if (Object.keys(patch).length > 0) {
+      const updated = await db.contact.update({ where: { id: existing.id }, data: patch, include });
+      return { contact: updated, created: false };
+    }
+    return { contact: existing, created: false };
+  }
+
+  const contact = await db.contact.create({
     data: {
       name: data.name,
       email: data.email || null,
@@ -502,9 +552,11 @@ export async function createContact(data: {
       type: data.type || "CLIENTE",
       company: data.company || null,
       notes: data.notes || null,
+      customerId: data.customerId || null,
     },
-    include: { interactions: { orderBy: { createdAt: "desc" } } },
+    include,
   });
+  return { contact, created: true };
 }
 
 export async function updateContact(id: string, data: Partial<{

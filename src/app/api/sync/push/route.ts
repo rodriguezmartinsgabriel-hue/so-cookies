@@ -3,7 +3,7 @@ import { z } from "zod"
 import { prisma } from "@/lib/prisma"
 import type { Prisma } from "@/generated/prisma/client"
 import { requireAuth } from "@/lib/api-auth"
-import { applyOrderUpdate } from "@/lib/db"
+import { applyOrderUpdate, findOrCreateContact } from "@/lib/db"
 import { resolveRefs, runDelete } from "@/lib/sync-refs"
 import { recordSyncDelete } from "@/lib/sync-deletes"
 import { computeMargin } from "@/lib/utils"
@@ -551,16 +551,14 @@ export async function POST(request: Request) {
         }
         case "contact:create": {
           const realId = await applyCreate("contact", tempId, (tx) =>
-            tx.contact.create({
-              data: {
-                name: data.name,
-                email: data.email || null,
-                phone: data.phone || null,
-                type: data.type || "CLIENTE",
-                company: data.company || null,
-                notes: data.notes || null,
-              },
-            })
+            findOrCreateContact(tx, {
+              name: data.name,
+              email: data.email,
+              phone: data.phone,
+              type: data.type,
+              company: data.company,
+              notes: data.notes,
+            }).then(({ contact }) => contact)
           )
           entry.ok = true
           entry.tempId = tempId
