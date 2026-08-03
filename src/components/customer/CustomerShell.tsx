@@ -4,6 +4,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { ShoppingBag, User, LayoutGrid } from "lucide-react"
 import { GlassSurface } from "@/components/ui/GlassSurface"
+import { ThemeToggle } from "@/components/ui/ThemeToggle"
 
 export function CustomerShell({
   children,
@@ -23,10 +24,11 @@ export function CustomerShell({
           tone="strong"
           className="sticky top-0 z-40 rounded-none"
         >
-          <div className="max-w-md mx-auto px-4 h-14 flex items-center gap-3">
+          <div className="max-w-md mx-auto px-4 h-14 flex items-center justify-between">
             <Link href="/cardapio" className="font-bold text-ink">
               Só Cookies & Café
             </Link>
+            <ThemeToggle />
           </div>
         </GlassSurface>
         <main className="max-w-md mx-auto px-4 py-6">{children}</main>
@@ -41,18 +43,21 @@ export function CustomerShell({
           <Link href="/cardapio" className="font-bold text-ink">
             Só Cookies & Café
           </Link>
-          <Link
-            href="/carrinho"
-            className="relative p-2 rounded-lg hover:bg-cream transition-colors"
-            aria-label="Carrinho"
-          >
-            <ShoppingBag className="w-5 h-5 text-ink" />
-            {cartCount > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 min-w-4 h-4 px-1 rounded-full bg-ink text-paper text-[10px] font-bold flex items-center justify-center">
-                {cartCount}
-              </span>
-            )}
-          </Link>
+          <div className="flex items-center gap-1">
+            <ThemeToggle />
+            <Link
+              href="/carrinho"
+              className="relative p-2 rounded-lg hover:bg-cream transition-colors"
+              aria-label="Carrinho"
+            >
+              <ShoppingBag className="w-5 h-5 text-ink" />
+              {cartCount > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 min-w-4 h-4 px-1 rounded-full bg-ink text-paper text-[10px] font-bold flex items-center justify-center">
+                  {cartCount}
+                </span>
+              )}
+            </Link>
+          </div>
         </div>
       </GlassSurface>
 

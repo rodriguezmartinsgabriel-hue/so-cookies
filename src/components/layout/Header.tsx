@@ -105,10 +105,10 @@ export function Header({
 
       <div className="hidden lg:block" />
 
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-1.5 sm:gap-3">
         {showLastSync && (
           <div
-            className="flex items-center gap-1.5 h-8 px-2.5 rounded-full bg-cream border border-line text-muted"
+            className="hidden sm:flex items-center gap-1.5 h-8 px-2.5 rounded-full bg-cream border border-line text-muted"
             title={`Sincronizado às ${formatSyncTime(lastSync)}`}
           >
             <Cloud className="w-3.5 h-3.5 text-success shrink-0" strokeWidth={2} />
@@ -136,7 +136,7 @@ export function Header({
           {open && (
             <GlassSurface
               tone="strong"
-              className="absolute right-0 top-full mt-2 w-80 max-h-[70vh] rounded-xl z-50 overflow-hidden flex flex-col"
+              className="absolute right-0 top-full mt-2 w-[min(20rem,calc(100vw-2rem))] max-h-[70vh] rounded-xl z-50 overflow-hidden flex flex-col"
             >
               <div className="flex items-center justify-between px-4 py-3 border-b border-line">
                 <h3 className="text-sm font-bold text-ink">Notificações</h3>
@@ -188,8 +188,8 @@ export function Header({
 
         <ThemeToggle />
 
-        <div className="flex items-center gap-2 pl-3 border-l border-line">
-          <div className="w-8 h-8 rounded-full bg-ink flex items-center justify-center">
+        <div className="flex items-center gap-1.5 sm:gap-2 pl-2 sm:pl-3 border-l border-line">
+          <div className="hidden sm:flex w-8 h-8 rounded-full bg-ink items-center justify-center">
             <User className="w-4 h-4 text-paper" strokeWidth={1.5} />
           </div>
           <span className="hidden sm:block text-sm font-medium text-ink">
