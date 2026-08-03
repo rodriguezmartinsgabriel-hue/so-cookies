@@ -22,7 +22,10 @@ export const customerSafeSelect = {
 } as const
 
 function getSecret(): Uint8Array {
-  const secret = process.env.CUSTOMER_AUTH_SECRET || process.env.NEXTAUTH_SECRET || "so-cookies-customer-dev-secret"
+  const secret = process.env.CUSTOMER_AUTH_SECRET || process.env.NEXTAUTH_SECRET
+  if (!secret) {
+    throw new Error("CUSTOMER_AUTH_SECRET or NEXTAUTH_SECRET must be set")
+  }
   return new TextEncoder().encode(secret)
 }
 

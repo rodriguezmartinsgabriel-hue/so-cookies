@@ -6,8 +6,13 @@ import { createProductSchema, getZodIssues } from "@/lib/validation"
 export async function GET() {
   const { error } = await requireAuth()
   if (error) return error
-  const products = await getProducts()
-  return NextResponse.json(products)
+
+  try {
+    const products = await getProducts()
+    return NextResponse.json(products)
+  } catch {
+    return NextResponse.json({ error: "Erro ao listar produtos" }, { status: 500 })
+  }
 }
 
 export async function POST(request: Request) {

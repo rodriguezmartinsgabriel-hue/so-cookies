@@ -1,5 +1,5 @@
 generator client {
-  provider = "prisma-client"
+  provider = "prisma-client-js"
   output   = "../src/generated/prisma"
 }
 
@@ -32,20 +32,20 @@ enum Role {
 }
 
 model Customer {
-  id                String   @id @default(cuid())
-  name              String
-  email             String   @unique
-  phone             String?
-  password          String?
-  addressCep        String?
-  addressStreet     String?
-  addressNumber     String?
-  addressComplement String?
+  id                  String   @id @default(cuid())
+  name                String
+  email               String   @unique
+  phone               String?
+  password            String?
+  addressCep          String?
+  addressStreet       String?
+  addressNumber       String?
+  addressComplement   String?
   addressNeighborhood String?
-  addressCity       String?
-  addressState      String?
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  addressCity         String?
+  addressState        String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
 
   orders   Order[]
   accounts CustomerAccount[]
@@ -71,25 +71,25 @@ model CustomerAccount {
 }
 
 model Product {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   name      String
-  sku       String   @unique
+  sku       String    @unique
   category  String
   price     Float
   cost      Float
   margin    Float
-  unit      String   @default("un")
-  active    Boolean  @default(true)
+  unit      String    @default("un")
+  active    Boolean   @default(true)
   image     String?
   deletedAt DateTime?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 
-  orderItems OrderItem[]
-  saleItems  SaleItem[]
-  recipes    Recipe[]
-  priceTiers PriceTier[]
-  productions Production[]
+  orderItems       OrderItem[]
+  saleItems        SaleItem[]
+  recipes          Recipe[]
+  priceTiers       PriceTier[]
+  productions      Production[]
   externalMappings ExternalItemMapping[]
 
   @@index([category])
@@ -99,11 +99,11 @@ model Product {
 }
 
 model Ingredient {
-  id              String   @id @default(cuid())
+  id              String    @id @default(cuid())
   name            String
   brand           String?
-  stockKg         Float    @default(0)
-  minStockKg      Float    @default(0)
+  stockKg         Float     @default(0)
+  minStockKg      Float     @default(0)
   costPerKg       Float
   supplier        String
   lastPurchase    DateTime?
@@ -111,8 +111,8 @@ model Ingredient {
   proteinPer100g  Float?
   carbsPer100g    Float?
   fatPer100g      Float?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
   recipeItems RecipeItem[]
 
@@ -129,20 +129,20 @@ model Recipe {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  product    Product?       @relation(fields: [productId], references: [id], onDelete: SetNull)
-  productId  String?
+  product     Product?     @relation(fields: [productId], references: [id], onDelete: SetNull)
+  productId   String?
   ingredients RecipeItem[]
-  totalCost  Float          @default(0)
+  totalCost   Float        @default(0)
   preparation String?
-  image      String?
+  image       String?
 
   @@index([name])
 }
 
 model RecipeItem {
-  id           String @id @default(cuid())
-  qty          Float
-  unit         String @default("kg")
+  id   String @id @default(cuid())
+  qty  Float
+  unit String @default("kg")
 
   recipe       Recipe     @relation(fields: [recipeId], references: [id], onDelete: Cascade)
   recipeId     String
@@ -190,7 +190,7 @@ model Sale {
   userId    String?
   items     SaleItem[]
 
-  order   Order? @relation(fields: [orderId], references: [id])
+  order   Order?  @relation(fields: [orderId], references: [id])
   orderId String? @unique
 
   @@index([channelId])
@@ -200,9 +200,9 @@ model Sale {
 }
 
 model SaleItem {
-  id       String @id @default(cuid())
-  qty      Int
-  price    Float
+  id    String @id @default(cuid())
+  qty   Int
+  price Float
 
   sale      Sale    @relation(fields: [saleId], references: [id], onDelete: Cascade)
   saleId    String
@@ -214,37 +214,37 @@ model SaleItem {
 }
 
 model Order {
-  id              String      @id @default(cuid())
-  channel         String
-  customer        String
-  total           Float
-  status          OrderStatus @default(PENDENTE)
-  notes           String?
-  platform        String?
-  externalId      String?
-  externalStatus  String?
-  deliveryAddress String?
-  deliveryCep        String?
-  deliveryStreet     String?
-  deliveryNumber     String?
-  deliveryComplement String?
+  id                   String      @id @default(cuid())
+  channel              String
+  customer             String
+  total                Float
+  status               OrderStatus @default(PENDENTE)
+  notes                String?
+  platform             String?
+  externalId           String?
+  externalStatus       String?
+  deliveryAddress      String?
+  deliveryCep          String?
+  deliveryStreet       String?
+  deliveryNumber       String?
+  deliveryComplement   String?
   deliveryNeighborhood String?
-  deliveryCity       String?
-  deliveryState      String?
-  deliveryDate      DateTime?  @db.Date
-  customerPhone   String?
-  platformFee     Float?
-  confirmBy       DateTime?
-  pickupCode      String?
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
+  deliveryCity         String?
+  deliveryState        String?
+  deliveryDate         DateTime?   @db.Date
+  customerPhone        String?
+  platformFee          Float?
+  confirmBy            DateTime?
+  pickupCode           String?
+  createdAt            DateTime    @default(now())
+  updatedAt            DateTime    @updatedAt
 
-  items OrderItem[]
-  sale  Sale?
+  items         OrderItem[]
+  sale          Sale?
   deliveryCosts DeliveryCost[]
 
-  customerId   String?
-  customerRef  Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  customerId  String?
+  customerRef Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
 
   deliveryRoute   DeliveryRoute? @relation(fields: [deliveryRouteId], references: [id], onDelete: SetNull)
   deliveryRouteId String?
@@ -274,15 +274,15 @@ enum OrderStatus {
 }
 
 model OrderItem {
-  id    String @id @default(cuid())
+  id    String  @id @default(cuid())
   qty   Int
   price Float
   name  String?
   notes String?
 
-  order     Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
   orderId   String
-  product   Product?  @relation(fields: [productId], references: [id])
+  product   Product? @relation(fields: [productId], references: [id])
   productId String?
 
   @@index([orderId])
@@ -296,9 +296,9 @@ model DeliveryZone {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  routes DeliveryRoute[]
+  routes       DeliveryRoute[]
   blockedDates DeliveryBlockedDate[]
-  orders Order[]
+  orders       Order[]
 
   @@index([active])
   @@index([name])
@@ -309,7 +309,7 @@ model DeliveryRoute {
   name             String
   zoneId           String
   recurring        Boolean   @default(true)
-  dayOfWeek        Int?      // 1=seg .. 7=dom (null p/ rota extraordinária)
+  dayOfWeek        Int? // 1=seg .. 7=dom (null p/ rota extraordinária)
   date             DateTime? @db.Date // data fixa (rota extraordinária)
   startDate        DateTime? @db.Date
   endDate          DateTime? @db.Date
@@ -317,7 +317,7 @@ model DeliveryRoute {
   cutoffOffsetDays Int       @default(1) // dias antes da rota para fechar pedidos
   capacityEnabled  Boolean   @default(false)
   maxOrders        Int?
-  maxItems         Int?      // total de unidades por rota/data
+  maxItems         Int? // total de unidades por rota/data
   active           Boolean   @default(true)
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
@@ -347,15 +347,15 @@ model DeliveryBlockedDate {
 }
 
 model CashFlow {
-  id          String      @id @default(cuid())
+  id          String   @id @default(cuid())
   type        CashType
   category    String
   description String
   amount      Float
-  date        DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  date        DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  user   User? @relation(fields: [userId], references: [id])
+  user   User?   @relation(fields: [userId], references: [id])
   userId String?
 
   @@index([type])
@@ -370,16 +370,16 @@ enum CashType {
 }
 
 model Production {
-  id        String   @id @default(cuid())
-  batchCode String   @unique
-  qty       Int
-  startTime DateTime @default(now())
-  endTime   DateTime?
-  status    String   @default("pendente")
-  notes     String?
+  id           String    @id @default(cuid())
+  batchCode    String    @unique
+  qty          Int
+  startTime    DateTime  @default(now())
+  endTime      DateTime?
+  status       String    @default("pendente")
+  notes        String?
   deliveryDate DateTime? @db.Date
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
   productId String
   product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
@@ -407,18 +407,18 @@ model DeliveryCost {
 }
 
 model Document {
-  id          String       @id @default(cuid())
+  id          String           @id @default(cuid())
   title       String
   description String?
   category    DocumentCategory
   content     String?
   fileUrl     String?
   tags        String?
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
 
   userId String?
-  user   User? @relation(fields: [userId], references: [id])
+  user   User?   @relation(fields: [userId], references: [id])
 
   @@index([category])
   @@index([userId])
@@ -434,15 +434,15 @@ enum DocumentCategory {
 }
 
 model Contact {
-  id           String                @id @default(cuid())
-  name         String
-  email        String?
-  phone        String?
-  type         ContactType           @default(CLIENTE)
-  company      String?
-  notes        String?
-  createdAt    DateTime              @default(now())
-  updatedAt    DateTime              @updatedAt
+  id        String      @id @default(cuid())
+  name      String
+  email     String?
+  phone     String?
+  type      ContactType @default(CLIENTE)
+  company   String?
+  notes     String?
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
 
   interactions ContactInteraction[]
 
@@ -454,10 +454,10 @@ model Contact {
 }
 
 model ContactInteraction {
-  id        String         @id @default(cuid())
+  id        String          @id @default(cuid())
   type      InteractionType
   note      String
-  createdAt DateTime       @default(now())
+  createdAt DateTime        @default(now())
 
   contact   Contact @relation(fields: [contactId], references: [id], onDelete: Cascade)
   contactId String
@@ -483,23 +483,23 @@ enum InteractionType {
 }
 
 model Coupon {
-  id                String       @id @default(cuid())
-  code              String       @unique
-  name              String
-  description       String?
-  type              CouponType   @default(PERCENTAGE)
-  value             Float
-  minOrderValue     Float        @default(0)
-  maxDiscount       Float?
-  usageLimit        Int          @default(1)
-  usedCount         Int          @default(0)
-  validFrom         DateTime     @default(now())
-  validUntil        DateTime?
-  active            Boolean      @default(true)
-  applicableProducts String[]    @default([])
-  applicableTypes   String[]     @default(["all"])
-  createdAt         DateTime     @default(now())
-  updatedAt         DateTime     @updatedAt
+  id                 String     @id @default(cuid())
+  code               String     @unique
+  name               String
+  description        String?
+  type               CouponType @default(PERCENTAGE)
+  value              Float
+  minOrderValue      Float      @default(0)
+  maxDiscount        Float?
+  usageLimit         Int        @default(1)
+  usedCount          Int        @default(0)
+  validFrom          DateTime   @default(now())
+  validUntil         DateTime?
+  active             Boolean    @default(true)
+  applicableProducts String[]   @default([])
+  applicableTypes    String[]   @default(["all"])
+  createdAt          DateTime   @default(now())
+  updatedAt          DateTime   @updatedAt
 
   @@index([code])
   @@index([active])
@@ -513,19 +513,19 @@ enum CouponType {
 }
 
 model Campaign {
-  id              String   @id @default(cuid())
-  name            String
-  description     String?
-  type            CampaignType @default(PROMOTIONAL)
-  priority        Int      @default(0)
-  startDate       DateTime @default(now())
-  endDate         DateTime?
-  active          Boolean  @default(true)
-  applicableProducts String[] @default([])
-  usedCount       Int      @default(0)
-  conditions      Json     // { minQty, products, categories, customerTypes }
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id                 String       @id @default(cuid())
+  name               String
+  description        String?
+  type               CampaignType @default(PROMOTIONAL)
+  priority           Int          @default(0)
+  startDate          DateTime     @default(now())
+  endDate            DateTime?
+  active             Boolean      @default(true)
+  applicableProducts String[]     @default([])
+  usedCount          Int          @default(0)
+  conditions         Json // { minQty, products, categories, customerTypes }
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
 
   @@index([active])
   @@index([startDate, endDate])
@@ -540,21 +540,21 @@ enum CampaignType {
 }
 
 model ShippingRate {
-  id              String              @id @default(cuid())
-  name            String
-  channel         String              // 'delivery' | 'pickup' | 'marketplace'
-  zoneId          String?
-  type            ShippingRateType    @default(FLAT_RATE)
-  basePrice       Float               @default(0)
-  pricePerKm      Float?              @default(0)
-  minOrderValue   Float?              @default(0)
+  id                    String           @id @default(cuid())
+  name                  String
+  channel               String // 'delivery' | 'pickup' | 'marketplace'
+  zoneId                String?
+  type                  ShippingRateType @default(FLAT_RATE)
+  basePrice             Float            @default(0)
+  pricePerKm            Float?           @default(0)
+  minOrderValue         Float?           @default(0)
   freeShippingThreshold Float?
-  enabled         Boolean             @default(true)
-  minWeight       Float?
-  maxWeight       Float?
-  region          String?
-  createdAt       DateTime            @default(now())
-  updatedAt       DateTime            @updatedAt
+  enabled               Boolean          @default(true)
+  minWeight             Float?
+  maxWeight             Float?
+  region                String?
+  createdAt             DateTime         @default(now())
+  updatedAt             DateTime         @updatedAt
 
   @@index([channel])
   @@index([zoneId])
@@ -572,7 +572,7 @@ enum ShippingRateType {
 model PricingSettings {
   id          String   @id @default("default")
   key         String   @unique
-  value       Json     // Configuração flexível
+  value       Json // Configuração flexível
   description String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
