@@ -1,3 +1,4 @@
+import { PrismaPg } from "@prisma/adapter-pg"
 import { PrismaClient } from '@/generated/prisma/client';
 import type { PricingContext } from '../types';
 import { PricingEngine } from '../engine/PricingEngine';
@@ -7,12 +8,19 @@ import { RuleExecutor } from '../executor/RuleExecutor';
 import { ActionReducer } from '../reducers/ActionReducer';
 import { PricingDataLoader } from '../loaders/PricingDataLoader';
 import { PricingCache } from '../cache/PricingCache';
-import { PricingRule, BasePriceRule } from '../rules/PricingRule';
+import { BasePriceRule } from '../rules/PricingRule';
 import { PriceTierRule } from '../rules/PriceTierRule';
 import { ShippingRule } from '../rules/ShippingRule';
 import { EventBus } from '../events/EventBus';
+import {
+  buildPricingDataLoaderDeps,
+  mockConsole,
+  mockMetrics,
+  pricingContextFactory,
+} from './factories';
 
-const prisma = new PrismaClient();
+const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL || "" })
+const prisma = new PrismaClient({ adapter });
 
 async function testPricingEngine() {
   console.log('🧪 Iniciando testes do Pricing Engine...\n');
@@ -20,45 +28,37 @@ async function testPricingEngine() {
   // 1. Configurar Engine
   const registry = new RuleRegistry();
   const pipeline = new RulePipeline();
+  const logger = mockConsole();
 
   // Registrar regras
-  registry.register(new BasePriceRule(prisma, console));
-  registry.register(new PriceTierRule(prisma, console));
-  registry.register(new ShippingRule(prisma, new EventBus(), console));
+  registry.register(new BasePriceRule(prisma, logger));
+  registry.register(new PriceTierRule(prisma, logger));
+  registry.register(new ShippingRule(prisma, new EventBus(), logger));
 
   // Configurar pipeline
   pipeline.registerPhase(PricingPhase.BASE, [registry.get('base-price')!]);
   pipeline.registerPhase(PricingPhase.ITEM, [registry.get('price-tier')!]);
   pipeline.registerPhase(PricingPhase.SHIPPING, [registry.get('shipping')!]);
 
-  const executor = new RuleExecutor(registry, console);
-  const reducer = new ActionReducer();
-  const dataLoader = new PricingDataLoader(
-    { findByIds: () => [] } as any,
-    { findByCode: () => null } as any,
-    { findActive: () => [] } as any,
-    { getRateByWeight: () => null } as any,
-    { getSettings: () => null } as any,
+  const _executor = new RuleExecutor(registry, logger);
+  void _executor;
+  const _reducer = new ActionReducer();
+  void _reducer;
+  const deps = buildPricingDataLoaderDeps();
+  const _dataLoader = new PricingDataLoader(
+    deps.productRepository,
+    deps.couponRepository,
+    deps.campaignRepository,
+    deps.shippingRepository,
+    deps.pricingRepository,
     new PricingCache()
   );
+  void _dataLoader;
 
-  const engine = new PricingEngine(prisma, registry, console, {
-    record: () => void 0
-  } as any);
+  const engine = new PricingEngine(prisma, registry, logger, mockMetrics());
 
   // 2. Testar cálculo de preço
-  const context: PricingContext = {
-    items: [
-      {
-        productId: 'prod1',
-        qty: 5,
-        basePrice: 15,
-        name: 'Cookie Clássico'
-      }
-    ],
-    channel: 'pickup',
-    customerType: 'CLIENTE'
-  };
+  const context: PricingContext = pricingContextFactory();
 
   console.log('Teste 1: Cálculo básico de preço');
   console.log('Itens:', context.items);
