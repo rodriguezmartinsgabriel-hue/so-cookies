@@ -6,12 +6,25 @@ export function proxy(request: NextRequest) {
 
   const isPublicRoute =
     pathname === "/login" ||
+    pathname === "/cardapio" ||
+    pathname.startsWith("/cardapio") ||
+    pathname === "/carrinho" ||
+    pathname.startsWith("/carrinho") ||
+    pathname === "/entrar" ||
+    pathname.startsWith("/entrar") ||
+    pathname === "/cadastro" ||
+    pathname.startsWith("/cadastro") ||
+    pathname === "/perfil" ||
+    pathname.startsWith("/perfil") ||
+    pathname === "/pedido" ||
+    pathname.startsWith("/pedido") ||
     pathname.startsWith("/_next/static") ||
     pathname.startsWith("/serwist") ||
     pathname === "/favicon.ico" ||
     pathname === "/manifest.webmanifest" ||
     pathname === "/~offline" ||
     pathname.startsWith("/api/auth") ||
+    pathname.startsWith("/api/public") ||
     pathname.startsWith("/api/integrations/99food/webhook") ||
     pathname.startsWith("/api/integrations/ifood/webhook");
 
