@@ -100,7 +100,7 @@ export async function compressImage(file: File, maxDim = 900, quality = 0.82, fo
 const IMAGE_DIM_STEPS = [900, 720, 600]
 const IMAGE_QUALITY_STEPS = [0.82, 0.6, 0.45, 0.3]
 
-async function compressImageToFit(file: File): Promise<string> {
+export async function compressImageToFit(file: File): Promise<string> {
   for (const dim of IMAGE_DIM_STEPS) {
     for (const quality of IMAGE_QUALITY_STEPS) {
       const url = await compressImage(file, dim, quality)

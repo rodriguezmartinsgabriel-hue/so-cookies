@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { Minus, Plus, Trash2, ArrowRight, ShoppingBag } from "lucide-react"
+import { Minus, Plus, Trash2, ArrowRight, ShoppingBag, Cookie } from "lucide-react"
+import NextImage from "next/image"
 import { CustomerShell } from "@/components/customer/CustomerShell"
 import { useCart } from "@/hooks/useCart"
 
@@ -12,6 +13,7 @@ type CatalogProduct = {
   category: string
   price: number
   unit: string
+  image: string | null
 }
 
 const formatBRL = (v: number) =>
@@ -96,6 +98,13 @@ export default function CarrinhoPage() {
             <div className="space-y-2">
               {lines.map((l) => (
                 <div key={l.productId} className="flex items-center gap-3 border border-line rounded-lg bg-paper p-3 shadow-card">
+                  {l.product.image ? (
+                    <NextImage src={l.product.image} alt={l.product.name} width={44} height={44} unoptimized className="w-11 h-11 rounded-lg object-cover shrink-0" />
+                  ) : (
+                    <div className="w-11 h-11 rounded-lg bg-cream border border-line flex items-center justify-center shrink-0">
+                      <Cookie className="w-5 h-5 text-kraft" />
+                    </div>
+                  )}
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-ink truncate">{l.product.name}</p>
                     <p className="text-xs text-muted">{formatBRL(l.product.price)}</p>

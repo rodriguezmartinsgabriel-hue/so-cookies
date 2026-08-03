@@ -72,6 +72,8 @@ export const createProductSchema = z.object({
   price: z.number().min(0, "Preço deve ser positivo"),
   cost: z.number().min(0, "Custo deve ser positivo"),
   unit: z.string().optional(),
+  image: z.string().nullable().optional(),
+  active: z.boolean().optional(),
 })
 
 export const createProductSyncSchema = createProductSchema.extend({
@@ -83,7 +85,7 @@ export const createRecipeSchema = z.object({
   name: z.string().min(1, "Nome é obrigatório"),
   yield: z.number().int().min(1),
   yieldUnit: z.string().optional(),
-  productId: z.string().optional(),
+  productId: z.string().nullable().optional(),
   totalCost: z.number().min(0),
   preparation: z.string().optional(),
   image: z.string().optional(),
@@ -178,7 +180,7 @@ export const updateRecipeSchema = z.object({
   name: z.string().min(1).optional(),
   yield: z.number().int().min(1).optional(),
   yieldUnit: z.string().optional(),
-  productId: z.string().optional(),
+  productId: z.string().nullable().optional(),
   totalCost: z.number().min(0).optional(),
   preparation: z.string().optional(),
   image: z.string().optional(),

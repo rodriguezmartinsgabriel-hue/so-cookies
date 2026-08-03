@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { createOrderSchema, createSaleSchema, createIngredientSchema, createCashFlowSchema, createRecipeSchema, updateRecipeSchema, createDocumentSchema, updateDocumentSchema, createProductionSchema, createPriceTierSchema } from "@/lib/validation"
+import { createOrderSchema, createSaleSchema, createIngredientSchema, createCashFlowSchema, createRecipeSchema, updateRecipeSchema, createDocumentSchema, updateDocumentSchema, createProductionSchema, createPriceTierSchema, createProductSchema } from "@/lib/validation"
 
 describe("createOrderSchema", () => {
   it("accepts valid order", () => {
@@ -60,6 +60,35 @@ describe("createIngredientSchema", () => {
   })
 })
 
+describe("createProductSchema", () => {
+  it("accepts product with image and active", () => {
+    const result = createProductSchema.parse({
+      name: "Cookie Clássico",
+      sku: "ck-classico",
+      category: "Doces",
+      price: 5,
+      cost: 2.5,
+      unit: "un",
+      image: "data:image/jpeg;base64,/9j/2Q==",
+      active: false,
+    })
+    expect(result.image).toContain("data:image/jpeg")
+    expect(result.active).toBe(false)
+  })
+
+  it("accepts product without optional fields", () => {
+    const result = createProductSchema.parse({
+      name: "Cookie",
+      sku: "ck",
+      category: "Doces",
+      price: 5,
+      cost: 2.5,
+    })
+    expect(result.image).toBeUndefined()
+    expect(result.active).toBeUndefined()
+  })
+})
+
 describe("createRecipeSchema", () => {
   it("accepts recipe with preparation and image", () => {
     const result = createRecipeSchema.parse({
@@ -98,6 +127,11 @@ describe("updateRecipeSchema", () => {
     })
     expect(result.preparation).toContain("Assar")
     expect(result.image).toContain("data:image/png")
+  })
+
+  it("accepts productId null para desvincular do produto", () => {
+    const result = updateRecipeSchema.parse({ productId: null })
+    expect(result.productId).toBeNull()
   })
 })
 

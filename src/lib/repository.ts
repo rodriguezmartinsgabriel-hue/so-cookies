@@ -446,7 +446,7 @@ export const repository = {
       return cached
     },
 
-    async create(data: { name: string; yield: number; yieldUnit?: string; totalCost?: number; productId?: string; preparation?: string; image?: string; ingredients: { ingredientId: string; qty: number; unit: string }[] }) {
+    async create(data: { name: string; yield: number; yieldUnit?: string; totalCost?: number; productId?: string | null; preparation?: string; image?: string; ingredients: { ingredientId: string; qty: number; unit: string }[] }) {
       const id = generateTempId()
       const recipe = {
         ...data,
@@ -474,7 +474,7 @@ export const repository = {
       return { ...recipe, ingredients: JSON.parse(recipe.ingredients) }
     },
 
-    async update(id: string, data: { name?: string; yield?: number; yieldUnit?: string; totalCost?: number; productId?: string; preparation?: string; image?: string; ingredients?: { ingredientId: string; qty: number; unit: string }[] }) {
+    async update(id: string, data: { name?: string; yield?: number; yieldUnit?: string; totalCost?: number; productId?: string | null; preparation?: string; image?: string; ingredients?: { ingredientId: string; qty: number; unit: string }[] }) {
       const updatedAt = now()
       const { ingredients, ...rest } = data
       const patch: UpdateSpec<LocalRecipe> = { ...rest, _synced: false, _updatedAt: updatedAt }

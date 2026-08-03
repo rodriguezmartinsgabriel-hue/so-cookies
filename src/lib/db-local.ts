@@ -146,7 +146,7 @@ export interface LocalRecipe {
   yield: number
   yieldUnit: string
   totalCost: number
-  productId?: string
+  productId?: string | null
   preparation?: string
   image?: string
   ingredients: string

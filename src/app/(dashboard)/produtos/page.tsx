@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import { useMemo, useState } from "react"
+import { useQueryClient } from "@tanstack/react-query"
 import { useConfirm } from "@/hooks/useConfirm"
 import { useFocusTrap } from "@/hooks/useFocusTrap"
 import { useRole } from "@/hooks/useRole"
@@ -9,17 +10,20 @@ import { AppShell } from "@/components/layout/AppShell"
 import { Skeleton } from "@/components/ui/Skeleton"
 import { ErrorState } from "@/components/ui/ErrorState"
 import { repository } from "@/lib/repository"
-import { computeMargin, formatBRL, parseCurrencyPtBr } from "@/lib/utils"
-import type { Product } from "@/lib/entity-types"
-import { Plus, Edit, Trash2, X, Search, Cookie } from "lucide-react"
+import { compressImageToFit } from "@/lib/files"
+import { computeMargin, formatBRL, parseCurrencyPtBr, resolveProductImage } from "@/lib/utils"
+import type { Product, Recipe } from "@/lib/entity-types"
+import { Plus, Edit, Trash2, X, Search, Cookie, ImagePlus } from "lucide-react"
 import NextImage from "next/image"
 
-const emptyForm = { name: "", sku: "", category: "", price: "", cost: "", unit: "un", image: "", active: true }
+const emptyForm = { name: "", sku: "", category: "", price: "", cost: "", unit: "un", image: "", recipeId: "", active: true }
 
 export default function ProdutosPage() {
   const { canEdit } = useRole();
   const { confirm, dialog } = useConfirm()
+  const queryClient = useQueryClient()
   const { data: products, isLoading: loading, error: productsError, invalidate } = useQueryData("products")
+  const { data: recipes } = useQueryData("recipes")
   const error = productsError ? "Erro ao carregar produtos" : null
   const [showModal, setShowModal] = useState(false)
   const modalRef = useFocusTrap(showModal)
@@ -27,6 +31,16 @@ export default function ProdutosPage() {
   const [form, setForm] = useState(emptyForm)
   const [search, setSearch] = useState("")
   const [filter, setFilter] = useState<"TODOS" | "ATIVOS" | "INATIVOS">("TODOS")
+  const [imageLoading, setImageLoading] = useState(false)
+  const [imageError, setImageError] = useState<string | null>(null)
+
+  const recipeByProduct = useMemo(() => {
+    const map: Record<string, Recipe> = {}
+    for (const r of recipes) if (r.productId) map[r.productId] = r
+    return map
+  }, [recipes])
+
+  const linkedRecipe = form.recipeId ? recipes.find((r) => r.id === form.recipeId) : undefined
 
   function openEdit(item: Product) {
     setEditingItem(item)
@@ -38,14 +52,56 @@ export default function ProdutosPage() {
       cost: String(item.cost ?? 0),
       unit: item.unit || "un",
       image: item.image || "",
+      recipeId: recipeByProduct[item.id]?.id || "",
       active: item.active !== false,
     })
+    setImageError(null)
     setShowModal(true)
   }
 
   function resetForm() {
     setForm(emptyForm)
     setEditingItem(null)
+    setImageError(null)
+  }
+
+  async function handleImageSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    e.target.value = ""
+    if (!file) return
+    if (!file.type.startsWith("image/")) {
+      setImageError("Selecione um arquivo de imagem válido.")
+      return
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      setImageError("A imagem é muito grande (máx. 10MB).")
+      return
+    }
+    setImageLoading(true)
+    setImageError(null)
+    try {
+      const dataUrl = await compressImageToFit(file)
+      setForm({ ...form, image: dataUrl })
+    } catch {
+      setImageError("Não foi possível processar a imagem.")
+    } finally {
+      setImageLoading(false)
+    }
+  }
+
+  function removeImage() {
+    setForm({ ...form, image: "" })
+    setImageError(null)
+  }
+
+  async function saveRecipeLink(productId: string, recipeId: string) {
+    const prev = recipeByProduct[productId]
+    if (prev && prev.id !== recipeId) {
+      await repository.recipes.update(prev.id, { productId: null })
+    }
+    if (recipeId) {
+      await repository.recipes.update(recipeId, { productId })
+    }
   }
 
   async function handleSave() {
@@ -63,14 +119,19 @@ export default function ProdutosPage() {
       image: form.image.trim() || null,
       active: form.active,
     }
+    let productId: string
     if (editingItem) {
       await repository.products.update(editingItem.id, payload)
+      productId = editingItem.id
     } else {
-      await repository.products.create(payload)
+      const created = await repository.products.create(payload)
+      productId = created.id
     }
+    await saveRecipeLink(productId, form.recipeId)
     setShowModal(false)
     resetForm()
     await invalidate()
+    queryClient.invalidateQueries({ queryKey: ["recipes"] })
   }
 
   async function handleDelete(id: string) {
@@ -193,8 +254,8 @@ export default function ProdutosPage() {
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-3">
                           <div className="w-8 h-8 rounded-lg bg-cream flex items-center justify-center shrink-0">
-                            {p.image ? (
-                              <NextImage src={p.image} alt={p.name} width={32} height={32} unoptimized className="w-8 h-8 rounded-lg object-cover" />
+                            {resolveProductImage(p, recipeByProduct[p.id]) ? (
+                              <NextImage src={resolveProductImage(p, recipeByProduct[p.id])!} alt={p.name} width={32} height={32} unoptimized className="w-8 h-8 rounded-lg object-cover" />
                             ) : (
                               <Cookie className="w-4 h-4 text-muted" strokeWidth={1.5} />
                             )}
@@ -278,8 +339,45 @@ export default function ProdutosPage() {
                   </div>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Imagem (URL opcional)</label>
-                  <input type="text" placeholder="https://..." value={form.image} onChange={(e) => setForm({ ...form, image: e.target.value })} className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink placeholder:text-kraft focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink transition-colors" />
+                  <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Receita vinculada (opcional)</label>
+                  <select value={form.recipeId} onChange={(e) => setForm({ ...form, recipeId: e.target.value })} className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink transition-colors bg-paper">
+                    <option value="">Nenhuma receita</option>
+                    {recipes.map((r) => (
+                      <option key={r.id} value={r.id}>{r.name}</option>
+                    ))}
+                  </select>
+                  {linkedRecipe?.image && !form.image && (
+                    <p className="text-xs text-muted mt-1.5">
+                      Usando foto da receita: <span className="text-ink font-medium">{linkedRecipe.name}</span>
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Foto do produto</label>
+                  <div className="flex items-center gap-3">
+                    <div className="w-20 h-20 rounded-lg overflow-hidden bg-cream border border-line flex items-center justify-center shrink-0">
+                      {form.image ? (
+                        <NextImage src={form.image} alt="Prévia do produto" width={80} height={80} unoptimized className="w-full h-full object-cover" />
+                      ) : linkedRecipe?.image ? (
+                        <NextImage src={linkedRecipe.image} alt={`Foto da receita ${linkedRecipe.name}`} width={80} height={80} unoptimized className="w-full h-full object-cover opacity-70" />
+                      ) : (
+                        <ImagePlus className="w-6 h-6 text-kraft" />
+                      )}
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      <label className="flex items-center gap-2 h-9 px-3 rounded-lg border border-line text-xs font-medium text-ink hover:bg-cream transition-colors cursor-pointer">
+                        <ImagePlus className="w-4 h-4" />
+                        {imageLoading ? "Processando..." : form.image ? "Trocar foto" : "Enviar foto"}
+                        <input type="file" accept="image/*" onChange={handleImageSelect} className="hidden" disabled={imageLoading} />
+                      </label>
+                      {form.image && (
+                        <button onClick={removeImage} className="flex items-center gap-1 text-xs font-medium text-danger hover:underline">
+                          <Trash2 className="w-3.5 h-3.5" /> Remover foto
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  {imageError && <p className="text-xs text-danger mt-2">{imageError}</p>}
                 </div>
                 <div className="flex items-center justify-between bg-cream border border-line rounded-lg px-3 py-2.5">
                   <label className="flex items-center gap-2 text-sm font-medium text-ink cursor-pointer">

@@ -1,7 +1,8 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
-import { Plus, Minus } from "lucide-react"
+import { Plus, Minus, Cookie } from "lucide-react"
+import NextImage from "next/image"
 import { CustomerShell } from "@/components/customer/CustomerShell"
 import { useCart } from "@/hooks/useCart"
 
@@ -77,6 +78,13 @@ export default function CardapioPage() {
                       key={p.id}
                       className="flex items-center gap-3 border border-line rounded-lg bg-paper p-3 shadow-card"
                     >
+                      {p.image ? (
+                        <NextImage src={p.image} alt={p.name} width={48} height={48} unoptimized className="w-12 h-12 rounded-lg object-cover shrink-0" />
+                      ) : (
+                        <div className="w-12 h-12 rounded-lg bg-cream border border-line flex items-center justify-center shrink-0">
+                          <Cookie className="w-5 h-5 text-kraft" />
+                        </div>
+                      )}
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-semibold text-ink truncate">{p.name}</p>
                         <p className="text-xs text-muted">{formatBRL(p.price)} / {p.unit}</p>

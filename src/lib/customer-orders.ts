@@ -1,4 +1,5 @@
 import { prisma } from "./prisma"
+import { toCatalogProduct, type CatalogProduct } from "./utils"
 
 const PICKUP_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
 
@@ -10,11 +11,15 @@ export function generatePickupCode(): string {
   return code
 }
 
-export async function getCustomerCatalog() {
-  return prisma.product.findMany({
+export type { CatalogProduct }
+
+export async function getCustomerCatalog(): Promise<CatalogProduct[]> {
+  const products = await prisma.product.findMany({
     where: { active: true, deletedAt: null },
     orderBy: [{ category: "asc" }, { name: "asc" }],
+    include: { recipes: { select: { image: true } } },
   })
+  return products.map(toCatalogProduct)
 }
 
 export async function createCustomerOrder(

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { cn, computeMargin, formatBRL, parseCurrencyPtBr } from "@/lib/utils"
+import { cn, computeMargin, formatBRL, parseCurrencyPtBr, resolveProductImage, toCatalogProduct } from "@/lib/utils"
 
 describe("cn", () => {
   it("merges class names", () => {
@@ -64,5 +64,53 @@ describe("formatBRL", () => {
 
   it("formata zero", () => {
     expect(formatBRL(0)).toBe("R$ 0,00")
+  })
+})
+
+describe("resolveProductImage", () => {
+  it("usa a foto do produto quando existe", () => {
+    expect(resolveProductImage({ image: "own.jpg" }, { image: "recipe.jpg" })).toBe("own.jpg")
+  })
+
+  it("cai para a foto da receita quando o produto não tem foto", () => {
+    expect(resolveProductImage({ image: null }, { image: "recipe.jpg" })).toBe("recipe.jpg")
+  })
+
+  it("retorna null sem produto nem receita", () => {
+    expect(resolveProductImage({ image: null }, { image: null })).toBeNull()
+    expect(resolveProductImage({ image: "" }, undefined)).toBeNull()
+  })
+})
+
+describe("toCatalogProduct", () => {
+  it("não vaza custo, margem ou sku", () => {
+    const result = toCatalogProduct({
+      id: "p1",
+      name: "Cookie",
+      category: "Doces",
+      price: 5,
+      unit: "un",
+      image: null,
+      recipes: [],
+    })
+    expect(result).toEqual({ id: "p1", name: "Cookie", category: "Doces", price: 5, unit: "un", image: null })
+  })
+
+  it("usa a foto do produto quando existe", () => {
+    const result = toCatalogProduct({
+      id: "p1", name: "Cookie", category: "Doces", price: 5, unit: "un",
+      image: "own.jpg",
+      recipes: [{ image: "recipe.jpg" }],
+    })
+    expect(result.image).toBe("own.jpg")
+  })
+
+  it("cai para a foto da receita vinculada", () => {
+    const result = toCatalogProduct({
+      id: "p1", name: "Cookie", category: "Doces", price: 5, unit: "un",
+      image: null,
+      recipes: [{ image: "recipe.jpg" }, { image: "recipe2.jpg" }],
+    })
+    expect(result.image).toBe("recipe.jpg")
   })
 })
