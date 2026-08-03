@@ -4,6 +4,15 @@ import { Suspense, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { CustomerShell } from "@/components/customer/CustomerShell"
+import { GoogleLoginButton } from "@/components/customer/GoogleLoginButton"
+
+const OAUTH_ERROR_MESSAGES: Record<string, string> = {
+  too_many_requests: "Muitas tentativas. Tente novamente em instantes.",
+  invalid_state: "A sessão expirou. Tente novamente.",
+  access_denied: "Acesso negado. Você não autorizou o Google.",
+  not_configured: "Login com Google indisponível no momento.",
+  server_error: "Não foi possível entrar com o Google. Tente novamente.",
+}
 
 export default function EntrarPage() {
   return (
@@ -16,7 +25,10 @@ export default function EntrarPage() {
 function EntrarForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const [error, setError] = useState("")
+  const [error, setError] = useState(() => {
+    const oauthError = searchParams.get("oauth_error")
+    return oauthError ? OAUTH_ERROR_MESSAGES[oauthError] ?? "" : ""
+  })
   const [loading, setLoading] = useState(false)
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -52,6 +64,15 @@ function EntrarForm() {
         <div>
           <h1 className="text-2xl font-bold text-ink">Entrar</h1>
           <p className="text-sm text-muted">Acompanhe seus pedidos e retiradas</p>
+        </div>
+
+        <div className="space-y-3">
+          <GoogleLoginButton next={searchParams.get("next")} />
+          <div className="flex items-center gap-3">
+            <div className="flex-1 h-px bg-line" />
+            <span className="text-xs text-muted">ou</span>
+            <div className="flex-1 h-px bg-line" />
+          </div>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">

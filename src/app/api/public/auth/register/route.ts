@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { hash } from "bcryptjs"
 import { setCustomerCookie, customerSafeSelect } from "@/lib/customer-auth"
+import { syncCustomerToContact } from "@/lib/customer-contact"
 import { registerCustomerSchema, getZodIssues } from "@/lib/validation"
 import { rateLimit } from "@/lib/rate-limit"
 
@@ -23,6 +24,11 @@ export async function POST(request: Request) {
       select: customerSafeSelect,
     })
     await setCustomerCookie(customer.id)
+    try {
+      await syncCustomerToContact({ id: customer.id, name: parsed.name, email: parsed.email, phone: parsed.phone || null })
+    } catch (e) {
+      console.error("Falha ao sincronizar contato do cliente", e)
+    }
     return NextResponse.json(customer, { status: 201 })
   } catch (e) {
     const issues = getZodIssues(e)

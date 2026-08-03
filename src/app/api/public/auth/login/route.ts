@@ -17,6 +17,12 @@ export async function POST(request: Request) {
     if (!customer) {
       return NextResponse.json({ error: "E-mail ou senha inválidos" }, { status: 401 })
     }
+    if (!customer.password) {
+      return NextResponse.json(
+        { error: "Esta conta usa login com Google. Entre com o Google." },
+        { status: 401 }
+      )
+    }
     const valid = await compare(parsed.password, customer.password)
     if (!valid) {
       return NextResponse.json({ error: "E-mail ou senha inválidos" }, { status: 401 })

@@ -1,0 +1,121 @@
+// @vitest-environment node
+import { describe, it, expect, beforeEach, vi } from "vitest"
+
+const store = vi.hoisted(() => {
+  const contacts = new Map<string, Record<string, unknown>>()
+  let id = 0
+
+  function reset() {
+    contacts.clear()
+    id = 0
+  }
+
+  const mockPrisma = {
+    contact: {
+      findFirst: async ({ where }: { where?: Record<string, unknown> }) => {
+        const or = where?.OR as
+          | ({ customerId?: string; email?: string; type?: string } | undefined)[]
+          | undefined
+        if (or) {
+          for (const cond of or) {
+            if (cond?.customerId) {
+              const hit = [...contacts.values()].find((c) => c.customerId === cond.customerId)
+              if (hit) return hit
+            }
+            if (cond?.email && cond.type) {
+              const hit = [...contacts.values()].find(
+                (c) => c.email === cond.email && c.type === cond.type,
+              )
+              if (hit) return hit
+            }
+          }
+          return null
+        }
+        return null
+      },
+      create: async ({ data }: { data: Record<string, unknown> }) => {
+        const contact = { id: `ct-${++id}`, createdAt: new Date(), updatedAt: new Date(), ...data }
+        contacts.set(contact.id as string, contact)
+        return contact
+      },
+      update: async ({ where, data }: { where?: Record<string, unknown>; data: Record<string, unknown> }) => {
+        const existing = contacts.get((where?.id as string) ?? "")
+        if (!existing) throw new Error("contact not found")
+        const updated = { ...existing, ...data }
+        contacts.set(existing.id as string, updated)
+        return updated
+      },
+    },
+  }
+
+  return { mockPrisma, contacts, reset }
+})
+
+vi.mock("@/lib/prisma", () => ({ prisma: store.mockPrisma }))
+
+import { syncCustomerToContact, CUSTOMER_CONTACT_NOTE } from "@/lib/customer-contact"
+
+function baseContact(overrides: Record<string, unknown> = {}) {
+  return { createdAt: new Date(), updatedAt: new Date(), ...overrides }
+}
+
+describe("syncCustomerToContact", () => {
+  beforeEach(() => store.reset())
+
+  it("cria contato CLIENTE com nota e vínculo quando não existe", async () => {
+    const result = await syncCustomerToContact({ id: "cust-1", name: "Maria", email: "maria@test.com", phone: "11999999999" })
+    expect(result.created).toBe(true)
+    const contact = [...store.contacts.values()][0]
+    expect(contact).toMatchObject({
+      name: "Maria",
+      email: "maria@test.com",
+      phone: "11999999999",
+      type: "CLIENTE",
+      notes: CUSTOMER_CONTACT_NOTE,
+      customerId: "cust-1",
+    })
+  })
+
+  it("cria contato sem phone quando o cliente não tem phone", async () => {
+    await syncCustomerToContact({ id: "cust-1", name: "João", email: "joao@test.com", phone: null })
+    const contact = [...store.contacts.values()][0]
+    expect(contact.phone).toBeNull()
+  })
+
+  it("vincula contato manual existente (mesmo email) e preenche lacunas", async () => {
+    store.contacts.set(
+      "ct-manual",
+      baseContact({ id: "ct-manual", name: "", email: "maria@test.com", phone: null, type: "CLIENTE", notes: "contato do whatsapp", customerId: null }),
+    )
+    const result = await syncCustomerToContact({ id: "cust-1", name: "Maria", email: "maria@test.com", phone: "11999999999" })
+    expect(result.created).toBe(false)
+    const contact = store.contacts.get("ct-manual")!
+    expect(contact.customerId).toBe("cust-1")
+    expect(contact.name).toBe("Maria")
+    expect(contact.phone).toBe("11999999999")
+    expect(contact.notes).toBe("contato do whatsapp")
+  })
+
+  it("não duplica quando já existe contato vinculado ao customerId", async () => {
+    store.contacts.set(
+      "ct-1",
+      baseContact({ id: "ct-1", name: "Maria", email: "maria@test.com", phone: null, type: "CLIENTE", notes: "n", customerId: "cust-1" }),
+    )
+    const result = await syncCustomerToContact({ id: "cust-1", name: "Maria", email: "maria@test.com" })
+    expect(result.created).toBe(false)
+    expect(result.contactId).toBe("ct-1")
+    expect(store.contacts.size).toBe(1)
+  })
+
+  it("não sobrescreve edições do manager, mas preenche lacunas", async () => {
+    store.contacts.set(
+      "ct-1",
+      baseContact({ id: "ct-1", name: "Maria Silva (Loja)", email: "maria@test.com", phone: null, type: "CLIENTE", notes: "nota do manager", customerId: "cust-1" }),
+    )
+    await syncCustomerToContact({ id: "cust-1", name: "Maria", email: "maria@test.com", phone: "11999999999" })
+    const contact = store.contacts.get("ct-1")!
+    expect(contact.name).toBe("Maria Silva (Loja)")
+    expect(contact.phone).toBe("11999999999")
+    expect(contact.notes).toBe("nota do manager")
+  })
+})

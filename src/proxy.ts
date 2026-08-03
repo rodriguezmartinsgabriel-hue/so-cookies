@@ -5,17 +5,17 @@ import { getHostRole } from "@/lib/hosts";
 function isCustomerRoute(pathname: string) {
   return (
     pathname === "/cardapio" ||
-    pathname.startsWith("/cardapio") ||
+    pathname.startsWith("/cardapio/") ||
     pathname === "/carrinho" ||
-    pathname.startsWith("/carrinho") ||
+    pathname.startsWith("/carrinho/") ||
     pathname === "/entrar" ||
-    pathname.startsWith("/entrar") ||
+    pathname.startsWith("/entrar/") ||
     pathname === "/cadastro" ||
-    pathname.startsWith("/cadastro") ||
+    pathname.startsWith("/cadastro/") ||
     pathname === "/perfil" ||
-    pathname.startsWith("/perfil") ||
+    pathname.startsWith("/perfil/") ||
     pathname === "/pedido" ||
-    pathname.startsWith("/pedido")
+    pathname.startsWith("/pedido/")
   );
 }
 
