@@ -1,5 +1,5 @@
-import type { PricingContext, PricingState, PricingData } from '../types';
-import type { Product, Coupon, Campaign, ShippingRate, PricingSettings } from '@prisma/client';
+import type { PricingContext } from '../types';
+import type { Product } from '@prisma/client';
 import { ProductRepository } from '../repositories/ProductRepository';
 import { CouponRepository } from '../repositories/CouponRepository';
 import { CampaignRepository } from '../repositories/CampaignRepository';
@@ -86,7 +86,7 @@ export class PricingDataLoader {
     }, {} as Record<string, any[]>);
   }
 
-  private async loadCoupons(couponCode?: string): Promise<Coupon[]> {
+  private async loadCoupons(couponCode?: string): Promise<any[]> {
     if (!couponCode) return [];
 
     const cacheKey = `coupon:${couponCode}`;
@@ -103,7 +103,7 @@ export class PricingDataLoader {
     return coupon ? [coupon] : [];
   }
 
-  private async loadActiveCampaigns(): Promise<Campaign[]> {
+  private async loadActiveCampaigns(): Promise<any[]> {
     const cacheKey = 'campaigns:active';
     const cached = this.cache.get(cacheKey);
 
@@ -116,7 +116,7 @@ export class PricingDataLoader {
     return campaigns;
   }
 
-  private async loadShippingRates(channel: string): Promise<ShippingRate[]> {
+  private async loadShippingRates(channel: string): Promise<any[]> {
     const cacheKey = `shipping:${channel}`;
     const cached = this.cache.get(cacheKey);
 
@@ -129,7 +129,7 @@ export class PricingDataLoader {
     return rates;
   }
 
-  private async loadSettings(): Promise<PricingSettings> {
+  private async loadSettings(): Promise<any> {
     const settings = await this.pricingRepository.getSettings();
 
     if (!settings) {
@@ -151,8 +151,8 @@ export interface PricingData {
   products: Record<string, Product>;
   customer?: any;
   priceTiers: Record<string, any[]>;
-  coupons: Coupon[];
-  campaigns: Campaign[];
-  shippingRates: ShippingRate[];
-  settings: PricingSettings;
+  coupons: any[];
+  campaigns: any[];
+  shippingRates: any[];
+  settings: any;
 }

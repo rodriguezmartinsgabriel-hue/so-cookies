@@ -146,3 +146,13 @@ export interface TimelineEvent {
   totalDiscount: number;
   totalSubtotal: number;
 }
+
+export interface PricingData {
+  products: Record<string, any>;
+  customer?: any;
+  priceTiers: Record<string, any[]>;
+  coupons: any[];
+  campaigns: any[];
+  shippingRates: any[];
+  settings: any;
+}

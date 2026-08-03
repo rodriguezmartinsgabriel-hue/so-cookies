@@ -87,11 +87,11 @@ export async function createCustomerOrder(
   const pricingRepo = new PricingRepository(prisma)
 
   const registry = new RuleRegistry()
-  registry.register('price-tier', new PriceTierRule(productRepo, { log: () => {} }))
+  registry.register(new PriceTierRule(productRepo, { log: () => {} }))
 
   const eventBus = new EventBus()
   const audit = new PricingAudit(prisma, eventBus)
-  const engine = new PricingEngine(prisma, registry, { log: () => {} }, { record: () => {} })
+  const engine = new PricingEngine(prisma, registry, { log: () => {} }, { record: () => void 0 })
 
   const totalItems = [...qtyByProduct.values()].reduce((sum, qty) => sum + qty, 0)
   const customer = await prisma.customer.findUnique({ where: { id: customerId } })
@@ -146,21 +146,8 @@ export async function createCustomerOrder(
   // Calcular preço com Pricing Engine v2
   const pricingContext: PricingContext = {
     items: pricingItems,
-    channel: 'app',
-    customerType: 'customer',
-    coupon: null,
-    shippingMethod: isDelivery ? 'delivery' : 'pickup',
-    shippingAddress: isDelivery ? {
-      cep: address.deliveryCep || '',
-      city: address.deliveryCity || '',
-      state: address.deliveryState || ''
-    } : {
-      cep: '',
-      city: '',
-      state: ''
-    },
-    deliveryDate: deliveryDate,
-    pickupCode: pickupCode
+    channel: isDelivery ? 'delivery' : 'pickup',
+    customerType: 'CLIENTE'
   }
 
   const pricingResult = await engine.calculatePrice(pricingContext)

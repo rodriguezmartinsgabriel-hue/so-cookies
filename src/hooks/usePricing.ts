@@ -2,16 +2,11 @@
 
 import { useCart } from './useCart'
 import { PricingEngine } from '@so-cookies/pricing'
-import { PricingContext, PricingState, PricingResult } from '@so-cookies/pricing'
+import { PricingContext, PricingResult } from '@so-cookies/pricing'
 import { ProductRepository } from '@so-cookies/pricing'
-import { CouponRepository } from '@so-cookies/pricing'
-import { CampaignRepository } from '@so-cookies/pricing'
-import { ShippingRepository } from '@so-cookies/pricing'
-import { PricingRepository } from '@so-cookies/pricing'
+import { PriceTierRule } from '@so-cookies/pricing'
 import { RuleRegistry } from '@so-cookies/pricing'
 import { EventBus } from '@so-cookies/pricing'
-import { PricingAudit } from '@so-cookies/pricing'
-import { PriceTierRule } from '@so-cookies/pricing'
 import { formatBRL } from '@so-cookies/pricing'
 import { prisma } from '@/lib/prisma'
 import { useState, useCallback, useEffect } from 'react'
@@ -22,33 +17,9 @@ export function usePricing() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const calculatePrice = useCallback(async (context?: PricingContext) => {
+  const calculatePrice = useCallback(async () => {
     if (!items.length) {
-      setPricingResult({
-        state: {
-          items: [],
-          discounts: [],
-          cashbacks: [],
-          taxes: [],
-          bonuses: [],
-          warnings: [],
-          logs: [],
-          blocked: false
-        },
-        total: 0,
-        summary: {
-          subTotal: 0,
-          discountsTotal: 0,
-          taxesTotal: 0,
-          shippingTotal: 0,
-          cashbacksTotal: 0,
-          bonusesTotal: 0,
-          finalTotal: 0,
-          itemCount: 0,
-          items: []
-        },
-        auditTrail: []
-      })
+      setPricingResult(null)
       return
     }
 
@@ -77,19 +48,19 @@ export function usePricing() {
 
       // Inicializar Repositories
       const productRepo = new ProductRepository(prisma)
-      const couponRepo = new CouponRepository(prisma)
-      const campaignRepo = new CampaignRepository(prisma)
-      const shippingRepo = new ShippingRepository(prisma)
-      const pricingRepo = new PricingRepository(prisma)
 
       // Inicializar Registry com as regras
       const registry = new RuleRegistry()
-      registry.register('price-tier', new PriceTierRule(productRepo, { log: () => {} }))
+      registry.register(new PriceTierRule(productRepo, { log: () => {} }))
 
       // Inicializar Engine
       const eventBus = new EventBus()
-      const audit = new PricingAudit(prisma, eventBus)
-      const engine = new PricingEngine(prisma, registry, { log: () => {} }, { record: () => {} })
+      const engine = new PricingEngine(
+        prisma,
+        registry,
+        { log: () => {}, error: () => {}, warn: () => {} },
+        { record: () => void 0 }
+      )
 
       // Preparar Contexto
       const context: PricingContext = {
@@ -99,17 +70,8 @@ export function usePricing() {
           basePrice: productMap[item.productId]?.price || 0,
           name: productMap[item.productId]?.name || ''
         })),
-        channel: 'app',
-        customerType: 'customer',
-        coupon: null,
-        shippingMethod: 'delivery',
-        shippingAddress: {
-          cep: '',
-          city: '',
-          state: ''
-        },
-        deliveryDate: null,
-        pickupCode: null
+        channel: 'pickup',
+        customerType: 'CLIENTE'
       }
 
       // Calcular Preço

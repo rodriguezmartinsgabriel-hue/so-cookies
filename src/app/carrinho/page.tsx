@@ -61,7 +61,7 @@ const formatBRL = (v: number) =>
 export default function CarrinhoPage() {
   const router = useRouter()
   const { items, setQty, removeItem, clear, count } = useCart()
-  const { result, loading: pricingLoading, error: pricingError, formatBRL } = usePricing()
+  const { result, loading: pricingLoading, error: pricingError } = usePricing()
   const [products, setProducts] = useState<Record<string, CatalogProduct>>({})
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
@@ -148,7 +148,7 @@ export default function CarrinhoPage() {
     .filter((l) => l.product)
 
   // Usar Pricing Engine v2 quando disponível, caso contrário usar cálculo simples
-  const total = pricingResult?.total ?? lines.reduce((s, l) => s + l.product.price * l.qty, 0)
+  const total = result?.total ?? lines.reduce((s, l) => s + l.product.price * l.qty, 0)
 
   function setField<K extends keyof AddressState>(key: K, value: string) {
     setAddress((prev) => ({ ...prev, [key]: value }))

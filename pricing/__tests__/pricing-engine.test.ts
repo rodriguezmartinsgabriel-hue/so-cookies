@@ -44,8 +44,8 @@ async function testPricingEngine() {
   );
 
   const engine = new PricingEngine(prisma, registry, console, {
-    record: () => {} as any
-  });
+    record: () => void 0
+  } as any);
 
   // 2. Testar cálculo de preço
   const context: PricingContext = {
