@@ -9,7 +9,7 @@ import { AppShell } from "@/components/layout/AppShell"
 import { Skeleton } from "@/components/ui/Skeleton"
 import { ErrorState } from "@/components/ui/ErrorState"
 import { repository } from "@/lib/repository"
-import { Clock, ChefHat, Package, Truck, X, Plus, Check, Edit, Trash2, Ban, ChevronDown, ChevronRight } from "lucide-react"
+import { Clock, ChefHat, Package, Truck, X, Plus, Check, Edit, Trash2, Ban, ChevronDown, ChevronRight, Smartphone } from "lucide-react"
 import type { Order, OrderItem } from "@/lib/entity-types"
 
 const columns = [
@@ -222,7 +222,14 @@ export default function PedidosPage() {
                           <span className="text-xs font-medium text-muted">#{o.id.slice(0, 6)}</span>
                           <span className="text-xs text-muted">{o.createdAt ? new Date(o.createdAt).toLocaleDateString("pt-BR") : ""}</span>
                         </div>
-                        <p className="text-sm font-medium text-ink truncate">{o.customer}</p>
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-medium text-ink truncate">{o.customer}</p>
+                          {o.customerId && (
+                            <span className="shrink-0 inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-info/10 text-info" title="Cliente cadastrado pelo app">
+                              <Smartphone className="w-3 h-3" /> App
+                            </span>
+                          )}
+                        </div>
                         {o.pickupCode && (
                           <p className="text-xs font-bold text-ink tracking-wider mt-1">Retirada: {o.pickupCode}</p>
                         )}
@@ -266,7 +273,14 @@ export default function PedidosPage() {
                             <span className="text-xs font-medium text-muted">#{o.id.slice(0, 6)}</span>
                             <span className="text-xs text-muted">{o.createdAt ? new Date(o.createdAt).toLocaleDateString("pt-BR") : ""}</span>
                           </div>
+                          <div className="flex items-center gap-2">
                           <p className="text-sm font-medium text-ink truncate">{o.customer}</p>
+                          {o.customerId && (
+                            <span className="shrink-0 inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-info/10 text-info" title="Cliente cadastrado pelo app">
+                              <Smartphone className="w-3 h-3" /> App
+                            </span>
+                          )}
+                        </div>
                           <div className="flex items-center justify-between mt-2">
                             <span className="text-xs text-muted">{o.channel} · R$ {o.total}</span>
                             <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${o.status === "CANCELADO" ? "bg-danger/10 text-danger" : "bg-success/10 text-success"}`}>{o.status === "CANCELADO" ? "Cancelado" : "Concluído"}</span>
@@ -297,7 +311,16 @@ export default function PedidosPage() {
                   {orders.map((o) => (
                     <tr key={o.id} className="hover:bg-cream/50 transition-colors">
                       <td className="px-4 py-3 text-sm font-medium text-ink">#{o.id.slice(0, 6)}</td>
-                      <td className="px-4 py-3 text-sm text-ink">{o.customer}</td>
+                      <td className="px-4 py-3 text-sm text-ink">
+                        <div className="flex items-center gap-2">
+                          {o.customer}
+                          {o.customerId && (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-info/10 text-info" title="Cliente cadastrado pelo app">
+                              <Smartphone className="w-3 h-3" /> App
+                            </span>
+                          )}
+                        </div>
+                      </td>
                       <td className="px-4 py-3 text-sm text-muted">
                         {o.channel}
                         {o.pickupCode && <span className="ml-2 font-bold text-ink tracking-wider">#{o.pickupCode}</span>}
@@ -346,6 +369,15 @@ export default function PedidosPage() {
                 <div>
                   <p className="text-xs text-muted uppercase tracking-wide mb-1">Cliente</p>
                   <p className="text-sm font-medium text-ink">{order.customer}</p>
+                  {order.customerId && (
+                    <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1.5 items-center">
+                      <span className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-info/10 text-info" title="Cliente cadastrado pelo app">
+                        <Smartphone className="w-3 h-3" /> Do app
+                      </span>
+                      {order.customerRef?.email && <span className="text-xs text-muted truncate">{order.customerRef.email}</span>}
+                      {order.customerRef?.phone && <span className="text-xs text-muted">{order.customerRef.phone}</span>}
+                    </div>
+                  )}
                 </div>
                 {order.notes && (
                   <div>

@@ -117,11 +117,23 @@ export async function getLowStock() {
 }
 
 export async function getOrders() {
-  return prisma.order.findMany({ include: { items: { include: { product: true } } }, orderBy: { createdAt: "desc" } });
+  return prisma.order.findMany({
+    include: {
+      items: { include: { product: true } },
+      customerRef: { select: { id: true, name: true, email: true, phone: true } },
+    },
+    orderBy: { createdAt: "desc" },
+  });
 }
 
 export async function getOrder(id: string) {
-  return prisma.order.findUnique({ where: { id }, include: { items: { include: { product: true } } } });
+  return prisma.order.findUnique({
+    where: { id },
+    include: {
+      items: { include: { product: true } },
+      customerRef: { select: { id: true, name: true, email: true, phone: true } },
+    },
+  });
 }
 
 export async function createOrder(data: { channel: string; customer: string; total: number; notes?: string; items: { productId: string; qty: number; price: number }[] }) {
