@@ -1,7 +1,6 @@
 import type { PricingRule } from '../rules/PricingRule';
 import type { PricingContext, PricingState, PricingData } from '../types';
 import type { PricingAction } from '../actions/PricingAction';
-import type { PricingRuleError } from '../errors/PricingRuleError';
 import { PricingRuleError } from '../errors/PricingRuleError';
 import { RuleValidator } from './RuleValidator';
 
@@ -54,7 +53,7 @@ export class RuleExecutor {
     state: PricingState,
     data: PricingData
   ): Promise<PricingAction[]> {
-    const phaseRules = this.registry.getPhaseRules(phase);
+    const phaseRules = this.registry.getPhaseRules(phase) as any[];
 
     const rulePromises = phaseRules.map(rule =>
       this.executeRule(rule, context, state, data)
@@ -121,3 +120,9 @@ export class RuleExecutor {
     return { actions: [], success: true };
   }
 }
+
+
+
+
+
+

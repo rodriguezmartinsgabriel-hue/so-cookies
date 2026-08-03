@@ -158,6 +158,7 @@ model PriceTier {
   minQty    Int
   maxQty    Int?
   price     Float
+  enabled   Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -479,6 +480,102 @@ enum InteractionType {
   WHATSAPP
   VISITA
   OUTRO
+}
+
+model Coupon {
+  id                String       @id @default(cuid())
+  code              String       @unique
+  name              String
+  description       String?
+  type              CouponType   @default(PERCENTAGE)
+  value             Float
+  minOrderValue     Float        @default(0)
+  maxDiscount       Float?
+  usageLimit        Int          @default(1)
+  usedCount         Int          @default(0)
+  validFrom         DateTime     @default(now())
+  validUntil        DateTime?
+  active            Boolean      @default(true)
+  applicableProducts String[]    @default([])
+  applicableTypes   String[]     @default(["all"])
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  @@index([code])
+  @@index([active])
+}
+
+enum CouponType {
+  PERCENTAGE
+  FIXED_AMOUNT
+  FREE_SHIPPING
+  BUY_X_GET_Y
+}
+
+model Campaign {
+  id              String   @id @default(cuid())
+  name            String
+  description     String?
+  type            CampaignType @default(PROMOTIONAL)
+  priority        Int      @default(0)
+  startDate       DateTime @default(now())
+  endDate         DateTime?
+  active          Boolean  @default(true)
+  applicableProducts String[] @default([])
+  usedCount       Int      @default(0)
+  conditions      Json     // { minQty, products, categories, customerTypes }
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([active])
+  @@index([startDate, endDate])
+}
+
+enum CampaignType {
+  PROMOTIONAL
+  SEASONAL
+  FLASH_SALE
+  LOYALTY
+  CUSTOM
+}
+
+model ShippingRate {
+  id              String              @id @default(cuid())
+  name            String
+  channel         String              // 'delivery' | 'pickup' | 'marketplace'
+  zoneId          String?
+  type            ShippingRateType    @default(FLAT_RATE)
+  basePrice       Float               @default(0)
+  pricePerKm      Float?              @default(0)
+  minOrderValue   Float?              @default(0)
+  freeShippingThreshold Float?
+  enabled         Boolean             @default(true)
+  minWeight       Float?
+  maxWeight       Float?
+  region          String?
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  @@index([channel])
+  @@index([zoneId])
+  @@index([enabled])
+}
+
+enum ShippingRateType {
+  FLAT_RATE
+  PER_KM
+  PER_ITEM
+  WEIGHT_BASED
+  FREE
+}
+
+model PricingSettings {
+  id          String   @id @default("default")
+  key         String   @unique
+  value       Json     // Configuração flexível
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 model IntegrationAccount {

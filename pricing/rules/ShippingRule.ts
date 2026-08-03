@@ -59,9 +59,7 @@ export class ShippingRule implements PricingRule {
         target: 'shipping',
         value: shippingRate.cost,
         sourceRule: this.id,
-        timestamp: new Date(),
-        cost: shippingRate.cost,
-        name: 'ShippingAction'
+        timestamp: new Date()
       });
 
       // Emitir evento
@@ -82,39 +80,7 @@ export class ShippingRule implements PricingRule {
           channel: context.channel
         },
         sourceRule: this.id,
-        timestamp: new Date(),
-        cost: 0,
-        name: 'WarningAction',
-        type: 'WARNING',
-        message: 'Taxa de frete não encontrada',
-        appliedTo: 'subtotal',
-        percentage: 0,
-        value: 0,
-        rulesApplied: [],
-        appliedItems: [],
-        expiration: null,
-        locked: false,
-        appliedProducts: ['all'],
-        allowedTypes: ['delivery', 'pickup', 'digital'],
-        validUntil: null,
-        discountValue: null,
-        discountPercent: null,
-        maxUsage: null,
-        usedCount: 0,
-        productId: null,
-        qty: 0,
-        basePrice: 0,
-        calculatedPrice: 0,
-        priceAfterDiscount: 0,
-        discounts: [],
-        taxes: [],
-        bonuses: [],
-        warnings: [],
-        logs: [],
-        blocked: false,
-        blockedReason: '',
-        version: '1.0.0',
-        description: ''
+        timestamp: new Date()
       });
     }
 
@@ -133,3 +99,9 @@ export class ShippingRule implements PricingRule {
 function generateId(): string {
   return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
 }
+
+
+
+
+
+

@@ -25,6 +25,8 @@ export interface PricingState {
   blocked: boolean;
   blockedReason?: string;
   version: string;
+  shipping?: { cost: number };
+  subtotal?: number;
 }
 
 // Item de preço
@@ -147,12 +149,20 @@ export interface TimelineEvent {
   totalSubtotal: number;
 }
 
+import type { Product, Customer, Coupon, Campaign, ShippingRate, PricingSettings } from '@/generated/prisma/client';
+
 export interface PricingData {
-  products: Record<string, any>;
-  customer?: any;
+  products: Record<string, Product>;
+  customer?: Customer | null;
   priceTiers: Record<string, any[]>;
-  coupons: any[];
-  campaigns: any[];
-  shippingRates: any[];
-  settings: any;
+  coupons: Coupon[];
+  campaigns: Campaign[];
+  shippingRates: ShippingRate[];
+  settings: PricingSettings | null;
 }
+
+
+
+
+
+

@@ -73,35 +73,8 @@ export class PriceTierRule implements PricingRule {
           appliedTo: 'items',
           percentage: discountPercent,
           name: `Faixa ${applicableTier.name}`,
-          cost: 0,
-          name: 'DiscountAction',
-          appliedProducts: ['all'],
-          allowedTypes: ['delivery', 'pickup', 'digital'],
-          expiration: null,
-          description: `Faixa de quantidade aplicada: ${applicableTier.name}`,
-          locked: false,
-          minOrderValue: null,
-          maxUsage: null,
-          rulesApplied: [],
-          usedCount: 0,
-          appliedItems: [],
-          validUntil: null,
-          discountValue: null,
-          discountPercent: null,
-          productId: item.productId,
-          qty: item.qty,
-          basePrice: item.basePrice,
-          calculatedPrice: item.calculatedPrice,
-          priceAfterDiscount: item.priceAfterDiscount,
-          discounts: [],
-          taxes: [],
-          bonuses: [],
-          warnings: [],
-          logs: [],
-          blocked: false,
-          blockedReason: '',
-          version: '1.0.0',
-          type: 'FIXED'
+          sourceRule: this.id,
+          timestamp: new Date()
         });
       }
     }
@@ -121,3 +94,9 @@ export class PriceTierRule implements PricingRule {
 function generateId(): string {
   return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
 }
+
+
+
+
+
+

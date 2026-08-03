@@ -27,3 +27,9 @@ export class RuleRegistry {
     return this.rules.has(ruleId);
   }
 }
+
+
+
+
+
+

@@ -1,5 +1,5 @@
-import type { PricingContext } from '../types';
-import type { Product } from '@prisma/client';
+import type { PricingContext, PricingData } from '../types';
+import type { Product, Customer, Coupon, Campaign, ShippingRate, PricingSettings } from '@/generated/prisma/client';
 import { ProductRepository } from '../repositories/ProductRepository';
 import { CouponRepository } from '../repositories/CouponRepository';
 import { CampaignRepository } from '../repositories/CampaignRepository';
@@ -8,8 +8,6 @@ import { PricingRepository } from '../repositories/PricingRepository';
 import { PricingCache } from '../cache/PricingCache';
 
 export class PricingDataLoader {
-  private cache: PricingCache;
-
   constructor(
     private productRepository: ProductRepository,
     private couponRepository: CouponRepository,
@@ -68,9 +66,8 @@ export class PricingDataLoader {
     }, {} as Record<string, Product>);
   }
 
-  private async loadCustomer(customerId: string): Promise<any> {
-    // Placeholder - será implementado quando Customer for modelado
-    return null;
+  private async loadCustomer(customerId: string): Promise<Customer | null> {
+    return await this.productRepository.getCustomerById(customerId);
   }
 
   private async loadPriceTiers(items: PricingContext['items']): Promise<Record<string, any[]>> {
@@ -86,7 +83,7 @@ export class PricingDataLoader {
     }, {} as Record<string, any[]>);
   }
 
-  private async loadCoupons(couponCode?: string): Promise<any[]> {
+  private async loadCoupons(couponCode?: string): Promise<Coupon[]> {
     if (!couponCode) return [];
 
     const cacheKey = `coupon:${couponCode}`;
@@ -103,7 +100,7 @@ export class PricingDataLoader {
     return coupon ? [coupon] : [];
   }
 
-  private async loadActiveCampaigns(): Promise<any[]> {
+  private async loadActiveCampaigns(): Promise<Campaign[]> {
     const cacheKey = 'campaigns:active';
     const cached = this.cache.get(cacheKey);
 
@@ -116,7 +113,7 @@ export class PricingDataLoader {
     return campaigns;
   }
 
-  private async loadShippingRates(channel: string): Promise<any[]> {
+  private async loadShippingRates(channel: string): Promise<ShippingRate[]> {
     const cacheKey = `shipping:${channel}`;
     const cached = this.cache.get(cacheKey);
 
@@ -129,30 +126,19 @@ export class PricingDataLoader {
     return rates;
   }
 
-  private async loadSettings(): Promise<any> {
+  private async loadSettings(): Promise<PricingSettings | null> {
     const settings = await this.pricingRepository.getSettings();
 
     if (!settings) {
-      return {
-        id: 'default',
-        activatePriceTier: true,
-        activateCoupon: false,
-        activateCampaign: false,
-        activateB2B: false,
-        activateFreeShipping: false
-      };
+      return null;
     }
 
     return settings;
   }
 }
 
-export interface PricingData {
-  products: Record<string, Product>;
-  customer?: any;
-  priceTiers: Record<string, any[]>;
-  coupons: any[];
-  campaigns: any[];
-  shippingRates: any[];
-  settings: any;
-}
+
+
+
+
+

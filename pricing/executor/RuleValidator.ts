@@ -10,7 +10,7 @@ export class RuleValidator {
 
   async validateRule(rule: PricingRule, context: PricingContext, state: PricingState, data: PricingData): Promise<boolean> {
     try {
-      const result = await rule.canApply(context, state, data);
+      const result = await rule.canApply(context, state, data) as any;
 
       if (result instanceof Promise) {
         return await result;
@@ -25,7 +25,7 @@ export class RuleValidator {
 
   validateRuleSync(rule: PricingRule, context: PricingContext, state: PricingState, data: PricingData): boolean {
     try {
-      const result = rule.canApplySync(context, state, data);
+      const result = rule.canApplySync(context, state, data) as any;
 
       if (result instanceof Promise) {
         return false; // Não pode validar síncrono se for assíncrono
@@ -37,3 +37,9 @@ export class RuleValidator {
     }
   }
 }
+
+
+
+
+
+

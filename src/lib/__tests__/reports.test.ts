@@ -31,11 +31,11 @@ function iso(daysAgo: number, hour = 12): string {
 const periods = Object.fromEntries(REPORT_PERIODS.map((p) => [p.key, p]))
 
 function sale(partial: Partial<ReportSale> & { createdAt: string }): ReportSale {
-  return { id: partial.id || "s1", total: 0, createdAt: partial.createdAt, ...partial }
+  return { id: partial.id || "s1", total: 0, ...partial, createdAt: partial.createdAt }
 }
 
 function order(partial: Partial<ReportOrder> & { createdAt: string }): ReportOrder {
-  return { id: partial.id || "o1", status: "CONCLUIDO", createdAt: partial.createdAt, ...partial }
+  return { id: partial.id || "o1", status: "CONCLUIDO", ...partial, createdAt: partial.createdAt }
 }
 
 describe("filterByCreatedAt / filterByDate", () => {

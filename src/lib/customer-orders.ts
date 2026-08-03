@@ -90,7 +90,7 @@ export async function createCustomerOrder(
   registry.register(new PriceTierRule(productRepo, { log: () => {} }))
 
   const eventBus = new EventBus()
-  const audit = new PricingAudit(prisma, eventBus)
+  const audit = new PricingAudit(prisma, eventBus, registry)
   const engine = new PricingEngine(prisma, registry, { log: () => {} }, { record: () => void 0 })
 
   const totalItems = [...qtyByProduct.values()].reduce((sum, qty) => sum + qty, 0)

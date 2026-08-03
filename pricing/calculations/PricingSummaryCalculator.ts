@@ -8,7 +8,7 @@ export class PricingSummaryCalculator {
       subtotal: this.calculateSubtotal(state.items),
       discountTotal: this.calculateDiscountTotal(state.discounts),
       cashbackTotal: this.calculateCashbackTotal(state.cashbacks),
-      shippingTotal: state.shipping,
+       shippingTotal: state.shipping?.cost || 0,
       taxTotal: this.calculateTaxTotal(state.taxes),
       total: this.calculateTotal(state),
       discountPercent: this.calculateDiscountPercent(state),
@@ -39,7 +39,7 @@ export class PricingSummaryCalculator {
 
   private calculateTotal(state: any): number {
     const subtotal = this.calculateSubtotal(state.items);
-    const shippingTotal = state.shipping;
+    const shippingTotal = state.shipping?.cost || 0;
     const taxTotal = this.calculateTaxTotal(state.taxes);
     const cashbackTotal = this.calculateCashbackTotal(state.cashbacks);
 
@@ -55,10 +55,16 @@ export class PricingSummaryCalculator {
 
   private getAppliedRules(state: any): string[] {
     return [...new Set([
-      ...state.discounts.map(d => d.id),
-      ...state.cashbacks.map(c => c.id),
-      ...state.taxes.map(t => t.id),
-      ...state.warnings.map(w => w.id)
+      ...state.discounts.map((d: any) => d.id),
+      ...state.cashbacks.map((c: any) => c.id),
+      ...state.taxes.map((t: any) => t.id),
+      ...state.warnings.map((w: any) => w.id)
     ])];
   }
 }
+
+
+
+
+
+

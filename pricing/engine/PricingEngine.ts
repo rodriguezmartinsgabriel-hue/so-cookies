@@ -1,8 +1,5 @@
-import type { PricingContext, PricingState, PricingResult } from '../types';
+import type { PricingContext, PricingState, PricingResult, PricingData } from '../types';
 import type { PricingAction } from '../actions/PricingAction';
-import type { PricingRule } from '../rules/PricingRule';
-import type { PricingRuleError } from '../errors/PricingRuleError';
-import type { PricingData } from '../loaders/PricingDataLoader';
 import { RulePipeline } from '../pipeline/RulePipeline';
 import { RuleExecutor } from '../executor/RuleExecutor';
 import { ActionReducer } from '../reducers/ActionReducer';
@@ -11,7 +8,7 @@ import { PricingCache } from '../cache/PricingCache';
 import { EventBus } from '../events/EventBus';
 import { PricingAudit } from '../audit/PricingAudit';
 import { PricingSummaryCalculator } from '../calculations/PricingSummaryCalculator';
-import { PricingRuleError } from '../errors/PricingRuleError';
+import { PricingRuleError } from '../errors';
 
 export class PricingEngine {
   private executor: RuleExecutor;
@@ -38,7 +35,7 @@ export class PricingEngine {
       registry.getRepository('pricing') as any,
       new PricingCache()
     );
-    this.audit = new PricingAudit(prisma, new EventBus());
+    this.audit = new PricingAudit(prisma, new EventBus(), registry);
     this.summaryCalculator = new PricingSummaryCalculator();
   }
 
@@ -136,3 +133,9 @@ export class PricingEngine {
     return this.executor;
   }
 }
+
+
+
+
+
+

@@ -1,5 +1,4 @@
-import { PrismaClient } from '@/src/generated/prisma/client';
-import type { Product } from '@prisma/client';
+import { PrismaClient, Product, Customer } from '@/generated/prisma/client';
 
 export class ProductRepository {
   constructor(private prisma: PrismaClient) {}
@@ -28,8 +27,15 @@ export class ProductRepository {
     });
   }
 
-  async getCustomerById(customerId: string): Promise<any> {
-    // Placeholder - será implementado quando Customer for modelado
-    return null;
+  async getCustomerById(customerId: string): Promise<Customer | null> {
+    return await this.prisma.customer.findUnique({
+      where: { id: customerId }
+    });
   }
 }
+
+
+
+
+
+

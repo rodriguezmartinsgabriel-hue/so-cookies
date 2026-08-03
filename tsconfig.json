@@ -21,7 +21,8 @@
     ],
     "paths": {
       "@/*": ["./src/*"],
-      "@so-cookies/pricing": ["./pricing"]
+      "@so-cookies/pricing": ["./pricing"],
+      "@prisma/client": ["./src/generated/prisma"]
     }
   },
   "include": [

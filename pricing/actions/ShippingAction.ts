@@ -1,11 +1,20 @@
-import { PricingAction } from './PricingAction';
+import { PricingAction, PricingActionType } from './PricingAction';
 
 export class ShippingAction implements PricingAction {
   constructor(
     public id: string,
-    public cost: number,
     public sourceRule: string,
     public timestamp: Date,
+    public type: PricingActionType,
+    public target: string,
+    public value: number,
+    public cost: number,
     public metadata?: Record<string, any>
   ) {}
 }
+
+
+
+
+
+

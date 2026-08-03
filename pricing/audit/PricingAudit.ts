@@ -2,11 +2,13 @@ import type { PricingContext, PricingState, PricingData } from '../types';
 import type { PricingAction } from '../actions/PricingAction';
 import type { EventBus } from '../events/EventBus';
 import type { AuditTrail, TimelineEvent } from '../types';
+import { PricingPhase } from '../pipeline/RulePipeline';
 
 export class PricingAudit {
   constructor(
     private prisma: any,
-    private eventBus: EventBus
+    private eventBus: EventBus,
+    private registry: any
   ) {}
 
   async createTrail(
@@ -89,3 +91,9 @@ export class PricingAudit {
     return rule?.name || ruleId;
   }
 }
+
+
+
+
+
+

@@ -1,5 +1,5 @@
-import { PrismaClient } from '@/src/generated/prisma/client';
-import type { Campaign } from '@prisma/client';
+import { PrismaClient, Campaign, CampaignType } from '@/generated/prisma/client';
+import type { Prisma } from '@/generated/prisma/client';
 
 export class CampaignRepository {
   constructor(private prisma: PrismaClient) {}
@@ -31,18 +31,19 @@ export class CampaignRepository {
     });
   }
 
-  async createCampaign(data: Partial<Campaign>): Promise<Campaign> {
+  async createCampaign(data: Prisma.CampaignCreateInput): Promise<Campaign> {
     return await this.prisma.campaign.create({
       data: {
         ...data,
         active: true,
         startDate: new Date(),
-        endDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1))
+        endDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1)),
+        applicableProducts: data.applicableProducts || [],
       }
     });
   }
 
-  async updateCampaign(id: string, data: Partial<Campaign>): Promise<Campaign> {
+  async updateCampaign(id: string, data: Prisma.CampaignUpdateInput): Promise<Campaign> {
     return await this.prisma.campaign.update({
       where: { id },
       data
@@ -55,3 +56,9 @@ export class CampaignRepository {
     });
   }
 }
+
+
+
+
+
+

@@ -19,7 +19,7 @@ export type {
 } from './types';
 
 // Actions
-export {
+export type {
   PricingAction,
   PricingActionType
 } from './actions/PricingAction';
@@ -91,15 +91,17 @@ export {
 
 // Executor
 export {
-  RuleValidator,
   RuleExecutor
 } from './executor/RuleExecutor';
 
 // Loader
 export {
-  PricingDataLoader,
-  PricingData
+  PricingDataLoader
 } from './loaders/PricingDataLoader';
+
+export type {
+  PricingData
+} from './types';
 
 // Engine
 export {
@@ -112,7 +114,9 @@ export {
 
 // Events
 export {
-  EventBus,
+  EventBus
+} from './events/EventBus';
+export type {
   PricingEvent,
   PricingEventType
 } from './events/EventBus';
@@ -123,12 +127,12 @@ export {
 } from './audit/PricingAudit';
 
 // Rules
-export {
-  PricingRule,
-  BasePriceRule,
-  PriceTierRule,
-  ShippingRule
+export type {
+  PricingRule
 } from './rules/PricingRule';
+export { BasePriceRule } from './rules/PricingRule';
+export { PriceTierRule } from './rules/PriceTierRule';
+export { ShippingRule } from './rules/ShippingRule';
 
 // Error types
 export {
@@ -147,3 +151,9 @@ export function formatBRL(value: number): string {
 export function formatCurrency(value: number): string {
   return `R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
+
+
+
+
+
+

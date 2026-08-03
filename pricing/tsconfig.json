@@ -1,0 +1,15 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "declaration": true,
+    "declarationMap": true,
+    "noEmit": false,
+    "composite": true,
+    "paths": {
+      "@prisma/client": ["../src/generated/prisma"]
+    }
+  },
+  "include": ["**/*.ts"],
+  "exclude": ["node_modules", "**/__tests__/**", "dist"]
+}

@@ -1,14 +1,22 @@
-import { PricingAction } from './PricingAction';
+import { PricingAction, PricingActionType } from './PricingAction';
 
 export class LogAction implements PricingAction {
   constructor(
     public id: string,
+    public sourceRule: string,
+    public timestamp: Date,
+    public type: PricingActionType,
+    public target: string,
+    public value: any,
     public ruleId: string,
     public ruleName: string,
     public actionType: string,
-    public value: any,
-    public sourceRule: string,
-    public timestamp: Date,
     public metadata?: Record<string, any>
   ) {}
 }
+
+
+
+
+
+

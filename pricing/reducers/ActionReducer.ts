@@ -21,7 +21,7 @@ export class ActionReducer {
           newState = this.applyItemPriceChange(newState, action);
           break;
         case 'ADD_SHIPPING':
-          newState.shipping = action.cost;
+          newState.shipping = { cost: (action as any).cost };
           break;
         case 'ADD_CASHBACK':
           newState.cashbacks.push(action.value);
@@ -40,7 +40,7 @@ export class ActionReducer {
           break;
         case 'BLOCK_CHECKOUT':
           newState.blocked = true;
-          newState.blockedReason = action.message;
+          newState.blockedReason = (action as any).message;
           break;
       }
     }
@@ -52,7 +52,7 @@ export class ActionReducer {
     const newState = this.cloneState(state);
 
     if (action.appliedTo === 'subtotal') {
-      newState.subtotal = Math.max(0, newState.subtotal - action.value);
+      newState.subtotal = Math.max(0, (newState.subtotal || 0) - action.value);
     }
 
     const discount: Discount = {
@@ -110,9 +110,9 @@ export class ActionReducer {
       0
     );
 
-    const shippingTotal = state.shipping;
-    const taxTotal = state.taxes.reduce((sum, t) => sum + t.value, 0);
-    const cashbackTotal = state.cashbacks.reduce((sum, c) => sum + c.value, 0);
+    const shippingTotal = state.shipping?.cost || 0;
+    const taxTotal = state.taxes.reduce((sum: number, t: any) => sum + t.value, 0);
+    const cashbackTotal = state.cashbacks.reduce((sum: number, c: any) => sum + c.value, 0);
 
     return subtotal + shippingTotal + taxTotal - cashbackTotal;
   }
@@ -129,3 +129,9 @@ export class ActionReducer {
     return state.logs;
   }
 }
+
+
+
+
+
+

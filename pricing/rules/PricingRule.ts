@@ -51,40 +51,7 @@ export class BasePriceRule implements PricingRule {
           target: 'system',
           value: { message: `Produto não encontrado: ${item.productId}`, rule: this.id },
           sourceRule: this.id,
-          timestamp: new Date(),
-          cost: 0,
-          name: 'warning',
-          message: `Produto não encontrado: ${item.productId}`,
-          appliedTo: 'subtotal',
-          percentage: 0,
-          value: 0,
-          rulesApplied: [],
-          appliedItems: [],
-          expiration: null,
-          locked: false,
-          type: 'INFO',
-          productId: item.productId,
-          qty: item.qty,
-          basePrice: item.basePrice,
-          calculatedPrice: item.calculatedPrice,
-          priceAfterDiscount: item.priceAfterDiscount,
-          discounts: [],
-          taxes: [],
-          bonuses: [],
-          warnings: [],
-          logs: [],
-          blocked: false,
-          blockedReason: '',
-          version: '1.0.0',
-          description: '',
-          appliedProducts: ['all'],
-          allowedTypes: ['delivery', 'pickup', 'digital'],
-          validUntil: null,
-          discountValue: null,
-          discountPercent: null,
-          maxUsage: null,
-          usedCount: 0,
-          minOrderValue: null
+          timestamp: new Date()
         });
         continue;
       }
@@ -105,42 +72,7 @@ export class BasePriceRule implements PricingRule {
           oldPrice: item.basePrice
         },
         sourceRule: this.id,
-        timestamp: new Date(),
-        cost: 0,
-        name: 'LogAction',
-        ruleId: this.id,
-        ruleName: this.name,
-        actionType: 'PRICE_UPDATED',
-        appliedTo: 'subtotal',
-        percentage: 0,
-        value: 0,
-        rulesApplied: [],
-        appliedItems: [],
-        expiration: null,
-        locked: false,
-        type: 'INFO',
-        productId: item.productId,
-        qty: item.qty,
-        basePrice: item.basePrice,
-        calculatedPrice: item.calculatedPrice,
-        priceAfterDiscount: item.priceAfterDiscount,
-        discounts: [],
-        taxes: [],
-        bonuses: [],
-        warnings: [],
-        logs: [],
-        blocked: false,
-        blockedReason: '',
-        version: '1.0.0',
-        description: '',
-        appliedProducts: ['all'],
-        allowedTypes: ['delivery', 'pickup', 'digital'],
-        validUntil: null,
-        discountValue: null,
-        discountPercent: null,
-        maxUsage: null,
-        usedCount: 0,
-        minOrderValue: null
+        timestamp: new Date()
       });
     }
 
@@ -159,3 +91,9 @@ export class BasePriceRule implements PricingRule {
 function generateId(): string {
   return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
 }
+
+
+
+
+
+

@@ -1,17 +1,16 @@
-import { PrismaClient } from '@/src/generated/prisma/client';
-import type { PricingContext } from './types';
-import { PricingEngine } from './engine/PricingEngine';
-import { RuleRegistry } from './registry/RuleRegistry';
-import { RulePipeline } from './pipeline/RulePipeline';
-import { RuleExecutor } from './executor/RuleExecutor';
-import { ActionReducer } from './reducers/ActionReducer';
-import { PricingDataLoader } from './loaders/PricingDataLoader';
-import { PricingCache } from './cache/PricingCache';
-import { PricingRule } from './rules/PricingRule';
-import { BasePriceRule } from './rules/PricingRule';
-import { PriceTierRule } from './rules/PriceTierRule';
-import { ShippingRule } from './rules/ShippingRule';
-import { EventBus } from './events/EventBus';
+import { PrismaClient } from '@/generated/prisma/client';
+import type { PricingContext } from '../types';
+import { PricingEngine } from '../engine/PricingEngine';
+import { RuleRegistry } from '../registry/RuleRegistry';
+import { RulePipeline, PricingPhase } from '../pipeline/RulePipeline';
+import { RuleExecutor } from '../executor/RuleExecutor';
+import { ActionReducer } from '../reducers/ActionReducer';
+import { PricingDataLoader } from '../loaders/PricingDataLoader';
+import { PricingCache } from '../cache/PricingCache';
+import { PricingRule, BasePriceRule } from '../rules/PricingRule';
+import { PriceTierRule } from '../rules/PriceTierRule';
+import { ShippingRule } from '../rules/ShippingRule';
+import { EventBus } from '../events/EventBus';
 
 const prisma = new PrismaClient();
 
@@ -102,3 +101,9 @@ async function testPricingEngine() {
 
 // Executar testes
 testPricingEngine();
+
+
+
+
+
+

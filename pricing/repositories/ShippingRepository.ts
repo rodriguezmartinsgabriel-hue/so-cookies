@@ -1,5 +1,5 @@
-import { PrismaClient } from '@/src/generated/prisma/client';
-import type { ShippingRate } from '@prisma/client';
+import { PrismaClient, ShippingRate, ShippingRateType } from '@/generated/prisma/client';
+import type { Prisma } from '@/generated/prisma/client';
 
 export class ShippingRepository {
   constructor(private prisma: PrismaClient) {}
@@ -31,13 +31,13 @@ export class ShippingRepository {
     });
   }
 
-  async createRate(data: Partial<ShippingRate>): Promise<ShippingRate> {
+  async createRate(data: Prisma.ShippingRateCreateInput): Promise<ShippingRate> {
     return await this.prisma.shippingRate.create({
       data
     });
   }
 
-  async updateRate(id: string, data: Partial<ShippingRate>): Promise<ShippingRate> {
+  async updateRate(id: string, data: Prisma.ShippingRateUpdateInput): Promise<ShippingRate> {
     return await this.prisma.shippingRate.update({
       where: { id },
       data
@@ -50,3 +50,9 @@ export class ShippingRepository {
     });
   }
 }
+
+
+
+
+
+

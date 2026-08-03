@@ -1,24 +1,16 @@
 "use client"
 
 import { useCart } from './useCart'
-import { PricingEngine } from '@so-cookies/pricing'
-import { PricingContext, PricingResult } from '@so-cookies/pricing'
-import { ProductRepository } from '@so-cookies/pricing'
-import { PriceTierRule } from '@so-cookies/pricing'
-import { RuleRegistry } from '@so-cookies/pricing'
-import { EventBus } from '@so-cookies/pricing'
-import { formatBRL } from '@so-cookies/pricing'
-import { prisma } from '@/lib/prisma'
 import { useState, useCallback, useEffect } from 'react'
 
 export function usePricing() {
-  const { items, count } = useCart()
-  const [pricingResult, setPricingResult] = useState<PricingResult | null>(null)
+  const { items: cartItems } = useCart()
+  const [pricingResult, setPricingResult] = useState<any | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const calculatePrice = useCallback(async () => {
-    if (!items.length) {
+    if (!cartItems.length) {
       setPricingResult(null)
       return
     }
@@ -27,56 +19,24 @@ export function usePricing() {
     setError(null)
 
     try {
-      // Carregar produtos do banco de dados
-      const products = await prisma.product.findMany({
-        where: {
-          id: { in: items.map((i) => i.productId) },
-          active: true
-        },
-        select: {
-          id: true,
-          name: true,
-          price: true,
-          cost: true,
-          margin: true
-        }
+      const res = await fetch('/api/public/pricing', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          items: cartItems.map(i => ({
+            productId: i.productId,
+            qty: i.qty
+          })),
+          channel: 'pickup'
+        })
       })
 
-      // Mapear produtos
-      const productMap: Record<string, any> = {}
-      products.forEach(p => productMap[p.id] = p)
-
-      // Inicializar Repositories
-      const productRepo = new ProductRepository(prisma)
-
-      // Inicializar Registry com as regras
-      const registry = new RuleRegistry()
-      registry.register(new PriceTierRule(productRepo, { log: () => {} }))
-
-      // Inicializar Engine
-      const eventBus = new EventBus()
-      const engine = new PricingEngine(
-        prisma,
-        registry,
-        { log: () => {}, error: () => {}, warn: () => {} },
-        { record: () => void 0 }
-      )
-
-      // Preparar Contexto
-      const context: PricingContext = {
-        items: items.map(item => ({
-          productId: item.productId,
-          qty: item.qty,
-          basePrice: productMap[item.productId]?.price || 0,
-          name: productMap[item.productId]?.name || ''
-        })),
-        channel: 'pickup',
-        customerType: 'CLIENTE'
+      if (!res.ok) {
+        const data = await res.json().catch(() => null)
+        throw new Error(data?.error || 'Failed to calculate price')
       }
 
-      // Calcular Preço
-      const result = await engine.calculatePrice(context)
-      setPricingResult(result)
+      setPricingResult(await res.json())
     } catch (err) {
       if (err instanceof Error) {
         setError(err.message)
@@ -87,18 +47,17 @@ export function usePricing() {
     } finally {
       setLoading(false)
     }
-  }, [items])
+  }, [cartItems])
 
-  // Calcular quando os itens do carrinho mudam
   useEffect(() => {
     calculatePrice()
-  }, [items, calculatePrice])
+  }, [cartItems, calculatePrice])
 
   return {
     result: pricingResult,
     loading,
     error,
     calculatePrice,
-    formatBRL
+    formatBRL: (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
   }
 }

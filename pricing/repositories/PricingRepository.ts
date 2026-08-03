@@ -1,6 +1,5 @@
-import { PrismaClient } from '@/src/generated/prisma/client';
-import type { PricingSettings } from '@prisma/client';
-import type { PriceTier } from '@prisma/client';
+import { PrismaClient, PriceTier, PricingSettings } from '@/generated/prisma/client';
+import type { Prisma } from '@/generated/prisma/client';
 
 export class PricingRepository {
   constructor(private prisma: PrismaClient) {}
@@ -23,18 +22,18 @@ export class PricingRepository {
   }
 
   async getSettings(): Promise<PricingSettings | null> {
-    return await this.prisma.pricingSettings.findFirst();
+    return await this.prisma.pricingSettings.findUnique({ where: { id: 'default' } });
   }
 
-  async updateSettings(settings: PricingSettings): Promise<void> {
+  async updateSettings(data: Prisma.PricingSettingsUpdateInput): Promise<void> {
     await this.prisma.pricingSettings.upsert({
       where: { id: 'default' },
-      update: settings,
-      create: { ...settings, id: 'default' }
+      update: data,
+      create: { id: 'default', ...data } as Prisma.PricingSettingsCreateInput
     });
   }
 
-  async getSettingsForChannel(channel: string): Promise<PricingSettings> {
+  async getSettingsForChannel(channel: string): Promise<any> {
     const settings = await this.getSettings();
 
     if (!settings) {
@@ -51,13 +50,13 @@ export class PricingRepository {
     return settings;
   }
 
-  async createPriceTier(data: Partial<PriceTier>): Promise<PriceTier> {
+  async createPriceTier(data: Prisma.PriceTierCreateInput): Promise<PriceTier> {
     return await this.prisma.priceTier.create({
       data
     });
   }
 
-  async updatePriceTier(id: string, data: Partial<PriceTier>): Promise<PriceTier> {
+  async updatePriceTier(id: string, data: Prisma.PriceTierUpdateInput): Promise<PriceTier> {
     return await this.prisma.priceTier.update({
       where: { id },
       data
@@ -70,3 +69,9 @@ export class PricingRepository {
     });
   }
 }
+
+
+
+
+
+

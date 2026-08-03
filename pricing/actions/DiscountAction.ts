@@ -1,15 +1,21 @@
-import { PricingAction } from './PricingAction';
+import { PricingAction, PricingActionType } from './PricingAction';
 
 export class DiscountAction implements PricingAction {
   constructor(
     public id: string,
-    public type: 'PERCENTAGE' | 'FIXED',
-    public target: 'items' | 'subtotal',
+    public sourceRule: string,
+    public timestamp: Date,
+    public type: PricingActionType,
+    public target: string,
     public value: number,
     public percentage: number,
     public appliedTo: 'items' | 'subtotal',
-    public sourceRule: string,
-    public timestamp: Date,
     public metadata?: Record<string, any>
   ) {}
 }
+
+
+
+
+
+
