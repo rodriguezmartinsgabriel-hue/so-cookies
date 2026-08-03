@@ -241,10 +241,10 @@ export default function ReceitasPage() {
                     <div className="flex items-center gap-1 shrink-0">
                       {canEdit && (
                         <>
-                          <button onClick={() => openEdit(recipe)} aria-label="Editar" className="p-2 rounded-md hover:bg-cream text-muted transition-colors">
+                          <button type="button" onClick={() => openEdit(recipe)} aria-label="Editar" className="p-2 rounded-md hover:bg-cream text-muted transition-colors">
                             <Edit className="w-4 h-4" />
                           </button>
-                          <button onClick={() => handleDelete(recipe.id)} aria-label="Excluir" className="p-2 rounded-md hover:bg-cream text-danger transition-colors">
+                          <button type="button" onClick={() => handleDelete(recipe.id)} aria-label="Excluir" className="p-2 rounded-md hover:bg-cream text-danger transition-colors">
                             <Trash2 className="w-4 h-4" />
                           </button>
                         </>
@@ -330,8 +330,8 @@ export default function ReceitasPage() {
                   <Input type="number" placeholder="20" value={form.yield} onChange={(e) => setForm({ ...form, yield: e.target.value })} />
                 </FormField>
                 <div>
-                  <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Unidade</label>
-                  <select value={form.yieldUnit} onChange={(e) => setForm({ ...form, yieldUnit: e.target.value })} className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink transition-colors bg-paper">
+                  <label htmlFor="sel-unidade" className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Unidade</label>
+                  <select id="sel-unidade" value={form.yieldUnit} onChange={(e) => setForm({ ...form, yieldUnit: e.target.value })} className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink transition-colors bg-paper">
                     <option value="un">un (unidades)</option>
                     <option value="kg">kg (quilos)</option>
                     <option value="g">g (gramas)</option>
@@ -356,7 +356,7 @@ export default function ReceitasPage() {
                       <input type="file" accept="image/*" onChange={handleImageSelect} className="hidden" disabled={imageLoading} />
                     </label>
                     {form.image && (
-                      <button onClick={removeImage} className="flex items-center gap-1 text-xs font-medium text-danger hover:underline">
+                      <button type="button" onClick={removeImage} className="flex items-center gap-1 text-xs font-medium text-danger hover:underline">
                         <Trash2 className="w-3.5 h-3.5" /> Remover foto
                       </button>
                     )}
@@ -373,7 +373,7 @@ export default function ReceitasPage() {
               <div className="border-t border-line pt-4">
                 <div className="flex items-center justify-between mb-3">
                   <label className="text-xs font-semibold text-muted uppercase tracking-wide">Ingredientes</label>
-                  <button onClick={addIngredient} className="flex items-center gap-1 text-xs font-medium text-info hover:text-info/80 transition-colors">
+                  <button type="button" onClick={addIngredient} className="flex items-center gap-1 text-xs font-medium text-info hover:text-info/80 transition-colors">
                     <Plus className="w-3 h-3" /> Adicionar
                   </button>
                 </div>
@@ -394,7 +394,7 @@ export default function ReceitasPage() {
                         <option value="ml">ml</option>
                       </select>
                       <span className="text-xs text-muted w-16 text-right">R$ {((parseFloat(ing.qty) || 0) * ing.costPerUnit).toFixed(2)}</span>
-                      <button onClick={() => removeIngredient(i)} aria-label="Remover" className="p-1 rounded hover:bg-cream text-danger"><Trash2 className="w-3 h-3" /></button>
+                      <button type="button" onClick={() => removeIngredient(i)} aria-label="Remover" className="p-1 rounded hover:bg-cream text-danger"><Trash2 className="w-3 h-3" /></button>
                     </div>
                   ))}
                   {form.ingredients.length === 0 && (

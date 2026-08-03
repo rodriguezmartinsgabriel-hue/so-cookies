@@ -307,11 +307,11 @@ export default function DocumentosPage() {
                         <div>
                           <p className="text-xs font-semibold text-muted uppercase tracking-wide mb-1">Anexo</p>
                           {isImageDataUrl(doc.fileUrl) ? (
-                            <button onClick={() => openView(doc)} className="rounded-lg overflow-hidden border border-line bg-paper w-full block hover:opacity-90 transition-opacity">
+                            <button type="button" onClick={() => openView(doc)} className="rounded-lg overflow-hidden border border-line bg-paper w-full block hover:opacity-90 transition-opacity">
                               <NextImage src={doc.fileUrl} alt={doc.title} width={600} height={400} unoptimized className="w-full max-h-72 object-cover" />
                             </button>
                           ) : (
-                            <button onClick={() => openView(doc)} className="w-full flex items-center gap-3 bg-paper rounded-lg p-3 border border-line hover:bg-cream transition-colors">
+                            <button type="button" onClick={() => openView(doc)} className="w-full flex items-center gap-3 bg-paper rounded-lg p-3 border border-line hover:bg-cream transition-colors">
                               <div className="w-10 h-10 rounded-lg bg-danger/10 text-danger flex items-center justify-center shrink-0">
                                 <FileText className="w-5 h-5" />
                               </div>
@@ -409,7 +409,7 @@ export default function DocumentosPage() {
                           {fileLoading ? "Processando..." : "Trocar"}
                           <input type="file" accept="image/*,application/pdf" onChange={handleFileSelect} className="hidden" disabled={fileLoading} />
                         </label>
-                        <button onClick={removeFile} className="flex items-center gap-1 text-xs font-medium text-danger hover:underline">
+                        <button type="button" onClick={removeFile} className="flex items-center gap-1 text-xs font-medium text-danger hover:underline">
                           <Trash2 className="w-3.5 h-3.5" /> Remover
                         </button>
                       </div>

@@ -287,8 +287,8 @@ export default function ProdutosPage() {
                       <div className="flex items-center justify-center gap-1">
                         {canEdit && (
                           <>
-                            <button onClick={() => openEdit(p)} aria-label="Editar" className="p-1.5 rounded-md hover:bg-cream text-muted"><Edit className="w-4 h-4" /></button>
-                            <button onClick={() => handleDelete(p.id)} aria-label="Excluir" className="p-1.5 rounded-md hover:bg-cream text-danger"><Trash2 className="w-4 h-4" /></button>
+                            <button type="button" onClick={() => openEdit(p)} aria-label="Editar" className="p-1.5 rounded-md hover:bg-cream text-muted"><Edit className="w-4 h-4" /></button>
+                            <button type="button" onClick={() => handleDelete(p.id)} aria-label="Excluir" className="p-1.5 rounded-md hover:bg-cream text-danger"><Trash2 className="w-4 h-4" /></button>
                           </>
                         )}
                       </div>
@@ -337,8 +337,8 @@ export default function ProdutosPage() {
                 </FormField>
               </div>
               <div>
-                <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Receita vinculada (opcional)</label>
-                <select value={form.recipeId} onChange={(e) => setForm({ ...form, recipeId: e.target.value })} className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink transition-colors bg-paper">
+                <label htmlFor="sel-receita-vinculada-opcional" className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Receita vinculada (opcional)</label>
+                <select id="sel-receita-vinculada-opcional" value={form.recipeId} onChange={(e) => setForm({ ...form, recipeId: e.target.value })} className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink transition-colors bg-paper">
                   <option value="">Nenhuma receita</option>
                   {recipes.map((r) => (
                     <option key={r.id} value={r.id}>{r.name}</option>
@@ -369,7 +369,7 @@ export default function ProdutosPage() {
                       <input type="file" accept="image/*" onChange={handleImageSelect} className="hidden" disabled={imageLoading} />
                     </label>
                     {form.image && (
-                      <button onClick={removeImage} className="flex items-center gap-1 text-xs font-medium text-danger hover:underline">
+                      <button type="button" onClick={removeImage} className="flex items-center gap-1 text-xs font-medium text-danger hover:underline">
                         <Trash2 className="w-3.5 h-3.5" /> Remover foto
                       </button>
                     )}

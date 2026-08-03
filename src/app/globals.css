@@ -10,7 +10,7 @@
   --paper: #ffffff;
   --cream: #f7f3ec;
   --kraft: #d8cfbe;
-  --muted: #6b6b6b;
+  --muted: #595959;
   --line: #e4e0d6;
   --success: #2f7a3e;
   --danger: #c23b2e;
@@ -150,6 +150,15 @@ body {
 *:focus-visible {
   outline: 2px solid var(--ink);
   outline-offset: 2px;
+}
+
+button[class*="p-1.5"][aria-label],
+button[class*="p-1"][aria-label] {
+  min-width: 44px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 ::-webkit-scrollbar {

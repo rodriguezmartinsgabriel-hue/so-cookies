@@ -200,8 +200,8 @@ export default function CaixaPage() {
                       <div className="flex items-center justify-center gap-1">
                         {canEdit && (
                           <>
-                            <button onClick={() => openEdit(entry)} aria-label="Editar" className="p-1.5 rounded-md hover:bg-cream text-muted"><Edit className="w-4 h-4" /></button>
-                            <button onClick={() => handleDelete(entry.id)} aria-label="Excluir" className="p-1.5 rounded-md hover:bg-cream text-danger"><Trash2 className="w-4 h-4" /></button>
+                            <button type="button" onClick={() => openEdit(entry)} aria-label="Editar" className="p-1.5 rounded-md hover:bg-cream text-muted"><Edit className="w-4 h-4" /></button>
+                            <button type="button" onClick={() => handleDelete(entry.id)} aria-label="Excluir" className="p-1.5 rounded-md hover:bg-cream text-danger"><Trash2 className="w-4 h-4" /></button>
                           </>
                         )}
                       </div>
@@ -233,8 +233,8 @@ export default function CaixaPage() {
               <div>
                 <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Tipo</label>
                 <div className="grid grid-cols-2 gap-2">
-                  <button onClick={() => setFormType("ENTRADA")} className={`h-10 border rounded-lg text-sm font-medium transition-colors ${formType === "ENTRADA" ? "border-success bg-success/10 text-success" : "border-line text-muted hover:bg-cream"}`}>Entrada</button>
-                  <button onClick={() => setFormType("SAIDA")} className={`h-10 border rounded-lg text-sm font-medium transition-colors ${formType === "SAIDA" ? "border-danger bg-danger/10 text-danger" : "border-line text-muted hover:bg-cream"}`}>Saída</button>
+                  <button type="button" onClick={() => setFormType("ENTRADA")} className={`h-10 border rounded-lg text-sm font-medium transition-colors ${formType === "ENTRADA" ? "border-success bg-success/10 text-success" : "border-line text-muted hover:bg-cream"}`}>Entrada</button>
+                  <button type="button" onClick={() => setFormType("SAIDA")} className={`h-10 border rounded-lg text-sm font-medium transition-colors ${formType === "SAIDA" ? "border-danger bg-danger/10 text-danger" : "border-line text-muted hover:bg-cream"}`}>Saída</button>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
@@ -272,8 +272,8 @@ export default function CaixaPage() {
               <div>
                 <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Tipo</label>
                 <div className="grid grid-cols-2 gap-2">
-                  <button onClick={() => setEditType("ENTRADA")} className={`h-10 border rounded-lg text-sm font-medium transition-colors ${editType === "ENTRADA" ? "border-success bg-success/10 text-success" : "border-line text-muted hover:bg-cream"}`}>Entrada</button>
-                  <button onClick={() => setEditType("SAIDA")} className={`h-10 border rounded-lg text-sm font-medium transition-colors ${editType === "SAIDA" ? "border-danger bg-danger/10 text-danger" : "border-line text-muted hover:bg-cream"}`}>Saída</button>
+                  <button type="button" onClick={() => setEditType("ENTRADA")} className={`h-10 border rounded-lg text-sm font-medium transition-colors ${editType === "ENTRADA" ? "border-success bg-success/10 text-success" : "border-line text-muted hover:bg-cream"}`}>Entrada</button>
+                  <button type="button" onClick={() => setEditType("SAIDA")} className={`h-10 border rounded-lg text-sm font-medium transition-colors ${editType === "SAIDA" ? "border-danger bg-danger/10 text-danger" : "border-line text-muted hover:bg-cream"}`}>Saída</button>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">

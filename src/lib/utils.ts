@@ -23,6 +23,8 @@ export function formatBRL(value: number): string {
   return `R$ ${(Number.isFinite(value) ? value : 0).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 }
 
+export const formatCurrency = formatBRL
+
 export function resolveProductImage(
   product: { image?: string | null },
   recipe?: { image?: string | null } | null,

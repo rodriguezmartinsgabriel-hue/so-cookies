@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { useConfirm } from "@/hooks/useConfirm"
 import { useRole } from "@/hooks/useRole"
 import { useQueryData } from "@/hooks/useQueryData"
+import { useFocusTrap } from "@/hooks/useFocusTrap"
 import { AppShell } from "@/components/layout/AppShell"
 import { Skeleton } from "@/components/ui/Skeleton"
 import { ErrorState } from "@/components/ui/ErrorState"
@@ -96,6 +97,7 @@ export default function PedidosPage() {
   const [editForm, setEditForm] = useState({ customer: "", notes: "" })
 
   const order = orders.find((o) => o.id === selectedOrder)
+  const orderModalRef = useFocusTrap(Boolean(order))
 
   async function handleStatusChange(orderId: string, newStatus: string) {
     await repository.orders.updateStatus(orderId, newStatus)
@@ -178,8 +180,8 @@ export default function PedidosPage() {
           <h1 className="text-2xl font-bold text-ink">Pedidos</h1>
           <div className="flex items-center gap-2">
             <div className="flex border border-line rounded-lg overflow-hidden">
-              <button onClick={() => setView("kanban")} className={`px-3 py-2 text-xs font-medium transition-colors ${view === "kanban" ? "bg-ink text-paper" : "text-muted hover:bg-cream"}`}>Kanban</button>
-              <button onClick={() => setView("list")} className={`px-3 py-2 text-xs font-medium transition-colors ${view === "list" ? "bg-ink text-paper" : "text-muted hover:bg-cream"}`}>Lista</button>
+              <button type="button" onClick={() => setView("kanban")} className={`px-3 py-2 text-xs font-medium transition-colors ${view === "kanban" ? "bg-ink text-paper" : "text-muted hover:bg-cream"}`}>Kanban</button>
+              <button type="button" onClick={() => setView("list")} className={`px-3 py-2 text-xs font-medium transition-colors ${view === "list" ? "bg-ink text-paper" : "text-muted hover:bg-cream"}`}>Lista</button>
             </div>
             {canEdit && (
               <Button onClick={() => { setFormChannel(""); setFormCustomer(""); setFormItems([]); setFormTotal(0); setShowCreateModal(true); }}>
@@ -378,13 +380,13 @@ export default function PedidosPage() {
                       <div className="flex items-center justify-center gap-1">
                         {canEdit && (
                           <>
-                            <button onClick={() => openEditModal(o)} aria-label="Editar" className="p-1.5 rounded-md hover:bg-cream text-muted"><Edit className="w-4 h-4" /></button>
+                            <button type="button" onClick={() => openEditModal(o)} aria-label="Editar" className="p-1.5 rounded-md hover:bg-cream text-muted"><Edit className="w-4 h-4" /></button>
                             {canCancel(o.status) && (
-                              <button onClick={() => handleStatusChange(o.id, "CANCELADO")} className="p-1.5 rounded-md hover:bg-cream text-danger"><Ban className="w-4 h-4" /></button>
+                              <button type="button" onClick={() => handleStatusChange(o.id, "CANCELADO")} className="p-1.5 rounded-md hover:bg-cream text-danger"><Ban className="w-4 h-4" /></button>
                             )}
-                            <button onClick={() => handleDeleteOrder(o.id)} aria-label="Excluir" className="p-1.5 rounded-md hover:bg-cream text-danger"><Trash2 className="w-4 h-4" /></button>
+                            <button type="button" onClick={() => handleDeleteOrder(o.id)} aria-label="Excluir" className="p-1.5 rounded-md hover:bg-cream text-danger"><Trash2 className="w-4 h-4" /></button>
                             {nextStatus[o.status] && (
-                              <button onClick={() => handleStatusChange(o.id, nextStatus[o.status])} className="text-xs px-3 py-1.5 bg-ink text-paper rounded-lg font-medium hover:bg-ink/90 transition-colors">
+                              <button type="button" onClick={() => handleStatusChange(o.id, nextStatus[o.status])} className="text-xs px-3 py-1.5 bg-ink text-paper rounded-lg font-medium hover:bg-ink/90 transition-colors">
                                 {nextStatusLabel[o.status]}
                               </button>
                             )}
@@ -401,13 +403,14 @@ export default function PedidosPage() {
 
         {order && (
           <div className="fixed inset-0 z-50 bg-ink/30 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="order-detail-title">
+            <div ref={orderModalRef} className="w-full max-w-md max-h-[80vh]">
             <GlassSurface tone="strong" className="rounded-xl w-full max-w-md max-h-[80vh] overflow-y-auto">
               <div className="flex items-center justify-between p-4 border-b border-line">
                 <div>
                   <h3 id="order-detail-title" className="text-lg font-bold text-ink">Pedido #{order.id.slice(0, 6)}</h3>
                   <p className="text-xs text-muted">{order.channel} · {order.createdAt ? new Date(order.createdAt).toLocaleDateString("pt-BR") : ""}</p>
                 </div>
-                <button onClick={() => setSelectedOrder(null)} data-close-modal aria-label="Fechar" className="p-1.5 rounded-md hover:bg-cream text-muted"><X className="w-5 h-5" /></button>
+                <button type="button" onClick={() => setSelectedOrder(null)} data-close-modal aria-label="Fechar" className="p-1.5 rounded-md hover:bg-cream text-muted"><X className="w-5 h-5" /></button>
               </div>
               <div className="p-4 space-y-3">
                 <div>
@@ -458,14 +461,14 @@ export default function PedidosPage() {
               <div className="p-4 border-t border-line flex gap-2">
                 {canEdit && (
                   <>
-                    <button onClick={() => handleDeleteOrder(order.id)} aria-label="Excluir" className="h-10 px-3 border border-danger/30 rounded-lg text-sm font-medium text-danger hover:bg-danger/5 transition-colors">
+                    <button type="button" onClick={() => handleDeleteOrder(order.id)} aria-label="Excluir" className="h-10 px-3 border border-danger/30 rounded-lg text-sm font-medium text-danger hover:bg-danger/5 transition-colors">
                       <Trash2 className="w-4 h-4" />
                     </button>
                     <Button variant="secondary" onClick={() => { setSelectedOrder(null); openEditModal(order); }} aria-label="Editar">
                       <Edit className="w-4 h-4" />
                     </Button>
                     {canCancel(order.status) && (
-                      <button onClick={() => handleStatusChange(order.id, "CANCELADO")} className="h-10 px-3 border border-danger/30 rounded-lg text-sm font-medium text-danger hover:bg-danger/5 transition-colors">
+                      <button type="button" onClick={() => handleStatusChange(order.id, "CANCELADO")} className="h-10 px-3 border border-danger/30 rounded-lg text-sm font-medium text-danger hover:bg-danger/5 transition-colors">
                         <Ban className="w-4 h-4" />
                       </button>
                     )}
@@ -479,6 +482,7 @@ export default function PedidosPage() {
                 )}
               </div>
             </GlassSurface>
+            </div>
           </div>
         )}
 
@@ -497,7 +501,7 @@ export default function PedidosPage() {
           >
             <div className="p-4 space-y-4">
               <div>
-                <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Cliente</label>
+                <label htmlFor="sel-cliente-label-input-type-text-value-edit" className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Cliente</label>
                 <Input type="text" value={editForm.customer} onChange={(e) => setEditForm({ ...editForm, customer: e.target.value })} />
               </div>
               <div>
@@ -525,7 +529,7 @@ export default function PedidosPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Canal *</label>
-                  <select value={formChannel} onChange={(e) => setFormChannel(e.target.value)} className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink bg-paper">
+                  <select id="sel-cliente-label-input-type-text-value-edit" value={formChannel} onChange={(e) => setFormChannel(e.target.value)} className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink bg-paper">
                     <option value="">Selecionar</option>
                     {channels.map((ch) => <option key={ch.id} value={ch.id}>{ch.name}</option>)}
                   </select>
@@ -538,7 +542,7 @@ export default function PedidosPage() {
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <label className="text-xs font-semibold text-muted uppercase tracking-wide">Itens</label>
-                  <button onClick={addItem} className="flex items-center gap-1 text-xs font-medium text-info"><Plus className="w-3 h-3" /> Adicionar</button>
+                  <button type="button" onClick={addItem} className="flex items-center gap-1 text-xs font-medium text-info"><Plus className="w-3 h-3" /> Adicionar</button>
                 </div>
                 <div className="space-y-2">
                   {formItems.map((item, i) => (
@@ -549,7 +553,7 @@ export default function PedidosPage() {
                       </select>
                       <input type="number" min="1" value={item.qty} onChange={(e) => updateItem(i, "qty", e.target.value)} className="w-16 h-9 px-2 border border-line rounded-lg text-xs text-ink bg-paper" />
                       <input type="number" step="0.01" value={item.price} onChange={(e) => updateItem(i, "price", e.target.value)} className="w-24 h-9 px-2 border border-line rounded-lg text-xs text-ink bg-paper" />
-                      <button onClick={() => removeItem(i)} aria-label="Remover" className="p-1 text-danger"><X className="w-3 h-3" /></button>
+                      <button type="button" onClick={() => removeItem(i)} aria-label="Remover" className="p-1 text-danger"><X className="w-3 h-3" /></button>
                     </div>
                   ))}
                 </div>

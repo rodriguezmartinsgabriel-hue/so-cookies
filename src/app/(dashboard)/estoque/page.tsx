@@ -117,13 +117,13 @@ export default function EstoquePage() {
         </div>
 
         <div className="flex gap-2 border-b border-line pb-2">
-          <button onClick={() => setTab("insumos")} className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${tab === "insumos" ? "bg-ink text-paper" : "text-muted hover:bg-cream"}`}>
+          <button type="button" onClick={() => setTab("insumos")} className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${tab === "insumos" ? "bg-ink text-paper" : "text-muted hover:bg-cream"}`}>
             Insumos
           </button>
-          <button onClick={() => setTab("geral")} className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${tab === "geral" ? "bg-ink text-paper" : "text-muted hover:bg-cream"}`}>
+          <button type="button" onClick={() => setTab("geral")} className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${tab === "geral" ? "bg-ink text-paper" : "text-muted hover:bg-cream"}`}>
             Geral
           </button>
-          <button onClick={() => setTab("precos")} className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${tab === "precos" ? "bg-ink text-paper" : "text-muted hover:bg-cream"}`}>
+          <button type="button" onClick={() => setTab("precos")} className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${tab === "precos" ? "bg-ink text-paper" : "text-muted hover:bg-cream"}`}>
             Tabela de Preços
           </button>
         </div>
@@ -186,8 +186,8 @@ export default function EstoquePage() {
                       <div className="flex gap-1">
                         {isAdmin && (
                           <>
-                            <button onClick={() => openEdit(item)} aria-label="Editar" className="p-1.5 rounded-md hover:bg-cream text-muted"><Edit className="w-4 h-4" /></button>
-                            <button onClick={() => handleDelete(item.id)} aria-label="Excluir" className="p-1.5 rounded-md hover:bg-cream text-danger"><Trash2 className="w-4 h-4" /></button>
+                            <button type="button" onClick={() => openEdit(item)} aria-label="Editar" className="p-1.5 rounded-md hover:bg-cream text-muted"><Edit className="w-4 h-4" /></button>
+                            <button type="button" onClick={() => handleDelete(item.id)} aria-label="Excluir" className="p-1.5 rounded-md hover:bg-cream text-danger"><Trash2 className="w-4 h-4" /></button>
                           </>
                         )}
                       </div>
@@ -247,8 +247,8 @@ export default function EstoquePage() {
                             <div className="flex items-center justify-center gap-1">
                               {isAdmin && (
                                 <>
-                                  <button onClick={() => openEdit(item)} aria-label="Editar" className="p-1.5 rounded-md hover:bg-cream text-muted"><Edit className="w-4 h-4" /></button>
-                                  <button onClick={() => handleDelete(item.id)} aria-label="Excluir" className="p-1.5 rounded-md hover:bg-cream text-danger"><Trash2 className="w-4 h-4" /></button>
+                                  <button type="button" onClick={() => openEdit(item)} aria-label="Editar" className="p-1.5 rounded-md hover:bg-cream text-muted"><Edit className="w-4 h-4" /></button>
+                                  <button type="button" onClick={() => handleDelete(item.id)} aria-label="Excluir" className="p-1.5 rounded-md hover:bg-cream text-danger"><Trash2 className="w-4 h-4" /></button>
                                 </>
                               )}
                             </div>
@@ -284,7 +284,7 @@ export default function EstoquePage() {
           >
             <div className="p-4 space-y-4">
                 <div>
-                  <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Nome *</label>
+                  <label htmlFor="sel-nome-label-input-type-text-placeholder-e" className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Nome *</label>
                   <Input type="text" placeholder="Ex: Farinha de trigo" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
@@ -443,8 +443,8 @@ function PriceTiersTab() {
                       <div className="flex items-center justify-center gap-1">
                         {isAdmin && (
                           <>
-                            <button onClick={() => { setEditingTier(tier); setForm({ name: tier.name, minQty: String(tier.minQty), maxQty: tier.maxQty ? String(tier.maxQty) : "", price: String(tier.price), productId: tier.productId || "", type: "assado" }); setShowModal(true); }} aria-label="Editar" className="p-1.5 rounded-md hover:bg-cream text-muted"><Edit className="w-4 h-4" /></button>
-                            <button onClick={() => handleDelete(tier.id)} aria-label="Excluir" className="p-1.5 rounded-md hover:bg-cream text-danger"><Trash2 className="w-4 h-4" /></button>
+                            <button type="button" onClick={() => { setEditingTier(tier); setForm({ name: tier.name, minQty: String(tier.minQty), maxQty: tier.maxQty ? String(tier.maxQty) : "", price: String(tier.price), productId: tier.productId || "", type: "assado" }); setShowModal(true); }} aria-label="Editar" className="p-1.5 rounded-md hover:bg-cream text-muted"><Edit className="w-4 h-4" /></button>
+                            <button type="button" onClick={() => handleDelete(tier.id)} aria-label="Excluir" className="p-1.5 rounded-md hover:bg-cream text-danger"><Trash2 className="w-4 h-4" /></button>
                           </>
                         )}
                       </div>
@@ -482,8 +482,8 @@ function PriceTiersTab() {
                       <div className="flex items-center justify-center gap-1">
                         {isAdmin && (
                           <>
-                            <button onClick={() => { setEditingTier(tier); setForm({ name: tier.name, minQty: String(tier.minQty), maxQty: tier.maxQty ? String(tier.maxQty) : "", price: String(tier.price), productId: tier.productId || "", type: "congelado" }); setShowModal(true); }} aria-label="Editar" className="p-1.5 rounded-md hover:bg-cream text-muted"><Edit className="w-4 h-4" /></button>
-                            <button onClick={() => handleDelete(tier.id)} aria-label="Excluir" className="p-1.5 rounded-md hover:bg-cream text-danger"><Trash2 className="w-4 h-4" /></button>
+                            <button type="button" onClick={() => { setEditingTier(tier); setForm({ name: tier.name, minQty: String(tier.minQty), maxQty: tier.maxQty ? String(tier.maxQty) : "", price: String(tier.price), productId: tier.productId || "", type: "congelado" }); setShowModal(true); }} aria-label="Editar" className="p-1.5 rounded-md hover:bg-cream text-muted"><Edit className="w-4 h-4" /></button>
+                            <button type="button" onClick={() => handleDelete(tier.id)} aria-label="Excluir" className="p-1.5 rounded-md hover:bg-cream text-danger"><Trash2 className="w-4 h-4" /></button>
                           </>
                         )}
                       </div>
@@ -512,7 +512,7 @@ function PriceTiersTab() {
           <div className="p-4 space-y-4">
             <div>
               <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Produto *</label>
-              <select
+              <select id="sel-nome-label-input-type-text-placeholder-e"
                 value={form.productId}
                 onChange={(e) => setForm({ ...form, productId: e.target.value })}
                 className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink bg-paper focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink transition-colors"

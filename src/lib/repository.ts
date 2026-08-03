@@ -6,6 +6,12 @@ import type { EntityTable, IDType, UpdateSpec } from "dexie"
 
 export { onDataRefresh } from "./refresh-events"
 
+function logSyncError(entity: string, error: unknown): void {
+  if (process.env.NODE_ENV !== "production") {
+    console.error(`[sync:${entity}]`, error)
+  }
+}
+
 const isOnline = () => navigator.onLine
 
 function generateTempId() {
@@ -78,7 +84,7 @@ export const repository = {
           },
         })
           .then(() => emitDataRefresh())
-          .catch((e) => console.error("Erro ao sync orders:", e))
+          .catch((e) => logSyncError("orders", e))
       }
       return cached
     },
@@ -136,7 +142,7 @@ export const repository = {
           },
         })
           .then(() => emitDataRefresh())
-          .catch((e) => console.error("Erro ao sync:", e))
+          .catch((e) => logSyncError("generic", e))
       }
       return cached
     },
@@ -177,7 +183,7 @@ export const repository = {
       if (isOnline() && shouldFetch("/api/cashflow")) {
         mergeTable(db.cashFlow, "/api/cashflow")
           .then(() => emitDataRefresh())
-          .catch((e) => console.error("Erro ao sync:", e))
+          .catch((e) => logSyncError("generic", e))
       }
       return cached
     },
@@ -217,7 +223,7 @@ export const repository = {
       if (isOnline() && shouldFetch("/api/productions")) {
         mergeTable(db.productions, "/api/productions")
           .then(() => emitDataRefresh())
-          .catch((e) => console.error("Erro ao sync:", e))
+          .catch((e) => logSyncError("generic", e))
       }
       return cached
     },
@@ -260,7 +266,7 @@ export const repository = {
       if (isOnline() && shouldFetch("/api/products")) {
         mergeTable(db.products, "/api/products")
           .then(() => emitDataRefresh())
-          .catch((e) => console.error("Erro ao sync products:", e))
+          .catch((e) => logSyncError("products", e))
       }
       return cached
     },
@@ -313,7 +319,7 @@ export const repository = {
       if (isOnline() && shouldFetch("/api/ingredients")) {
         mergeTable(db.ingredients, "/api/ingredients")
           .then(() => emitDataRefresh())
-          .catch((e) => console.error("Erro ao sync:", e))
+          .catch((e) => logSyncError("generic", e))
       }
       return cached
     },
@@ -364,7 +370,7 @@ export const repository = {
       if (isOnline() && shouldFetch("/api/channels")) {
         mergeTable(db.channels, "/api/channels")
           .then(() => emitDataRefresh())
-          .catch((e) => console.error("Erro ao sync:", e))
+          .catch((e) => logSyncError("generic", e))
       }
       return cached
     },
@@ -400,7 +406,7 @@ export const repository = {
       if (isOnline() && shouldFetch("/api/price-tiers")) {
         mergeTable(db.priceTiers, "/api/price-tiers")
           .then(() => emitDataRefresh())
-          .catch((e) => console.error("Erro ao sync:", e))
+          .catch((e) => logSyncError("generic", e))
       }
       return cached
     },
@@ -441,7 +447,7 @@ export const repository = {
           },
         })
           .then(() => emitDataRefresh())
-          .catch((e) => console.error("Erro ao sync:", e))
+          .catch((e) => logSyncError("generic", e))
       }
       return cached
     },
@@ -498,7 +504,7 @@ export const repository = {
       if (isOnline() && shouldFetch("/api/documents")) {
         mergeTable(db.documents, "/api/documents")
           .then(() => emitDataRefresh())
-          .catch((e) => console.error("Erro ao sync:", e))
+          .catch((e) => logSyncError("generic", e))
       }
       return cached
     },
@@ -541,7 +547,7 @@ export const repository = {
       if (isOnline() && shouldFetch("/api/delivery-cost")) {
         mergeTable(db.deliveryCosts, "/api/delivery-cost")
           .then(() => emitDataRefresh())
-          .catch((e) => console.error("Erro ao sync:", e))
+          .catch((e) => logSyncError("generic", e))
       }
       return cached
     },
@@ -606,7 +612,7 @@ export const repository = {
             if (toUpsert.length) await db.contactInteractions.bulkPut(toUpsert)
             emitDataRefresh()
           })
-          .catch((e) => console.error("Erro ao sync contacts:", e))
+          .catch((e) => logSyncError("contacts", e))
       }
       return cached
     },
@@ -644,7 +650,7 @@ export const repository = {
           scope: (i) => i.contactId === contactId,
         })
           .then(() => emitDataRefresh())
-          .catch((e) => console.error("Erro ao sync interactions:", e))
+          .catch((e) => logSyncError("interactions", e))
       }
       return sorted
     },

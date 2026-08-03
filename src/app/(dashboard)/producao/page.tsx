@@ -158,10 +158,10 @@ export default function ProducaoPage() {
                               <Button variant="ghost" size="icon" onClick={() => handleDelete(batch.id)} aria-label="Excluir"><Trash2 className="w-4 h-4 text-danger" /></Button>
                             )}
                             {batch.status === "pendente" && (
-                              <button onClick={() => handleStatusChange(batch.id, "em_producao")} className="text-xs px-3 py-1.5 bg-warning/10 text-warning rounded-lg font-medium hover:bg-warning/20 transition-colors">Iniciar</button>
+                              <button type="button" onClick={() => handleStatusChange(batch.id, "em_producao")} className="text-xs px-3 py-1.5 bg-warning/10 text-warning rounded-lg font-medium hover:bg-warning/20 transition-colors">Iniciar</button>
                             )}
                             {batch.status === "em_producao" && (
-                              <button onClick={() => handleStatusChange(batch.id, "concluido")} className="text-xs px-3 py-1.5 bg-success/10 text-success rounded-lg font-medium hover:bg-success/20 transition-colors">Concluir</button>
+                              <button type="button" onClick={() => handleStatusChange(batch.id, "concluido")} className="text-xs px-3 py-1.5 bg-success/10 text-success rounded-lg font-medium hover:bg-success/20 transition-colors">Concluir</button>
                             )}
                           </>
                         )}

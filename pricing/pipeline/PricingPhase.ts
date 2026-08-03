@@ -1,0 +1,9 @@
+export enum PricingPhase {
+  BASE = 'BASE',
+  ITEM = 'ITEM',
+  ORDER = 'ORDER',
+  CUSTOMER = 'CUSTOMER',
+  PAYMENT = 'PAYMENT',
+  SHIPPING = 'SHIPPING',
+  POST_PROCESSING = 'POST_PROCESSING'
+}

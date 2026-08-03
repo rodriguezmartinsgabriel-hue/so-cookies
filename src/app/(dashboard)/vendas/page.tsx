@@ -184,7 +184,7 @@ export default function VendasPage() {
                       <Td className="text-sm text-muted">{new Date(sale.createdAt).toLocaleDateString("pt-BR")}</Td>
                       <Td className="text-center">
                         {canEdit && (
-                          <button onClick={() => handleDeleteSale(sale.id)} aria-label="Excluir" className="p-1.5 rounded-md hover:bg-cream text-danger"><Trash2 className="w-4 h-4" /></button>
+                          <button type="button" onClick={() => handleDeleteSale(sale.id)} aria-label="Excluir" className="p-1.5 rounded-md hover:bg-cream text-danger"><Trash2 className="w-4 h-4" /></button>
                         )}
                       </Td>
                     </Tr>
@@ -213,8 +213,8 @@ export default function VendasPage() {
           >
             <div className="p-4 space-y-4">
                 <div>
-                  <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Canal de Venda *</label>
-                  <select value={formChannel} onChange={(e) => setFormChannel(e.target.value)} className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink transition-colors bg-paper">
+                  <label htmlFor="sel-canal-de-venda" className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Canal de Venda *</label>
+                  <select id="sel-canal-de-venda" value={formChannel} onChange={(e) => setFormChannel(e.target.value)} className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink transition-colors bg-paper">
                     <option value="">Selecionar canal</option>
                     {channels.map((ch) => (
                       <option key={ch.id} value={ch.id}>{ch.name}</option>
@@ -225,7 +225,7 @@ export default function VendasPage() {
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <label className="text-xs font-semibold text-muted uppercase tracking-wide">Itens</label>
-                    <button onClick={addItem} className="flex items-center gap-1 text-xs font-medium text-info hover:text-info/80 transition-colors">
+                    <button type="button" onClick={addItem} className="flex items-center gap-1 text-xs font-medium text-info hover:text-info/80 transition-colors">
                       <Plus className="w-3 h-3" /> Adicionar Item
                     </button>
                   </div>
@@ -241,7 +241,7 @@ export default function VendasPage() {
                         <input type="number" min="1" placeholder="Qtd" value={item.qty} onChange={(e) => updateItem(i, "qty", e.target.value)} className="w-16 h-9 px-2 border border-line rounded-lg text-xs text-ink placeholder:text-kraft focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink bg-paper" />
                         <input type="number" step="0.01" placeholder="Preço" value={item.price} onChange={(e) => updateItem(i, "price", e.target.value)} className="w-24 h-9 px-2 border border-line rounded-lg text-xs text-ink placeholder:text-kraft focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink bg-paper" />
                         <span className="text-xs font-semibold text-ink w-16 text-right">R$ {((parseFloat(item.qty) || 0) * (parseFloat(item.price) || 0)).toFixed(2)}</span>
-                        <button onClick={() => removeItem(i)} aria-label="Remover" className="p-1 rounded hover:bg-cream text-danger"><X className="w-3 h-3" /></button>
+                        <button type="button" onClick={() => removeItem(i)} aria-label="Remover" className="p-1 rounded hover:bg-cream text-danger"><X className="w-3 h-3" /></button>
                       </div>
                     ))}
                   </div>

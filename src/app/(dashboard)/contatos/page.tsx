@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useConfirm } from "@/hooks/useConfirm";
 import { useRole } from "@/hooks/useRole";
 import { useQueryData } from "@/hooks/useQueryData";
+import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { AppShell } from "@/components/layout/AppShell";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { ErrorState } from "@/components/ui/ErrorState";
@@ -77,6 +78,7 @@ export default function ContatosPage() {
 
   const [editingField, setEditingField] = useState<{ id: string; field: string } | null>(null);
   const [editValue, setEditValue] = useState("");
+  const contactModalRef = useFocusTrap(Boolean(selectedContact));
   const [editingNotes, setEditingNotes] = useState(false);
   const [notesValue, setNotesValue] = useState("");
 
@@ -264,7 +266,7 @@ export default function ContatosPage() {
               return (
                 <Card key={c.id}>
                   <div className="flex items-center gap-3">
-                    <button onClick={() => setSelectedContact(c)} aria-label="Ver detalhes" className="w-10 h-10 rounded-lg bg-cream flex items-center justify-center shrink-0 hover:bg-kraft/50 transition-colors">
+                    <button type="button" onClick={() => setSelectedContact(c)} aria-label="Ver detalhes" className="w-10 h-10 rounded-lg bg-cream flex items-center justify-center shrink-0 hover:bg-kraft/50 transition-colors">
                       <BookUser className="w-5 h-5 text-muted" strokeWidth={1.5} />
                     </button>
                     <div className="flex-1 min-w-0">
@@ -340,11 +342,11 @@ export default function ContatosPage() {
                       )}
                     </div>
                     <div className="shrink-0 flex items-center gap-1">
-                      <button onClick={() => setSelectedContact(c)} aria-label="Ver" className="p-1.5 rounded-md hover:bg-cream text-muted">
+                      <button type="button" onClick={() => setSelectedContact(c)} aria-label="Ver" className="p-1.5 rounded-md hover:bg-cream text-muted">
                         <Eye className="w-4 h-4" />
                       </button>
                       {canEdit && (
-                        <button onClick={() => handleDelete(c.id)} aria-label="Excluir" className="p-1.5 rounded-md hover:bg-cream text-danger">
+                        <button type="button" onClick={() => handleDelete(c.id)} aria-label="Excluir" className="p-1.5 rounded-md hover:bg-cream text-danger">
                           <Trash2 className="w-4 h-4" />
                         </button>
                       )}
@@ -411,13 +413,13 @@ export default function ContatosPage() {
           >
             <div className="p-4 space-y-4">
               <div>
-                <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Nome *</label>
+                <label htmlFor="sel-nome-label-input-type-text-placeholder-e" className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Nome *</label>
                 <Input type="text" placeholder="Ex: Maria Silva" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Tipo</label>
-                  <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })} className={inputClass}>
+                  <select id="sel-nome-label-input-type-text-placeholder-e" value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })} className={inputClass}>
                     {Object.entries(TYPE_CONFIG).map(([value, cfg]) => (
                       <option key={value} value={value}>{cfg.label}</option>
                     ))}
@@ -448,6 +450,7 @@ export default function ContatosPage() {
 
         {selectedContact && (
           <div className="fixed inset-0 z-50 bg-ink/30 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="contact-detail-title">
+            <div ref={contactModalRef} className="w-full max-w-lg max-h-[85vh]">
             <GlassSurface tone="strong" className="rounded-xl w-full max-w-lg max-h-[85vh] overflow-y-auto">
               <div className="flex items-center justify-between p-4 border-b border-line sticky top-0 bg-paper">
                 <div className="flex items-center gap-3">
@@ -466,7 +469,7 @@ export default function ContatosPage() {
                     </div>
                   </div>
                 </div>
-                <button onClick={() => setSelectedContact(null)} data-close-modal aria-label="Fechar" className="p-1.5 rounded-md hover:bg-cream text-muted"><X className="w-5 h-5" /></button>
+                <button type="button" onClick={() => setSelectedContact(null)} data-close-modal aria-label="Fechar" className="p-1.5 rounded-md hover:bg-cream text-muted"><X className="w-5 h-5" /></button>
               </div>
               <div className="p-4 space-y-4">
                 <div className="grid grid-cols-2 gap-2 text-sm">
@@ -550,7 +553,7 @@ export default function ContatosPage() {
                               <p className="text-sm text-ink mt-0.5 whitespace-pre-wrap">{it.note}</p>
                             </div>
                             {canEdit && (
-                              <button onClick={() => handleDeleteInteraction(it.id)} aria-label="Excluir" className="p-1.5 rounded-md hover:bg-cream text-danger shrink-0">
+                              <button type="button" onClick={() => handleDeleteInteraction(it.id)} aria-label="Excluir" className="p-1.5 rounded-md hover:bg-cream text-danger shrink-0">
                                 <Trash2 className="w-4 h-4" />
                               </button>
                             )}
@@ -567,6 +570,7 @@ export default function ContatosPage() {
                 </Button>
               </div>
             </GlassSurface>
+            </div>
           </div>
         )}
       </div>

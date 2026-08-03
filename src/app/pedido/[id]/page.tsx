@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/Button"
 import { Input } from "@/components/ui/Input"
 import { FormField } from "@/components/ui/FormField"
 import { GlassSurface } from "@/components/ui/GlassSurface"
+import { useFocusTrap } from "@/hooks/useFocusTrap"
 
 type PublicOrderItem = {
   id: string
@@ -101,6 +102,7 @@ export default function PedidoPage({ params }: { params: Promise<{ id: string }>
   const [selectedSlot, setSelectedSlot] = useState<DeliverySlot | null>(null)
   const [address, setAddress] = useState<AddressState>({ cep: "", street: "", number: "", complement: "", neighborhood: "", city: "", state: "" })
   const [saving, setSaving] = useState(false)
+  const deliveryModalRef = useFocusTrap(showDeliveryModal)
   const [deliveryError, setDeliveryError] = useState("")
 
   const load = useCallback(async (id: string) => {
@@ -344,16 +346,17 @@ export default function PedidoPage({ params }: { params: Promise<{ id: string }>
 
       {showDeliveryModal && order && (
         <div className="fixed inset-0 z-50 bg-ink/30 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="delivery-modal-title">
-          <GlassSurface tone="strong" className="rounded-xl w-full max-w-md max-h-[80vh] overflow-y-auto">
-            <div className="flex items-center justify-between p-4 border-b border-line">
-              <div>
-                <h3 id="delivery-modal-title" className="text-lg font-bold text-ink">Entrega agendada</h3>
-                <p className="text-xs text-muted">Escolha uma rota disponível</p>
+          <div ref={deliveryModalRef} className="w-full max-w-md max-h-[80vh]">
+            <GlassSurface tone="strong" className="rounded-xl w-full max-h-[80vh] overflow-y-auto">
+              <div className="flex items-center justify-between p-4 border-b border-line">
+                <div>
+                  <h3 id="delivery-modal-title" className="text-lg font-bold text-ink">Entrega agendada</h3>
+                  <p className="text-xs text-muted">Escolha uma rota disponível</p>
+                </div>
+                <button type="button" data-close-modal onClick={() => setShowDeliveryModal(false)} aria-label="Fechar" className="p-1.5 rounded-md hover:bg-cream text-muted">
+                  <X className="w-5 h-5" />
+                </button>
               </div>
-              <button onClick={() => setShowDeliveryModal(false)} aria-label="Fechar" className="p-1.5 rounded-md hover:bg-cream text-muted">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
             <div className="p-4 space-y-4">
               {slotsLoading && <p className="text-sm text-muted text-center py-4">Carregando datas...</p>}
               {!slotsLoading && slots.length === 0 && (
@@ -433,6 +436,7 @@ export default function PedidoPage({ params }: { params: Promise<{ id: string }>
               </Button>
             </div>
           </GlassSurface>
+          </div>
         </div>
       )}
     </CustomerShell>

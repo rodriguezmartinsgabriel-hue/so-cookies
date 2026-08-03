@@ -1,14 +1,7 @@
 import type { PricingRule } from '../rules/PricingRule';
+import { PricingPhase } from './PricingPhase';
 
-export enum PricingPhase {
-  BASE = 'BASE',
-  ITEM = 'ITEM',
-  ORDER = 'ORDER',
-  CUSTOMER = 'CUSTOMER',
-  PAYMENT = 'PAYMENT',
-  SHIPPING = 'SHIPPING',
-  POST_PROCESSING = 'POST_PROCESSING'
-}
+export { PricingPhase }
 
 export class RulePipeline {
   private phases = new Map<PricingPhase, PricingRule[]>();

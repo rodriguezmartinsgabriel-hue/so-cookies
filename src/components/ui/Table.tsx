@@ -48,7 +48,7 @@ export function Tr({ className, children, ...props }: HTMLAttributes<HTMLTableRo
 
 export function Th({ className, children, ...props }: ThHTMLAttributes<HTMLTableCellElement>) {
   return (
-    <th className={cn("px-4 py-3 font-medium", className)} {...props}>
+    <th scope="col" className={cn("px-4 py-3 font-medium", className)} {...props}>
       {children}
     </th>
   );
