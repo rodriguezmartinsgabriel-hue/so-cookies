@@ -43,14 +43,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <div className="h-screen flex overflow-hidden">
       <OfflineBanner />
       <Sidebar />
-      <div className="flex-1 flex flex-col min-w-0">
-        <div className="relative flex-1">
+      <div className="flex-1 flex flex-col min-w-0 min-h-0">
+        <div className="relative flex-1 min-h-0">
           <main
             ref={mainRef}
             className="h-full overflow-y-auto overscroll-contain pb-[calc(5rem+env(safe-area-inset-bottom))] lg:pb-0"
           >
             <PullToRefresh scrollRef={mainRef} onRefresh={emitDataRefresh}>
-              <div className="p-4 lg:p-6 max-w-7xl mx-auto pt-20">{children}</div>
+              <div className="px-4 lg:px-6 pt-20 pb-4 lg:pb-6 max-w-7xl mx-auto">{children}</div>
             </PullToRefresh>
           </main>
           <div className="absolute top-0 inset-x-0 z-40">
