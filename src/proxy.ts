@@ -1,11 +1,9 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { getHostRole } from "@/lib/hosts";
 
-export function proxy(request: NextRequest) {
-  const { pathname } = request.nextUrl;
-
-  const isPublicRoute =
-    pathname === "/login" ||
+function isCustomerRoute(pathname: string) {
+  return (
     pathname === "/cardapio" ||
     pathname.startsWith("/cardapio") ||
     pathname === "/carrinho" ||
@@ -17,16 +15,64 @@ export function proxy(request: NextRequest) {
     pathname === "/perfil" ||
     pathname.startsWith("/perfil") ||
     pathname === "/pedido" ||
-    pathname.startsWith("/pedido") ||
+    pathname.startsWith("/pedido")
+  );
+}
+
+function isCustomerApi(pathname: string) {
+  return pathname.startsWith("/api/public");
+}
+
+function isAuthRoute(pathname: string) {
+  return pathname === "/login" || pathname.startsWith("/api/auth");
+}
+
+function isInfraRoute(pathname: string) {
+  return (
     pathname.startsWith("/_next/static") ||
     pathname.startsWith("/serwist") ||
     pathname === "/favicon.ico" ||
     pathname === "/manifest.webmanifest" ||
-    pathname === "/~offline" ||
-    pathname.startsWith("/api/auth") ||
-    pathname.startsWith("/api/public") ||
+    pathname === "/~offline"
+  );
+}
+
+function isWebhookRoute(pathname: string) {
+  return (
     pathname.startsWith("/api/integrations/99food/webhook") ||
-    pathname.startsWith("/api/integrations/ifood/webhook");
+    pathname.startsWith("/api/integrations/ifood/webhook")
+  );
+}
+
+export function proxy(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+  const role = getHostRole(request.nextUrl.hostname);
+
+  if (role === "store") {
+    if (pathname === "/") {
+      return NextResponse.redirect(new URL("/cardapio", request.url));
+    }
+    if (
+      isCustomerRoute(pathname) ||
+      isCustomerApi(pathname) ||
+      isInfraRoute(pathname) ||
+      isWebhookRoute(pathname)
+    ) {
+      return NextResponse.next();
+    }
+    return new NextResponse("Not found", { status: 404 });
+  }
+
+  if (role === "staff" && (isCustomerRoute(pathname) || isCustomerApi(pathname))) {
+    return new NextResponse("Not found", { status: 404 });
+  }
+
+  const isPublicRoute =
+    isCustomerRoute(pathname) ||
+    isCustomerApi(pathname) ||
+    isAuthRoute(pathname) ||
+    isInfraRoute(pathname) ||
+    isWebhookRoute(pathname);
 
   if (isPublicRoute) {
     return NextResponse.next();
