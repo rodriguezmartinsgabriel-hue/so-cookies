@@ -277,3 +277,17 @@ export const createCustomerOrderSchema = z.object({
     qty: z.number().int().min(1).max(100, "Quantidade máxima por item é 100"),
   })).min(1, "Adicione ao menos 1 item").max(50, "Máximo de 50 itens por pedido"),
 })
+
+export const updateCustomerProfileSchema = z
+  .object({
+    name: z.string().trim().min(1, "Nome é obrigatório").optional(),
+    phone: z.string().optional().nullable(),
+    currentPassword: z.string().optional(),
+    newPassword: z.string().min(6, "Senha deve ter no mínimo 6 caracteres").optional(),
+  })
+  .refine((d) => (!!d.currentPassword) === (!!d.newPassword), {
+    message: "Para alterar a senha, informe a senha atual e a nova senha",
+  })
+  .refine((d) => d.name !== undefined || d.phone !== undefined || d.newPassword !== undefined, {
+    message: "Nada para atualizar",
+  })

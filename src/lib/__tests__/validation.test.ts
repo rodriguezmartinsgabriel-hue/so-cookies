@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { createOrderSchema, createSaleSchema, createIngredientSchema, createCashFlowSchema, createRecipeSchema, updateRecipeSchema, createDocumentSchema, updateDocumentSchema, createProductionSchema, createPriceTierSchema, createProductSchema } from "@/lib/validation"
+import { createOrderSchema, createSaleSchema, createIngredientSchema, createCashFlowSchema, createRecipeSchema, updateRecipeSchema, createDocumentSchema, updateDocumentSchema, createProductionSchema, createPriceTierSchema, createProductSchema, updateCustomerProfileSchema } from "@/lib/validation"
 
 describe("createOrderSchema", () => {
   it("accepts valid order", () => {
@@ -277,5 +277,42 @@ describe("createPriceTierSchema", () => {
       minQty: 1,
       price: -5,
     })).toThrow()
+  })
+})
+
+describe("updateCustomerProfileSchema", () => {
+  it("accepts name and phone update", () => {
+    const result = updateCustomerProfileSchema.parse({ name: "Ana", phone: "(11) 99999-9999" })
+    expect(result.name).toBe("Ana")
+    expect(result.phone).toBe("(11) 99999-9999")
+  })
+
+  it("accepts phone null", () => {
+    const result = updateCustomerProfileSchema.parse({ phone: null })
+    expect(result.phone).toBeNull()
+  })
+
+  it("rejects blank name", () => {
+    expect(() => updateCustomerProfileSchema.parse({ name: "   " })).toThrow()
+  })
+
+  it("rejects invalid email", () => {
+    expect(() => updateCustomerProfileSchema.parse({ email: "nao-e-email" })).toThrow()
+  })
+
+  it("rejects short new password", () => {
+    expect(() => updateCustomerProfileSchema.parse({ newPassword: "123" })).toThrow()
+  })
+
+  it("rejects new password without current password", () => {
+    expect(() => updateCustomerProfileSchema.parse({ newPassword: "senha123" })).toThrow()
+  })
+
+  it("rejects current password without new password", () => {
+    expect(() => updateCustomerProfileSchema.parse({ currentPassword: "velha123" })).toThrow()
+  })
+
+  it("rejects empty object (nothing to update)", () => {
+    expect(() => updateCustomerProfileSchema.parse({})).toThrow()
   })
 })
