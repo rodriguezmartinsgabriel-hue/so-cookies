@@ -23,6 +23,15 @@ function isCustomerApi(pathname: string) {
   return pathname.startsWith("/api/public");
 }
 
+function isProtectedCustomerRoute(pathname: string) {
+  return (
+    (pathname === "/cardapio" || pathname.startsWith("/cardapio/")) ||
+    (pathname === "/carrinho" || pathname.startsWith("/carrinho/")) ||
+    (pathname === "/perfil" || pathname.startsWith("/perfil/")) ||
+    (pathname === "/pedido" || pathname.startsWith("/pedido/"))
+  );
+}
+
 function isAuthRoute(pathname: string) {
   return pathname === "/login" || pathname.startsWith("/api/auth");
 }
@@ -52,12 +61,12 @@ export function proxy(request: NextRequest) {
     if (pathname === "/") {
       return NextResponse.redirect(new URL("/cardapio", request.url));
     }
-    if (
-      isCustomerRoute(pathname) ||
-      isCustomerApi(pathname) ||
-      isInfraRoute(pathname) ||
-      isWebhookRoute(pathname)
-    ) {
+    if (isCustomerRoute(pathname) || isCustomerApi(pathname) || isInfraRoute(pathname) || isWebhookRoute(pathname)) {
+      if (isProtectedCustomerRoute(pathname) && !request.cookies.has("socookie_customer")) {
+        const loginUrl = new URL("/entrar", request.url);
+        loginUrl.searchParams.set("next", pathname);
+        return NextResponse.redirect(loginUrl);
+      }
       return NextResponse.next();
     }
     return new NextResponse("Not found", { status: 404 });

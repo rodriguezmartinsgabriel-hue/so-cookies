@@ -76,22 +76,35 @@ export default function CarrinhoPage() {
 
   useEffect(() => {
     fetch("/api/public/catalog")
-      .then((r) => r.json())
+      .then((r) => {
+        if (r.status === 401) {
+          router.push(`/entrar?next=${encodeURIComponent("/carrinho")}`)
+          return null
+        }
+        return r.json()
+      })
       .then((data) => {
+        if (!data) return
         const map: Record<string, CatalogProduct> = {}
         for (const p of data) map[p.id] = p
         setProducts(map)
       })
       .finally(() => setLoading(false))
-  }, [])
+  }, [router])
 
   useEffect(() => {
     if (mode !== "entrega") return
     let cancelled = false
     fetch("/api/public/delivery-slots")
-      .then((r) => r.json())
+      .then((r) => {
+        if (r.status === 401) {
+          router.push(`/entrar?next=${encodeURIComponent("/carrinho")}`)
+          return null
+        }
+        return r.json()
+      })
       .then((data) => {
-        if (cancelled) return
+        if (cancelled || !data) return
         const next: DeliverySlot[] = data?.slots ?? []
         setSlots(next)
         setSelectedSlot((prev) =>
@@ -107,7 +120,7 @@ export default function CarrinhoPage() {
     return () => {
       cancelled = true
     }
-  }, [mode])
+  }, [mode, router])
 
   useEffect(() => {
     if (mode !== "entrega") return

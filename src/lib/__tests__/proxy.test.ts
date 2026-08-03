@@ -7,6 +7,10 @@ function req(url: string): NextRequest {
   return new NextRequest(url)
 }
 
+function reqWithCookie(url: string, cookie: string): NextRequest {
+  return new NextRequest(url, { headers: { cookie } })
+}
+
 describe("proxy host isolation (loja vs manager)", () => {
   beforeEach(() => {
     process.env.STORE_HOST = "store.example.com"
@@ -26,9 +30,23 @@ describe("proxy host isolation (loja vs manager)", () => {
     expect(res.headers.get("location")).toBe("http://store.example.com/cardapio")
   })
 
-  it("allows customer routes on the store host", () => {
-    for (const p of ["/entrar", "/cadastro", "/cardapio", "/carrinho", "/perfil", "/pedido/abc"]) {
+  it("allows auth customer routes on the store host without login", () => {
+    for (const p of ["/entrar", "/cadastro"]) {
       expect(proxy(req(`http://store.example.com${p}`)).status, p).toBe(200)
+    }
+  })
+
+  it("redirects protected customer routes to /entrar?next=... without login", () => {
+    for (const p of ["/cardapio", "/carrinho", "/perfil", "/pedido/abc"]) {
+      const res = proxy(req(`http://store.example.com${p}`))
+      expect(res.status, p).toBe(307)
+      expect(res.headers.get("location"), p).toBe(`http://store.example.com/entrar?next=${encodeURIComponent(p)}`)
+    }
+  })
+
+  it("allows protected customer routes on the store host with a customer cookie", () => {
+    for (const p of ["/cardapio", "/carrinho", "/perfil", "/pedido/abc"]) {
+      expect(proxy(reqWithCookie(`http://store.example.com${p}`, "socookie_customer=token")).status, p).toBe(200)
     }
   })
 
@@ -51,8 +69,9 @@ describe("proxy host isolation (loja vs manager)", () => {
   })
 
   it("distinguishes /pedido (cliente) from /pedidos (gestão)", () => {
-    expect(proxy(req("http://store.example.com/pedido/abc")).status).toBe(200)
+    expect(proxy(req("http://store.example.com/pedido/abc")).status).toBe(307)
     expect(proxy(req("http://store.example.com/pedidos")).status).toBe(404)
+    expect(proxy(reqWithCookie("http://store.example.com/pedido/abc", "socookie_customer=token")).status).toBe(200)
     expect(proxy(req("http://app.example.com/pedido/abc")).status).toBe(404)
   })
 

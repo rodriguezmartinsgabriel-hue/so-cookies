@@ -1,8 +1,11 @@
 import { NextResponse } from "next/server"
 import { getDeliverySlots } from "@/lib/delivery-scheduling"
+import { requireCustomer } from "@/lib/customer-auth"
 import { rateLimit } from "@/lib/rate-limit"
 
 export async function GET(request: Request) {
+  const { error } = await requireCustomer()
+  if (error) return error
   const limited = rateLimit(request, 60, 60_000)
   if (!limited.ok) {
     return NextResponse.json({ error: "Muitas tentativas. Tente novamente em instantes." }, { status: 429, headers: { "Retry-After": String(limited.retryAfterSeconds) } })

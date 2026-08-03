@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
+import { useRouter } from "next/navigation"
 import { Plus, Minus, Cookie } from "lucide-react"
 import NextImage from "next/image"
 import { CustomerShell } from "@/components/customer/CustomerShell"
@@ -22,6 +23,7 @@ const formatBRL = (v: number) =>
   v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
 
 export default function CardapioPage() {
+  const router = useRouter()
   const [products, setProducts] = useState<CatalogProduct[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
@@ -30,13 +32,19 @@ export default function CardapioPage() {
   useEffect(() => {
     fetch("/api/public/catalog")
       .then((r) => {
+        if (r.status === 401) {
+          router.push(`/entrar?next=${encodeURIComponent("/cardapio")}`)
+          return null
+        }
         if (!r.ok) throw new Error()
         return r.json()
       })
-      .then((data) => setProducts(data))
+      .then((data) => {
+        if (data) setProducts(data)
+      })
       .catch(() => setError(true))
       .finally(() => setLoading(false))
-  }, [])
+  }, [router])
 
   const grouped = useMemo(() => {
     const map = new Map<string, CatalogProduct[]>()
