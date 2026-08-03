@@ -30,14 +30,20 @@ export default function ReportCharts({ salesPerDay, channelData, statusData }: C
           <div className="h-56">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={salesPerDay} margin={{ top: 4, right: 8, bottom: 0, left: 8 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#E5DCCB" />
-                <XAxis dataKey="name" tick={{ fontSize: 10, fill: "#6B6156" }} tickLine={false} />
-                <YAxis tick={{ fontSize: 10, fill: "#6B6156" }} tickLine={false} width={54} />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--kraft)" />
+                <XAxis dataKey="name" tick={{ fontSize: 10, fill: "var(--muted)" }} tickLine={false} />
+                <YAxis tick={{ fontSize: 10, fill: "var(--muted)" }} tickLine={false} width={54} />
                 <Tooltip
                   formatter={(value) => [`R$ ${Number(value).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`, "Receita"]}
-                  labelStyle={{ color: "#111111" }}
+                  labelStyle={{ color: "var(--ink)" }}
+                  contentStyle={{
+                    background: "var(--paper)",
+                    border: "1px solid var(--line)",
+                    borderRadius: 8,
+                    color: "var(--ink)",
+                  }}
                 />
-                <Bar dataKey="total" fill="#111111" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="total" fill="var(--ink)" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>

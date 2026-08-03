@@ -24,7 +24,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   if (status === "loading") {
     return (
-      <div className="h-screen flex items-center justify-center bg-paper">
+      <div className="h-screen flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-4xl font-bold text-ink">só</h1>
           <p className="text-muted text-sm mt-2">Carregando...</p>
@@ -40,16 +40,23 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const handleLogout = () => signOut({ callbackUrl: "/login" });
 
   return (
-    <div className="h-screen flex overflow-hidden bg-paper">
+    <div className="h-screen flex overflow-hidden">
       <OfflineBanner />
       <Sidebar />
       <div className="flex-1 flex flex-col min-w-0">
-        <Header user={session?.user} onLogout={handleLogout} />
-        <main ref={mainRef} className="flex-1 overflow-y-auto overscroll-contain pb-[calc(5rem+env(safe-area-inset-bottom))] lg:pb-0">
-          <PullToRefresh scrollRef={mainRef} onRefresh={emitDataRefresh}>
-            <div className="p-4 lg:p-6 max-w-7xl mx-auto">{children}</div>
-          </PullToRefresh>
-        </main>
+        <div className="relative flex-1">
+          <main
+            ref={mainRef}
+            className="h-full overflow-y-auto overscroll-contain pb-[calc(5rem+env(safe-area-inset-bottom))] lg:pb-0"
+          >
+            <PullToRefresh scrollRef={mainRef} onRefresh={emitDataRefresh}>
+              <div className="p-4 lg:p-6 max-w-7xl mx-auto pt-20">{children}</div>
+            </PullToRefresh>
+          </main>
+          <div className="absolute top-0 inset-x-0 z-40">
+            <Header user={session?.user} onLogout={handleLogout} />
+          </div>
+        </div>
       </div>
       <BottomNav />
     </div>

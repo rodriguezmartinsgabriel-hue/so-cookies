@@ -4,6 +4,9 @@ import { signIn } from "next-auth/react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
+import { FormField } from "@/components/ui/FormField";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -50,51 +53,33 @@ export default function LoginPage() {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label
-              htmlFor="email"
-              className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5"
-            >
-              Email
-            </label>
-            <input
+          <FormField label="Email" htmlFor="email" required>
+            <Input
               id="email"
               name="email"
               type="email"
               placeholder="seu@email.com"
               required
-              className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink placeholder:text-kraft focus:outline-none focus:border-ink transition-colors"
             />
-          </div>
+          </FormField>
 
-          <div>
-            <label
-              htmlFor="password"
-              className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5"
-            >
-              Senha
-            </label>
-            <input
+          <FormField label="Senha" htmlFor="password" required>
+            <Input
               id="password"
               name="password"
               type="password"
               placeholder="••••••••"
               required
-              className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink placeholder:text-kraft focus:outline-none focus:border-ink transition-colors"
             />
-          </div>
+          </FormField>
 
           {error && (
             <p className="text-sm text-danger text-center">{error}</p>
           )}
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full h-12 bg-ink text-paper font-medium rounded-lg hover:bg-ink/90 transition-colors active:scale-[0.98] disabled:opacity-50"
-          >
+          <Button type="submit" size="lg" className="w-full" disabled={loading}>
             {loading ? "Entrando..." : "Entrar"}
-          </button>
+          </Button>
         </form>
 
         <p className="text-xs text-muted text-center">

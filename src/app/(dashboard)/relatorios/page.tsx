@@ -5,22 +5,24 @@ import dynamic from "next/dynamic"
 import { AppShell } from "@/components/layout/AppShell"
 import { Skeleton } from "@/components/ui/Skeleton"
 import { ErrorState } from "@/components/ui/ErrorState"
+import { Card } from "@/components/ui/Card"
+import { Button } from "@/components/ui/Button"
 import { useQueryData } from "@/hooks/useQueryData"
 import { REPORT_PERIODS, buildReportSummary } from "@/lib/reports"
 import { buildReportCsv, downloadCsv, fileStamp } from "@/lib/csv"
 import { TrendingUp, DollarSign, ShoppingCart, Package, Truck, FileDown, FileSpreadsheet, Loader2 } from "lucide-react"
 
-const COLORS = ["#C23B2E", "#E0A400", "#2F7A3E", "#111111"]
+const COLORS = ["var(--danger)", "var(--warning)", "var(--success)", "var(--ink)"]
 
 const ReportCharts = dynamic(() => import("@/components/charts/ReportCharts"), {
   ssr: false,
   loading: () => (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
       {Array.from({ length: 2 }).map((_, i) => (
-        <div key={i} className="border border-line rounded-lg bg-paper p-4 shadow-card">
+        <Card key={i} className="p-4">
           <Skeleton className="h-4 w-32 mb-4" />
           <Skeleton className="h-48" />
-        </div>
+        </Card>
       ))}
     </div>
   ),
@@ -79,13 +81,15 @@ export default function RelatoriosPage() {
           <div className="flex flex-wrap items-center gap-2">
             <div className="flex flex-wrap gap-1 border border-line rounded-lg bg-paper p-1">
               {REPORT_PERIODS.map((p) => (
-                <button
+                <Button
                   key={p.key}
                   onClick={() => setPeriodKey(p.key)}
-                  className={`h-8 px-3 rounded-md text-sm font-medium transition-colors ${period.key === p.key ? "bg-ink text-paper" : "text-muted hover:bg-cream"}`}
+                  size="sm"
+                  variant={period.key === p.key ? "primary" : "ghost"}
+                  className="rounded-md"
                 >
                   {p.label}
-                </button>
+                </Button>
               ))}
             </div>
             <button
@@ -112,55 +116,55 @@ export default function RelatoriosPage() {
           <div className="space-y-6">
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
               {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="border border-line rounded-lg bg-paper p-4 shadow-card">
+                <Card key={i} className="p-4">
                   <Skeleton className="h-4 w-16 mb-2" />
                   <Skeleton className="h-7 w-20" />
-                </div>
+                </Card>
               ))}
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {Array.from({ length: 2 }).map((_, i) => (
-                <div key={i} className="border border-line rounded-lg bg-paper p-4 shadow-card">
+                <Card key={i} className="p-4">
                   <Skeleton className="h-4 w-32 mb-4" />
                   <Skeleton className="h-48" />
-                </div>
+                </Card>
               ))}
             </div>
           </div>
         ) : (
           <>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-              <div className="border border-line rounded-lg bg-paper p-4 shadow-card">
+              <Card className="p-4">
                 <div className="flex items-center gap-2 mb-2">
                   <DollarSign className="w-4 h-4 text-muted" />
                   <span className="text-xs text-muted uppercase">Receita</span>
                 </div>
                 <p className="text-2xl font-bold text-ink">{summary.revenue.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</p>
-              </div>
-              <div className="border border-line rounded-lg bg-paper p-4 shadow-card">
+              </Card>
+              <Card className="p-4">
                 <div className="flex items-center gap-2 mb-2">
                   <ShoppingCart className="w-4 h-4 text-muted" />
                   <span className="text-xs text-muted uppercase">Pedidos</span>
                 </div>
                 <p className="text-2xl font-bold text-ink">{summary.orderCount}</p>
-              </div>
-              <div className="border border-line rounded-lg bg-paper p-4 shadow-card">
+              </Card>
+              <Card className="p-4">
                 <div className="flex items-center gap-2 mb-2">
                   <Package className="w-4 h-4 text-muted" />
                   <span className="text-xs text-muted uppercase">Ticket Médio</span>
                 </div>
                 <p className="text-2xl font-bold text-ink">R$ {summary.averageTicket.toFixed(2)}</p>
-              </div>
-              <div className="border border-line rounded-lg bg-paper p-4 shadow-card">
+              </Card>
+              <Card className="p-4">
                 <div className="flex items-center gap-2 mb-2">
                   <TrendingUp className="w-4 h-4 text-muted" />
                   <span className="text-xs text-muted uppercase">Vendas</span>
                 </div>
                 <p className="text-2xl font-bold text-ink">{summary.saleCount}</p>
-              </div>
+              </Card>
             </div>
 
-            <div className="border border-line rounded-lg bg-paper p-4 shadow-card">
+            <Card className="p-4">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
                   <Truck className="w-4 h-4 text-info" />
@@ -185,11 +189,11 @@ export default function RelatoriosPage() {
                   </div>
                 </div>
               </div>
-            </div>
+            </Card>
 
             <ReportCharts salesPerDay={summary.overTime} channelData={channelData} statusData={summary.statuses} />
 
-            <div className="border border-line rounded-lg bg-paper p-4 shadow-card">
+            <Card className="p-4">
               <h2 className="text-sm font-semibold text-ink uppercase tracking-wide mb-4">
                 Top Produtos
               </h2>
@@ -215,7 +219,7 @@ export default function RelatoriosPage() {
                   <p className="text-center text-muted text-sm py-8">Sem dados</p>
                 )}
               </div>
-            </div>
+            </Card>
           </>
         )}
       </div>

@@ -1,12 +1,18 @@
 import "./globals.css"
 import type { Metadata, Viewport } from "next"
-import { Space_Grotesk } from "next/font/google"
+import { Inter, Space_Grotesk } from "next/font/google"
 import Providers from "./providers"
+
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-inter",
+  display: "swap",
+})
 
 const spaceGrotesk = Space_Grotesk({
   subsets: ["latin"],
   weight: ["300", "400", "500", "600", "700"],
-  variable: "--font-ui",
+  variable: "--font-grotesk",
   display: "swap",
 })
 
@@ -44,7 +50,10 @@ export const metadata: Metadata = {
 }
 
 export const viewport: Viewport = {
-  themeColor: "#111111",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#111111" },
+    { media: "(prefers-color-scheme: dark)", color: "#1a1816" },
+  ],
   viewportFit: "cover",
   interactiveWidget: "resizes-content",
 }
@@ -55,8 +64,12 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="pt-BR" className={`${spaceGrotesk.variable} h-full antialiased`} suppressHydrationWarning>
-      <body className="h-full font-ui">
+    <html
+      lang="pt-BR"
+      className={`${inter.variable} ${spaceGrotesk.variable} h-full antialiased`}
+      suppressHydrationWarning
+    >
+      <body className="h-full font-body">
         <link
           rel="apple-touch-startup-image"
           media="(device-width: 393px) and (device-height: 852px)"

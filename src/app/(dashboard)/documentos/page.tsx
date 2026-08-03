@@ -2,13 +2,17 @@
 
 import { useState } from "react";
 import { useConfirm } from "@/hooks/useConfirm";
-import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { useRole } from "@/hooks/useRole";
 import { useQueryData } from "@/hooks/useQueryData";
 import { AppShell } from "@/components/layout/AppShell";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { ErrorState } from "@/components/ui/ErrorState";
-import { Plus, X, Edit, Trash2, FileText, Search, ChevronDown, ChevronUp, Eye, ImagePlus, Paperclip, Download, ExternalLink } from "lucide-react";
+import { Card } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
+import { FormField } from "@/components/ui/FormField";
+import { Modal } from "@/components/ui/Modal";
+import { Plus, Edit, Trash2, FileText, Search, ChevronDown, ChevronUp, Eye, ImagePlus, Paperclip, Download, ExternalLink } from "lucide-react";
 import NextImage from "next/image";
 import { repository } from "@/lib/repository";
 import { processAttachment, isImageDataUrl, isPdfDataUrl, fileTypeLabel, formatBytes, dataUrlSize, fileNameFromDataUrl } from "@/lib/files";
@@ -36,10 +40,8 @@ export default function DocumentosPage() {
   const [search, setSearch] = useState("");
   const [expanded, setExpanded] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
-  const modalRef = useFocusTrap(showModal);
   const [editingDoc, setEditingDoc] = useState<Document | null>(null);
   const [viewingDoc, setViewingDoc] = useState<Document | null>(null);
-  const viewRef = useFocusTrap(!!viewingDoc);
 
   const [form, setForm] = useState({
     title: "",
@@ -174,13 +176,10 @@ export default function DocumentosPage() {
             </p>
           </div>
           {canEdit && (
-            <button
-              onClick={openNew}
-              className="flex items-center gap-2 h-10 px-4 bg-ink text-paper rounded-lg text-sm font-medium hover:bg-ink/90 transition-colors"
-            >
+            <Button onClick={openNew}>
               <Plus className="w-4 h-4" />
               Novo Documento
-            </button>
+            </Button>
           )}
         </div>
 
@@ -208,12 +207,12 @@ export default function DocumentosPage() {
 
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
-          <input
+          <Input
             type="text"
             placeholder="Buscar documentos..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full h-10 pl-10 pr-3 border border-line rounded-lg text-sm text-ink placeholder:text-kraft focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink transition-colors"
+            className="pl-10 pr-3"
           />
         </div>
 
@@ -224,7 +223,7 @@ export default function DocumentosPage() {
         {loading ? (
           <div className="space-y-2">
             {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="border border-line rounded-lg bg-paper shadow-card overflow-hidden p-4">
+              <Card key={i} className="p-4">
                 <div className="flex items-center gap-3">
                   <Skeleton className="h-8 w-8 rounded-lg shrink-0" />
                   <div className="flex-1">
@@ -237,7 +236,7 @@ export default function DocumentosPage() {
                     <Skeleton className="h-8 w-8" />
                   </div>
                 </div>
-              </div>
+              </Card>
             ))}
           </div>
         ) : (
@@ -245,7 +244,7 @@ export default function DocumentosPage() {
             {filtered.map((doc) => {
               const cat = CATEGORY_MAP[doc.category] || CATEGORIES[5];
               return (
-                <div key={doc.id} className="border border-line rounded-lg bg-paper shadow-card overflow-hidden">
+                <Card key={doc.id} padded={false} className="overflow-hidden">
                   <div className="flex items-center gap-2 p-4">
                     <button
                       onClick={() => setExpanded(expanded === doc.id ? null : doc.id)}
@@ -286,17 +285,17 @@ export default function DocumentosPage() {
                       )}
                     </button>
                     <div className="flex items-center gap-1 shrink-0">
-                      <button onClick={() => openView(doc)} aria-label="Visualizar" className="p-2 rounded-md hover:bg-cream text-muted transition-colors">
+                      <Button variant="ghost" size="icon" onClick={() => openView(doc)} aria-label="Visualizar">
                         <Eye className="w-4 h-4" />
-                      </button>
+                      </Button>
                       {canEdit && (
                         <>
-                          <button onClick={() => openEdit(doc)} aria-label="Editar" className="p-2 rounded-md hover:bg-cream text-muted transition-colors">
+                          <Button variant="ghost" size="icon" onClick={() => openEdit(doc)} aria-label="Editar">
                             <Edit className="w-4 h-4" />
-                          </button>
-                          <button onClick={() => handleDelete(doc.id)} aria-label="Excluir" className="p-2 rounded-md hover:bg-cream text-danger transition-colors">
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                          </Button>
+                          <Button variant="ghost" size="icon" onClick={() => handleDelete(doc.id)} aria-label="Excluir">
+                            <Trash2 className="w-4 h-4 text-danger" />
+                          </Button>
                         </>
                       )}
                     </div>
@@ -344,7 +343,7 @@ export default function DocumentosPage() {
                       </div>
                     </div>
                   )}
-                </div>
+                </Card>
               );
             })}
             {filtered.length === 0 && (
@@ -355,193 +354,185 @@ export default function DocumentosPage() {
           </div>
         )}
 
-        {showModal && (
-          <div className="fixed inset-0 z-50 bg-ink/30 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="documento-title">
-            <div ref={modalRef} className="bg-paper rounded-xl border border-line shadow-lg w-full max-w-lg max-h-[90vh] overflow-y-auto">
-              <div className="flex items-center justify-between p-4 border-b border-line sticky top-0 bg-paper z-10">
-                <h3 id="documento-title" className="text-lg font-bold text-ink">{editingDoc ? "Editar Documento" : "Novo Documento"}</h3>
-                <button onClick={() => { setShowModal(false); resetForm(); }} data-close-modal aria-label="Fechar" className="p-1.5 rounded-md hover:bg-cream text-muted"><X className="w-5 h-5" /></button>
-              </div>
-              <div className="p-4 space-y-4">
-                <div>
-                  <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Título *</label>
-                  <input type="text" placeholder="Ex: Higiene das mãos" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink placeholder:text-kraft focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink transition-colors" />
+        <Modal
+          open={showModal}
+          onClose={() => { setShowModal(false); resetForm(); }}
+          title={editingDoc ? "Editar Documento" : "Novo Documento"}
+          size="md"
+          footer={
+            <div className="flex flex-wrap gap-2">
+              {saveError && (
+                <p className="text-xs text-danger w-full">{saveError}</p>
+              )}
+              <Button variant="secondary" className="flex-1" onClick={() => { setShowModal(false); resetForm(); }}>Cancelar</Button>
+              <Button className="flex-1" onClick={handleSave}>
+                {editingDoc ? "Atualizar" : "Salvar"}
+              </Button>
+            </div>
+          }
+        >
+          <div className="p-4 space-y-4">
+            <FormField label="Título" required htmlFor="documento-title-input">
+              <Input id="documento-title-input" type="text" placeholder="Ex: Higiene das mãos" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
+            </FormField>
+            <FormField label="Categoria" required htmlFor="documento-categoria">
+              <select id="documento-categoria" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink transition-colors bg-paper">
+                {CATEGORIES.map((cat) => (
+                  <option key={cat.value} value={cat.value}>{cat.label}</option>
+                ))}
+              </select>
+            </FormField>
+            <FormField label="Arquivo (foto ou PDF)">
+              <div className="flex items-center gap-3">
+                <div className="w-16 h-16 rounded-lg overflow-hidden bg-cream border border-line flex items-center justify-center shrink-0">
+                  {form.fileUrl ? (
+                    isImageDataUrl(form.fileUrl) ? (
+                      <NextImage src={form.fileUrl} alt="Prévia do arquivo" width={64} height={64} unoptimized className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex flex-col items-center justify-center text-danger">
+                        <FileText className="w-6 h-6" />
+                        <span className="text-[9px] font-semibold mt-0.5">PDF</span>
+                      </div>
+                    )
+                  ) : (
+                    <Paperclip className="w-6 h-6 text-kraft" />
+                  )}
                 </div>
-                <div>
-                  <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Categoria *</label>
-                  <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink transition-colors bg-paper">
-                    {CATEGORIES.map((cat) => (
-                      <option key={cat.value} value={cat.value}>{cat.label}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Arquivo (foto ou PDF)</label>
-                  <div className="flex items-center gap-3">
-                    <div className="w-16 h-16 rounded-lg overflow-hidden bg-cream border border-line flex items-center justify-center shrink-0">
-                      {form.fileUrl ? (
-                        isImageDataUrl(form.fileUrl) ? (
-                          <NextImage src={form.fileUrl} alt="Prévia do arquivo" width={64} height={64} unoptimized className="w-full h-full object-cover" />
-                        ) : (
-                          <div className="w-full h-full flex flex-col items-center justify-center text-danger">
-                            <FileText className="w-6 h-6" />
-                            <span className="text-[9px] font-semibold mt-0.5">PDF</span>
-                          </div>
-                        )
-                      ) : (
-                        <Paperclip className="w-6 h-6 text-kraft" />
-                      )}
-                    </div>
-                    <div className="flex flex-col gap-1.5 flex-1 min-w-0">
-                      {form.fileUrl ? (
-                        <>
-                          <p className="text-xs font-medium text-ink truncate">{form.fileName || fileNameFromDataUrl(form.fileUrl)}</p>
-                          <p className="text-xs text-muted">{formatBytes(form.fileSize || dataUrlSize(form.fileUrl))}</p>
-                          <div className="flex gap-2">
-                            <label className="flex items-center gap-1.5 h-8 px-3 rounded-lg border border-line text-xs font-medium text-ink hover:bg-cream transition-colors cursor-pointer">
-                              <ImagePlus className="w-4 h-4" />
-                              {fileLoading ? "Processando..." : "Trocar"}
-                              <input type="file" accept="image/*,application/pdf" onChange={handleFileSelect} className="hidden" disabled={fileLoading} />
-                            </label>
-                            <button onClick={removeFile} className="flex items-center gap-1 text-xs font-medium text-danger hover:underline">
-                              <Trash2 className="w-3.5 h-3.5" /> Remover
-                            </button>
-                          </div>
-                        </>
-                      ) : (
-                        <label className="flex items-center gap-2 h-10 px-3 rounded-lg border border-line text-xs font-medium text-ink hover:bg-cream transition-colors cursor-pointer">
+                <div className="flex flex-col gap-1.5 flex-1 min-w-0">
+                  {form.fileUrl ? (
+                    <>
+                      <p className="text-xs font-medium text-ink truncate">{form.fileName || fileNameFromDataUrl(form.fileUrl)}</p>
+                      <p className="text-xs text-muted">{formatBytes(form.fileSize || dataUrlSize(form.fileUrl))}</p>
+                      <div className="flex gap-2">
+                        <label className="flex items-center gap-1.5 h-8 px-3 rounded-lg border border-line text-xs font-medium text-ink hover:bg-cream transition-colors cursor-pointer">
                           <ImagePlus className="w-4 h-4" />
-                          {fileLoading ? "Processando..." : "Enviar foto ou PDF"}
+                          {fileLoading ? "Processando..." : "Trocar"}
                           <input type="file" accept="image/*,application/pdf" onChange={handleFileSelect} className="hidden" disabled={fileLoading} />
                         </label>
-                      )}
-                    </div>
-                  </div>
-                  {fileError && <p className="text-xs text-danger mt-2">{fileError}</p>}
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Descrição</label>
-                  <input type="text" placeholder="Resumo do documento" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink placeholder:text-kraft focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink transition-colors" />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Conteúdo</label>
-                  <textarea placeholder="Conteúdo do documento (fichas técnicas, procedimentos, etc.)" value={form.content} onChange={(e) => setForm({ ...form, content: e.target.value })} rows={8} className="w-full px-3 py-2 border border-line rounded-lg text-sm text-ink placeholder:text-kraft focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink transition-colors resize-none" />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Tags</label>
-                  <input type="text" placeholder="Separar por vírgulas: cookie, higiene, EPI" value={form.tags} onChange={(e) => setForm({ ...form, tags: e.target.value })} className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink placeholder:text-kraft focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink transition-colors" />
+                        <button onClick={removeFile} className="flex items-center gap-1 text-xs font-medium text-danger hover:underline">
+                          <Trash2 className="w-3.5 h-3.5" /> Remover
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <label className="flex items-center gap-2 h-10 px-3 rounded-lg border border-line text-xs font-medium text-ink hover:bg-cream transition-colors cursor-pointer">
+                      <ImagePlus className="w-4 h-4" />
+                      {fileLoading ? "Processando..." : "Enviar foto ou PDF"}
+                      <input type="file" accept="image/*,application/pdf" onChange={handleFileSelect} className="hidden" disabled={fileLoading} />
+                    </label>
+                  )}
                 </div>
               </div>
-              <div className="p-4 border-t border-line flex flex-wrap gap-2 sticky bottom-0 bg-paper">
-                {saveError && (
-                  <p className="text-xs text-danger w-full">{saveError}</p>
-                )}
-                <button onClick={() => { setShowModal(false); resetForm(); }} className="flex-1 h-10 border border-line rounded-lg text-sm font-medium text-ink hover:bg-cream transition-colors">Cancelar</button>
-                <button onClick={handleSave} className="flex-1 h-10 bg-ink text-paper rounded-lg text-sm font-medium hover:bg-ink/90 transition-colors">
-                  {editingDoc ? "Atualizar" : "Salvar"}
-                </button>
-              </div>
-            </div>
+              {fileError && <p className="text-xs text-danger mt-2">{fileError}</p>}
+            </FormField>
+            <FormField label="Descrição" htmlFor="documento-descricao">
+              <Input id="documento-descricao" type="text" placeholder="Resumo do documento" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
+            </FormField>
+            <FormField label="Conteúdo" htmlFor="documento-conteudo">
+              <textarea id="documento-conteudo" placeholder="Conteúdo do documento (fichas técnicas, procedimentos, etc.)" value={form.content} onChange={(e) => setForm({ ...form, content: e.target.value })} rows={8} className="w-full px-3 py-2 border border-line rounded-lg text-sm text-ink placeholder:text-kraft focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink transition-colors resize-none" />
+            </FormField>
+            <FormField label="Tags" htmlFor="documento-tags">
+              <Input id="documento-tags" type="text" placeholder="Separar por vírgulas: cookie, higiene, EPI" value={form.tags} onChange={(e) => setForm({ ...form, tags: e.target.value })} />
+            </FormField>
           </div>
-        )}
+        </Modal>
 
         {viewingDoc && (
-          <div className="fixed inset-0 z-50 bg-ink/30 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="view-documento-title">
-            <div ref={viewRef} className="bg-paper rounded-xl border border-line shadow-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-              <div className="flex items-center justify-between p-4 border-b border-line sticky top-0 bg-paper z-10">
-                <div className="flex items-center gap-2">
-                  <div className={`w-8 h-8 rounded-lg ${(CATEGORY_MAP[viewingDoc.category] || CATEGORIES[5]).color} text-paper flex items-center justify-center overflow-hidden`}>
-                    {viewingDoc.fileUrl && isImageDataUrl(viewingDoc.fileUrl) ? (
-                      <NextImage src={viewingDoc.fileUrl} alt={viewingDoc.title} width={32} height={32} unoptimized className="w-full h-full object-cover" />
-                    ) : (
-                      <FileText className="w-4 h-4" />
-                    )}
-                  </div>
-                  <div>
-                    <h3 id="view-documento-title" className="text-lg font-bold text-ink">{viewingDoc.title}</h3>
-                    <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-cream text-muted">
-                      {(CATEGORY_MAP[viewingDoc.category] || CATEGORIES[5]).label}
-                    </span>
-                  </div>
-                </div>
-                <button onClick={() => setViewingDoc(null)} data-close-modal aria-label="Fechar" className="p-1.5 rounded-md hover:bg-cream text-muted"><X className="w-5 h-5" /></button>
-              </div>
-              <div className="p-4 space-y-4">
-                {viewingDoc.fileUrl && (
-                  <div>
-                    <div className="flex items-center justify-between mb-1">
-                      <p className="text-xs font-semibold text-muted uppercase tracking-wide">Anexo · {fileTypeLabel(viewingDoc.fileUrl)}</p>
-                      <div className="flex items-center gap-3">
-                        <a
-                          href={viewingDoc.fileUrl}
-                          download={fileNameFromDataUrl(viewingDoc.fileUrl)}
-                          className="text-xs font-medium text-info hover:underline flex items-center gap-1"
-                        >
-                          <Download className="w-3 h-3" /> Baixar
-                        </a>
-                        <a
-                          href={viewingDoc.fileUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-xs font-medium text-info hover:underline flex items-center gap-1"
-                        >
-                          <ExternalLink className="w-3 h-3" /> Nova aba
-                        </a>
-                      </div>
-                    </div>
-                    {isPdfDataUrl(viewingDoc.fileUrl) ? (
-                      <iframe
-                        src={viewingDoc.fileUrl}
-                        title={viewingDoc.title}
-                        className="w-full h-[70vh] rounded-lg border border-line bg-cream"
-                      />
-                    ) : (
-                      <div className="rounded-lg overflow-hidden border border-line bg-paper">
-                        <NextImage src={viewingDoc.fileUrl} alt={viewingDoc.title} width={800} height={600} unoptimized className="w-full max-h-[70vh] object-contain" />
-                      </div>
-                    )}
-                  </div>
-                )}
-                {viewingDoc.description && (
-                  <div>
-                    <p className="text-xs font-semibold text-muted uppercase tracking-wide mb-1">Descrição</p>
-                    <p className="text-sm text-ink">{viewingDoc.description}</p>
-                  </div>
-                )}
-                {viewingDoc.content && (
-                  <div>
-                    <p className="text-xs font-semibold text-muted uppercase tracking-wide mb-1">Conteúdo</p>
-                    <div className="text-sm text-ink whitespace-pre-wrap bg-cream/30 rounded-lg p-4 border border-line">
-                      {viewingDoc.content}
-                    </div>
-                  </div>
-                )}
-                {viewingDoc.tags && (
-                  <div>
-                    <p className="text-xs font-semibold text-muted uppercase tracking-wide mb-1">Tags</p>
-                    <div className="flex flex-wrap gap-1">
-                      {viewingDoc.tags.split(",").map((tag: string, i: number) => (
-                        <span key={i} className="text-xs px-2 py-1 rounded-full bg-cream text-muted">{tag.trim()}</span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                <div className="text-xs text-muted border-t border-line pt-3">
-                  Criado em {new Date(viewingDoc.createdAt).toLocaleDateString("pt-BR")} às {new Date(viewingDoc.createdAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
-                </div>
-              </div>
-              <div className="p-4 border-t border-line flex gap-2 sticky bottom-0 bg-paper">
+          <Modal
+            open={!!viewingDoc}
+            onClose={() => setViewingDoc(null)}
+            title={viewingDoc.title}
+            size="lg"
+            footer={
+              <div className="flex gap-2">
                 {canEdit && (
-                  <button onClick={() => { setViewingDoc(null); openEdit(viewingDoc); }} className="flex-1 h-10 border border-line rounded-lg text-sm font-medium text-ink hover:bg-cream transition-colors flex items-center justify-center gap-2">
+                  <Button variant="secondary" className="flex-1" onClick={() => { setViewingDoc(null); openEdit(viewingDoc); }}>
                     <Edit className="w-4 h-4" /> Editar
-                  </button>
+                  </Button>
                 )}
-                <button onClick={() => setViewingDoc(null)} className="flex-1 h-10 bg-ink text-paper rounded-lg text-sm font-medium hover:bg-ink/90 transition-colors">
+                <Button className="flex-1" onClick={() => setViewingDoc(null)}>
                   Fechar
-                </button>
+                </Button>
+              </div>
+            }
+          >
+            <div className="p-4 space-y-4">
+              <div className="flex items-center gap-2">
+                <div className={`w-8 h-8 rounded-lg ${(CATEGORY_MAP[viewingDoc.category] || CATEGORIES[5]).color} text-paper flex items-center justify-center overflow-hidden shrink-0`}>
+                  {viewingDoc.fileUrl && isImageDataUrl(viewingDoc.fileUrl) ? (
+                    <NextImage src={viewingDoc.fileUrl} alt={viewingDoc.title} width={32} height={32} unoptimized className="w-full h-full object-cover" />
+                  ) : (
+                    <FileText className="w-4 h-4" />
+                  )}
+                </div>
+                <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-cream text-muted">
+                  {(CATEGORY_MAP[viewingDoc.category] || CATEGORIES[5]).label}
+                </span>
+              </div>
+              {viewingDoc.fileUrl && (
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <p className="text-xs font-semibold text-muted uppercase tracking-wide">Anexo · {fileTypeLabel(viewingDoc.fileUrl)}</p>
+                    <div className="flex items-center gap-3">
+                      <a
+                        href={viewingDoc.fileUrl}
+                        download={fileNameFromDataUrl(viewingDoc.fileUrl)}
+                        className="text-xs font-medium text-info hover:underline flex items-center gap-1"
+                      >
+                        <Download className="w-3 h-3" /> Baixar
+                      </a>
+                      <a
+                        href={viewingDoc.fileUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs font-medium text-info hover:underline flex items-center gap-1"
+                      >
+                        <ExternalLink className="w-3 h-3" /> Nova aba
+                      </a>
+                    </div>
+                  </div>
+                  {isPdfDataUrl(viewingDoc.fileUrl) ? (
+                    <iframe
+                      src={viewingDoc.fileUrl}
+                      title={viewingDoc.title}
+                      className="w-full h-[70vh] rounded-lg border border-line bg-cream"
+                    />
+                  ) : (
+                    <div className="rounded-lg overflow-hidden border border-line bg-paper">
+                      <NextImage src={viewingDoc.fileUrl} alt={viewingDoc.title} width={800} height={600} unoptimized className="w-full max-h-[70vh] object-contain" />
+                    </div>
+                  )}
+                </div>
+              )}
+              {viewingDoc.description && (
+                <div>
+                  <p className="text-xs font-semibold text-muted uppercase tracking-wide mb-1">Descrição</p>
+                  <p className="text-sm text-ink">{viewingDoc.description}</p>
+                </div>
+              )}
+              {viewingDoc.content && (
+                <div>
+                  <p className="text-xs font-semibold text-muted uppercase tracking-wide mb-1">Conteúdo</p>
+                  <div className="text-sm text-ink whitespace-pre-wrap bg-cream/30 rounded-lg p-4 border border-line">
+                    {viewingDoc.content}
+                  </div>
+                </div>
+              )}
+              {viewingDoc.tags && (
+                <div>
+                  <p className="text-xs font-semibold text-muted uppercase tracking-wide mb-1">Tags</p>
+                  <div className="flex flex-wrap gap-1">
+                    {viewingDoc.tags.split(",").map((tag: string, i: number) => (
+                      <span key={i} className="text-xs px-2 py-1 rounded-full bg-cream text-muted">{tag.trim()}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+              <div className="text-xs text-muted border-t border-line pt-3">
+                Criado em {new Date(viewingDoc.createdAt).toLocaleDateString("pt-BR")} às {new Date(viewingDoc.createdAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
               </div>
             </div>
-          </div>
+          </Modal>
         )}
       </div>
         {dialog}

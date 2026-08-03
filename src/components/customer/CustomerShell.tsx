@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { ShoppingBag, User, LayoutGrid } from "lucide-react"
+import { GlassSurface } from "@/components/ui/GlassSurface"
 
 export function CustomerShell({
   children,
@@ -16,22 +17,26 @@ export function CustomerShell({
 
   if (isAuthPage) {
     return (
-      <div className="min-h-screen bg-cream">
-        <header className="sticky top-0 z-40 bg-paper/95 backdrop-blur border-b border-line">
+      <div className="min-h-screen">
+        <GlassSurface
+          as="header"
+          tone="strong"
+          className="sticky top-0 z-40 rounded-none"
+        >
           <div className="max-w-md mx-auto px-4 h-14 flex items-center gap-3">
             <Link href="/cardapio" className="font-bold text-ink">
               Só Cookies & Café
             </Link>
           </div>
-        </header>
+        </GlassSurface>
         <main className="max-w-md mx-auto px-4 py-6">{children}</main>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-cream">
-      <header className="sticky top-0 z-40 bg-paper/95 backdrop-blur border-b border-line">
+    <div className="min-h-screen">
+      <GlassSurface as="header" tone="strong" className="sticky top-0 z-40 rounded-none">
         <div className="max-w-md mx-auto px-4 h-14 flex items-center justify-between">
           <Link href="/cardapio" className="font-bold text-ink">
             Só Cookies & Café
@@ -49,16 +54,16 @@ export function CustomerShell({
             )}
           </Link>
         </div>
-      </header>
+      </GlassSurface>
 
-      <main className="max-w-md mx-auto px-4 py-4 pb-24">{children}</main>
+      <main className="max-w-md mx-auto px-4 py-4 pb-28">{children}</main>
 
-      <nav className="fixed bottom-0 left-0 right-0 z-40 bg-paper border-t border-line pb-[env(safe-area-inset-bottom)]">
-        <div className="max-w-md mx-auto flex items-center justify-around h-16">
+      <nav className="fixed bottom-0 left-0 right-0 z-40 px-3 pb-[calc(env(safe-area-inset-bottom)+12px)] pointer-events-none">
+        <GlassSurface tone="strong" className="max-w-md mx-auto flex items-center justify-around h-16 rounded-2xl pointer-events-auto animate-fade-in-up">
           <NavLink href="/cardapio" label="Cardápio" icon={LayoutGrid} pathname={pathname} />
           <NavLink href="/carrinho" label="Carrinho" icon={ShoppingBag} pathname={pathname} badge={cartCount} />
           <NavLink href="/perfil" label="Conta" icon={User} pathname={pathname} />
-        </div>
+        </GlassSurface>
       </nav>
     </div>
   )

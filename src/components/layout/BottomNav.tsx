@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Home, ShoppingBag, DollarSign, Package, BarChart3 } from "lucide-react";
+import { GlassSurface } from "@/components/ui/GlassSurface";
 
 const navItems = [
   { href: "/", label: "Home", icon: Home },
@@ -16,8 +17,8 @@ export function BottomNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-paper border-t border-line pb-[env(safe-area-inset-bottom)]">
-      <div className="flex items-center justify-between h-16 px-1">
+    <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 px-3 pb-[calc(env(safe-area-inset-bottom)+12px)] pointer-events-none">
+      <GlassSurface tone="strong" className="max-w-md mx-auto rounded-2xl flex items-center justify-between h-16 px-1 pointer-events-auto animate-fade-in-up">
         {navItems.map((item) => {
           const isActive =
             pathname === item.href ||
@@ -52,7 +53,7 @@ export function BottomNav() {
             </Link>
           );
         })}
-      </div>
+      </GlassSurface>
     </nav>
   );
 }

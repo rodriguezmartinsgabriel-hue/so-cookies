@@ -4,6 +4,10 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { LogOut, User, ChevronRight, Package, Pencil, X, Check, Lock } from "lucide-react"
 import { CustomerShell } from "@/components/customer/CustomerShell"
+import { Card } from "@/components/ui/Card"
+import { Button } from "@/components/ui/Button"
+import { Input } from "@/components/ui/Input"
+import { FormField } from "@/components/ui/FormField"
 
 type Profile = {
   id: string
@@ -42,8 +46,6 @@ const statusLabel: Record<string, string> = {
 
 const formatBRL = (v: number) =>
   v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
-
-const inputClass = "w-full h-10 px-3 border border-line rounded-lg text-sm text-ink placeholder:text-kraft focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink transition-colors"
 
 export default function PerfilPage() {
   const router = useRouter()
@@ -139,16 +141,13 @@ export default function PerfilPage() {
         {loading && <div className="text-center py-12 text-muted">Carregando...</div>}
 
         {!loading && !profile && (
-          <div className="text-center py-12 border border-dashed border-line rounded-lg">
+          <Card padded={false} className="text-center py-12">
             <User className="w-8 h-8 mx-auto mb-2 text-muted" />
             <p className="text-muted text-sm">Você não está logado</p>
-            <button
-              onClick={() => router.push("/entrar")}
-              className="mt-3 text-sm px-4 py-2 bg-ink text-paper rounded-lg font-medium hover:bg-ink/90 transition-colors"
-            >
+            <Button variant="primary" size="sm" className="mt-3" onClick={() => router.push("/entrar")}>
               Entrar
-            </button>
-          </div>
+            </Button>
+          </Card>
         )}
 
         {!loading && profile && (
@@ -159,32 +158,33 @@ export default function PerfilPage() {
               </div>
             )}
 
-            <div className="border border-line rounded-lg bg-paper p-4 shadow-card">
+            <Card>
               {editing ? (
                 <div className="space-y-3">
-                  <div>
-                    <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Nome</label>
-                    <input type="text" value={editName} onChange={(e) => setEditName(e.target.value)} className={inputClass} />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Telefone</label>
-                    <input type="text" value={editPhone} onChange={(e) => setEditPhone(e.target.value)} placeholder="(11) 99999-9999" className={inputClass} />
-                  </div>
+                  <FormField label="Nome">
+                    <Input type="text" value={editName} onChange={(e) => setEditName(e.target.value)} />
+                  </FormField>
+                  <FormField label="Telefone">
+                    <Input type="text" value={editPhone} onChange={(e) => setEditPhone(e.target.value)} placeholder="(11) 99999-9999" />
+                  </FormField>
                   <div className="flex gap-2">
-                    <button
+                    <Button
+                      variant="secondary"
+                      size="md"
                       onClick={() => setEditing(false)}
                       disabled={saving}
-                      className="flex items-center justify-center gap-1.5 h-10 px-3 border border-line rounded-lg text-sm font-medium text-ink hover:bg-cream transition-colors"
                     >
                       <X className="w-4 h-4" /> Cancelar
-                    </button>
-                    <button
+                    </Button>
+                    <Button
+                      variant="primary"
+                      size="md"
+                      className="flex-1"
                       onClick={handleSaveProfile}
                       disabled={saving}
-                      className="flex items-center justify-center gap-1.5 flex-1 h-10 bg-ink text-paper rounded-lg text-sm font-medium hover:bg-ink/90 transition-colors disabled:opacity-50"
                     >
                       <Check className="w-4 h-4" /> Salvar
-                    </button>
+                    </Button>
                   </div>
                 </div>
               ) : (
@@ -195,41 +195,47 @@ export default function PerfilPage() {
                       <p className="text-sm text-muted truncate">{profile.email}</p>
                       {profile.phone && <p className="text-sm text-muted">{profile.phone}</p>}
                     </div>
-                    <button
+                    <Button
+                      variant="secondary"
+                      size="icon"
+                      className="shrink-0"
                       onClick={startEdit}
                       aria-label="Editar dados"
-                      className="shrink-0 p-2 rounded-lg border border-line text-muted hover:bg-cream transition-colors"
                     >
                       <Pencil className="w-4 h-4" />
-                    </button>
+                    </Button>
                   </div>
                 </>
               )}
-            </div>
+            </Card>
 
             {profile.hasPassword && (
-              <div className="border border-line rounded-lg bg-paper p-4 shadow-card space-y-3">
+              <Card className="space-y-3">
                 <p className="flex items-center gap-1.5 text-sm font-semibold text-ink">
                   <Lock className="w-4 h-4" /> Alterar senha
                 </p>
-                <input type="password" placeholder="Senha atual" value={pwCurrent} onChange={(e) => setPwCurrent(e.target.value)} className={inputClass} />
-                <input type="password" placeholder="Nova senha (mínimo 6 caracteres)" value={pwNew} onChange={(e) => setPwNew(e.target.value)} className={inputClass} />
-                <button
+                <Input type="password" placeholder="Senha atual" value={pwCurrent} onChange={(e) => setPwCurrent(e.target.value)} />
+                <Input type="password" placeholder="Nova senha (mínimo 6 caracteres)" value={pwNew} onChange={(e) => setPwNew(e.target.value)} />
+                <Button
+                  variant="primary"
+                  size="md"
+                  className="w-full"
                   onClick={handleChangePassword}
                   disabled={saving || !pwCurrent || !pwNew}
-                  className="w-full h-10 bg-ink text-paper rounded-lg text-sm font-medium hover:bg-ink/90 transition-colors disabled:opacity-50"
                 >
                   Alterar senha
-                </button>
-              </div>
+                </Button>
+              </Card>
             )}
 
-            <button
+            <Button
+              variant="secondary"
+              size="md"
+              className="w-full"
               onClick={handleLogout}
-              className="flex items-center justify-center gap-2 w-full h-11 border border-line rounded-lg text-danger font-medium hover:bg-danger/5 transition-colors"
             >
-              <LogOut className="w-4 h-4" /> Sair
-            </button>
+              <span className="text-danger"><LogOut className="w-4 h-4" /> Sair</span>
+            </Button>
 
             <div>
               <p className="text-sm font-semibold text-ink mb-2 flex items-center gap-1.5">
@@ -240,12 +246,13 @@ export default function PerfilPage() {
               ) : (
                 <div className="space-y-2">
                   {orders.map((o) => (
-                    <button
+                    <Button
                       key={o.id}
+                      variant="secondary"
+                      className="w-full h-auto p-3"
                       onClick={() => router.push(`/pedido/${o.id}`)}
-                      className="w-full text-left border border-line rounded-lg bg-paper p-3 shadow-card hover:bg-cream transition-colors"
                     >
-                      <div className="flex items-center justify-between">
+                      <div className="w-full flex items-center justify-between">
                         <div>
                           <p className="text-sm font-semibold text-ink">
                             #{o.id.slice(0, 6)} · {new Date(o.createdAt).toLocaleDateString("pt-BR")}
@@ -259,7 +266,7 @@ export default function PerfilPage() {
                           <ChevronRight className="w-4 h-4 text-muted" />
                         </div>
                       </div>
-                    </button>
+                    </Button>
                   ))}
                 </div>
               )}

@@ -7,10 +7,15 @@ import { useRole } from "@/hooks/useRole";
 import { AppShell } from "@/components/layout/AppShell";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { ErrorState } from "@/components/ui/ErrorState";
+import { Card } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
+import { Badge } from "@/components/ui/Badge";
+import { FormField } from "@/components/ui/FormField";
+import { Input } from "@/components/ui/Input";
+import { Modal } from "@/components/ui/Modal";
 import {
   Plus,
   Store,
-  X,
   Trash2,
   Edit,
   Copy,
@@ -195,10 +200,10 @@ export default function IntegracoesPage() {
   if (!isAdmin) {
     return (
       <AppShell>
-        <div className="border border-line rounded-lg bg-paper p-8 text-center shadow-card">
+        <Card className="p-8 text-center">
           <Eye className="w-8 h-8 text-muted mx-auto mb-2" strokeWidth={1.5} />
           <p className="text-sm text-muted">Apenas administradores podem gerenciar integrações.</p>
-        </div>
+        </Card>
       </AppShell>
     );
   }
@@ -213,26 +218,26 @@ export default function IntegracoesPage() {
               {accounts.length} conta(s) · {enabledCount} ativa(s) · 99Food e iFood
             </p>
           </div>
-          <button
+          <Button
             onClick={() => { resetForm(); setShowCreate(true); }}
-            className="flex items-center gap-2 h-10 px-4 bg-ink text-paper rounded-lg text-sm font-medium hover:bg-ink/90 transition-colors"
           >
             <Plus className="w-4 h-4" />
             Nova Conta
-          </button>
+          </Button>
         </div>
 
-        <button
+        <Button
+          variant="secondary"
+          className="w-full h-auto py-3 justify-start"
           onClick={() => setShowGuide(!showGuide)}
-          className="flex items-center gap-2 w-full text-left border border-line rounded-lg bg-paper px-4 py-3 text-sm font-medium text-ink hover:bg-cream transition-colors"
         >
           <Plug className="w-4 h-4 text-muted" />
           Como configurar os webhooks
           <ChevronDown className={`w-4 h-4 ml-auto text-muted transition-transform ${showGuide ? "rotate-180" : ""}`} />
-        </button>
+        </Button>
 
         {showGuide && (
-          <div className="border border-line rounded-lg bg-paper p-4 space-y-3 text-sm text-muted shadow-card">
+          <Card className="p-4 space-y-3 text-sm text-muted">
             <p>
               <strong className="text-ink">99Food (Open Delivery):</strong> no painel da 99Food, cadastre o webhook
               apontando para <code className="text-xs bg-cream px-1.5 py-0.5 rounded">{"/api/integrations/99food/webhook"}</code>.
@@ -250,7 +255,7 @@ export default function IntegracoesPage() {
               A resposta ao webhook é 200/202 para reconhecer o evento. Pedidos novos aparecem na aba Delivery com
               SLA de 8 minutos e som de notificação.
             </p>
-          </div>
+          </Card>
         )}
 
         {error && <ErrorState message={error} onRetry={loadAccounts} />}
@@ -258,17 +263,17 @@ export default function IntegracoesPage() {
         {loading && isAdmin ? (
           <div className="space-y-2">
             {Array.from({ length: 2 }).map((_, i) => (
-              <div key={i} className="border border-line rounded-lg bg-paper p-4 shadow-card">
+              <Card key={i} className="p-4">
                 <Skeleton className="h-5 w-40 mb-2" />
                 <Skeleton className="h-3 w-64 mb-2" />
                 <Skeleton className="h-3 w-72" />
-              </div>
+              </Card>
             ))}
           </div>
         ) : (
           <div className="space-y-2">
             {accounts.map((acc) => (
-              <div key={acc.id} className="border border-line rounded-lg bg-paper p-4 shadow-card">
+              <Card key={acc.id} className="p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 flex-wrap">
@@ -276,12 +281,12 @@ export default function IntegracoesPage() {
                         <Store className="w-4 h-4 text-ink" strokeWidth={1.5} />
                       </div>
                       <p className="text-sm font-semibold text-ink">{acc.storeName || "Loja"}</p>
-                      <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-ink/5 text-muted">
+                      <Badge variant="neutral">
                         {PLATFORM_LABEL[acc.platform] || acc.platform}
-                      </span>
-                      <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${acc.enabled ? "bg-success/10 text-success" : "bg-danger/10 text-danger"}`}>
+                      </Badge>
+                      <Badge variant={acc.enabled ? "success" : "danger"}>
                         {acc.enabled ? "Ativa" : "Desativada"}
-                      </span>
+                      </Badge>
                     </div>
                     <p className="text-xs text-muted mt-2">
                       {acc.platform === "99FOOD"
@@ -291,13 +296,15 @@ export default function IntegracoesPage() {
                     {acc.webhookUrl && (
                       <div className="mt-2 flex items-center gap-2">
                         <code className="text-[11px] bg-cream px-2 py-1 rounded flex-1 truncate">{acc.webhookUrl}</code>
-                        <button
+                        <Button
+                          variant="secondary"
+                          size="sm"
                           onClick={() => handleCopy(acc)}
-                          className="flex items-center gap-1 text-xs px-2 py-1 rounded-md border border-line text-ink hover:bg-cream transition-colors shrink-0"
+                          className="shrink-0"
                         >
                           {copiedId === acc.id ? <Check className="w-3 h-3 text-success" /> : <Copy className="w-3 h-3" />}
                           {copiedId === acc.id ? "Copiado" : "Copiar"}
-                        </button>
+                        </Button>
                       </div>
                     )}
                     <p className="text-[11px] text-muted mt-2">
@@ -318,11 +325,11 @@ export default function IntegracoesPage() {
                     >
                       <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-paper shadow transition-all ${acc.enabled ? "left-[18px]" : "left-0.5"}`} />
                     </button>
-                    <button onClick={() => openEdit(acc)} aria-label="Editar" className="p-1.5 rounded-md hover:bg-cream text-muted"><Edit className="w-4 h-4" /></button>
-                    <button onClick={() => handleDelete(acc)} aria-label="Excluir" className="p-1.5 rounded-md hover:bg-cream text-danger"><Trash2 className="w-4 h-4" /></button>
+                    <Button variant="ghost" size="icon" onClick={() => openEdit(acc)} aria-label="Editar"><Edit className="w-4 h-4" /></Button>
+                    <Button variant="ghost" size="icon" onClick={() => handleDelete(acc)} aria-label="Excluir"><span className="text-danger"><Trash2 className="w-4 h-4" /></span></Button>
                   </div>
                 </div>
-              </div>
+              </Card>
             ))}
             {accounts.length === 0 && (
               <div className="text-center py-10 text-muted border border-dashed border-line rounded-lg">
@@ -333,116 +340,105 @@ export default function IntegracoesPage() {
         )}
 
         {showCreate && (
-          <div className="fixed inset-0 z-50 bg-ink/30 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="nova-conta-title">
-            <div ref={createRef} className="bg-paper rounded-xl border border-line shadow-lg w-full max-w-md">
-              <div className="flex items-center justify-between p-4 border-b border-line">
-                <h3 id="nova-conta-title" className="text-lg font-bold text-ink">Nova Conta</h3>
-                <button onClick={() => setShowCreate(false)} data-close-modal aria-label="Fechar" className="p-1.5 rounded-md hover:bg-cream text-muted"><X className="w-5 h-5" /></button>
+          <Modal
+            open
+            onClose={() => setShowCreate(false)}
+            title="Nova Conta"
+            size="md"
+            footer={
+              <div className="flex gap-2">
+                <Button variant="secondary" className="flex-1" onClick={() => setShowCreate(false)}>Cancelar</Button>
+                <Button className="flex-1" onClick={handleCreate}>Salvar</Button>
               </div>
-              <div className="p-4 space-y-4">
-                <div>
-                  <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Plataforma</label>
-                  <select
-                    value={form.platform}
-                    onChange={(e) => setForm({ ...form, platform: e.target.value })}
-                    className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink bg-paper focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink transition-colors"
-                  >
-                    <option value="99FOOD">99Food</option>
-                    <option value="IFOOD">iFood</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Nome da Loja *</label>
-                  <input
-                    type="text"
-                    placeholder="Ex.: Loja Centro"
-                    value={form.storeName}
-                    onChange={(e) => setForm({ ...form, storeName: e.target.value })}
-                    className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink placeholder:text-kraft focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink transition-colors"
-                  />
-                  <p className="text-[11px] text-muted mt-1">Identificador da loja no app (único por plataforma).</p>
-                </div>
-                {form.platform === "99FOOD" ? (
-                  <>
-                    <div>
-                      <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">APP ID *</label>
-                      <input type="text" value={formCred.appId} onChange={(e) => setFormCred({ ...formCred, appId: e.target.value })} className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink transition-colors" />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">APP Shopp ID *</label>
-                      <input type="text" value={formCred.appShoppId} onChange={(e) => setFormCred({ ...formCred, appShoppId: e.target.value })} className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink transition-colors" />
-                    </div>
-                  </>
-                ) : (
-                  <div>
-                    <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Client ID *</label>
-                    <input type="text" value={formCred.clientId} onChange={(e) => setFormCred({ ...formCred, clientId: e.target.value })} className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink transition-colors" />
-                  </div>
-                )}
-                <div>
-                  <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Client Secret *</label>
-                  <input type="password" value={formCred.clientSecret} onChange={(e) => setFormCred({ ...formCred, clientSecret: e.target.value })} className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink transition-colors" />
-                </div>
-                <label className="flex items-center gap-2 text-sm text-ink">
-                  <input type="checkbox" checked={form.enabled} onChange={(e) => setForm({ ...form, enabled: e.target.checked })} className="w-4 h-4 accent-ink" />
-                  Conta ativa (recebe webhooks e sincroniza)
-                </label>
-              </div>
-              <div className="p-4 border-t border-line flex gap-2">
-                <button onClick={() => setShowCreate(false)} className="flex-1 h-10 border border-line rounded-lg text-sm font-medium text-ink hover:bg-cream transition-colors">Cancelar</button>
-                <button onClick={handleCreate} className="flex-1 h-10 bg-ink text-paper rounded-lg text-sm font-medium hover:bg-ink/90 transition-colors">Salvar</button>
-              </div>
+            }
+          >
+            <div ref={createRef} className="p-4 space-y-4">
+              <FormField label="Plataforma">
+                <select
+                  value={form.platform}
+                  onChange={(e) => setForm({ ...form, platform: e.target.value })}
+                  className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink bg-paper focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink transition-colors"
+                >
+                  <option value="99FOOD">99Food</option>
+                  <option value="IFOOD">iFood</option>
+                </select>
+              </FormField>
+              <FormField label="Nome da Loja" required hint="Identificador da loja no app (único por plataforma).">
+                <Input
+                  type="text"
+                  placeholder="Ex.: Loja Centro"
+                  value={form.storeName}
+                  onChange={(e) => setForm({ ...form, storeName: e.target.value })}
+                />
+              </FormField>
+              {form.platform === "99FOOD" ? (
+                <>
+                  <FormField label="APP ID" required>
+                    <Input type="text" value={formCred.appId} onChange={(e) => setFormCred({ ...formCred, appId: e.target.value })} />
+                  </FormField>
+                  <FormField label="APP Shopp ID" required>
+                    <Input type="text" value={formCred.appShoppId} onChange={(e) => setFormCred({ ...formCred, appShoppId: e.target.value })} />
+                  </FormField>
+                </>
+              ) : (
+                <FormField label="Client ID" required>
+                  <Input type="text" value={formCred.clientId} onChange={(e) => setFormCred({ ...formCred, clientId: e.target.value })} />
+                </FormField>
+              )}
+              <FormField label="Client Secret" required>
+                <Input type="password" value={formCred.clientSecret} onChange={(e) => setFormCred({ ...formCred, clientSecret: e.target.value })} />
+              </FormField>
+              <label className="flex items-center gap-2 text-sm text-ink">
+                <input type="checkbox" checked={form.enabled} onChange={(e) => setForm({ ...form, enabled: e.target.checked })} className="w-4 h-4 accent-ink" />
+                Conta ativa (recebe webhooks e sincroniza)
+              </label>
             </div>
-          </div>
+          </Modal>
         )}
 
         {showEdit && editing && (
-          <div className="fixed inset-0 z-50 bg-ink/30 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="edit-conta-title">
-            <div ref={editRef} className="bg-paper rounded-xl border border-line shadow-lg w-full max-w-md">
-              <div className="flex items-center justify-between p-4 border-b border-line">
-                <h3 id="edit-conta-title" className="text-lg font-bold text-ink">Editar Conta</h3>
-                <button onClick={() => { setShowEdit(false); setEditing(null); }} data-close-modal aria-label="Fechar" className="p-1.5 rounded-md hover:bg-cream text-muted"><X className="w-5 h-5" /></button>
+          <Modal
+            open
+            onClose={() => { setShowEdit(false); setEditing(null); }}
+            title="Editar Conta"
+            size="md"
+            footer={
+              <div className="flex gap-2">
+                <Button variant="secondary" className="flex-1" onClick={() => { setShowEdit(false); setEditing(null); }}>Cancelar</Button>
+                <Button className="flex-1" onClick={handleEditSave}>Salvar</Button>
               </div>
-              <div className="p-4 space-y-4">
-                <p className="text-xs text-muted">
-                  Conta {PLATFORM_LABEL[editing.platform]} · {editing.credentials.appShoppId || editing.credentials.clientId || ""}
-                </p>
-                <div>
-                  <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Nome da Loja</label>
-                  <input type="text" value={editForm.storeName} onChange={(e) => setEditForm({ ...editForm, storeName: e.target.value })} className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink transition-colors" />
-                </div>
-                {editing.platform === "99FOOD" ? (
-                  <>
-                    <div>
-                      <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">APP ID (novo, opcional)</label>
-                      <input type="text" value={editCred.appId} onChange={(e) => setEditCred({ ...editCred, appId: e.target.value })} className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink transition-colors" />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">APP Shopp ID (novo, opcional)</label>
-                      <input type="text" value={editCred.appShoppId} onChange={(e) => setEditCred({ ...editCred, appShoppId: e.target.value })} className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink transition-colors" />
-                    </div>
-                  </>
-                ) : (
-                  <div>
-                    <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Client ID (novo, opcional)</label>
-                    <input type="text" value={editCred.clientId} onChange={(e) => setEditCred({ ...editCred, clientId: e.target.value })} className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink transition-colors" />
-                  </div>
-                )}
-                <div>
-                  <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Client Secret (novo, opcional)</label>
-                  <input type="password" placeholder="Deixe em branco para manter" value={editCred.clientSecret} onChange={(e) => setEditCred({ ...editCred, clientSecret: e.target.value })} className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink placeholder:text-kraft focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink transition-colors" />
-                </div>
-                <label className="flex items-center gap-2 text-sm text-ink">
-                  <input type="checkbox" checked={editForm.enabled} onChange={(e) => setEditForm({ ...editForm, enabled: e.target.checked })} className="w-4 h-4 accent-ink" />
-                  Conta ativa
-                </label>
-              </div>
-              <div className="p-4 border-t border-line flex gap-2">
-                <button onClick={() => { setShowEdit(false); setEditing(null); }} className="flex-1 h-10 border border-line rounded-lg text-sm font-medium text-ink hover:bg-cream transition-colors">Cancelar</button>
-                <button onClick={handleEditSave} className="flex-1 h-10 bg-ink text-paper rounded-lg text-sm font-medium hover:bg-ink/90 transition-colors">Salvar</button>
-              </div>
+            }
+          >
+            <div ref={editRef} className="p-4 space-y-4">
+              <p className="text-xs text-muted">
+                Conta {PLATFORM_LABEL[editing.platform]} · {editing.credentials.appShoppId || editing.credentials.clientId || ""}
+              </p>
+              <FormField label="Nome da Loja">
+                <Input type="text" value={editForm.storeName} onChange={(e) => setEditForm({ ...editForm, storeName: e.target.value })} />
+              </FormField>
+              {editing.platform === "99FOOD" ? (
+                <>
+                  <FormField label="APP ID (novo, opcional)">
+                    <Input type="text" value={editCred.appId} onChange={(e) => setEditCred({ ...editCred, appId: e.target.value })} />
+                  </FormField>
+                  <FormField label="APP Shopp ID (novo, opcional)">
+                    <Input type="text" value={editCred.appShoppId} onChange={(e) => setEditCred({ ...editCred, appShoppId: e.target.value })} />
+                  </FormField>
+                </>
+              ) : (
+                <FormField label="Client ID (novo, opcional)">
+                  <Input type="text" value={editCred.clientId} onChange={(e) => setEditCred({ ...editCred, clientId: e.target.value })} />
+                </FormField>
+              )}
+              <FormField label="Client Secret (novo, opcional)">
+                <Input type="password" placeholder="Deixe em branco para manter" value={editCred.clientSecret} onChange={(e) => setEditCred({ ...editCred, clientSecret: e.target.value })} />
+              </FormField>
+              <label className="flex items-center gap-2 text-sm text-ink">
+                <input type="checkbox" checked={editForm.enabled} onChange={(e) => setEditForm({ ...editForm, enabled: e.target.checked })} className="w-4 h-4 accent-ink" />
+                Conta ativa
+              </label>
             </div>
-          </div>
+          </Modal>
         )}
       </div>
         {dialog}

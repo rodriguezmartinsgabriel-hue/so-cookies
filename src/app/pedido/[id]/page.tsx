@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react"
 import Link from "next/link"
 import { Check, Package, Clock, Store } from "lucide-react"
 import { CustomerShell } from "@/components/customer/CustomerShell"
+import { Card } from "@/components/ui/Card"
 
 type PublicOrderItem = {
   id: string
@@ -105,15 +106,15 @@ export default function PedidoPage({ params }: { params: Promise<{ id: string }>
               </div>
             ) : (
               <>
-                <div className="border border-line rounded-lg bg-paper p-4 shadow-card text-center">
+                <Card className="text-center">
                   <p className="text-xs text-muted uppercase tracking-wide mb-1">Código de retirada</p>
                   <p className="text-3xl font-bold tracking-[0.3em] text-ink">{order.pickupCode ?? "---"}</p>
                   <p className="text-xs text-muted mt-1 flex items-center justify-center gap-1">
                     <Store className="w-3 h-3" /> Retirada na loja
                   </p>
-                </div>
+                </Card>
 
-                <div className="border border-line rounded-lg bg-paper p-4 shadow-card">
+                <Card>
                   <div className="flex items-center justify-between mb-3">
                     <p className="text-sm font-semibold text-ink flex items-center gap-1.5">
                       <Package className="w-4 h-4" /> Status
@@ -146,9 +147,9 @@ export default function PedidoPage({ params }: { params: Promise<{ id: string }>
                       })}
                     </ol>
                   )}
-                </div>
+                </Card>
 
-                <div className="border border-line rounded-lg bg-paper p-4 shadow-card">
+                <Card>
                   <p className="text-sm font-semibold text-ink mb-2">Itens</p>
                   <div className="space-y-2">
                     {order.items.map((item) => (
@@ -167,7 +168,7 @@ export default function PedidoPage({ params }: { params: Promise<{ id: string }>
                     <span className="font-semibold text-ink">Total</span>
                     <span className="font-bold text-ink">{formatBRL(order.total)}</span>
                   </div>
-                </div>
+                </Card>
               </>
             )}
 

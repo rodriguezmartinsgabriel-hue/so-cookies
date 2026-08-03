@@ -6,6 +6,8 @@ import { Minus, Plus, Trash2, ArrowRight, ShoppingBag, Cookie } from "lucide-rea
 import NextImage from "next/image"
 import { CustomerShell } from "@/components/customer/CustomerShell"
 import { useCart } from "@/hooks/useCart"
+import { Card } from "@/components/ui/Card"
+import { Button } from "@/components/ui/Button"
 
 type CatalogProduct = {
   id: string
@@ -81,23 +83,20 @@ export default function CarrinhoPage() {
         {loading && <div className="text-center py-12 text-muted">Carregando...</div>}
 
         {!loading && lines.length === 0 && (
-          <div className="text-center py-12 border border-dashed border-line rounded-lg">
+          <Card padded={false} className="text-center py-12">
             <ShoppingBag className="w-8 h-8 mx-auto mb-2 text-muted" />
             <p className="text-muted text-sm">Seu carrinho está vazio</p>
-            <button
-              onClick={() => router.push("/cardapio")}
-              className="mt-3 text-sm px-4 py-2 bg-ink text-paper rounded-lg font-medium hover:bg-ink/90 transition-colors"
-            >
+            <Button variant="primary" size="sm" className="mt-3" onClick={() => router.push("/cardapio")}>
               Ver cardápio
-            </button>
-          </div>
+            </Button>
+          </Card>
         )}
 
         {!loading && lines.length > 0 && (
           <>
             <div className="space-y-2">
               {lines.map((l) => (
-                <div key={l.productId} className="flex items-center gap-3 border border-line rounded-lg bg-paper p-3 shadow-card">
+                <Card key={l.productId} padded={false} className="flex items-center gap-3 p-3">
                   {l.product.image ? (
                     <NextImage src={l.product.image} alt={l.product.name} width={44} height={44} unoptimized className="w-11 h-11 rounded-lg object-cover shrink-0" />
                   ) : (
@@ -110,30 +109,33 @@ export default function CarrinhoPage() {
                     <p className="text-xs text-muted">{formatBRL(l.product.price)}</p>
                   </div>
                   <div className="flex items-center gap-2">
-                    <button
+                    <Button
+                      variant="secondary"
+                      size="icon"
                       onClick={() => setQty(l.productId, l.qty - 1)}
-                      className="w-8 h-8 flex items-center justify-center border border-line rounded-lg text-ink hover:bg-cream transition-colors"
                       aria-label="Diminuir"
                     >
                       <Minus className="w-4 h-4" />
-                    </button>
+                    </Button>
                     <span className="w-6 text-center text-sm font-semibold text-ink">{l.qty}</span>
-                    <button
+                    <Button
+                      variant="primary"
+                      size="icon"
                       onClick={() => setQty(l.productId, l.qty + 1)}
-                      className="w-8 h-8 flex items-center justify-center bg-ink text-paper rounded-lg hover:bg-ink/90 transition-colors"
                       aria-label="Aumentar"
                     >
                       <Plus className="w-4 h-4" />
-                    </button>
-                    <button
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
                       onClick={() => removeItem(l.productId)}
-                      className="w-8 h-8 flex items-center justify-center text-danger hover:bg-danger/10 rounded-lg transition-colors"
                       aria-label="Remover"
                     >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                      <Trash2 className="w-4 h-4 text-danger" />
+                    </Button>
                   </div>
-                </div>
+                </Card>
               ))}
             </div>
 
@@ -144,14 +146,16 @@ export default function CarrinhoPage() {
 
             {error && <p className="text-sm text-danger">{error}</p>}
 
-            <button
+            <Button
+              size="lg"
+              variant="primary"
+              className="w-full"
               onClick={handleCheckout}
               disabled={submitting}
-              className="w-full h-12 flex items-center justify-center gap-2 bg-ink text-paper font-medium rounded-lg hover:bg-ink/90 active:scale-[0.99] disabled:opacity-50 transition-all"
             >
               {submitting ? "Finalizando..." : "Finalizar pedido — retirada na loja"}
               {!submitting && <ArrowRight className="w-4 h-4" />}
-            </button>
+            </Button>
           </>
         )}
       </div>

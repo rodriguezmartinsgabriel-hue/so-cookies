@@ -5,6 +5,8 @@ import { Plus, Minus, Cookie } from "lucide-react"
 import NextImage from "next/image"
 import { CustomerShell } from "@/components/customer/CustomerShell"
 import { useCart } from "@/hooks/useCart"
+import { Card } from "@/components/ui/Card"
+import { Button } from "@/components/ui/Button"
 
 type CatalogProduct = {
   id: string
@@ -74,9 +76,10 @@ export default function CardapioPage() {
                 {items.map((p) => {
                   const qty = qtyFor(p.id)
                   return (
-                    <div
+                    <Card
                       key={p.id}
-                      className="flex items-center gap-3 border border-line rounded-lg bg-paper p-3 shadow-card"
+                      padded={false}
+                      className="flex items-center gap-3 p-3"
                     >
                       {p.image ? (
                         <NextImage src={p.image} alt={p.name} width={48} height={48} unoptimized className="w-12 h-12 rounded-lg object-cover shrink-0" />
@@ -90,33 +93,36 @@ export default function CardapioPage() {
                         <p className="text-xs text-muted">{formatBRL(p.price)} / {p.unit}</p>
                       </div>
                       {qty === 0 ? (
-                        <button
+                        <Button
+                          variant="primary"
+                          size="sm"
                           onClick={() => addItem(p.id)}
-                          className="flex items-center gap-1 text-xs px-3 py-2 bg-ink text-paper rounded-lg font-medium hover:bg-ink/90 active:scale-95 transition-colors"
                           aria-label={`Adicionar ${p.name}`}
                         >
                           <Plus className="w-3.5 h-3.5" /> Adicionar
-                        </button>
+                        </Button>
                       ) : (
                         <div className="flex items-center gap-2">
-                          <button
+                          <Button
+                            variant="secondary"
+                            size="icon"
                             onClick={() => setQty(p.id, qty - 1)}
-                            className="w-8 h-8 flex items-center justify-center border border-line rounded-lg text-ink hover:bg-cream transition-colors"
                             aria-label={`Diminuir ${p.name}`}
                           >
                             <Minus className="w-4 h-4" />
-                          </button>
+                          </Button>
                           <span className="w-6 text-center text-sm font-semibold text-ink">{qty}</span>
-                          <button
+                          <Button
+                            variant="primary"
+                            size="icon"
                             onClick={() => setQty(p.id, qty + 1)}
-                            className="w-8 h-8 flex items-center justify-center bg-ink text-paper rounded-lg hover:bg-ink/90 transition-colors"
                             aria-label={`Aumentar ${p.name}`}
                           >
                             <Plus className="w-4 h-4" />
-                          </button>
+                          </Button>
                         </div>
                       )}
-                    </div>
+                    </Card>
                   )
                 })}
               </div>

@@ -2,12 +2,17 @@
 
 import { useState, useEffect } from "react";
 import { useConfirm } from "@/hooks/useConfirm";
-import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { useRole } from "@/hooks/useRole";
 import { useQueryData } from "@/hooks/useQueryData";
 import { AppShell } from "@/components/layout/AppShell";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { ErrorState } from "@/components/ui/ErrorState";
+import { Card } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
+import { Badge } from "@/components/ui/Badge";
+import { Modal } from "@/components/ui/Modal";
+import { GlassSurface } from "@/components/ui/GlassSurface";
 import { repository } from "@/lib/repository";
 import type { Contact } from "@/lib/entity-types";
 import type { LocalContactInteraction } from "@/lib/db-local";
@@ -29,11 +34,11 @@ import {
   Smartphone,
 } from "lucide-react";
 
-const TYPE_CONFIG: Record<string, { label: string; className: string }> = {
-  CLIENTE: { label: "Cliente", className: "bg-success/10 text-success" },
-  FORNECEDOR: { label: "Fornecedor", className: "bg-info/10 text-info" },
-  LEAD: { label: "Lead", className: "bg-warning/10 text-warning" },
-  OUTRO: { label: "Outro", className: "bg-muted/10 text-muted" },
+const TYPE_CONFIG: Record<string, { label: string; variant: "neutral" | "success" | "warning" | "danger" | "info" | "accent" }> = {
+  CLIENTE: { label: "Cliente", variant: "success" },
+  FORNECEDOR: { label: "Fornecedor", variant: "info" },
+  LEAD: { label: "Lead", variant: "warning" },
+  OUTRO: { label: "Outro", variant: "neutral" },
 };
 
 const INTERACTION_CONFIG: Record<string, { label: string; icon: typeof StickyNote }> = {
@@ -64,11 +69,9 @@ export default function ContatosPage() {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("ALL");
   const [showModal, setShowModal] = useState(false);
-  const modalRef = useFocusTrap(showModal);
   const [form, setForm] = useState({ name: "", email: "", phone: "", type: "CLIENTE", company: "", notes: "" });
 
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
-  const detailRef = useFocusTrap(!!selectedContact);
   const [interactions, setInteractions] = useState<LocalContactInteraction[]>([]);
   const [interactionForm, setInteractionForm] = useState({ type: "NOTA", note: "" });
 
@@ -199,13 +202,10 @@ export default function ContatosPage() {
             </p>
           </div>
           {canEdit && (
-            <button
-              onClick={() => { resetForm(); setShowModal(true); }}
-              className="flex items-center gap-2 h-10 px-4 bg-ink text-paper rounded-lg text-sm font-medium hover:bg-ink/90 transition-colors"
-            >
+            <Button onClick={() => { resetForm(); setShowModal(true); }}>
               <Plus className="w-4 h-4" />
               Novo Contato
-            </button>
+            </Button>
           )}
         </div>
 
@@ -225,12 +225,12 @@ export default function ContatosPage() {
 
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
-          <input
+          <Input
             type="text"
             placeholder="Buscar por nome, e-mail, telefone ou empresa..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full h-10 pl-10 pr-4 border border-line rounded-lg text-sm text-ink placeholder:text-kraft focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink transition-colors"
+            className="pl-10 pr-4"
           />
         </div>
 
@@ -239,7 +239,7 @@ export default function ContatosPage() {
         {loading ? (
           <div className="space-y-2">
             {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="border border-line rounded-lg bg-paper p-4 shadow-card">
+              <Card key={i}>
                 <div className="flex items-center gap-3">
                   <Skeleton className="h-10 w-10 rounded-lg" />
                   <div className="flex-1">
@@ -248,7 +248,7 @@ export default function ContatosPage() {
                   </div>
                   <Skeleton className="h-5 w-16 rounded-full" />
                 </div>
-              </div>
+              </Card>
             ))}
           </div>
         ) : filtered.length === 0 ? (
@@ -262,7 +262,7 @@ export default function ContatosPage() {
             {filtered.map((c) => {
               const cfg = TYPE_CONFIG[c.type] || TYPE_CONFIG.OUTRO;
               return (
-                <div key={c.id} className="border border-line rounded-lg bg-paper p-4 shadow-card">
+                <Card key={c.id}>
                   <div className="flex items-center gap-3">
                     <button onClick={() => setSelectedContact(c)} aria-label="Ver detalhes" className="w-10 h-10 rounded-lg bg-cream flex items-center justify-center shrink-0 hover:bg-kraft/50 transition-colors">
                       <BookUser className="w-5 h-5 text-muted" strokeWidth={1.5} />
@@ -324,21 +324,19 @@ export default function ContatosPage() {
                           ))}
                         </select>
                       ) : (
-                        <span
+                        <Badge
+                          variant={cfg.variant}
                           onClick={() => canEdit && startEdit(c.id, "type", c.type)}
                           title={canEdit ? "Clique para editar" : undefined}
-                          className={`text-xs font-medium px-2 py-1 rounded-full ${cfg.className} ${canEdit ? "cursor-pointer hover:ring-1 hover:ring-ink" : ""}`}
+                          className={`${canEdit ? "cursor-pointer hover:ring-1 hover:ring-ink" : ""}`}
                         >
                           {cfg.label}
-                        </span>
+                        </Badge>
                       )}
                       {c.customerId && (
-                        <span
-                          className="inline-flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full bg-info/10 text-info"
-                          title="Cliente cadastrado pelo app"
-                        >
+                        <Badge variant="info" title="Cliente cadastrado pelo app">
                           <Smartphone className="w-3 h-3" /> App
-                        </span>
+                        </Badge>
                       )}
                     </div>
                     <div className="shrink-0 flex items-center gap-1">
@@ -392,64 +390,65 @@ export default function ContatosPage() {
                       </span>
                     )}
                   </div>
-                </div>
+                </Card>
               );
             })}
           </div>
         )}
 
         {showModal && (
-          <div className="fixed inset-0 z-50 bg-ink/30 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="contact-title">
-            <div ref={modalRef} className="bg-paper rounded-xl border border-line shadow-lg w-full max-w-lg max-h-[85vh] overflow-y-auto">
-              <div className="flex items-center justify-between p-4 border-b border-line sticky top-0 bg-paper">
-                <h3 id="contact-title" className="text-lg font-bold text-ink">Novo Contato</h3>
-                <button onClick={() => { setShowModal(false); }} data-close-modal aria-label="Fechar" className="p-1.5 rounded-md hover:bg-cream text-muted"><X className="w-5 h-5" /></button>
+          <Modal
+            open
+            onClose={() => setShowModal(false)}
+            title="Novo Contato"
+            size="md"
+            footer={
+              <div className="flex gap-2">
+                <Button variant="secondary" className="flex-1" onClick={() => setShowModal(false)}>Cancelar</Button>
+                <Button className="flex-1" onClick={handleCreate}>Salvar</Button>
               </div>
-              <div className="p-4 space-y-4">
+            }
+          >
+            <div className="p-4 space-y-4">
+              <div>
+                <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Nome *</label>
+                <Input type="text" placeholder="Ex: Maria Silva" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Nome *</label>
-                  <input type="text" placeholder="Ex: Maria Silva" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className={inputClass} />
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Tipo</label>
-                    <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })} className={inputClass}>
-                      {Object.entries(TYPE_CONFIG).map(([value, cfg]) => (
-                        <option key={value} value={value}>{cfg.label}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Empresa</label>
-                    <input type="text" placeholder="Ex: Padaria Central" value={form.company} onChange={(e) => setForm({ ...form, company: e.target.value })} className={inputClass} />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Telefone</label>
-                    <input type="text" placeholder="(11) 99999-9999" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className={inputClass} />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">E-mail</label>
-                    <input type="email" placeholder="contato@exemplo.com" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className={inputClass} />
-                  </div>
+                  <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Tipo</label>
+                  <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })} className={inputClass}>
+                    {Object.entries(TYPE_CONFIG).map(([value, cfg]) => (
+                      <option key={value} value={value}>{cfg.label}</option>
+                    ))}
+                  </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Observações</label>
-                  <textarea rows={3} placeholder="Notas sobre este contato..." value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} className="w-full px-3 py-2 border border-line rounded-lg text-sm text-ink placeholder:text-kraft focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink transition-colors resize-none" />
+                  <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Empresa</label>
+                  <Input type="text" placeholder="Ex: Padaria Central" value={form.company} onChange={(e) => setForm({ ...form, company: e.target.value })} />
                 </div>
               </div>
-              <div className="p-4 border-t border-line flex gap-2 sticky bottom-0 bg-paper">
-                <button onClick={() => { setShowModal(false); }} className="flex-1 h-10 border border-line rounded-lg text-sm font-medium text-ink hover:bg-cream transition-colors">Cancelar</button>
-                <button onClick={handleCreate} className="flex-1 h-10 bg-ink text-paper rounded-lg text-sm font-medium hover:bg-ink/90 transition-colors">Salvar</button>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Telefone</label>
+                  <Input type="text" placeholder="(11) 99999-9999" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">E-mail</label>
+                  <Input type="email" placeholder="contato@exemplo.com" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Observações</label>
+                <textarea rows={3} placeholder="Notas sobre este contato..." value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} className="w-full px-3 py-2 border border-line rounded-lg text-sm text-ink placeholder:text-kraft focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink transition-colors resize-none" />
               </div>
             </div>
-          </div>
+          </Modal>
         )}
 
         {selectedContact && (
           <div className="fixed inset-0 z-50 bg-ink/30 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="contact-detail-title">
-            <div ref={detailRef} className="bg-paper rounded-xl border border-line shadow-lg w-full max-w-lg max-h-[85vh] overflow-y-auto">
+            <GlassSurface tone="strong" className="rounded-xl w-full max-w-lg max-h-[85vh] overflow-y-auto">
               <div className="flex items-center justify-between p-4 border-b border-line sticky top-0 bg-paper">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-lg bg-cream flex items-center justify-center">
@@ -460,12 +459,9 @@ export default function ContatosPage() {
                     <div className="flex items-center gap-2">
                       <p className="text-xs text-muted">{TYPE_CONFIG[selectedContact.type]?.label}{selectedContact.company ? ` · ${selectedContact.company}` : ""}</p>
                       {selectedContact.customerId && (
-                        <span
-                          className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-info/10 text-info"
-                          title="Cliente cadastrado pelo app"
-                        >
+                        <Badge variant="info" title="Cliente cadastrado pelo app">
                           <Smartphone className="w-3 h-3" /> Do app
-                        </span>
+                        </Badge>
                       )}
                     </div>
                   </div>
@@ -524,9 +520,9 @@ export default function ContatosPage() {
                         onKeyDown={(e) => { if (e.key === "Enter") handleAddInteraction(); }}
                         className="flex-1 h-10 px-3 border border-line rounded-lg text-sm text-ink placeholder:text-kraft focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink transition-colors"
                       />
-                      <button onClick={handleAddInteraction} aria-label="Adicionar" className="h-10 px-4 bg-ink text-paper rounded-lg text-sm font-medium hover:bg-ink/90 transition-colors shrink-0">
+                      <Button onClick={handleAddInteraction} aria-label="Adicionar" className="shrink-0 px-4">
                         <Plus className="w-4 h-4" />
-                      </button>
+                      </Button>
                     </div>
                   )}
 
@@ -566,11 +562,11 @@ export default function ContatosPage() {
                 </div>
               </div>
               <div className="p-4 border-t border-line flex gap-2 sticky bottom-0 bg-paper">
-                <button onClick={() => setSelectedContact(null)} className="flex-1 h-10 bg-ink text-paper rounded-lg text-sm font-medium hover:bg-ink/90 transition-colors">
+                <Button className="flex-1" onClick={() => setSelectedContact(null)}>
                   Fechar
-                </button>
+                </Button>
               </div>
-            </div>
+            </GlassSurface>
           </div>
         )}
       </div>

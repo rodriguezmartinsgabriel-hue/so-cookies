@@ -4,6 +4,8 @@ import { useEffect, useState } from "react"
 import Image from "next/image"
 import { WifiOff, RefreshCw, Cloud } from "lucide-react"
 import { getLastSyncTime, getPendingSyncCount, NEVER_SYNCED } from "@/lib/db-local"
+import { Card } from "@/components/ui/Card"
+import { Button } from "@/components/ui/Button"
 
 function formatSyncTime(iso: string) {
   const d = new Date(iso)
@@ -87,7 +89,7 @@ export default function OfflinePage() {
           será sincronizada automaticamente quando a conexão voltar.
         </p>
 
-        <div className="space-y-2 rounded-xl border border-line bg-cream p-4 text-left">
+        <Card className="space-y-2 text-left">
           <div className="flex items-center justify-between gap-3">
             <span className="text-xs text-muted">Alterações pendentes</span>
             <span className="text-sm font-semibold text-ink tabular-nums">{pendingCount}</span>
@@ -98,7 +100,7 @@ export default function OfflinePage() {
               {lastSync ? formatSyncTime(lastSync) : "—"}
             </span>
           </div>
-        </div>
+        </Card>
 
         {pendingCount > 0 && (
           <p className="flex items-center justify-center gap-1.5 text-xs text-info">
@@ -107,10 +109,11 @@ export default function OfflinePage() {
           </p>
         )}
 
-        <button
+        <Button
           onClick={handleRetry}
           disabled={retrying}
-          className="w-full h-12 flex items-center justify-center gap-2 bg-ink text-paper rounded-lg text-sm font-medium hover:bg-ink/90 transition-colors active:scale-[0.98] disabled:opacity-60"
+          size="lg"
+          className="w-full"
         >
           {retrying ? (
             <>
@@ -123,7 +126,7 @@ export default function OfflinePage() {
               Tentar novamente
             </>
           )}
-        </button>
+        </Button>
 
         {stillOffline && (
           <p className="flex items-center justify-center gap-1.5 text-xs text-warning">

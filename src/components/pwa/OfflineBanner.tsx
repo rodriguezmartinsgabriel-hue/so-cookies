@@ -4,6 +4,7 @@ import { useState } from "react"
 import { useSync } from "@/hooks/useSync"
 import { discardQueued } from "@/lib/db-local"
 import { WifiOff, RefreshCw, AlertTriangle } from "lucide-react"
+import { GlassSurface } from "@/components/ui/GlassSurface"
 
 export function OfflineBanner() {
   const { isOnline, isSyncing, pendingCount, errors, doSync, clearErrors, refresh } = useSync()
@@ -47,7 +48,11 @@ export function OfflineBanner() {
             {errors.length} alteração{errors.length > 1 ? "ões" : ""} falhou{errors.length > 1 ? "ram" : ""} — ver detalhes
           </button>
           {showErrors && (
-            <div className="bg-paper text-ink shadow-lg max-h-[50vh] overflow-y-auto">
+            <GlassSurface
+              variant="glass"
+              tone="strong"
+              className="rounded-none text-ink shadow-lg max-h-[50vh] overflow-y-auto"
+            >
               {errors.map((e) => (
                 <div key={e.id ?? `${e.entity}-${e.createdAt}`} className="px-4 py-2 border-b border-line text-sm flex items-start gap-2">
                   <div className="flex-1">
@@ -69,7 +74,7 @@ export function OfflineBanner() {
               <div className="px-4 py-2 flex justify-end">
                 <button onClick={clearErrors} className="text-xs font-semibold text-danger">Limpar erros</button>
               </div>
-            </div>
+            </GlassSurface>
           )}
         </div>
       )}

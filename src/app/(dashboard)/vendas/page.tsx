@@ -2,23 +2,28 @@
 
 import { useState } from "react"
 import { useConfirm } from "@/hooks/useConfirm"
-import { useFocusTrap } from "@/hooks/useFocusTrap"
 import { useRole } from "@/hooks/useRole"
 import { useQueryData } from "@/hooks/useQueryData"
 import { AppShell } from "@/components/layout/AppShell"
 import { Skeleton } from "@/components/ui/Skeleton"
 import { ErrorState } from "@/components/ui/ErrorState"
+import { Card } from "@/components/ui/Card"
+import { Button } from "@/components/ui/Button"
+import { Input } from "@/components/ui/Input"
+import { Badge } from "@/components/ui/Badge"
+import { Modal } from "@/components/ui/Modal"
+import { Table, THead, TBody, Tr, Th, Td } from "@/components/ui/Table"
 import { repository } from "@/lib/repository"
 import { Plus, Search, X, Trash2 } from "lucide-react"
 import type { Sale, SaleChannel } from "@/lib/entity-types"
 
 type SaleRow = Sale & { channel?: SaleChannel | string | null; user?: { name?: string } | null }
 
-const channelColors: Record<string, string> = {
-  iFood: "bg-danger/10 text-danger",
-  Rappi: "bg-warning/10 text-warning",
-  WhatsApp: "bg-success/10 text-success",
-  Direto: "bg-ink/10 text-ink",
+const channelVariants: Record<string, "neutral" | "success" | "warning" | "danger" | "info" | "accent"> = {
+  iFood: "danger",
+  Rappi: "warning",
+  WhatsApp: "success",
+  Direto: "neutral",
 };
 
 export default function VendasPage() {
@@ -31,7 +36,6 @@ export default function VendasPage() {
   const error = salesError || productsError || channelsError ? "Erro ao carregar vendas" : null
   const [search, setSearch] = useState("")
   const [showModal, setShowModal] = useState(false)
-  const modalRef = useFocusTrap(showModal)
 
   const [formChannel, setFormChannel] = useState("")
   const [formItems, setFormItems] = useState<{ productId: string; qty: string; price: string }[]>([])
@@ -109,21 +113,21 @@ export default function VendasPage() {
             </p>
           </div>
           {canEdit && (
-            <button onClick={() => { setFormChannel(""); setFormItems([]); setFormTotal(0); setShowModal(true); }} className="flex items-center gap-2 h-10 px-4 bg-ink text-paper rounded-lg text-sm font-medium hover:bg-ink/90 transition-colors">
+            <Button onClick={() => { setFormChannel(""); setFormItems([]); setFormTotal(0); setShowModal(true); }}>
               <Plus className="w-4 h-4" />
               Nova Venda
-            </button>
+            </Button>
           )}
         </div>
 
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
-          <input
+          <Input
             type="text"
             placeholder="Buscar por canal..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full h-10 pl-10 pr-4 border border-line rounded-lg text-sm text-ink placeholder:text-kraft focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink transition-colors"
+            className="pl-10 pr-4"
           />
         </div>
 
@@ -132,80 +136,82 @@ export default function VendasPage() {
         )}
 
         {loading ? (
-          <div className="border border-line rounded-lg bg-paper shadow-card overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-line bg-cream">
-                    {Array.from({ length: 6 }).map((_, i) => (
-                      <th key={i} className="px-4 py-3"><Skeleton className="h-3 w-16" /></th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-line">
-                  {Array.from({ length: 4 }).map((_, i) => (
-                    <tr key={i}>
-                      {Array.from({ length: 6 }).map((_, j) => (
-                        <td key={j} className="px-4 py-3"><Skeleton className="h-4 w-full" /></td>
-                      ))}
-                    </tr>
+          <Card padded={false} className="overflow-hidden">
+            <Table>
+              <THead>
+                <Tr>
+                  {Array.from({ length: 6 }).map((_, i) => (
+                    <Th key={i}><Skeleton className="h-3 w-16" /></Th>
                   ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
+                </Tr>
+              </THead>
+              <TBody>
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <Tr key={i}>
+                    {Array.from({ length: 6 }).map((_, j) => (
+                      <Td key={j}><Skeleton className="h-4 w-full" /></Td>
+                    ))}
+                  </Tr>
+                ))}
+              </TBody>
+            </Table>
+          </Card>
         ) : (
-          <div className="border border-line rounded-lg bg-paper shadow-card overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-line bg-cream">
-                    <th className="text-left text-xs font-semibold text-muted uppercase tracking-wide px-4 py-3">ID</th>
-                    <th className="text-left text-xs font-semibold text-muted uppercase tracking-wide px-4 py-3">Canal</th>
-                    <th className="text-right text-xs font-semibold text-muted uppercase tracking-wide px-4 py-3">Itens</th>
-                    <th className="text-right text-xs font-semibold text-muted uppercase tracking-wide px-4 py-3">Total</th>
-                    <th className="text-left text-xs font-semibold text-muted uppercase tracking-wide px-4 py-3">Data</th>
-                    <th className="text-center text-xs font-semibold text-muted uppercase tracking-wide px-4 py-3">Ações</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-line">
-                  {filtered.map((sale: SaleRow) => {
-                    const channelName = (typeof sale.channel === "object" && sale.channel ? sale.channel.name : sale.channel) || channels.find((ch) => ch.id === sale.channelId)?.name || "—"
-                    const channelStyle = channelColors[channelName] || "bg-cream text-muted"
-                    return (
-                      <tr key={sale.id} className="hover:bg-cream/50 transition-colors">
-                        <td className="px-4 py-3 text-sm font-medium text-ink">#{sale.id.slice(0, 6)}</td>
-                        <td className="px-4 py-3">
-                          <span className={`text-xs font-medium px-2 py-1 rounded-full ${channelStyle}`}>{channelName}</span>
-                        </td>
-                        <td className="px-4 py-3 text-sm text-muted text-right">{(sale.items || []).length}</td>
-                        <td className="px-4 py-3 text-sm font-semibold text-ink text-right">R$ {sale.total}</td>
-                        <td className="px-4 py-3 text-sm text-muted">{new Date(sale.createdAt).toLocaleDateString("pt-BR")}</td>
-                        <td className="px-4 py-3 text-center">
-                          {canEdit && (
-                            <button onClick={() => handleDeleteSale(sale.id)} aria-label="Excluir" className="p-1.5 rounded-md hover:bg-cream text-danger"><Trash2 className="w-4 h-4" /></button>
-                          )}
-                        </td>
-                      </tr>
-                    )
-                  })}
-                  {filtered.length === 0 && (
-                    <tr><td colSpan={6} className="px-4 py-8 text-center text-sm text-muted">Nenhuma venda registrada</td></tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
+          <Card padded={false} className="overflow-hidden">
+            <Table>
+              <THead>
+                <Tr>
+                  <Th>ID</Th>
+                  <Th>Canal</Th>
+                  <Th className="text-right">Itens</Th>
+                  <Th className="text-right">Total</Th>
+                  <Th>Data</Th>
+                  <Th className="text-center">Ações</Th>
+                </Tr>
+              </THead>
+              <TBody>
+                {filtered.map((sale: SaleRow) => {
+                  const channelName = (typeof sale.channel === "object" && sale.channel ? sale.channel.name : sale.channel) || channels.find((ch) => ch.id === sale.channelId)?.name || "—"
+                  const channelVariant = channelVariants[channelName] || "neutral"
+                  return (
+                    <Tr key={sale.id}>
+                      <Td className="text-sm font-medium text-ink">#{sale.id.slice(0, 6)}</Td>
+                      <Td>
+                        <Badge variant={channelVariant}>{channelName}</Badge>
+                      </Td>
+                      <Td className="text-sm text-muted text-right">{(sale.items || []).length}</Td>
+                      <Td className="text-sm font-semibold text-ink text-right">R$ {sale.total}</Td>
+                      <Td className="text-sm text-muted">{new Date(sale.createdAt).toLocaleDateString("pt-BR")}</Td>
+                      <Td className="text-center">
+                        {canEdit && (
+                          <button onClick={() => handleDeleteSale(sale.id)} aria-label="Excluir" className="p-1.5 rounded-md hover:bg-cream text-danger"><Trash2 className="w-4 h-4" /></button>
+                        )}
+                      </Td>
+                    </Tr>
+                  )
+                })}
+                {filtered.length === 0 && (
+                  <Tr><Td colSpan={6} className="px-4 py-8 text-center text-sm text-muted">Nenhuma venda registrada</Td></Tr>
+                )}
+              </TBody>
+            </Table>
+          </Card>
         )}
 
         {showModal && (
-          <div className="fixed inset-0 z-50 bg-ink/30 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="venda-title">
-            <div ref={modalRef} className="bg-paper rounded-xl border border-line shadow-lg w-full max-w-lg max-h-[85vh] overflow-y-auto">
-              <div className="flex items-center justify-between p-4 border-b border-line sticky top-0 bg-paper">
-                <h3 id="venda-title" className="text-lg font-bold text-ink">Nova Venda</h3>
-                <button onClick={() => setShowModal(false)} data-close-modal aria-label="Fechar" className="p-1.5 rounded-md hover:bg-cream text-muted"><X className="w-5 h-5" /></button>
+          <Modal
+            open
+            onClose={() => setShowModal(false)}
+            title="Nova Venda"
+            size="md"
+            footer={
+              <div className="flex gap-2">
+                <Button variant="secondary" className="flex-1" onClick={() => setShowModal(false)}>Cancelar</Button>
+                <Button className="flex-1" onClick={handleSaveSale}>Salvar</Button>
               </div>
-              <div className="p-4 space-y-4">
+            }
+          >
+            <div className="p-4 space-y-4">
                 <div>
                   <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Canal de Venda *</label>
                   <select value={formChannel} onChange={(e) => setFormChannel(e.target.value)} className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink transition-colors bg-paper">
@@ -246,12 +252,7 @@ export default function VendasPage() {
                   <span className="text-xl font-bold text-ink">R$ {formTotal.toFixed(2)}</span>
                 </div>
               </div>
-              <div className="p-4 border-t border-line flex gap-2 sticky bottom-0 bg-paper">
-                <button onClick={() => setShowModal(false)} className="flex-1 h-10 border border-line rounded-lg text-sm font-medium text-ink hover:bg-cream transition-colors">Cancelar</button>
-                <button onClick={handleSaveSale} className="flex-1 h-10 bg-ink text-paper rounded-lg text-sm font-medium hover:bg-ink/90 transition-colors">Salvar</button>
-              </div>
-            </div>
-          </div>
+          </Modal>
         )}
       </div>
         {dialog}

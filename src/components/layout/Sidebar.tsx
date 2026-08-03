@@ -24,6 +24,7 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
+import { GlassSurface } from "@/components/ui/GlassSurface";
 
 const navItems = [
   { href: "/", label: "Painel", icon: Home },
@@ -50,8 +51,9 @@ export function Sidebar() {
   const visibleItems = navItems.filter((item) => !item.adminOnly || isAdmin);
 
   return (
-    <aside
-      className={`hidden lg:flex flex-col border-r border-line bg-cream transition-all duration-200 ${
+    <GlassSurface
+      tone="strong"
+      className={`hidden lg:flex flex-col rounded-none transition-all duration-200 ${
         collapsed ? "w-[68px]" : "w-56"
       }`}
     >
@@ -106,6 +108,6 @@ export function Sidebar() {
           <p className="text-xs text-muted text-center">Só Cookies v{APP_VERSION}</p>
         </div>
       )}
-    </aside>
+    </GlassSurface>
   );
 }

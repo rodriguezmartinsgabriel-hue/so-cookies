@@ -2,15 +2,20 @@
 
 import { useState } from "react"
 import { useConfirm } from "@/hooks/useConfirm"
-import { useFocusTrap } from "@/hooks/useFocusTrap"
 import { useRole } from "@/hooks/useRole"
 import { useQueryData } from "@/hooks/useQueryData"
 import { AppShell } from "@/components/layout/AppShell"
 import { Skeleton } from "@/components/ui/Skeleton"
 import { ErrorState } from "@/components/ui/ErrorState"
+import { Card } from "@/components/ui/Card"
+import { Button } from "@/components/ui/Button"
+import { Input } from "@/components/ui/Input"
+import { FormField } from "@/components/ui/FormField"
+import { Modal } from "@/components/ui/Modal"
+import { Table, THead, TBody, Tr, Th, Td } from "@/components/ui/Table"
 import { repository } from "@/lib/repository"
 import type { SaleChannel } from "@/lib/entity-types"
-import { Plus, Edit, Trash2, X, Store } from "lucide-react"
+import { Plus, Edit, Trash2, Store } from "lucide-react"
 
 export default function CanaisPage() {
   const { canEdit } = useRole();
@@ -18,7 +23,6 @@ export default function CanaisPage() {
   const { data: channels, isLoading: loading, error: channelsError, invalidate } = useQueryData("channels")
   const error = channelsError ? "Erro ao carregar canais" : null
   const [showModal, setShowModal] = useState(false)
-  const modalRef = useFocusTrap(showModal)
   const [editingItem, setEditingItem] = useState<SaleChannel | null>(null)
   const [form, setForm] = useState({ name: "", commission: "" })
 
@@ -64,13 +68,10 @@ export default function CanaisPage() {
             <p className="text-sm text-muted">{channels.length} canais cadastrados</p>
           </div>
           {canEdit && (
-            <button
-              onClick={() => { resetForm(); setShowModal(true); }}
-              className="flex items-center gap-2 h-10 px-4 bg-ink text-paper rounded-lg text-sm font-medium hover:bg-ink/90 transition-colors"
-            >
+            <Button onClick={() => { resetForm(); setShowModal(true); }}>
               <Plus className="w-4 h-4" />
               Novo Canal
-            </button>
+            </Button>
           )}
         </div>
 
@@ -79,100 +80,92 @@ export default function CanaisPage() {
         )}
 
         {loading ? (
-          <div className="border border-line rounded-lg bg-paper shadow-card overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-line bg-cream">
-                    <th className="px-4 py-3"><Skeleton className="h-3 w-20" /></th>
-                    <th className="px-4 py-3"><Skeleton className="h-3 w-16 ml-auto" /></th>
-                    <th className="px-4 py-3"><Skeleton className="h-3 w-12 mx-auto" /></th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-line">
-                  {Array.from({ length: 3 }).map((_, i) => (
-                    <tr key={i}>
-                      <td className="px-4 py-3"><div className="flex items-center gap-3"><Skeleton className="h-8 w-8 rounded-lg" /><Skeleton className="h-4 w-24" /></div></td>
-                      <td className="px-4 py-3"><Skeleton className="h-4 w-12 ml-auto" /></td>
-                      <td className="px-4 py-3"><div className="flex justify-center gap-1"><Skeleton className="h-7 w-7" /><Skeleton className="h-7 w-7" /></div></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
+          <Card padded={false} className="overflow-hidden">
+            <Table>
+              <THead>
+                <Tr>
+                  <Th><Skeleton className="h-3 w-20" /></Th>
+                  <Th className="text-right"><Skeleton className="h-3 w-16 ml-auto" /></Th>
+                  <Th className="text-center"><Skeleton className="h-3 w-12 mx-auto" /></Th>
+                </Tr>
+              </THead>
+              <TBody>
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <Tr key={i}>
+                    <Td><div className="flex items-center gap-3"><Skeleton className="h-8 w-8 rounded-lg" /><Skeleton className="h-4 w-24" /></div></Td>
+                    <Td className="text-right"><Skeleton className="h-4 w-12 ml-auto" /></Td>
+                    <Td className="text-center"><div className="flex justify-center gap-1"><Skeleton className="h-7 w-7" /><Skeleton className="h-7 w-7" /></div></Td>
+                  </Tr>
+                ))}
+              </TBody>
+            </Table>
+          </Card>
         ) : channels.length === 0 ? (
           <div className="text-center py-8 text-muted border border-dashed border-line rounded-lg">
             Nenhum canal cadastrado. Clique em &quot;Novo Canal&quot; para começar.
           </div>
         ) : (
-          <div className="border border-line rounded-lg bg-paper shadow-card overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-line bg-cream">
-                    <th className="text-left text-xs font-semibold text-muted uppercase tracking-wide px-4 py-3">Canal</th>
-                    <th className="text-right text-xs font-semibold text-muted uppercase tracking-wide px-4 py-3">Comissão</th>
-                    <th className="text-center text-xs font-semibold text-muted uppercase tracking-wide px-4 py-3">Ações</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-line">
-                  {channels.map((ch: SaleChannel) => (
-                    <tr key={ch.id} className="hover:bg-cream/50 transition-colors">
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-lg bg-cream flex items-center justify-center">
-                            <Store className="w-4 h-4 text-muted" strokeWidth={1.5} />
-                          </div>
-                          <span className="text-sm font-medium text-ink">{ch.name}</span>
+          <Card padded={false} className="overflow-hidden">
+            <Table>
+              <THead>
+                <Tr>
+                  <Th>Canal</Th>
+                  <Th className="text-right">Comissão</Th>
+                  <Th className="text-center">Ações</Th>
+                </Tr>
+              </THead>
+              <TBody>
+                {channels.map((ch: SaleChannel) => (
+                  <Tr key={ch.id}>
+                    <Td>
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-cream flex items-center justify-center">
+                          <Store className="w-4 h-4 text-muted" strokeWidth={1.5} />
                         </div>
-                      </td>
-                      <td className="px-4 py-3 text-sm text-ink text-right">
-                        {ch.commission > 0 ? `${(ch.commission * 100).toFixed(0)}%` : "—"}
-                      </td>
-                      <td className="px-4 py-3 text-center">
-                        <div className="flex items-center justify-center gap-1">
-                          {canEdit && (
-                            <>
-                              <button onClick={() => openEdit(ch)} aria-label="Editar" className="p-1.5 rounded-md hover:bg-cream text-muted"><Edit className="w-4 h-4" /></button>
-                              <button onClick={() => handleDelete(ch.id)} aria-label="Excluir" className="p-1.5 rounded-md hover:bg-cream text-danger"><Trash2 className="w-4 h-4" /></button>
-                            </>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
+                        <span className="text-sm font-medium text-ink">{ch.name}</span>
+                      </div>
+                    </Td>
+                    <Td className="text-right">
+                      {ch.commission > 0 ? `${(ch.commission * 100).toFixed(0)}%` : "—"}
+                    </Td>
+                    <Td className="text-center">
+                      <div className="flex items-center justify-center gap-1">
+                        {canEdit && (
+                          <>
+                            <Button variant="ghost" size="icon" onClick={() => openEdit(ch)} aria-label="Editar"><Edit className="w-4 h-4" /></Button>
+                            <Button variant="ghost" size="icon" onClick={() => handleDelete(ch.id)} aria-label="Excluir"><Trash2 className="w-4 h-4 text-danger" /></Button>
+                          </>
+                        )}
+                      </div>
+                    </Td>
+                  </Tr>
+                ))}
+              </TBody>
+            </Table>
+          </Card>
         )}
 
-        {showModal && (
-          <div className="fixed inset-0 z-50 bg-ink/30 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="canal-title">
-            <div ref={modalRef} className="bg-paper rounded-xl border border-line shadow-lg w-full max-w-md">
-              <div className="flex items-center justify-between p-4 border-b border-line">
-                <h3 id="canal-title" className="text-lg font-bold text-ink">{editingItem ? "Editar Canal" : "Novo Canal"}</h3>
-                <button onClick={() => { setShowModal(false); resetForm(); }} data-close-modal aria-label="Fechar" className="p-1.5 rounded-md hover:bg-cream text-muted"><X className="w-5 h-5" /></button>
-              </div>
-              <div className="p-4 space-y-4">
-                <div>
-                  <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Nome *</label>
-                  <input type="text" placeholder="Ex: WhatsApp, iFood..." value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink placeholder:text-kraft focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink transition-colors" />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Comissão (0-1)</label>
-                  <input type="number" step="0.01" min="0" max="1" placeholder="0 = sem comissão" value={form.commission} onChange={(e) => setForm({ ...form, commission: e.target.value })} className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink placeholder:text-kraft focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink transition-colors" />
-                  <p className="text-[10px] text-muted mt-1">Ex: 0.23 = 23% de comissão</p>
-                </div>
-              </div>
-              <div className="p-4 border-t border-line flex gap-2">
-                <button onClick={() => { setShowModal(false); resetForm(); }} className="flex-1 h-10 border border-line rounded-lg text-sm font-medium text-ink hover:bg-cream transition-colors">Cancelar</button>
-                <button onClick={handleSave} className="flex-1 h-10 bg-ink text-paper rounded-lg text-sm font-medium hover:bg-ink/90 transition-colors">Salvar</button>
-              </div>
+        <Modal
+          open={showModal}
+          onClose={() => { setShowModal(false); resetForm(); }}
+          title={editingItem ? "Editar Canal" : "Novo Canal"}
+          size="md"
+          footer={
+            <div className="flex gap-2">
+              <Button variant="secondary" className="flex-1" onClick={() => { setShowModal(false); resetForm(); }}>Cancelar</Button>
+              <Button className="flex-1" onClick={handleSave}>Salvar</Button>
             </div>
+          }
+        >
+          <div className="p-4 space-y-4">
+            <FormField label="Nome" required htmlFor="canal-name">
+              <Input id="canal-name" type="text" placeholder="Ex: WhatsApp, iFood..." value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+            </FormField>
+            <FormField label="Comissão (0-1)" htmlFor="canal-commission" hint="Ex: 0.23 = 23% de comissão">
+              <Input id="canal-commission" type="number" step="0.01" min="0" max="1" placeholder="0 = sem comissão" value={form.commission} onChange={(e) => setForm({ ...form, commission: e.target.value })} />
+            </FormField>
           </div>
-        )}
+        </Modal>
       </div>
         {dialog}
     </AppShell>

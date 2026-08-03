@@ -3,6 +3,9 @@
 import { AppShell } from "@/components/layout/AppShell"
 import { Skeleton } from "@/components/ui/Skeleton"
 import { ErrorState } from "@/components/ui/ErrorState"
+import { Card } from "@/components/ui/Card"
+import { Button } from "@/components/ui/Button"
+import { Table, THead, TBody, Tr, Th, Td } from "@/components/ui/Table"
 import { useQueryData } from "@/hooks/useQueryData"
 import type { Ingredient, Product, Recipe, Sale, SaleItem } from "@/lib/entity-types"
 import { csvFromSections, downloadCsv, fileStamp } from "@/lib/csv"
@@ -90,13 +93,15 @@ export default function IndicadoresPage() {
               Análise baseada nos dados reais do negócio
             </p>
           </div>
-          <button
+          <Button
             onClick={handleExportCsv}
-            className="flex items-center gap-2 h-8 px-3 rounded-md text-sm font-medium bg-ink/10 text-ink hover:bg-ink/20 transition-colors"
+            variant="ghost"
+            size="sm"
+            className="bg-ink/10 hover:bg-ink/20"
           >
             <FileSpreadsheet className="w-4 h-4" />
             Exportar Planilha
-          </button>
+          </Button>
         </div>
 
         {error && (
@@ -107,7 +112,7 @@ export default function IndicadoresPage() {
           <div className="space-y-4">
             <div className="space-y-3">
               {Array.from({ length: 5 }).map((_, i) => (
-                <div key={i} className="border border-line rounded-lg bg-paper p-4 shadow-card">
+                <Card key={i} className="p-4">
                   <div className="flex items-start gap-3">
                     <Skeleton className="h-10 w-10 rounded-lg shrink-0" />
                     <div className="flex-1">
@@ -116,7 +121,7 @@ export default function IndicadoresPage() {
                       <Skeleton className="h-3 w-40" />
                     </div>
                   </div>
-                </div>
+                </Card>
               ))}
             </div>
           </div>
@@ -124,7 +129,7 @@ export default function IndicadoresPage() {
           <>
             <div className="space-y-3">
               {kpis.map((kpi) => (
-                <div key={kpi.label} className="border border-line rounded-lg bg-paper p-4 shadow-card">
+                <Card key={kpi.label} className="p-4">
                   <div className="flex items-start gap-3">
                     <div className="w-10 h-10 rounded-lg bg-cream flex items-center justify-center shrink-0">
                       <kpi.icon className="w-5 h-5 text-muted" strokeWidth={1.5} />
@@ -135,7 +140,7 @@ export default function IndicadoresPage() {
                       <p className="text-xs text-muted mt-1">{kpi.sub}</p>
                     </div>
                   </div>
-                </div>
+                </Card>
               ))}
             </div>
 
@@ -162,7 +167,7 @@ export default function IndicadoresPage() {
               </div>
             )}
 
-            <div className="border border-line rounded-lg bg-paper p-4 shadow-card">
+            <Card className="p-4">
               <h2 className="text-sm font-semibold text-ink uppercase tracking-wide mb-3">
                 Custos por Receita
               </h2>
@@ -179,37 +184,35 @@ export default function IndicadoresPage() {
                   <p className="text-sm text-muted text-center py-4">Nenhuma receita cadastrada</p>
                 )}
               </div>
-            </div>
+            </Card>
 
-            <div className="border border-line rounded-lg bg-paper p-4 shadow-card">
+            <Card className="p-4">
               <h2 className="text-sm font-semibold text-ink uppercase tracking-wide mb-3">
                 Margens por Produto
               </h2>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-line">
-                      <th className="text-left text-xs font-semibold text-muted uppercase px-2 py-2">Produto</th>
-                      <th className="text-right text-xs font-semibold text-muted uppercase px-2 py-2">Preço</th>
-                      <th className="text-right text-xs font-semibold text-muted uppercase px-2 py-2">Custo</th>
-                      <th className="text-right text-xs font-semibold text-muted uppercase px-2 py-2">Margem</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-line">
-                    {activeProducts.length > 0 ? activeProducts.map((p: Product) => (
-                      <tr key={p.id}>
-                        <td className="px-2 py-2 text-ink font-medium">{p.name}</td>
-                        <td className="px-2 py-2 text-right text-ink">R$ {(p.price || 0).toFixed(2)}</td>
-                        <td className="px-2 py-2 text-right text-muted">R$ {(p.cost || 0).toFixed(3)}</td>
-                        <td className="px-2 py-2 text-right text-success font-medium">{(p.margin || 0).toFixed(1)}%</td>
-                      </tr>
-                    )) : (
-                      <tr><td colSpan={4} className="px-2 py-4 text-center text-muted">Nenhum produto cadastrado</td></tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+              <Table>
+                <THead>
+                  <Tr>
+                    <Th>Produto</Th>
+                    <Th className="text-right">Preço</Th>
+                    <Th className="text-right">Custo</Th>
+                    <Th className="text-right">Margem</Th>
+                  </Tr>
+                </THead>
+                <TBody>
+                  {activeProducts.length > 0 ? activeProducts.map((p: Product) => (
+                    <Tr key={p.id}>
+                      <Td className="font-medium">{p.name}</Td>
+                      <Td className="text-right">R$ {(p.price || 0).toFixed(2)}</Td>
+                      <Td className="text-right text-muted">R$ {(p.cost || 0).toFixed(3)}</Td>
+                      <Td className="text-right text-success font-medium">{(p.margin || 0).toFixed(1)}%</Td>
+                    </Tr>
+                  )) : (
+                    <Tr><Td colSpan={4} className="text-center py-4 text-muted">Nenhum produto cadastrado</Td></Tr>
+                  )}
+                </TBody>
+              </Table>
+            </Card>
           </>
         )}
       </div>

@@ -5,6 +5,9 @@ import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { CustomerShell } from "@/components/customer/CustomerShell"
 import { GoogleLoginButton } from "@/components/customer/GoogleLoginButton"
+import { Button } from "@/components/ui/Button"
+import { Input } from "@/components/ui/Input"
+import { FormField } from "@/components/ui/FormField"
 
 export default function CadastroPage() {
   return (
@@ -74,86 +77,62 @@ function CadastroForm() {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label htmlFor="name" className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">
-              Nome
-            </label>
-            <input
+          <FormField label="Nome" htmlFor="name" required>
+            <Input
               id="name"
               name="name"
               type="text"
               placeholder="Seu nome"
               required
-              className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink placeholder:text-kraft focus:outline-none focus:border-ink transition-colors"
             />
-          </div>
+          </FormField>
 
-          <div>
-            <label htmlFor="email" className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">
-              Email
-            </label>
-            <input
+          <FormField label="Email" htmlFor="email" required>
+            <Input
               id="email"
               name="email"
               type="email"
               placeholder="seu@email.com"
               required
-              className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink placeholder:text-kraft focus:outline-none focus:border-ink transition-colors"
             />
-          </div>
+          </FormField>
 
-          <div>
-            <label htmlFor="phone" className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">
-              Telefone (opcional)
-            </label>
-            <input
+          <FormField label="Telefone (opcional)" htmlFor="phone">
+            <Input
               id="phone"
               name="phone"
               type="tel"
               placeholder="(11) 99999-9999"
-              className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink placeholder:text-kraft focus:outline-none focus:border-ink transition-colors"
             />
-          </div>
+          </FormField>
 
-          <div>
-            <label htmlFor="password" className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">
-              Senha
-            </label>
-            <input
+          <FormField label="Senha" htmlFor="password" required>
+            <Input
               id="password"
               name="password"
               type="password"
               placeholder="Mínimo 6 caracteres"
               required
               minLength={6}
-              className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink placeholder:text-kraft focus:outline-none focus:border-ink transition-colors"
             />
-          </div>
+          </FormField>
 
-          <div>
-            <label htmlFor="confirm" className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">
-              Confirmar senha
-            </label>
-            <input
+          <FormField label="Confirmar senha" htmlFor="confirm" required>
+            <Input
               id="confirm"
               name="confirm"
               type="password"
               placeholder="••••••••"
               required
               minLength={6}
-              className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink placeholder:text-kraft focus:outline-none focus:border-ink transition-colors"
             />
-          </div>
+          </FormField>
 
           {error && <p className="text-sm text-danger">{error}</p>}
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full h-12 bg-ink text-paper font-medium rounded-lg hover:bg-ink/90 active:scale-[0.98] disabled:opacity-50 transition-all"
-          >
+          <Button type="submit" size="lg" className="w-full" disabled={loading}>
             {loading ? "Criando..." : "Criar conta"}
-          </button>
+          </Button>
         </form>
 
         <p className="text-sm text-muted text-center">

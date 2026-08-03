@@ -2,12 +2,18 @@
 
 import { useState } from "react"
 import { useConfirm } from "@/hooks/useConfirm"
-import { useFocusTrap } from "@/hooks/useFocusTrap"
 import { useRole } from "@/hooks/useRole"
 import { useQueryData } from "@/hooks/useQueryData"
 import { AppShell } from "@/components/layout/AppShell"
 import { Skeleton } from "@/components/ui/Skeleton"
 import { ErrorState } from "@/components/ui/ErrorState"
+import { Card } from "@/components/ui/Card"
+import { Button } from "@/components/ui/Button"
+import { Input } from "@/components/ui/Input"
+import { Badge } from "@/components/ui/Badge"
+import { Modal } from "@/components/ui/Modal"
+import { GlassSurface } from "@/components/ui/GlassSurface"
+import { Table, THead, TBody, Tr, Th, Td } from "@/components/ui/Table"
 import { repository } from "@/lib/repository"
 import { Clock, ChefHat, Package, Truck, X, Plus, Check, Edit, Trash2, Ban, ChevronDown, ChevronRight, Smartphone } from "lucide-react"
 import type { Order, OrderItem } from "@/lib/entity-types"
@@ -70,10 +76,6 @@ export default function PedidosPage() {
   const [editingOrder, setEditingOrder] = useState<Order | null>(null)
   const [view, setView] = useState<"kanban" | "list">("kanban")
   const [showCompleted, setShowCompleted] = useState(false)
-
-  const orderDetailRef = useFocusTrap(!!selectedOrder)
-  const editModalRef = useFocusTrap(showEditModal)
-  const createModalRef = useFocusTrap(showCreateModal)
 
   const [formChannel, setFormChannel] = useState("")
   const [formCustomer, setFormCustomer] = useState("")
@@ -169,10 +171,10 @@ export default function PedidosPage() {
               <button onClick={() => setView("list")} className={`px-3 py-2 text-xs font-medium transition-colors ${view === "list" ? "bg-ink text-paper" : "text-muted hover:bg-cream"}`}>Lista</button>
             </div>
             {canEdit && (
-              <button onClick={() => { setFormChannel(""); setFormCustomer(""); setFormItems([]); setFormTotal(0); setShowCreateModal(true); }} className="flex items-center gap-2 h-10 px-4 bg-ink text-paper rounded-lg text-sm font-medium hover:bg-ink/90 transition-colors">
+              <Button onClick={() => { setFormChannel(""); setFormCustomer(""); setFormItems([]); setFormTotal(0); setShowCreateModal(true); }}>
                 <Plus className="w-4 h-4" />
                 Novo Pedido
-              </button>
+              </Button>
             )}
           </div>
         </div>
@@ -184,20 +186,20 @@ export default function PedidosPage() {
         {loading ? (
           <div className="space-y-4">
             {Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="border border-line rounded-lg bg-paper shadow-card overflow-hidden">
+              <Card key={i} padded={false} className="overflow-hidden">
                 <div className="px-4 py-3 border-b border-line">
                   <Skeleton className="h-4 w-24" />
                 </div>
                 <div className="p-2 space-y-2">
                   {Array.from({ length: 2 }).map((_, j) => (
-                    <div key={j} className="p-3 border border-line rounded-lg">
+                    <Card key={j} className="p-3">
                       <Skeleton className="h-3 w-16 mb-2" />
                       <Skeleton className="h-4 w-32 mb-2" />
                       <Skeleton className="h-3 w-24" />
-                    </div>
+                    </Card>
                   ))}
                 </div>
-              </div>
+              </Card>
             ))}
           </div>
         ) : view === "kanban" ? (
@@ -205,7 +207,7 @@ export default function PedidosPage() {
             {columns.filter((c) => c.id !== "CONCLUIDO" && c.id !== "CANCELADO").map((col) => {
               const colOrders = orders.filter((o) => o.status === col.id)
               return (
-                <div key={col.id} className="border border-line rounded-lg bg-paper shadow-card overflow-hidden">
+                <Card key={col.id} padded={false} className="overflow-hidden">
                   <div className={`flex items-center gap-2 px-4 py-3 border-b border-line ${col.bg}`}>
                     <col.icon className={`w-4 h-4 ${col.color}`} strokeWidth={1.5} />
                     <span className="text-sm font-semibold text-ink">{col.label}</span>
@@ -225,9 +227,9 @@ export default function PedidosPage() {
                         <div className="flex items-center gap-2">
                           <p className="text-sm font-medium text-ink truncate">{o.customer}</p>
                           {o.customerId && (
-                            <span className="shrink-0 inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-info/10 text-info" title="Cliente cadastrado pelo app">
+                            <Badge variant="info" className="shrink-0" title="Cliente cadastrado pelo app">
                               <Smartphone className="w-3 h-3" /> App
-                            </span>
+                            </Badge>
                           )}
                         </div>
                         {o.pickupCode && (
@@ -243,7 +245,7 @@ export default function PedidosPage() {
                       <div className="p-4 text-center text-xs text-muted border border-dashed border-line rounded-lg">Nenhum pedido</div>
                     )}
                   </div>
-                </div>
+                </Card>
               )
             })}
 
@@ -252,7 +254,7 @@ export default function PedidosPage() {
               const cancelledCount = orders.filter((o) => o.status === "CANCELADO").length
               if (concludedCount === 0 && cancelledCount === 0) return null
               return (
-                <div className="border border-line rounded-lg bg-paper shadow-card overflow-hidden">
+                <Card padded={false} className="overflow-hidden">
                   <button
                     onClick={() => setShowCompleted(!showCompleted)}
                     className="w-full flex items-center gap-2 px-4 py-3 text-left hover:bg-cream/50 transition-colors"
@@ -276,88 +278,86 @@ export default function PedidosPage() {
                           <div className="flex items-center gap-2">
                           <p className="text-sm font-medium text-ink truncate">{o.customer}</p>
                           {o.customerId && (
-                            <span className="shrink-0 inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-info/10 text-info" title="Cliente cadastrado pelo app">
+                            <Badge variant="info" className="shrink-0" title="Cliente cadastrado pelo app">
                               <Smartphone className="w-3 h-3" /> App
-                            </span>
+                            </Badge>
                           )}
                         </div>
                           <div className="flex items-center justify-between mt-2">
                             <span className="text-xs text-muted">{o.channel} · R$ {o.total}</span>
-                            <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${o.status === "CANCELADO" ? "bg-danger/10 text-danger" : "bg-success/10 text-success"}`}>{o.status === "CANCELADO" ? "Cancelado" : "Concluído"}</span>
+                            <Badge variant={o.status === "CANCELADO" ? "danger" : "success"}>{o.status === "CANCELADO" ? "Cancelado" : "Concluído"}</Badge>
                           </div>
                         </button>
                       ))}
                     </div>
                   )}
-                </div>
+                </Card>
               )
             })()}
           </div>
         ) : (
-          <div className="border border-line rounded-lg bg-paper shadow-card overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-line bg-cream">
-                    <th className="text-left text-xs font-semibold text-muted uppercase tracking-wide px-4 py-3">ID</th>
-                    <th className="text-left text-xs font-semibold text-muted uppercase tracking-wide px-4 py-3">Cliente</th>
-                    <th className="text-left text-xs font-semibold text-muted uppercase tracking-wide px-4 py-3">Canal</th>
-                    <th className="text-right text-xs font-semibold text-muted uppercase tracking-wide px-4 py-3">Total</th>
-                    <th className="text-left text-xs font-semibold text-muted uppercase tracking-wide px-4 py-3">Status</th>
-                    <th className="text-center text-xs font-semibold text-muted uppercase tracking-wide px-4 py-3">Ações</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-line">
-                  {orders.map((o) => (
-                    <tr key={o.id} className="hover:bg-cream/50 transition-colors">
-                      <td className="px-4 py-3 text-sm font-medium text-ink">#{o.id.slice(0, 6)}</td>
-                      <td className="px-4 py-3 text-sm text-ink">
-                        <div className="flex items-center gap-2">
-                          {o.customer}
-                          {o.customerId && (
-                            <span className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-info/10 text-info" title="Cliente cadastrado pelo app">
-                              <Smartphone className="w-3 h-3" /> App
-                            </span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 text-sm text-muted">
-                        {o.channel}
-                        {o.pickupCode && <span className="ml-2 font-bold text-ink tracking-wider">#{o.pickupCode}</span>}
-                      </td>
-                      <td className="px-4 py-3 text-sm font-semibold text-ink text-right">R$ {o.total}</td>
-                      <td className="px-4 py-3">
-                        <span className="text-xs font-medium text-muted bg-cream px-2 py-1 rounded-full">{o.status}</span>
-                      </td>
-                      <td className="px-4 py-3 text-center">
-                        <div className="flex items-center justify-center gap-1">
-                          {canEdit && (
-                            <>
-                              <button onClick={() => openEditModal(o)} aria-label="Editar" className="p-1.5 rounded-md hover:bg-cream text-muted"><Edit className="w-4 h-4" /></button>
-                              {canCancel(o.status) && (
-                                <button onClick={() => handleStatusChange(o.id, "CANCELADO")} className="p-1.5 rounded-md hover:bg-cream text-danger"><Ban className="w-4 h-4" /></button>
-                              )}
-                              <button onClick={() => handleDeleteOrder(o.id)} aria-label="Excluir" className="p-1.5 rounded-md hover:bg-cream text-danger"><Trash2 className="w-4 h-4" /></button>
-                              {nextStatus[o.status] && (
-                                <button onClick={() => handleStatusChange(o.id, nextStatus[o.status])} className="text-xs px-3 py-1.5 bg-ink text-paper rounded-lg font-medium hover:bg-ink/90 transition-colors">
-                                  {nextStatusLabel[o.status]}
-                                </button>
-                              )}
-                            </>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
+          <Card padded={false} className="overflow-hidden">
+            <Table>
+              <THead>
+                <Tr>
+                  <Th>ID</Th>
+                  <Th>Cliente</Th>
+                  <Th>Canal</Th>
+                  <Th className="text-right">Total</Th>
+                  <Th>Status</Th>
+                  <Th className="text-center">Ações</Th>
+                </Tr>
+              </THead>
+              <TBody>
+                {orders.map((o) => (
+                  <Tr key={o.id}>
+                    <Td className="text-sm font-medium text-ink">#{o.id.slice(0, 6)}</Td>
+                    <Td className="text-sm text-ink">
+                      <div className="flex items-center gap-2">
+                        {o.customer}
+                        {o.customerId && (
+                          <Badge variant="info" title="Cliente cadastrado pelo app">
+                            <Smartphone className="w-3 h-3" /> App
+                          </Badge>
+                        )}
+                      </div>
+                    </Td>
+                    <Td className="text-sm text-muted">
+                      {o.channel}
+                      {o.pickupCode && <span className="ml-2 font-bold text-ink tracking-wider">#{o.pickupCode}</span>}
+                    </Td>
+                    <Td className="text-sm font-semibold text-ink text-right">R$ {o.total}</Td>
+                    <Td>
+                      <Badge variant="neutral">{o.status}</Badge>
+                    </Td>
+                    <Td className="text-center">
+                      <div className="flex items-center justify-center gap-1">
+                        {canEdit && (
+                          <>
+                            <button onClick={() => openEditModal(o)} aria-label="Editar" className="p-1.5 rounded-md hover:bg-cream text-muted"><Edit className="w-4 h-4" /></button>
+                            {canCancel(o.status) && (
+                              <button onClick={() => handleStatusChange(o.id, "CANCELADO")} className="p-1.5 rounded-md hover:bg-cream text-danger"><Ban className="w-4 h-4" /></button>
+                            )}
+                            <button onClick={() => handleDeleteOrder(o.id)} aria-label="Excluir" className="p-1.5 rounded-md hover:bg-cream text-danger"><Trash2 className="w-4 h-4" /></button>
+                            {nextStatus[o.status] && (
+                              <button onClick={() => handleStatusChange(o.id, nextStatus[o.status])} className="text-xs px-3 py-1.5 bg-ink text-paper rounded-lg font-medium hover:bg-ink/90 transition-colors">
+                                {nextStatusLabel[o.status]}
+                              </button>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    </Td>
+                  </Tr>
+                ))}
+              </TBody>
+            </Table>
+          </Card>
         )}
 
         {order && (
           <div className="fixed inset-0 z-50 bg-ink/30 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="order-detail-title">
-            <div ref={orderDetailRef} className="bg-paper rounded-xl border border-line shadow-lg w-full max-w-md max-h-[80vh] overflow-y-auto">
+            <GlassSurface tone="strong" className="rounded-xl w-full max-w-md max-h-[80vh] overflow-y-auto">
               <div className="flex items-center justify-between p-4 border-b border-line">
                 <div>
                   <h3 id="order-detail-title" className="text-lg font-bold text-ink">Pedido #{order.id.slice(0, 6)}</h3>
@@ -371,9 +371,9 @@ export default function PedidosPage() {
                   <p className="text-sm font-medium text-ink">{order.customer}</p>
                   {order.customerId && (
                     <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1.5 items-center">
-                      <span className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-info/10 text-info" title="Cliente cadastrado pelo app">
+                      <Badge variant="info" title="Cliente cadastrado pelo app">
                         <Smartphone className="w-3 h-3" /> Do app
-                      </span>
+                      </Badge>
                       {order.customerRef?.email && <span className="text-xs text-muted truncate">{order.customerRef.email}</span>}
                       {order.customerRef?.phone && <span className="text-xs text-muted">{order.customerRef.phone}</span>}
                     </div>
@@ -387,7 +387,7 @@ export default function PedidosPage() {
                 )}
                 <div>
                   <p className="text-xs text-muted uppercase tracking-wide mb-1">Status</p>
-                  <span className="text-xs font-medium text-muted bg-cream px-2 py-1 rounded-full">{order.status}</span>
+                  <Badge variant="neutral">{order.status}</Badge>
                 </div>
                 {order.pickupCode && (
                   <div>
@@ -417,9 +417,9 @@ export default function PedidosPage() {
                     <button onClick={() => handleDeleteOrder(order.id)} aria-label="Excluir" className="h-10 px-3 border border-danger/30 rounded-lg text-sm font-medium text-danger hover:bg-danger/5 transition-colors">
                       <Trash2 className="w-4 h-4" />
                     </button>
-                    <button onClick={() => { setSelectedOrder(null); openEditModal(order); }} aria-label="Editar" className="h-10 px-3 border border-line rounded-lg text-sm font-medium text-ink hover:bg-cream transition-colors">
+                    <Button variant="secondary" onClick={() => { setSelectedOrder(null); openEditModal(order); }} aria-label="Editar">
                       <Edit className="w-4 h-4" />
-                    </button>
+                    </Button>
                     {canCancel(order.status) && (
                       <button onClick={() => handleStatusChange(order.id, "CANCELADO")} className="h-10 px-3 border border-danger/30 rounded-lg text-sm font-medium text-danger hover:bg-danger/5 transition-colors">
                         <Ban className="w-4 h-4" />
@@ -427,93 +427,95 @@ export default function PedidosPage() {
                     )}
                   </>
                 )}
-                <button onClick={() => setSelectedOrder(null)} className="flex-1 h-10 border border-line rounded-lg text-sm font-medium text-ink hover:bg-cream transition-colors">Fechar</button>
+                <Button variant="secondary" className="flex-1" onClick={() => setSelectedOrder(null)}>Fechar</Button>
                 {canEdit && nextStatus[order.status] && (
-                  <button onClick={() => handleStatusChange(order.id, nextStatus[order.status])} className="flex-1 h-10 bg-ink text-paper rounded-lg text-sm font-medium transition-colors hover:bg-ink/90">
+                  <Button className="flex-1" onClick={() => handleStatusChange(order.id, nextStatus[order.status])}>
                     {nextStatusLabel[order.status]}
-                  </button>
+                  </Button>
                 )}
               </div>
-            </div>
+            </GlassSurface>
           </div>
         )}
 
         {showEditModal && editingOrder && (
-          <div className="fixed inset-0 z-50 bg-ink/30 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="edit-order-title">
-            <div ref={editModalRef} className="bg-paper rounded-xl border border-line shadow-lg w-full max-w-md">
-              <div className="flex items-center justify-between p-4 border-b border-line">
-                <h3 id="edit-order-title" className="text-lg font-bold text-ink">Editar Pedido #{editingOrder.id.slice(0, 6)}</h3>
-                <button onClick={() => { setShowEditModal(false); setEditingOrder(null); }} data-close-modal aria-label="Fechar" className="p-1.5 rounded-md hover:bg-cream text-muted"><X className="w-5 h-5" /></button>
+          <Modal
+            open
+            onClose={() => { setShowEditModal(false); setEditingOrder(null); }}
+            title={`Editar Pedido #${editingOrder.id.slice(0, 6)}`}
+            size="sm"
+            footer={
+              <div className="flex gap-2">
+                <Button variant="secondary" className="flex-1" onClick={() => { setShowEditModal(false); setEditingOrder(null); }}>Cancelar</Button>
+                <Button className="flex-1" onClick={handleEditSave}>Salvar</Button>
               </div>
-              <div className="p-4 space-y-4">
-                <div>
-                  <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Cliente</label>
-                  <input type="text" value={editForm.customer} onChange={(e) => setEditForm({ ...editForm, customer: e.target.value })} className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink placeholder:text-kraft focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink transition-colors" />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Observações</label>
-                  <textarea value={editForm.notes} onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })} rows={3} className="w-full px-3 py-2 border border-line rounded-lg text-sm text-ink placeholder:text-kraft focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink transition-colors resize-none" />
-                </div>
+            }
+          >
+            <div className="p-4 space-y-4">
+              <div>
+                <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Cliente</label>
+                <Input type="text" value={editForm.customer} onChange={(e) => setEditForm({ ...editForm, customer: e.target.value })} />
               </div>
-              <div className="p-4 border-t border-line flex gap-2">
-                <button onClick={() => { setShowEditModal(false); setEditingOrder(null); }} className="flex-1 h-10 border border-line rounded-lg text-sm font-medium text-ink hover:bg-cream transition-colors">Cancelar</button>
-                <button onClick={handleEditSave} className="flex-1 h-10 bg-ink text-paper rounded-lg text-sm font-medium hover:bg-ink/90 transition-colors">Salvar</button>
+              <div>
+                <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Observações</label>
+                <textarea value={editForm.notes} onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })} rows={3} className="w-full px-3 py-2 border border-line rounded-lg text-sm text-ink placeholder:text-kraft focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink transition-colors resize-none" />
               </div>
             </div>
-          </div>
+          </Modal>
         )}
 
         {showCreateModal && (
-          <div className="fixed inset-0 z-50 bg-ink/30 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="create-order-title">
-            <div ref={createModalRef} className="bg-paper rounded-xl border border-line shadow-lg w-full max-w-lg max-h-[85vh] overflow-y-auto">
-              <div className="flex items-center justify-between p-4 border-b border-line sticky top-0 bg-paper">
-                <h3 id="create-order-title" className="text-lg font-bold text-ink">Novo Pedido</h3>
-                <button onClick={() => setShowCreateModal(false)} data-close-modal aria-label="Fechar" className="p-1.5 rounded-md hover:bg-cream text-muted"><X className="w-5 h-5" /></button>
+          <Modal
+            open
+            onClose={() => setShowCreateModal(false)}
+            title="Novo Pedido"
+            size="md"
+            footer={
+              <div className="flex gap-2">
+                <Button variant="secondary" className="flex-1" onClick={() => setShowCreateModal(false)}>Cancelar</Button>
+                <Button className="flex-1" onClick={handleCreateOrder}>Criar Pedido</Button>
               </div>
-              <div className="p-4 space-y-4">
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Canal *</label>
-                    <select value={formChannel} onChange={(e) => setFormChannel(e.target.value)} className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink bg-paper">
-                      <option value="">Selecionar</option>
-                      {channels.map((ch) => <option key={ch.id} value={ch.id}>{ch.name}</option>)}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Cliente *</label>
-                    <input type="text" placeholder="Nome do cliente" value={formCustomer} onChange={(e) => setFormCustomer(e.target.value)} className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink placeholder:text-kraft focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink" />
-                  </div>
+            }
+          >
+            <div className="p-4 space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Canal *</label>
+                  <select value={formChannel} onChange={(e) => setFormChannel(e.target.value)} className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink bg-paper">
+                    <option value="">Selecionar</option>
+                    {channels.map((ch) => <option key={ch.id} value={ch.id}>{ch.name}</option>)}
+                  </select>
                 </div>
                 <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <label className="text-xs font-semibold text-muted uppercase tracking-wide">Itens</label>
-                    <button onClick={addItem} className="flex items-center gap-1 text-xs font-medium text-info"><Plus className="w-3 h-3" /> Adicionar</button>
-                  </div>
-                  <div className="space-y-2">
-                    {formItems.map((item, i) => (
-                      <div key={i} className="flex items-center gap-2 bg-cream/50 rounded-lg p-2">
-                        <select value={item.productId} onChange={(e) => updateItem(i, "productId", e.target.value)} className="flex-1 h-9 px-2 border border-line rounded-lg text-xs text-ink bg-paper">
-                          <option value="">Produto</option>
-                          {products.filter((p) => p.active).map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-                        </select>
-                        <input type="number" min="1" value={item.qty} onChange={(e) => updateItem(i, "qty", e.target.value)} className="w-16 h-9 px-2 border border-line rounded-lg text-xs text-ink bg-paper" />
-                        <input type="number" step="0.01" value={item.price} onChange={(e) => updateItem(i, "price", e.target.value)} className="w-24 h-9 px-2 border border-line rounded-lg text-xs text-ink bg-paper" />
-                        <button onClick={() => removeItem(i)} aria-label="Remover" className="p-1 text-danger"><X className="w-3 h-3" /></button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                <div className="border-t border-line pt-3 flex items-center justify-between">
-                  <span className="text-sm font-semibold text-ink">Total</span>
-                  <span className="text-xl font-bold text-ink">R$ {formTotal.toFixed(2)}</span>
+                  <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Cliente *</label>
+                  <Input type="text" placeholder="Nome do cliente" value={formCustomer} onChange={(e) => setFormCustomer(e.target.value)} />
                 </div>
               </div>
-              <div className="p-4 border-t border-line flex gap-2 sticky bottom-0 bg-paper">
-                <button onClick={() => setShowCreateModal(false)} className="flex-1 h-10 border border-line rounded-lg text-sm font-medium text-ink hover:bg-cream">Cancelar</button>
-                <button onClick={handleCreateOrder} className="flex-1 h-10 bg-ink text-paper rounded-lg text-sm font-medium hover:bg-ink/90">Criar Pedido</button>
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-xs font-semibold text-muted uppercase tracking-wide">Itens</label>
+                  <button onClick={addItem} className="flex items-center gap-1 text-xs font-medium text-info"><Plus className="w-3 h-3" /> Adicionar</button>
+                </div>
+                <div className="space-y-2">
+                  {formItems.map((item, i) => (
+                    <div key={i} className="flex items-center gap-2 bg-cream/50 rounded-lg p-2">
+                      <select value={item.productId} onChange={(e) => updateItem(i, "productId", e.target.value)} className="flex-1 h-9 px-2 border border-line rounded-lg text-xs text-ink bg-paper">
+                        <option value="">Produto</option>
+                        {products.filter((p) => p.active).map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                      </select>
+                      <input type="number" min="1" value={item.qty} onChange={(e) => updateItem(i, "qty", e.target.value)} className="w-16 h-9 px-2 border border-line rounded-lg text-xs text-ink bg-paper" />
+                      <input type="number" step="0.01" value={item.price} onChange={(e) => updateItem(i, "price", e.target.value)} className="w-24 h-9 px-2 border border-line rounded-lg text-xs text-ink bg-paper" />
+                      <button onClick={() => removeItem(i)} aria-label="Remover" className="p-1 text-danger"><X className="w-3 h-3" /></button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="border-t border-line pt-3 flex items-center justify-between">
+                <span className="text-sm font-semibold text-ink">Total</span>
+                <span className="text-xl font-bold text-ink">R$ {formTotal.toFixed(2)}</span>
               </div>
             </div>
-          </div>
+          </Modal>
         )}
       </div>
         {dialog}

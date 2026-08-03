@@ -10,6 +10,7 @@ import { useRole } from "@/hooks/useRole";
 import { useQueryData } from "@/hooks/useQueryData";
 import { AppShell } from "@/components/layout/AppShell";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { Card } from "@/components/ui/Card";
 import {
   ShoppingBag,
   Package,
@@ -87,7 +88,7 @@ export default function HomePage() {
 
   if (status === "loading" || status === "unauthenticated") {
     return (
-      <div className="h-screen flex items-center justify-center bg-paper">
+      <div className="h-screen flex items-center justify-center">
         <div className="flex items-center gap-4">
           <Image
             src="/logo.svg"
@@ -124,22 +125,22 @@ export default function HomePage() {
           <div className="space-y-6">
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
               {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="border border-line rounded-lg bg-paper p-4 shadow-card">
+                <Card key={i} className="p-4">
                   <Skeleton className="h-3 w-20 mb-2" />
                   <Skeleton className="h-7 w-24 mb-1" />
                   <Skeleton className="h-3 w-16" />
-                </div>
+                </Card>
               ))}
             </div>
             <div>
               <Skeleton className="h-4 w-20 mb-3" />
               <div className="grid grid-cols-3 gap-3">
                 {Array.from({ length: 9 }).map((_, i) => (
-                  <div key={i} className="border border-line rounded-xl bg-paper p-5 shadow-card">
+                  <Card key={i} className="p-5">
                     <Skeleton className="h-12 w-12 rounded-xl mb-3" />
                     <Skeleton className="h-4 w-16 mx-auto mb-1" />
                     <Skeleton className="h-3 w-20 mx-auto" />
-                  </div>
+                  </Card>
                 ))}
               </div>
             </div>
@@ -147,31 +148,31 @@ export default function HomePage() {
         ) : (
         <>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          <div className="border border-line rounded-lg bg-paper p-4 shadow-card">
+          <Card className="p-4">
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-medium text-muted uppercase tracking-wide">Faturamento</span>
               <TrendingUp className="w-4 h-4 text-success" strokeWidth={1.5} />
             </div>
             <p className="text-2xl font-bold text-ink">R$ {kpis?.revenue?.toFixed(0) || "0"}</p>
             <p className="text-xs text-muted mt-1">mês atual</p>
-          </div>
-          <div className="border border-line rounded-lg bg-paper p-4 shadow-card">
+          </Card>
+          <Card className="p-4">
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-medium text-muted uppercase tracking-wide">Lucro</span>
               <TrendingUp className="w-4 h-4 text-success" strokeWidth={1.5} />
             </div>
             <p className="text-2xl font-bold text-success">R$ {kpis?.profit?.toFixed(0) || "0"}</p>
             <p className="text-xs text-muted mt-1">margem {kpis?.margin?.toFixed(1) || 0}%</p>
-          </div>
-          <div className="border border-line rounded-lg bg-paper p-4 shadow-card">
+          </Card>
+          <Card className="p-4">
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-medium text-muted uppercase tracking-wide">Pedidos Hoje</span>
               <ShoppingBag className="w-4 h-4 text-info" strokeWidth={1.5} />
             </div>
             <p className="text-2xl font-bold text-ink">{kpis?.ordersToday || 0}</p>
             <p className="text-xs text-warning mt-1">{kpis?.pendingOrders || 0} pendentes</p>
-          </div>
-          <div className="border border-line rounded-lg bg-paper p-4 shadow-card">
+          </Card>
+          <Card className="p-4">
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-medium text-muted uppercase tracking-wide">Saldo Hoje</span>
               <DollarSign className="w-4 h-4 text-muted" strokeWidth={1.5} />
@@ -187,10 +188,10 @@ export default function HomePage() {
                 <ArrowDownLeft className="w-3 h-3" />{kpis?.todayOut || 0}
               </span>
             </div>
-          </div>
+          </Card>
         </div>
 
-        <div className="border border-line rounded-lg bg-paper p-4 shadow-card">
+        <Card className="p-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-2">
               <Truck className="w-4 h-4 text-info" strokeWidth={1.5} />
@@ -207,26 +208,29 @@ export default function HomePage() {
               </div>
             </div>
           </div>
-        </div>
+        </Card>
 
         <div>
           <h2 className="text-sm font-semibold text-ink uppercase tracking-wide mb-3">
             Módulos
           </h2>
-          <div className="grid grid-cols-3 lg:grid-cols-3 gap-3">
-            {modules.filter((mod) => !mod.adminOnly || isAdmin).map((mod) => (
+          <div className="grid grid-cols-3 lg:grid-cols-3 gap-3 stagger">
+            {modules.filter((mod) => !mod.adminOnly || isAdmin).map((mod, index) => (
               <Link
                 key={mod.label}
                 href={mod.href}
-                className="flex flex-col items-center gap-3 p-5 border border-line rounded-xl bg-paper hover:bg-cream hover:shadow-md transition-all shadow-card group"
+                className="block"
+                style={{ ["--stagger" as string]: index }}
               >
-                <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${mod.color} group-hover:scale-110 transition-transform`}>
-                  <mod.icon className="w-6 h-6" strokeWidth={1.5} />
-                </div>
-                <div className="text-center">
-                  <span className="text-sm font-semibold text-ink block">{mod.label}</span>
-                  <span className="text-[10px] text-muted">{mod.desc}</span>
-                </div>
+                <Card interactive padded={false} className="group flex flex-col items-center gap-3 p-5 h-full">
+                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${mod.color} group-hover:scale-110 transition-transform`}>
+                    <mod.icon className="w-6 h-6" strokeWidth={1.5} />
+                  </div>
+                  <div className="text-center">
+                    <span className="text-sm font-semibold text-ink block">{mod.label}</span>
+                    <span className="text-[10px] text-muted">{mod.desc}</span>
+                  </div>
+                </Card>
               </Link>
             ))}
           </div>
@@ -238,7 +242,7 @@ export default function HomePage() {
               <AlertTriangle className="w-4 h-4 text-warning" />
               Estoque Baixo
             </h2>
-            <div className="border border-line rounded-lg bg-paper shadow-card divide-y divide-line">
+            <Card padded={false} className="divide-y divide-line overflow-hidden">
               {lowStock.slice(0, 5).map((item: Ingredient) => (
                 <div key={item.id} className="flex items-center gap-3 p-3">
                   <div className="flex-1 min-w-0">
@@ -251,7 +255,7 @@ export default function HomePage() {
                   </div>
                 </div>
               ))}
-            </div>
+            </Card>
           </div>
         )}
 
@@ -260,7 +264,7 @@ export default function HomePage() {
             <h2 className="text-sm font-semibold text-ink uppercase tracking-wide mb-3">
               Pedidos Recentes
             </h2>
-            <div className="border border-line rounded-lg bg-paper shadow-card divide-y divide-line">
+            <Card padded={false} className="divide-y divide-line overflow-hidden">
               {recentOrders.map((order) => (
                 <div key={order.id} className="flex items-center gap-3 p-3">
                   <div className="flex-1 min-w-0">
@@ -275,7 +279,7 @@ export default function HomePage() {
                   </div>
                 </div>
               ))}
-            </div>
+            </Card>
           </div>
         )}
         </>
