@@ -61,13 +61,18 @@ const formatBRL = (v: number) =>
 export default function CarrinhoPage() {
   const router = useRouter()
   const { items, setQty, removeItem, clear, count } = useCart()
-  const { result, loading: pricingLoading, error: pricingError } = usePricing()
+  const [mode, setMode] = useState<"retirada" | "entrega">("retirada")
+  const [couponDraft, setCouponDraft] = useState("")
+  const [couponCode, setCouponCode] = useState("")
+  const { result, loading: pricingLoading, error: pricingError } = usePricing({
+    couponCode: couponCode.trim() || null,
+    channel: mode === "entrega" ? "delivery" : "pickup",
+  })
   const [products, setProducts] = useState<Record<string, CatalogProduct>>({})
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState("")
 
-  const [mode, setMode] = useState<"retirada" | "entrega">("retirada")
   const [slots, setSlots] = useState<DeliverySlot[]>([])
   const [slotsLoading, setSlotsLoading] = useState(false)
   const [slotsError, setSlotsError] = useState("")
@@ -171,6 +176,8 @@ export default function CarrinhoPage() {
       const body: Record<string, unknown> = {
         items: lines.map((l) => ({ productId: l.productId, qty: l.qty })),
       }
+      const code = couponCode.trim()
+      if (code) body.couponCode = code
       if (mode === "entrega" && selectedSlot) {
         body.deliveryDate = selectedSlot.date
         body.deliveryRouteId = selectedSlot.routeId
@@ -363,6 +370,41 @@ export default function CarrinhoPage() {
                   </div>
                 </div>
               )}
+            </Card>
+
+            <Card padded={false}>
+              <div className="p-4 space-y-2">
+                <p className="text-sm font-semibold text-ink">Cupom de desconto</p>
+                <div className="flex gap-2">
+                  <Input
+                    type="text"
+                    placeholder="Digite o cupom"
+                    value={couponDraft}
+                    onChange={(e) => setCouponDraft(e.target.value.toUpperCase())}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && couponDraft.trim()) {
+                        setCouponCode(couponDraft.trim().toUpperCase())
+                      }
+                    }}
+                    aria-label="Cupom de desconto"
+                  />
+                  <Button variant="secondary" size="md" onClick={() => setCouponCode(couponDraft.trim().toUpperCase())} disabled={!couponDraft.trim()}>
+                    Aplicar
+                  </Button>
+                </div>
+                {couponCode && result?.state.warnings && result.state.warnings.length > 0 && (
+                  <ul className="space-y-1">
+                    {result.state.warnings.map((w, idx) => (
+                      <li key={idx} className="text-xs text-danger">{w.message}</li>
+                    ))}
+                  </ul>
+                )}
+                {couponCode && result?.summary.discountTotal ? (
+                  <p className="text-xs text-success">
+                    Desconto aplicado: {formatBRL(result.summary.discountTotal)}
+                  </p>
+                ) : null}
+              </div>
             </Card>
 
             <div className="flex items-center justify-between border-t border-line pt-3">

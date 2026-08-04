@@ -132,7 +132,18 @@ export type {
 } from './rules/PricingRule';
 export { BasePriceRule } from './rules/PricingRule';
 export { PriceTierRule } from './rules/PriceTierRule';
+export { CouponRule } from './rules/CouponRule';
+export { CampaignRule } from './rules/CampaignRule';
+export { B2BRule } from './rules/B2BRule';
 export { ShippingRule } from './rules/ShippingRule';
+
+// Factory
+export {
+  buildPricingEngine
+} from './factory';
+export type {
+  BuildPricingEngineOptions
+} from './factory';
 
 // Error types
 export {

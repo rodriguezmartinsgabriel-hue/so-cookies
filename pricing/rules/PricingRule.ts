@@ -56,9 +56,17 @@ export class BasePriceRule implements PricingRule {
         continue;
       }
 
-      // Atualizar preço calculado
-      item.calculatedPrice = product.price;
-      item.priceAfterDiscount = product.price;
+      // Registrar mudança de preço via ação (regras são puras; estado muda só no reducer)
+      actions.push({
+        id: generateId(),
+        type: 'CHANGE_ITEM_PRICE',
+        target: 'product',
+        value: product.price,
+        productId: item.productId,
+        newPrice: product.price,
+        sourceRule: this.id,
+        timestamp: new Date()
+      });
 
       // Adicionar log
       actions.push({

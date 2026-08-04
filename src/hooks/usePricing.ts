@@ -17,6 +17,8 @@ export interface PricingResult {
     blockedReason?: string
     subtotal?: number
     shipping?: { cost: number }
+    warnings?: Array<{ message: string; type?: string }>
+    freeShipping?: boolean
   }
   total: number
   summary: {
@@ -34,8 +36,15 @@ export interface PricingResult {
   auditTrail: unknown
 }
 
-export function usePricing() {
+export interface UsePricingOptions {
+  couponCode?: string | null
+  channel?: 'delivery' | 'pickup' | 'digital'
+}
+
+export function usePricing(options?: UsePricingOptions) {
   const { items: cartItems } = useCart()
+  const couponCode = options?.couponCode || null
+  const channel = options?.channel ?? 'pickup'
   const [pricingResult, setPricingResult] = useState<PricingResult | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -44,7 +53,7 @@ export function usePricing() {
   useEffect(() => {
     if (!cartItems.length) return
 
-    const cartKey = cartItems.map(i => `${i.productId}:${i.qty}`).join('|')
+    const cartKey = `${channel}|${couponCode ?? ''}|${cartItems.map(i => `${i.productId}:${i.qty}`).join('|')}`
     if (cartKey === lastCartKeyRef.current) return
     lastCartKeyRef.current = cartKey
 
@@ -65,7 +74,8 @@ export function usePricing() {
               productId: i.productId,
               qty: i.qty
             })),
-            channel: 'pickup'
+            channel,
+            couponCode: couponCode || undefined
           }),
           signal: controller.signal
         })
@@ -91,7 +101,7 @@ export function usePricing() {
       cancelled = true
       controller.abort()
     }
-  }, [cartItems])
+  }, [cartItems, couponCode, channel])
 
   const isEmpty = cartItems.length === 0
   return {

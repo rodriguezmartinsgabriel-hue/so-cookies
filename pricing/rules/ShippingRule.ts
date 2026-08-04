@@ -30,6 +30,32 @@ export class ShippingRule implements PricingRule {
   async apply(context: PricingContext, state: PricingState, _data: PricingData): Promise<PricingAction[]> {
     const actions: PricingAction[] = [];
 
+    // Frete grátis ativado por cupom (fase PAYMENT já reduziu o estado)
+    if (state.freeShipping) {
+      actions.push({
+        id: generateId(),
+        type: 'ADD_LOG',
+        target: 'shipping',
+        value: {
+          message: 'Frete grátis ativado',
+          cost: 0
+        },
+        sourceRule: this.id,
+        timestamp: new Date()
+      });
+
+      actions.push({
+        id: generateId(),
+        type: 'ADD_SHIPPING',
+        target: 'shipping',
+        value: 0,
+        sourceRule: this.id,
+        timestamp: new Date()
+      });
+
+      return actions;
+    }
+
     // Calcular peso total
     const totalWeight = state.items.reduce((sum, item) => sum + item.qty, 0);
 
@@ -37,8 +63,6 @@ export class ShippingRule implements PricingRule {
     const shippingRate = await (this.shippingRepository as ShippingRepository).getRateByWeight(totalWeight, context.channel);
 
     if (shippingRate) {
-      state.shipping = { cost: shippingRate.basePrice };
-
       // Adicionar log
       actions.push({
         id: generateId(),

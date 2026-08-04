@@ -26,6 +26,7 @@ export interface PricingState {
   blockedReason?: string;
   version: string;
   shipping?: { cost: number };
+  freeShipping?: boolean;
   subtotal?: number;
 }
 
@@ -149,7 +150,7 @@ export interface TimelineEvent {
   totalSubtotal: number;
 }
 
-import type { Product, Customer, Coupon, Campaign, ShippingRate, PricingSettings, PriceTier } from '@/generated/prisma/client';
+import type { Product, Customer, Coupon, Campaign, ShippingRate, PriceTier } from '@/generated/prisma/client';
 
 // Logger mínimo aceito pelo Pricing Engine (compatível com console e mocks)
 export interface Logger {
@@ -165,6 +166,17 @@ export interface Metrics {
   record(category: string, metric: string, value: number): void;
 }
 
+// Configuração de precificação por canal (flags de ativação + parâmetros)
+export interface ChannelConfig {
+  id: string;
+  activatePriceTier: boolean;
+  activateCoupon: boolean;
+  activateCampaign: boolean;
+  activateB2B: boolean;
+  activateFreeShipping: boolean;
+  b2bDiscountPercent: number;
+}
+
 export interface PricingData {
   products: Record<string, Product>;
   customer?: Customer | null;
@@ -172,7 +184,7 @@ export interface PricingData {
   coupons: Coupon[];
   campaigns: Campaign[];
   shippingRates: ShippingRate[];
-  settings: PricingSettings | null;
+  settings: ChannelConfig;
 }
 
 

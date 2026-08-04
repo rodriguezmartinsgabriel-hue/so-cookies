@@ -4,6 +4,25 @@ Todas as mudanças notáveis deste projeto serão documentadas neste arquivo.
 
 O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o versionamento segue [SemVer](https://semver.org/lang/pt-BR/). A versão exibida no app vem de `src/lib/version.ts` (fonte: `package.json`). Tags git acompanham cada release (`vX.Y.Z`).
 
+## [1.2.0] - 2026-08-03
+
+### Adicionado (Pricing Engine v2 completo — regras de desconto)
+- **Cupom de desconto no carrinho** (`CouponRule`, fase PAYMENT): o cliente aplica um código na página `/carrinho` e o Pricing Engine recalcula o total.
+  - Tipos suportados: `PERCENTAGE`, `FIXED_AMOUNT`, `FREE_SHIPPING` (zera o frete na entrega via novo estado `freeShipping`).
+  - `BUY_X_GET_Y` não é aplicado — gera aviso "leva/ganha ainda não é suportado" no resumo.
+  - Validações com aviso no lugar de erro fatal: cupom inexistente, inativo, expirado, esgotado (`usedCount >= usageLimit`), canal incompatível (`applicableTypes`) e pedido mínimo (`minOrderValue`).
+- **Campanha promocional** (`CampaignRule`, fase ORDER): aplica o desconto da campanha ativa de maior prioridade cujas condições batam (`minQty`, `minOrderValue`, `products`, `categories`, `customerTypes`).
+- **Desconto B2B** (`B2BRule`, fase CUSTOMER): aplica `b2bDiscountPercent` quando `customerType === 'B2B'`.
+- **Configuração por canal** (`ChannelConfig`): `PricingSettings.value` (Json) agora é lido como flags de ativação (`activatePriceTier/Coupon/Campaign/B2B/FreeShipping`) + `b2bDiscountPercent`, via `PricingRepository.getChannelConfig(channel)`; `PricingData.settings` deixou de ser `PricingSettings | null`.
+- **Fábrica `buildPricingEngine(prisma, { register })`**: substitui a montagem manual de `RuleRegistry` + regras + engine duplicada em `src/lib/customer-orders.ts` e `src/app/api/public/pricing/route.ts`; o hook de teste pode trocar os repositórios via `register`.
+- **Testes Vitest do Pricing Engine**: `pricing/__tests__/pricing-engine.test.ts` reescrito como suíte real (prisma mockado, sem `PrismaPg`/conexão) com 15 cenários (cupons, campanhas, B2B, tier, frete grátis, warnings e regressão de totais); `vitest.config.ts` agora inclui `pricing/**/*.test.{ts,tsx}`.
+- **UI de cupom**: campo "Cupom de desconto" no carrinho (aplica ao pressionar Enter ou no botão "Aplicar"), avisos do engine exibidos, total recalculado pelo engine; `couponCode` propagado para `POST /api/public/pricing` e `POST /api/public/orders`.
+
+### Corrigido
+- **Desconto não reduzia o total**: `PricingSummaryCalculator.calculateTotal` não subtraía os descontos de pedido (`appliedTo === 'subtotal'`) — nenhum cupom/campanha/B2B afetava o total. Agora `total = max(0, subtotal − descontos de pedido) + frete + taxas − cashback` e `discountTotal` soma economia de itens + descontos de pedido.
+- **Preço de tier perdido no reduce final**: `BasePriceRule` e `PriceTierRule` mutavam `state` diretamente sem emitir `CHANGE_ITEM_PRICE`; como o `PricingEngine` faz o reduce final a partir do estado inicial, o preço da faixa era revertido. As duas regras agora emitem a ação `CHANGE_ITEM_PRICE` (regras puras; estado muda só no reducer).
+- `PricingDataLoader` deixou de logar `console.log` no caminho de cálculo.
+
 ## [0.7.1] - 2026-08-02
 
 ### Corrigido (Polimento da loja do cliente)

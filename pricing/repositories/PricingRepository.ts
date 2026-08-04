@@ -1,15 +1,6 @@
 import { PrismaClient, PriceTier, PricingSettings } from '@/generated/prisma/client';
 import type { Prisma } from '@/generated/prisma/client';
-
-// Configurações de canal derivadas quando não há registro em PricingSettings
-export interface ChannelSettings {
-  id: string;
-  activatePriceTier: boolean;
-  activateCoupon: boolean;
-  activateCampaign: boolean;
-  activateB2B: boolean;
-  activateFreeShipping: boolean;
-}
+import type { ChannelConfig } from '../types';
 
 export class PricingRepository {
   constructor(private prisma: PrismaClient) {}
@@ -43,21 +34,26 @@ export class PricingRepository {
     });
   }
 
-  async getSettingsForChannel(_channel: string): Promise<PricingSettings | ChannelSettings> {
+  async getChannelConfig(channel: string): Promise<ChannelConfig> {
+    void channel;
     const settings = await this.getSettings();
 
-    if (!settings) {
-      return {
-        id: 'default',
-        activatePriceTier: true,
-        activateCoupon: false,
-        activateCampaign: false,
-        activateB2B: false,
-        activateFreeShipping: false
-      };
-    }
+    const raw = settings?.value && typeof settings.value === 'object' && !Array.isArray(settings.value)
+      ? settings.value as Record<string, unknown>
+      : {};
 
-    return settings;
+    const flag = (key: string, fallback: boolean): boolean =>
+      typeof raw[key] === 'boolean' ? (raw[key] as boolean) : fallback;
+
+    return {
+      id: settings?.id ?? 'default',
+      activatePriceTier: flag('activatePriceTier', true),
+      activateCoupon: flag('activateCoupon', true),
+      activateCampaign: flag('activateCampaign', true),
+      activateB2B: flag('activateB2B', true),
+      activateFreeShipping: flag('activateFreeShipping', true),
+      b2bDiscountPercent: typeof raw.b2bDiscountPercent === 'number' ? (raw.b2bDiscountPercent as number) : 10,
+    };
   }
 
   async createPriceTier(data: Prisma.PriceTierCreateInput): Promise<PriceTier> {

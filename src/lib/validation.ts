@@ -311,6 +311,7 @@ export const createCustomerOrderSchema = z
       productId: z.string().min(1),
       qty: z.number().int().min(1).max(100, "Quantidade máxima por item é 100"),
     })).min(1, "Adicione ao menos 1 item").max(50, "Máximo de 50 itens por pedido"),
+    couponCode: z.string().trim().max(50).optional().nullable(),
     deliveryDate: dateKeySchema.optional().nullable(),
     deliveryRouteId: z.string().min(1).optional().nullable(),
     ...deliveryAddressFields,

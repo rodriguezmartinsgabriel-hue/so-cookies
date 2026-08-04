@@ -1,10 +1,7 @@
 import { prisma } from "./prisma"
 import { toCatalogProduct, type CatalogProduct } from "./utils"
 import { assertSlotAvailable, SlotError } from "./delivery-scheduling"
-import { PricingEngine } from "@so-cookies/pricing"
-import { ProductRepository } from "@so-cookies/pricing"
-import { RuleRegistry } from "@so-cookies/pricing"
-import { PriceTierRule } from "@so-cookies/pricing"
+import { buildPricingEngine } from "@so-cookies/pricing"
 import { PricingContext } from "@so-cookies/pricing"
 
 const PICKUP_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
@@ -51,6 +48,7 @@ export async function createCustomerOrder(
   customerId: string,
   input: {
     items: { productId: string; qty: number }[]
+    couponCode?: string | null
     deliveryDate?: string | null
     deliveryRouteId?: string | null
     deliveryCep?: string | null
@@ -74,12 +72,7 @@ export async function createCustomerOrder(
   }
 
   // Inicializar Pricing Engine v2
-  const productRepo = new ProductRepository(prisma)
-
-  const registry = new RuleRegistry()
-  registry.register(new PriceTierRule(productRepo, { log: () => {}, error: () => {} }))
-
-  const engine = new PricingEngine(prisma, registry, { log: () => {}, error: () => {} }, { record: () => void 0 })
+  const engine = buildPricingEngine(prisma)
 
   const totalItems = [...qtyByProduct.values()].reduce((sum, qty) => sum + qty, 0)
   const customer = await prisma.customer.findUnique({ where: { id: customerId } })
@@ -135,7 +128,8 @@ export async function createCustomerOrder(
   const pricingContext: PricingContext = {
     items: pricingItems,
     channel: isDelivery ? 'delivery' : 'pickup',
-    customerType: 'CLIENTE'
+    customerType: 'CLIENTE',
+    couponCode: input.couponCode ?? undefined
   }
 
   const pricingResult = await engine.calculatePrice(pricingContext)

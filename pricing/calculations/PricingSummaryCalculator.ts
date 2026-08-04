@@ -5,7 +5,7 @@ export class PricingSummaryCalculator {
     return {
       originalPrice: this.calculateOriginalPrice(state.items),
       subtotal: this.calculateSubtotal(state.items),
-      discountTotal: this.calculateDiscountTotal(state.discounts),
+      discountTotal: this.calculateDiscountTotal(state),
       cashbackTotal: this.calculateCashbackTotal(state.cashbacks),
        shippingTotal: state.shipping?.cost || 0,
       taxTotal: this.calculateTaxTotal(state.taxes),
@@ -24,8 +24,18 @@ export class PricingSummaryCalculator {
     return items.reduce((sum, item) => sum + item.priceAfterDiscount * item.qty, 0);
   }
 
-  private calculateDiscountTotal(discounts: Discount[]): number {
-    return discounts.reduce((sum, d) => sum + d.value, 0);
+  private calculateItemSavings(state: PricingState): number {
+    return Math.max(0, this.calculateOriginalPrice(state.items) - this.calculateSubtotal(state.items));
+  }
+
+  private calculateOrderDiscountTotal(discounts: Discount[]): number {
+    return discounts
+      .filter((d) => d.appliedTo === 'subtotal')
+      .reduce((sum, d) => sum + d.value, 0);
+  }
+
+  private calculateDiscountTotal(state: PricingState): number {
+    return this.calculateItemSavings(state) + this.calculateOrderDiscountTotal(state.discounts);
   }
 
   private calculateCashbackTotal(cashbacks: Cashback[]): number {
@@ -38,16 +48,17 @@ export class PricingSummaryCalculator {
 
   private calculateTotal(state: PricingState): number {
     const subtotal = this.calculateSubtotal(state.items);
+    const orderDiscountTotal = this.calculateOrderDiscountTotal(state.discounts);
     const shippingTotal = state.shipping?.cost || 0;
     const taxTotal = this.calculateTaxTotal(state.taxes);
     const cashbackTotal = this.calculateCashbackTotal(state.cashbacks);
 
-    return subtotal + shippingTotal + taxTotal - cashbackTotal;
+    return Math.max(0, subtotal - orderDiscountTotal) + shippingTotal + taxTotal - cashbackTotal;
   }
 
   private calculateDiscountPercent(state: PricingState): number {
     const originalPrice = this.calculateOriginalPrice(state.items);
-    const discountTotal = this.calculateDiscountTotal(state.discounts);
+    const discountTotal = this.calculateDiscountTotal(state);
 
     return originalPrice > 0 ? (discountTotal / originalPrice) * 100 : 0;
   }

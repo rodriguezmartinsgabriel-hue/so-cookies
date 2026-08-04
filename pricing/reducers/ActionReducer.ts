@@ -22,6 +22,10 @@ export class ActionReducer {
         case 'ADD_SHIPPING':
           newState.shipping = { cost: action.value as number };
           break;
+        case 'SET_FREE_SHIPPING':
+          newState.freeShipping = true;
+          newState.shipping = { cost: 0 };
+          break;
         case 'ADD_CASHBACK':
           newState.cashbacks.push(action.value as Cashback);
           break;
@@ -50,16 +54,32 @@ export class ActionReducer {
   private applyDiscount(state: PricingState, action: PricingAction): PricingState {
     const newState = this.cloneState(state);
 
+    const currentSubtotal = newState.items.reduce(
+      (sum, item) => sum + item.priceAfterDiscount * item.qty,
+      0
+    );
+
+    let value = action.value as number;
+    let percentage = action.percentage || 0;
+
+    // Desconto de pedido (subtotal): o valor monetário é calculado aqui e usado no total.
+    // Descontos de item (tier) são informativos — o preço do item já foi reduzido.
     if (action.appliedTo === 'subtotal') {
-      newState.subtotal = Math.max(0, (newState.subtotal || 0) - (action.value as number));
+      if (action.type === 'ADD_DISCOUNT_PERCENTAGE') {
+        percentage = Math.max(0, Math.min(100, action.percentage || 0));
+        value = (currentSubtotal * percentage) / 100;
+      } else {
+        value = Math.max(0, Math.min(value, currentSubtotal));
+      }
+      newState.subtotal = Math.max(0, currentSubtotal - value);
     }
 
     const discount: Discount = {
       id: action.id,
       name: action.name || 'Desconto',
       type: action.type === 'ADD_DISCOUNT_PERCENTAGE' ? 'PERCENTAGE' : 'FIXED',
-      value: action.value as number,
-      percentage: action.percentage || 0,
+      value,
+      percentage,
       appliedTo: action.appliedTo
     };
 

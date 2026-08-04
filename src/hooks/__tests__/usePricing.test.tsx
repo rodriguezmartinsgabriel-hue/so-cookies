@@ -175,4 +175,43 @@ describe("usePricing", () => {
     const { result } = renderHook(() => usePricing());
     expect(result.current.formatBRL(20)).toMatch(/R\$/);
   });
+
+  it("includes couponCode and channel in the pricing request", async () => {
+    mockCart([{ productId: "p1", qty: 2 }]);
+    const fetchSpy = mockFetchSuccess(samplePricingResult);
+
+    const { result } = renderHook(() =>
+      usePricing({ couponCode: "WELCOME10", channel: "delivery" })
+    );
+
+    await waitFor(() => {
+      expect(result.current.result).toEqual(samplePricingResult);
+    }, { timeout: 2000 });
+    const [url, opts] = (fetchSpy as ReturnType<typeof vi.fn>).mock.calls[0];
+    expect(url).toBe("/api/public/pricing");
+    expect(JSON.parse(opts.body)).toEqual({
+      items: [{ productId: "p1", qty: 2 }],
+      channel: "delivery",
+      couponCode: "WELCOME10",
+    });
+  });
+
+  it("refetches when couponCode changes", async () => {
+    mockCart([{ productId: "p1", qty: 1 }]);
+    const fetchSpy = mockFetchSuccess(samplePricingResult);
+
+    const { result, rerender } = renderHook(
+      ({ couponCode }: { couponCode: string | null }) => usePricing({ couponCode }),
+      { initialProps: { couponCode: null } as { couponCode: string | null } }
+    );
+    await waitFor(() => {
+      expect(result.current.result).toEqual(samplePricingResult);
+    }, { timeout: 2000 });
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+
+    rerender({ couponCode: "FIX10" });
+    await waitFor(() => {
+      expect(fetchSpy).toHaveBeenCalledTimes(2);
+    }, { timeout: 2000 });
+  });
 });

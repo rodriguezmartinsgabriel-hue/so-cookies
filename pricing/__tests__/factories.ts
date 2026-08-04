@@ -1,5 +1,5 @@
-import type { PrismaClient, Product, Customer, Coupon, Campaign, ShippingRate, PricingSettings } from '@/generated/prisma/client';
-import type { PricingContext } from '../types';
+import type { PrismaClient, Product, Customer, Coupon, Campaign, ShippingRate, PricingSettings, PriceTier } from '@/generated/prisma/client';
+import type { PricingContext, ChannelConfig } from '../types';
 import type { ProductRepository } from '../repositories/ProductRepository';
 import type { CouponRepository } from '../repositories/CouponRepository';
 import type { CampaignRepository } from '../repositories/CampaignRepository';
@@ -12,16 +12,20 @@ type CouponProps = Partial<Coupon>;
 type CampaignProps = Partial<Campaign>;
 type ShippingRateProps = Partial<ShippingRate>;
 type PricingSettingsProps = Partial<PricingSettings>;
+type PriceTierProps = Partial<PriceTier>;
 
 export const productFactory = (overrides: ProductProps = {}): Product => ({
   id: 'prod-1',
   name: 'Cookie Clássico',
-  description: null,
+  sku: 'COOK-001',
   category: 'Cookies',
-  active: true,
-  cost: 5,
   price: 15,
-  weight: 80,
+  cost: 5,
+  margin: 66.67,
+  unit: 'un',
+  active: true,
+  image: null,
+  deletedAt: null,
   createdAt: new Date('2024-01-01'),
   updatedAt: new Date('2024-01-01'),
   ...overrides,
@@ -32,11 +36,14 @@ export const customerFactory = (overrides: CustomerProps = {}): Customer => ({
   name: 'João Silva',
   email: 'joao@example.com',
   phone: '11999999999',
-  document: null,
-  type: 'CLIENTE',
-  active: true,
-  deliveryAddress: null,
-  notes: null,
+  password: null,
+  addressCep: null,
+  addressStreet: null,
+  addressNumber: null,
+  addressComplement: null,
+  addressNeighborhood: null,
+  addressCity: null,
+  addressState: null,
   createdAt: new Date('2024-01-01'),
   updatedAt: new Date('2024-01-01'),
   ...overrides,
@@ -46,15 +53,18 @@ export const couponFactory = (overrides: CouponProps = {}): Coupon => ({
   id: 'coupon-1',
   code: 'WELCOME10',
   name: 'Welcome 10%',
+  description: null,
   type: 'PERCENTAGE',
   value: 10,
-  minValue: 0,
-  maxValue: null,
-  usageLimit: null,
+  minOrderValue: 0,
+  maxDiscount: null,
+  usageLimit: 100,
   usedCount: 0,
+  validFrom: new Date('2024-01-01'),
+  validUntil: new Date('2026-12-31'),
   active: true,
-  startsAt: new Date('2024-01-01'),
-  endsAt: new Date('2024-12-31'),
+  applicableProducts: [],
+  applicableTypes: ['all'],
   createdAt: new Date('2024-01-01'),
   updatedAt: new Date('2024-01-01'),
   ...overrides,
@@ -64,9 +74,14 @@ export const campaignFactory = (overrides: CampaignProps = {}): Campaign => ({
   id: 'camp-1',
   name: 'Black Friday',
   description: null,
+  type: 'PROMOTIONAL',
+  priority: 0,
+  startDate: new Date('2024-01-01'),
+  endDate: new Date('2026-12-31'),
   active: true,
-  startsAt: new Date('2024-11-01'),
-  endsAt: new Date('2024-11-30'),
+  applicableProducts: [],
+  usedCount: 0,
+  conditions: { discountPercent: 15 },
   createdAt: new Date('2024-01-01'),
   updatedAt: new Date('2024-01-01'),
   ...overrides,
@@ -74,26 +89,63 @@ export const campaignFactory = (overrides: CampaignProps = {}): Campaign => ({
 
 export const shippingRateFactory = (overrides: ShippingRateProps = {}): ShippingRate => ({
   id: 'rate-1',
-  zone: 'centro',
+  name: 'Entrega Centro',
+  channel: 'delivery',
+  zoneId: null,
+  type: 'FLAT_RATE',
+  basePrice: 10,
+  pricePerKm: 0,
+  minOrderValue: 0,
+  freeShippingThreshold: null,
+  enabled: true,
   minWeight: 0,
   maxWeight: 1000,
-  cost: 10,
-  active: true,
+  region: null,
   createdAt: new Date('2024-01-01'),
   updatedAt: new Date('2024-01-01'),
   ...overrides,
 } as ShippingRate);
 
 export const pricingSettingsFactory = (overrides: PricingSettingsProps = {}): PricingSettings => ({
-  id: 'settings-1',
-  defaultShippingCost: 10,
-  freeShippingThreshold: 100,
-  taxRate: 0,
-  active: true,
+  id: 'default',
+  key: 'default',
+  value: {
+    activatePriceTier: true,
+    activateCoupon: true,
+    activateCampaign: true,
+    activateB2B: true,
+    activateFreeShipping: true,
+    b2bDiscountPercent: 10,
+  },
+  description: null,
   createdAt: new Date('2024-01-01'),
   updatedAt: new Date('2024-01-01'),
   ...overrides,
 } as PricingSettings);
+
+export const priceTierFactory = (overrides: PriceTierProps = {}): PriceTier => ({
+  id: 'tier-1',
+  name: 'Leve 5',
+  minQty: 5,
+  maxQty: null,
+  price: 12,
+  enabled: true,
+  createdAt: new Date('2024-01-01'),
+  updatedAt: new Date('2024-01-01'),
+  productId: 'prod-1',
+  ...overrides,
+} as PriceTier);
+
+export const channelConfigFactory = (overrides: Partial<ChannelConfig> = {}): ChannelConfig => ({
+  id: 'default',
+  activatePriceTier: true,
+  activateCoupon: true,
+  activateCampaign: true,
+  activateB2B: true,
+  activateFreeShipping: true,
+  b2bDiscountPercent: 10,
+  ...overrides,
+});
 
 export const pricingContextFactory = (overrides: Partial<PricingContext> = {}): PricingContext => ({
   items: [
@@ -131,10 +183,14 @@ export const mockShippingRepository = (rates: ShippingRate[] = []): ShippingRepo
     getRates: () => Promise.resolve(rates),
   }) as unknown as ShippingRepository;
 
-export const mockPricingRepository = (settings: PricingSettings | null = null): PricingRepository =>
+export const mockPricingRepository = (opts: {
+  config?: ChannelConfig | null;
+  priceTiers?: Record<string, PriceTier[]>;
+} = {}): PricingRepository =>
   ({
-    getSettings: () => Promise.resolve(settings),
-    getActivePriceTiersForProducts: () => Promise.resolve([]),
+    getSettings: () => Promise.resolve(null),
+    getChannelConfig: () => Promise.resolve(opts.config ?? channelConfigFactory()),
+    getActivePriceTiersForProducts: () => Promise.resolve(Object.values(opts.priceTiers ?? {}).flat()),
   }) as unknown as PricingRepository;
 
 export const mockConsole = () => ({
@@ -154,20 +210,22 @@ export const buildPricingDataLoaderDeps = (opts: {
   coupons?: Coupon[];
   campaigns?: Campaign[];
   shippingRates?: ShippingRate[];
-  settings?: PricingSettings | null;
+  config?: ChannelConfig | null;
+  priceTiers?: Record<string, PriceTier[]>;
 } = {}) => {
   const products = opts.products ?? [productFactory()];
   const coupons = opts.coupons ?? [];
   const campaigns = opts.campaigns ?? [];
   const shippingRates = opts.shippingRates ?? [];
-  const settings = opts.settings === undefined ? pricingSettingsFactory() : opts.settings;
+  const config = opts.config === undefined ? channelConfigFactory() : opts.config;
 
   return {
     productRepository: mockProductRepository(products),
     couponRepository: mockCouponRepository(coupons),
     campaignRepository: mockCampaignRepository(campaigns),
     shippingRepository: mockShippingRepository(shippingRates),
-    pricingRepository: mockPricingRepository(settings),
+    pricingRepository: mockPricingRepository({ config, priceTiers: opts.priceTiers }),
+    priceTiers: opts.priceTiers ?? {},
   };
 };
 

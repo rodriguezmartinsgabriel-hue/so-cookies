@@ -42,8 +42,17 @@ export class PriceTierRule implements PricingRule {
         const discountValue = oldPrice - newPrice;
         const discountPercent = (discountValue / oldPrice) * 100;
 
-        item.calculatedPrice = newPrice;
-        item.priceAfterDiscount = newPrice;
+        // Registrar mudança de preço via ação (regras são puras; estado muda só no reducer)
+        actions.push({
+          id: generateId(),
+          type: 'CHANGE_ITEM_PRICE',
+          target: 'tier',
+          value: newPrice,
+          productId: item.productId,
+          newPrice,
+          sourceRule: this.id,
+          timestamp: new Date()
+        });
 
         // Adicionar log
         actions.push({

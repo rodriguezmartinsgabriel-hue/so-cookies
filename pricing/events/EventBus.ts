@@ -1,5 +1,7 @@
 export type PricingEventType =
   | 'CouponApplied'
+  | 'CampaignApplied'
+  | 'B2BDiscountApplied'
   | 'CashbackGranted'
   | 'CheckoutBlocked'
   | 'OrderCalculated'

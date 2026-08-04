@@ -1,5 +1,5 @@
-import type { PricingContext, PricingData } from '../types';
-import type { Product, Customer, Coupon, Campaign, ShippingRate, PricingSettings, PriceTier } from '@/generated/prisma/client';
+import type { PricingContext, PricingData, ChannelConfig } from '../types';
+import type { Product, Customer, Coupon, Campaign, ShippingRate, PriceTier } from '@/generated/prisma/client';
 import { ProductRepository } from '../repositories/ProductRepository';
 import { CouponRepository } from '../repositories/CouponRepository';
 import { CampaignRepository } from '../repositories/CampaignRepository';
@@ -18,8 +18,6 @@ export class PricingDataLoader {
   ) {}
 
   async loadData(context: PricingContext): Promise<PricingData> {
-    const startTime = Date.now();
-
     // 1. Carregar produtos
     const products = await this.loadProducts(context.items);
 
@@ -40,10 +38,8 @@ export class PricingDataLoader {
     // 6. Carregar taxas de frete
     const shippingRates = await this.loadShippingRates(context.channel);
 
-    // 7. Carregar configurações
-    const settings = await this.loadSettings();
-
-    console.log(`PricingDataLoader: Total load time: ${Date.now() - startTime}ms`);
+    // 7. Carregar configurações do canal
+    const settings = await this.loadChannelConfig(context.channel);
 
     return {
       products,
@@ -126,14 +122,8 @@ export class PricingDataLoader {
     return rates;
   }
 
-  private async loadSettings(): Promise<PricingSettings | null> {
-    const settings = await this.pricingRepository.getSettings();
-
-    if (!settings) {
-      return null;
-    }
-
-    return settings;
+  private async loadChannelConfig(channel: string): Promise<ChannelConfig> {
+    return await this.pricingRepository.getChannelConfig(channel);
   }
 }
 

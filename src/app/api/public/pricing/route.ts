@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { z } from "zod"
-import { PricingEngine, ProductRepository, PriceTierRule, RuleRegistry, PricingContext } from "@so-cookies/pricing"
+import { buildPricingEngine, PricingContext } from "@so-cookies/pricing"
 import { prisma } from "@/lib/prisma"
 import { getCustomerSession } from "@/lib/customer-auth"
 
@@ -12,6 +12,8 @@ const pricingSchema = z.object({
     name: z.string().optional()
   })).min(1),
   channel: z.enum(["delivery", "pickup", "digital"]).default("pickup"),
+  couponCode: z.string().trim().optional(),
+  customerType: z.enum(["CLIENTE", "B2B", "EMPRESA", "SUBSCRIBER"]).default("CLIENTE"),
 })
 
 export async function POST(req: NextRequest) {
@@ -37,8 +39,9 @@ export async function POST(req: NextRequest) {
 
     const context: PricingContext = {
       customerId: session.id,
-      customerType: 'CLIENTE',
+      customerType: parsed.customerType,
       channel: parsed.channel,
+      couponCode: parsed.couponCode,
       items: parsed.items.map(item => ({
         productId: item.productId,
         qty: item.qty,
@@ -47,16 +50,7 @@ export async function POST(req: NextRequest) {
       }))
     }
 
-    const productRepo = new ProductRepository(prisma)
-    const registry = new RuleRegistry()
-    registry.register(new PriceTierRule(productRepo, console))
-
-    const engine = new PricingEngine(
-      prisma,
-      registry,
-      console,
-      { record: () => void 0 }
-    )
+    const engine = buildPricingEngine(prisma)
 
     const result = await engine.calculatePrice(context)
     return NextResponse.json(result)

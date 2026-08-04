@@ -22,6 +22,7 @@ export type PricingActionType =
   | 'ADD_DISCOUNT_FIXED'
   | 'CHANGE_ITEM_PRICE'
   | 'ADD_SHIPPING'
+  | 'SET_FREE_SHIPPING'
   | 'ADD_CASHBACK'
   | 'ADD_TAX'
   | 'ADD_BONUS'
