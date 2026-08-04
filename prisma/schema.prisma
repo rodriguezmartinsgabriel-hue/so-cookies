@@ -315,6 +315,8 @@ model DeliveryRoute {
   endDate          DateTime? @db.Date
   cutoffTime       String    @default("18:00") // HH:mm em America/Sao_Paulo
   cutoffOffsetDays Int       @default(1) // dias antes da rota para fechar pedidos
+  windowStart      String    @default("12:00") // HH:mm — início da janela de entrega
+  windowEnd        String    @default("18:00") // HH:mm — fim da janela de entrega
   capacityEnabled  Boolean   @default(false)
   maxOrders        Int?
   maxItems         Int? // total de unidades por rota/data

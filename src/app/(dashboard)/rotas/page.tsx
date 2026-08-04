@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import { useConfirm } from "@/hooks/useConfirm"
 import { useRole } from "@/hooks/useRole"
 import { AppShell } from "@/components/layout/AppShell"
@@ -32,6 +32,8 @@ type Route = {
   endDate: string | null
   cutoffTime: string
   cutoffOffsetDays: number
+  windowStart: string
+  windowEnd: string
   capacityEnabled: boolean
   maxOrders: number | null
   maxItems: number | null
@@ -59,15 +61,17 @@ function dateKeyOf(d: string | null | undefined): string {
 }
 
 function routeSummary(r: Route): string {
-  if (!r.recurring) return `Rota extraordinária · ${dateKeyOf(r.date)}`
+  if (!r.recurring) return `Rota extraordinária · ${dateKeyOf(r.date)} · ${r.windowStart} às ${r.windowEnd}`
   const extra = r.startDate || r.endDate ? ` · ${dateKeyOf(r.startDate) || "?"} a ${dateKeyOf(r.endDate) || "∞"}` : ""
-  return `${dayLabel(r.dayOfWeek ?? 0)}-feira · cutoff ${r.cutoffTime} (${r.cutoffOffsetDays}d antes)${extra}`
+  return `${dayLabel(r.dayOfWeek ?? 0)}-feira · ${r.windowStart} às ${r.windowEnd} · cutoff ${r.cutoffTime} (${r.cutoffOffsetDays}d antes)${extra}`
 }
 
 async function fetchJson<T>(url: string): Promise<T> {
   const resp = await fetch(url)
   if (!resp.ok) {
     const data = await resp.json().catch(() => null)
+    if (resp.status === 401) throw new Error("Sessão expirada. Faça login novamente.")
+    if (resp.status === 500) throw new Error("Erro no servidor ao carregar rotas. Tente novamente.")
     throw new Error(data?.error || "Erro na requisição")
   }
   return resp.json()
@@ -83,6 +87,8 @@ type RouteForm = {
   endDate: string
   cutoffTime: string
   cutoffOffsetDays: string
+  windowStart: string
+  windowEnd: string
   capacityEnabled: boolean
   maxOrders: string
   maxItems: string
@@ -99,6 +105,8 @@ const EMPTY_ROUTE_FORM: RouteForm = {
   endDate: "",
   cutoffTime: "18:00",
   cutoffOffsetDays: "1",
+  windowStart: "12:00",
+  windowEnd: "18:00",
   capacityEnabled: false,
   maxOrders: "",
   maxItems: "",
@@ -114,6 +122,7 @@ export default function RotasPage() {
   const [blocks, setBlocks] = useState<Block[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const ignoreRef = useRef(false)
 
   const [showZone, setShowZone] = useState(false)
   const [zoneForm, setZoneForm] = useState({ name: "", active: true })
@@ -133,44 +142,28 @@ export default function RotasPage() {
         fetchJson<Route[]>("/api/delivery-routes"),
         fetchJson<Block[]>("/api/delivery-blocks"),
       ])
+      if (ignoreRef.current) return
       setZones(z)
       setRoutes(r)
       setBlocks(b)
       setError(null)
     } catch (e) {
+      if (ignoreRef.current) return
       setError(e instanceof Error ? e.message : "Erro ao carregar rotas")
     } finally {
-      setLoading(false)
+      if (!ignoreRef.current) setLoading(false)
     }
   }, [])
 
   useEffect(() => {
     if (!isAdmin) return
-    let ignore = false
-    async function startFetching() {
-      try {
-        const [z, r, b] = await Promise.all([
-          fetchJson<Zone[]>("/api/delivery-zones"),
-          fetchJson<Route[]>("/api/delivery-routes"),
-          fetchJson<Block[]>("/api/delivery-blocks"),
-        ])
-        if (ignore) return
-        setZones(z)
-        setRoutes(r)
-        setBlocks(b)
-        setError(null)
-      } catch (e) {
-        if (ignore) return
-        setError(e instanceof Error ? e.message : "Erro ao carregar rotas")
-      } finally {
-        if (!ignore) setLoading(false)
-      }
-    }
-    startFetching()
+    ignoreRef.current = false
+    const timer = setTimeout(() => void load(), 0)
     return () => {
-      ignore = true
+      clearTimeout(timer)
+      ignoreRef.current = true
     }
-  }, [isAdmin])
+  }, [isAdmin, load])
 
   if (!isAdmin) {
     return (
@@ -239,6 +232,8 @@ export default function RotasPage() {
       endDate: dateKeyOf(route.endDate),
       cutoffTime: route.cutoffTime,
       cutoffOffsetDays: String(route.cutoffOffsetDays),
+      windowStart: route.windowStart || "12:00",
+      windowEnd: route.windowEnd || "18:00",
       capacityEnabled: route.capacityEnabled,
       maxOrders: route.maxOrders != null ? String(route.maxOrders) : "",
       maxItems: route.maxItems != null ? String(route.maxItems) : "",
@@ -261,6 +256,8 @@ export default function RotasPage() {
       endDate: routeForm.endDate || null,
       cutoffTime: routeForm.cutoffTime,
       cutoffOffsetDays: Number(routeForm.cutoffOffsetDays),
+      windowStart: routeForm.windowStart,
+      windowEnd: routeForm.windowEnd,
       capacityEnabled: routeForm.capacityEnabled,
       maxOrders: routeForm.capacityEnabled && routeForm.maxOrders ? Number(routeForm.maxOrders) : null,
       maxItems: routeForm.capacityEnabled && routeForm.maxItems ? Number(routeForm.maxItems) : null,
@@ -574,6 +571,17 @@ export default function RotasPage() {
                   <Input type="number" min="0" max="7" value={routeForm.cutoffOffsetDays} onChange={(e) => setRouteForm({ ...routeForm, cutoffOffsetDays: e.target.value })} />
                 </FormField>
               </div>
+
+              <p className="text-sm font-medium text-ink">Janela de entrega</p>
+              <div className="grid grid-cols-2 gap-3">
+                <FormField label="Entrega a partir de">
+                  <Input type="time" value={routeForm.windowStart} onChange={(e) => setRouteForm({ ...routeForm, windowStart: e.target.value })} />
+                </FormField>
+                <FormField label="Entrega até">
+                  <Input type="time" value={routeForm.windowEnd} onChange={(e) => setRouteForm({ ...routeForm, windowEnd: e.target.value })} />
+                </FormField>
+              </div>
+              <p className="text-xs text-muted -mt-2">Exibida ao cliente no carrinho e no pedido. Ex.: &quot;Entrega entre 12h e 18h&quot;.</p>
 
               <div className="flex items-center justify-between border border-line rounded-lg p-3">
                 <div>

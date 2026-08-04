@@ -38,6 +38,8 @@ export async function POST(request: Request) {
         endDate: parseDate(parsed.endDate),
         cutoffTime: parsed.cutoffTime,
         cutoffOffsetDays: parsed.cutoffOffsetDays,
+        windowStart: parsed.windowStart,
+        windowEnd: parsed.windowEnd,
         capacityEnabled: parsed.capacityEnabled,
         maxOrders: parsed.maxOrders ?? null,
         maxItems: parsed.maxItems ?? null,

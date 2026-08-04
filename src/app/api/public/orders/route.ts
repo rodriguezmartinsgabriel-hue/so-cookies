@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { requireCustomer } from "@/lib/customer-auth"
 import { createCustomerOrder, getCustomerOrders } from "@/lib/customer-orders"
 import { createCustomerOrderSchema, getZodIssues } from "@/lib/validation"
+import { SlotError } from "@/lib/delivery-scheduling"
 import { rateLimit } from "@/lib/rate-limit"
 
 export async function GET() {
@@ -31,6 +32,10 @@ export async function POST(request: Request) {
     const issues = getZodIssues(e)
     if (issues) {
       return NextResponse.json({ error: "Dados inválidos", details: issues }, { status: 400 })
+    }
+    if (e instanceof SlotError) {
+      const status = e.code === "NOT_FOUND" ? 404 : 409
+      return NextResponse.json({ error: e.message, code: e.code }, { status })
     }
     return NextResponse.json({ error: "Erro ao criar pedido" }, { status: 500 })
   }

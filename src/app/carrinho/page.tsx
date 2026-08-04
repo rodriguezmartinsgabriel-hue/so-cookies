@@ -33,6 +33,9 @@ type DeliverySlot = {
   cutoffAt: string
   cutoffLabel: string
   cutoffOffsetDays: number
+  windowStart: string
+  windowEnd: string
+  windowLabel: string
   open: boolean
   capacity: {
     enabled: boolean
@@ -315,6 +318,9 @@ export default function CarrinhoPage() {
                               <p className={`text-xs mt-1 flex items-center gap-1 ${active ? "text-paper/80" : "text-muted"}`}>
                                 <Clock className="w-3 h-3" /> Peça até {slot.cutoffLabel}
                               </p>
+                              <p className={`text-xs mt-0.5 flex items-center gap-1 ${active ? "text-paper/80" : "text-muted"}`}>
+                                <Truck className="w-3 h-3" /> {slot.windowLabel}
+                              </p>
                               {full && (
                                 <p className="text-xs mt-1 font-medium text-danger">Rota lotada</p>
                               )}
@@ -324,9 +330,14 @@ export default function CarrinhoPage() {
                       </div>
                     )}
                     {selectedSlot && (
-                      <p className="mt-2 text-xs text-muted flex items-center gap-1">
-                        <Clock className="w-3 h-3" /> Fecha em <span className="font-semibold text-ink">{countdown}</span>
-                      </p>
+                      <div className="mt-2 space-y-1">
+                        <p className="text-xs text-muted flex items-center gap-1">
+                          <Clock className="w-3 h-3" /> Fecha em <span className="font-semibold text-ink">{countdown}</span>
+                        </p>
+                        <p className="text-xs text-muted flex items-center gap-1">
+                          <Truck className="w-3 h-3" /> {selectedSlot.windowLabel}
+                        </p>
+                      </div>
                     )}
                   </div>
 

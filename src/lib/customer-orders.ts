@@ -281,7 +281,7 @@ export async function getCustomerOrder(customerId: string, orderId: string) {
     where: { id: orderId, customerId },
     include: {
       items: { include: { product: true } },
-      deliveryRoute: { select: { id: true, name: true } },
+      deliveryRoute: { select: { id: true, name: true, windowStart: true, windowEnd: true } },
       deliveryZone: { select: { id: true, name: true } },
     },
   })
@@ -292,7 +292,7 @@ export async function getCustomerOrders(customerId: string) {
     where: { customerId },
     include: {
       items: { include: { product: true } },
-      deliveryRoute: { select: { id: true, name: true } },
+      deliveryRoute: { select: { id: true, name: true, windowStart: true, windowEnd: true } },
       deliveryZone: { select: { id: true, name: true } },
     },
     orderBy: { createdAt: "desc" },
