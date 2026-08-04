@@ -6,6 +6,8 @@ import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { GlassSurface } from "@/components/ui/GlassSurface";
 
+const MotionGlassSurface = motion(GlassSurface);
+
 type ModalProps = {
   open: boolean;
   onClose: () => void;
@@ -58,7 +60,7 @@ export function Modal({
           exit={{ opacity: 0 }}
           transition={{ duration: 0.2 }}
         >
-          <GlassSurface
+          <MotionGlassSurface
             tone="strong"
             className={cn(
               "w-full rounded-xl max-h-[85vh] overflow-y-auto flex flex-col",
@@ -86,7 +88,7 @@ export function Modal({
             )}
             <div className="flex-1 min-h-0">{children}</div>
             {footer && <div className="px-4 py-3 border-t border-line shrink-0">{footer}</div>}
-          </GlassSurface>
+          </MotionGlassSurface>
         </motion.div>
       )}
     </AnimatePresence>
