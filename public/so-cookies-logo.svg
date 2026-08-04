@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" fill="none">
+  <image
+    href="/so-cookies-logo-final.png"
+    width="400"
+    height="400"
+    class="logo-image"
+  />
+  <style>
+    .logo-image {
+      filter: brightness(0) saturate(100%);
+    }
+    :root.dark .logo-image,
+    [data-theme="dark"] .logo-image,
+    .dark .logo-image {
+      filter: brightness(0) saturate(100%) invert(1);
+    }
+  </style>
+</svg>

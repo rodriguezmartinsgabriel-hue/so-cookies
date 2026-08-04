@@ -255,6 +255,80 @@ textarea,
   animation: fade-in 0.4s var(--ease-expressive) both;
 }
 
+@keyframes loading-screen-enter {
+  from {
+    opacity: 0;
+    transform: scale(1.02);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.loading-screen-enter {
+  animation: loading-screen-enter 0.5s var(--ease-expressive) both;
+}
+
+@keyframes loading-screen-exit {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+}
+
+.loading-screen-exit {
+  animation: loading-screen-exit 0.6s var(--ease-expressive) both;
+}
+
+@keyframes loading-logo-enter {
+  0% {
+    opacity: 0;
+    transform: scale(0.85) translateY(8px);
+  }
+  60% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.loading-logo-wrapper {
+  animation: loading-logo-enter 0.7s var(--ease-expressive) both;
+  animation-delay: 0.1s;
+}
+
+@keyframes loading-logo-exit {
+  from {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.95) translateY(-4px);
+  }
+}
+
+.loading-screen-exit .loading-logo-wrapper {
+  animation: loading-logo-exit 0.6s var(--ease-expressive) both;
+}
+
+.loading-logo {
+  filter: brightness(0) saturate(100%);
+}
+
+:root.dark .loading-logo,
+[data-theme="dark"] .loading-logo,
+.dark .loading-logo {
+  filter: brightness(0) saturate(100%) invert(1);
+}
+
 @keyframes fade-in-up {
   from {
     opacity: 0;

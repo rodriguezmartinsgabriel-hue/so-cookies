@@ -26,7 +26,7 @@ export function LoadingScreen() {
 
     const timer = setTimeout(() => {
       setPhase("fading")
-      const timer2 = setTimeout(() => setPhase("done"), 500)
+      const timer2 = setTimeout(() => setPhase("done"), 600)
       return () => clearTimeout(timer2)
     }, 1500)
 
@@ -38,16 +38,17 @@ export function LoadingScreen() {
 
   return (
     <div
-      className={`fixed inset-0 z-50 flex items-center justify-center bg-paper transition-opacity duration-500 ${phase === "fading" ? "opacity-0" : "opacity-100"}`}
+      className={`loading-screen fixed inset-0 z-50 flex items-center justify-center bg-paper transition-opacity duration-500 ${phase === "fading" ? "loading-screen-exit" : "loading-screen-enter"}`}
     >
-      <div className="animate-fade-in">
+      <div className="loading-logo-wrapper">
         <Image
-          src="/logo.svg"
-          alt="Só"
-          width={80}
-          height={80}
+          src="/so-cookies-logo.svg"
+          alt="Só Cookies & Café"
+          width={120}
+          height={120}
           unoptimized
-          className="h-20 w-auto"
+          priority
+          className="loading-logo h-24 w-auto sm:h-28 md:h-32"
         />
       </div>
     </div>
