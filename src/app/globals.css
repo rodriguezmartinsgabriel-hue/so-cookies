@@ -170,6 +170,22 @@ textarea,
 [role="link"] {
   min-height: 44px;
   min-width: 44px;
+  touch-action: manipulation;
+}
+
+@supports (-webkit-touch-callout: none) {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .cardapio-scroll {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
+  }
 }
 
 @media (prefers-contrast: high) {

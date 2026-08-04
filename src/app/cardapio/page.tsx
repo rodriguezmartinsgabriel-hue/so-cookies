@@ -6,6 +6,7 @@ import { CustomerShell } from "@/components/customer/CustomerShell"
 import { ProductCard } from "@/components/customer/ProductCard"
 import { useCart } from "@/hooks/useCart"
 import { EmptyState } from "@/components/ui/EmptyState"
+import { motion } from "framer-motion"
 import type { CatalogProduct } from "@/lib/utils"
 
 export default function CardapioPage() {
@@ -46,11 +47,15 @@ export default function CardapioPage() {
 
   return (
     <CustomerShell cartCount={count}>
-      <div className="space-y-6">
-        <div>
+      <div className="space-y-6 cardapio-scroll">
+        <motion.div
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, ease: "easeOut" }}
+        >
           <h1 className="text-2xl font-bold text-ink">Cardápio</h1>
           <p className="text-sm text-muted">Escolha seus cookies — retirada na loja</p>
-        </div>
+        </motion.div>
 
         {loading && (
           <div className="space-y-2">
@@ -65,23 +70,43 @@ export default function CardapioPage() {
 
         {!loading &&
           !error &&
-          grouped.map(([category, items]) => (
-            <section key={category}>
-              <h2 className="text-sm font-semibold text-muted uppercase tracking-wide mb-2">
+          grouped.map(([category, categoryItems], categoryIndex) => (
+            <motion.section
+              key={category}
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: categoryIndex * 0.08, ease: "easeOut" }}
+            >
+              <motion.h2
+                initial={{ opacity: 0, x: -8 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.3, delay: categoryIndex * 0.08 + 0.05 }}
+                className="text-sm font-semibold text-muted uppercase tracking-wide mb-2"
+              >
                 {category}
-              </h2>
+              </motion.h2>
               <div className="space-y-2">
-                {items.map((p) => (
-                  <ProductCard
+                {categoryItems.map((p, itemIndex) => (
+                  <motion.div
                     key={p.id}
-                    product={p}
-                    qty={qtyFor(p.id)}
-                    onAdd={() => addItem(p.id)}
-                    onSetQty={(q) => setQty(p.id, q)}
-                  />
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{
+                      duration: 0.35,
+                      delay: categoryIndex * 0.08 + itemIndex * 0.04,
+                      ease: "easeOut",
+                    }}
+                  >
+                    <ProductCard
+                      product={p}
+                      qty={qtyFor(p.id)}
+                      onAdd={() => addItem(p.id)}
+                      onSetQty={(q) => setQty(p.id, q)}
+                    />
+                  </motion.div>
                 ))}
               </div>
-            </section>
+            </motion.section>
           ))}
 
         {!loading && !error && products.length === 0 && (

@@ -16,6 +16,7 @@ import { CalorieBadge } from "@/components/ui/CalorieBadge"
 import { ShimmerSkeleton } from "@/components/ui/ShimmerSkeleton"
 import { Input } from "@/components/ui/Input"
 import { FormField } from "@/components/ui/FormField"
+import { motion, AnimatePresence } from "framer-motion"
 
 import type { CatalogProduct } from "@/lib/utils"
 
@@ -245,38 +246,57 @@ export default function CarrinhoPage() {
 
         {!loading && lines.length > 0 && (
           <>
-            <div className="space-y-2">
-              {lines.map((l) => (
-                <Card key={l.productId} padded={false} className="flex items-center gap-3 p-3">
-                  {l.product.image ? (
-                    <NextImage src={l.product.image} alt={l.product.name} width={44} height={44} unoptimized className="w-11 h-11 rounded-lg object-cover shrink-0" />
-                  ) : (
-                    <div className="w-11 h-11 rounded-lg bg-cream border border-line flex items-center justify-center shrink-0">
-                      <Cookie className="w-5 h-5 text-kraft" />
-                    </div>
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-ink truncate">{l.product.name}</p>
-                    <div className="flex items-center gap-2">
-                      <p className="text-xs text-muted">{formatBRL(l.product.price)}</p>
-                      <CalorieBadge calories={l.product.nutrition?.caloriesPerUnit ?? null} variant="compact" />
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Button variant="secondary" size="icon" onClick={() => setQty(l.productId, l.qty - 1)} aria-label="Diminuir">
-                      <Minus className="w-4 h-4" />
-                    </Button>
-                    <span className="w-6 text-center text-sm font-semibold text-ink">{l.qty}</span>
-                    <Button variant="primary" size="icon" onClick={() => setQty(l.productId, l.qty + 1)} aria-label="Aumentar">
-                      <Plus className="w-4 h-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon" onClick={() => removeItem(l.productId)} aria-label="Remover">
-                      <Trash2 className="w-4 h-4 text-danger" />
-                    </Button>
-                  </div>
-                </Card>
-              ))}
-            </div>
+            <AnimatePresence mode="popLayout">
+              <div className="space-y-2">
+                {lines.map((l) => (
+                  <motion.div
+                    key={l.productId}
+                    layout
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -20, height: 0 }}
+                    transition={{ duration: 0.25, ease: "easeOut" }}
+                  >
+                    <Card key={l.productId} padded={false} className="flex items-center gap-3 p-3">
+                      {l.product.image ? (
+                        <NextImage src={l.product.image} alt={l.product.name} width={44} height={44} unoptimized className="w-11 h-11 rounded-lg object-cover shrink-0" />
+                      ) : (
+                        <div className="w-11 h-11 rounded-lg bg-cream border border-line flex items-center justify-center shrink-0">
+                          <Cookie className="w-5 h-5 text-kraft" />
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-ink truncate">{l.product.name}</p>
+                        <div className="flex items-center gap-2">
+                          <p className="text-xs text-muted">{formatBRL(l.product.price)}</p>
+                          <CalorieBadge calories={l.product.nutrition?.caloriesPerUnit ?? null} variant="compact" />
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button variant="secondary" size="icon" onClick={() => setQty(l.productId, l.qty - 1)} aria-label="Diminuir">
+                          <Minus className="w-4 h-4" />
+                        </Button>
+                        <motion.span
+                          key={l.qty}
+                          initial={{ scale: 0.5 }}
+                          animate={{ scale: 1 }}
+                          transition={{ type: "spring", stiffness: 400, damping: 20 }}
+                          className="w-6 text-center text-sm font-semibold text-ink"
+                        >
+                          {l.qty}
+                        </motion.span>
+                        <Button variant="primary" size="icon" onClick={() => setQty(l.productId, l.qty + 1)} aria-label="Aumentar">
+                          <Plus className="w-4 h-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" onClick={() => removeItem(l.productId)} aria-label="Remover">
+                          <Trash2 className="w-4 h-4 text-danger" />
+                        </Button>
+                      </div>
+                    </Card>
+                  </motion.div>
+                ))}
+              </div>
+            </AnimatePresence>
 
             <Card padded={false}>
               <div className="p-4">
