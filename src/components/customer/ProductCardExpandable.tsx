@@ -9,6 +9,7 @@ import { formatBRL } from "@/lib/utils"
 import { Button } from "@/components/ui/Button"
 import { CalorieBadge } from "@/components/ui/CalorieBadge"
 import { useHapticFeedback } from "@/hooks/useHapticFeedback"
+import { useReducedMotion } from "@/hooks/useReducedMotion"
 
 type ProductCardExpandableProps = {
   product: CatalogProduct
@@ -46,6 +47,7 @@ export function ProductCardExpandable({
   const haptic = useHapticFeedback()
   const overlayRef = useRef<HTMLDivElement>(null)
   const [imageLoaded, setImageLoaded] = useState(false)
+  const reducedMotion = useReducedMotion()
 
   const handleAdd = useCallback(() => {
     haptic.tap()
@@ -81,25 +83,25 @@ export function ProductCardExpandable({
     <motion.div
       ref={overlayRef}
       className="fixed inset-0 z-50 flex items-end sm:items-center justify-center will-change-transform"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        transition={{ duration: 0.25, ease: "easeInOut" }}
-        onClick={handleClose}
-        role="dialog"
-        aria-modal="true"
-        aria-label={product.name}
-      >
-        <div className="absolute inset-0 bg-ink/40 backdrop-blur-md" />
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: reducedMotion ? 0 : 0.25, ease: "easeInOut" }}
+      onClick={handleClose}
+      role="dialog"
+      aria-modal="true"
+      aria-label={product.name}
+    >
+      <div className="absolute inset-0 bg-ink/40 backdrop-blur-md" />
 
-        <motion.div
-          className="relative w-full max-w-md mx-auto bg-paper rounded-t-2xl sm:rounded-2xl overflow-hidden shadow-2xl"
-          initial={{ y: "100%", opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          exit={{ y: "100%", opacity: 0 }}
-          transition={{ type: "spring", stiffness: 300, damping: 28 }}
-          onClick={(e) => e.stopPropagation()}
-        >
+      <motion.div
+        className="relative w-full max-w-md mx-auto bg-paper rounded-t-2xl sm:rounded-2xl overflow-hidden shadow-2xl"
+        initial={{ y: "100%", opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        exit={{ y: "100%", opacity: 0 }}
+        transition={{ type: "spring", stiffness: reducedMotion ? 1 : 300, damping: reducedMotion ? 1 : 28 }}
+        onClick={(e) => e.stopPropagation()}
+      >
           <div className="relative">
             <div className="w-full aspect-square bg-cream relative overflow-hidden">
               {product.image ? (

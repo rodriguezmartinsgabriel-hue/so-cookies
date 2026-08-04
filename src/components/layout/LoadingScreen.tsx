@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react"
 import { usePathname } from "next/navigation"
 import Image from "next/image"
 
-const CLIENT_ROUTES = ["/cardapio", "/carrinho", "/entrar", "/cadastro", "/perfil", "/pedido"]
+const CLIENT_ROUTES = ["/", "/cardapio", "/carrinho", "/entrar", "/cadastro", "/perfil", "/pedido", "/pedidos", "/vendas", "/contatos", "/estoque", "/produtos", "/receitas", "/canais", "/caixa", "/delivery", "/rotas", "/integracoes", "/producao", "/documentos", "/relatorios", "/usuarios", "/indicadores"]
 
 function isClientRoute(pathname: string) {
   return CLIENT_ROUTES.some(

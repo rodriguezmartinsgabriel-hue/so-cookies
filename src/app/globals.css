@@ -56,7 +56,7 @@
   --paper: #1a1816;
   --cream: #23201d;
   --kraft: #3a3631;
-  --muted: #a6a099;
+  --muted: #b0a99e;
   --line: #35312c;
   --success: #55b46a;
   --danger: #e0605a;
@@ -181,11 +181,11 @@ textarea,
   body {
     -webkit-overflow-scrolling: touch;
   }
+}
 
-  .cardapio-scroll {
-    -webkit-overflow-scrolling: touch;
-    overscroll-behavior-y: contain;
-  }
+.cardapio-scroll {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
 }
 
 @media (prefers-contrast: high) {

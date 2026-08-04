@@ -6,6 +6,7 @@ import { ShoppingBag, ArrowRight } from "lucide-react"
 import Link from "next/link"
 import { formatBRL } from "@/lib/utils"
 import { useHapticFeedback } from "@/hooks/useHapticFeedback"
+import { useReducedMotion } from "@/hooks/useReducedMotion"
 
 type CartFloatingBarProps = {
   total: number
@@ -14,6 +15,7 @@ type CartFloatingBarProps = {
 
 export function CartFloatingBar({ total, itemCount }: CartFloatingBarProps) {
   const haptic = useHapticFeedback()
+  const reducedMotion = useReducedMotion()
 
   const handleTap = useCallback(() => {
     haptic.tap()
@@ -27,7 +29,7 @@ export function CartFloatingBar({ total, itemCount }: CartFloatingBarProps) {
           initial={{ y: 80, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: 80, opacity: 0 }}
-          transition={{ type: "spring", stiffness: 300, damping: 28 }}
+          transition={{ type: "spring", stiffness: reducedMotion ? 1 : 300, damping: reducedMotion ? 1 : 28 }}
         >
         <Link
           href="/carrinho"
@@ -36,8 +38,8 @@ export function CartFloatingBar({ total, itemCount }: CartFloatingBarProps) {
         >
           <motion.div
             className="bg-paper/90 backdrop-blur-xl rounded-2xl border border-line/50 shadow-lg px-4 py-3 flex items-center justify-between"
-            whileTap={{ scale: 0.97 }}
-            transition={{ type: "spring", stiffness: 400, damping: 20 }}
+            whileTap={reducedMotion ? {} : { scale: 0.97 }}
+            transition={{ type: "spring", stiffness: reducedMotion ? 1 : 400, damping: reducedMotion ? 1 : 20 }}
           >
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-ink/5 flex items-center justify-center">

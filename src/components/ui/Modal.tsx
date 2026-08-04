@@ -6,6 +6,8 @@ import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { GlassSurface } from "@/components/ui/GlassSurface";
 import { useHapticFeedback } from "@/hooks/useHapticFeedback";
+import { useFocusTrap } from "@/hooks/useFocusTrap";
+import { useReducedMotion } from "@/hooks/useReducedMotion";
 
 const MotionGlassSurface = motion.create(GlassSurface);
 
@@ -34,7 +36,10 @@ export function Modal({
   footer,
   className,
 }: ModalProps) {
-  const haptic = useHapticFeedback()
+  const haptic = useHapticFeedback();
+  const dialogRef = useFocusTrap(open);
+  const reducedMotion = useReducedMotion();
+
   useEffect(() => {
     if (!open) return;
     function onKey(e: KeyboardEvent) {
@@ -60,20 +65,21 @@ export function Modal({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.2 }}
+          transition={{ duration: reducedMotion ? 0 : 0.2 }}
         >
            <MotionGlassSurface
-             tone="strong"
-             className={cn(
-               "w-full rounded-xl max-h-[85vh] overflow-y-auto flex flex-col will-change-transform",
-              sizes[size],
-              className,
-            )}
-            onClick={(e: React.MouseEvent) => e.stopPropagation()}
-            initial={{ scale: 0.96, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.96, opacity: 0 }}
-            transition={{ type: "spring", stiffness: 300, damping: 28 }}
+              ref={dialogRef}
+              tone="strong"
+              className={cn(
+                "w-full rounded-xl max-h-[85vh] overflow-y-auto flex flex-col will-change-transform",
+               sizes[size],
+               className,
+             )}
+             onClick={(e: React.MouseEvent) => e.stopPropagation()}
+             initial={reducedMotion ? {} : { scale: 0.96, opacity: 0 }}
+             animate={{ scale: 1, opacity: 1 }}
+             exit={reducedMotion ? {} : { scale: 0.96, opacity: 0 }}
+             transition={{ type: "spring", stiffness: reducedMotion ? 1 : 300, damping: reducedMotion ? 1 : 28 }}
           >
             {title && (
               <div className="flex items-center justify-between px-4 py-3 border-b border-line shrink-0">

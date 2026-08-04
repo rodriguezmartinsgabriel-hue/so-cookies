@@ -35,6 +35,7 @@ export function PullToRefresh({
     if (!el || el.scrollTop > 0) return;
     const dy = e.touches[0].clientY - startY.current;
     if (dy > 0) {
+      e.preventDefault();
       setPull(Math.min(dy * 0.5, PULL_THRESHOLD * 1.5));
     } else {
       setPull(0);

@@ -139,7 +139,7 @@ function NavLink({
         </motion.span>
       )}
       <Icon className="w-5 h-5" strokeWidth={1.5} />
-      <span className="text-[10px] font-medium leading-none">{label}</span>
+              <span className="text-xs font-medium leading-none">{label}</span>
     </Link>
     </motion.div>
   )
