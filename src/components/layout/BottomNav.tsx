@@ -17,8 +17,12 @@ export function BottomNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 px-3 pb-[calc(env(safe-area-inset-bottom)+12px)] pointer-events-none">
-      <GlassSurface tone="strong" className="max-w-md mx-auto rounded-2xl flex items-center justify-between h-16 px-1 pointer-events-auto animate-fade-in-up">
+    <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 pointer-events-none">
+      <GlassSurface
+        tone="strong"
+        className="w-full rounded-t-2xl rounded-b-none border-x-0 border-b-0 border-t border-line/50 flex justify-center pointer-events-auto animate-fade-in-up"
+      >
+        <div className="max-w-md w-full px-2 pb-[env(safe-area-inset-bottom,0px)] pt-2 flex items-center justify-between h-16">
         {navItems.map((item) => {
           const isActive =
             pathname === item.href ||
@@ -53,6 +57,7 @@ export function BottomNav() {
             </Link>
           );
         })}
+        </div>
       </GlassSurface>
     </nav>
   );

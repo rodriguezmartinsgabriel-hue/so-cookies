@@ -235,6 +235,13 @@ textarea,
   box-shadow: var(--glass-shadow);
 }
 
+/* Premium: header & footer glass surfaces have directional shadows */
+.glass-surface[class*="rounded-t-2xl"] {
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.04) inset,
+    0 -8px 24px -8px rgba(0, 0, 0, 0.12);
+}
+
 @keyframes fade-in {
   from {
     opacity: 0;

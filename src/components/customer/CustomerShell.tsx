@@ -30,9 +30,9 @@ export function CustomerShell({
         <GlassSurface
           as="header"
           tone="strong"
-          className="sticky top-0 z-40 rounded-none"
+          className="sticky top-0 z-40 rounded-none border-0"
         >
-          <div className="max-w-md mx-auto px-4 h-14 flex items-center justify-between">
+          <div className="max-w-md mx-auto px-4 pt-[env(safe-area-inset-top,0px)] h-14 flex items-center justify-between">
             <Link href="/cardapio" className="font-bold text-ink">
               Só Cookies & Café
             </Link>
@@ -46,8 +46,8 @@ export function CustomerShell({
 
   return (
     <div className="min-h-screen">
-      <GlassSurface as="header" tone="strong" className="sticky top-0 z-40 rounded-none">
-        <div className="max-w-md mx-auto px-4 h-14 flex items-center justify-between">
+      <GlassSurface as="header" tone="strong" className="sticky top-0 z-40 rounded-none border-0">
+        <div className="max-w-md mx-auto px-4 pt-[env(safe-area-inset-top,0px)] h-14 flex items-center justify-between">
           <Link href="/cardapio" className="font-bold text-ink">
             Só Cookies & Café
           </Link>
@@ -81,11 +81,16 @@ export function CustomerShell({
         <CartFloatingBar total={cartTotal} itemCount={cartCount} />
       )}
 
-      <nav className="fixed bottom-0 left-0 right-0 z-40 px-3 pb-[calc(env(safe-area-inset-bottom)+12px)] pointer-events-none">
-        <GlassSurface tone="strong" className="max-w-md mx-auto flex items-center justify-around h-16 rounded-2xl pointer-events-auto animate-fade-in-up">
-          <NavLink href="/cardapio" label="Cardápio" icon={LayoutGrid} pathname={pathname} haptic={haptic} />
-          <NavLink href="/carrinho" label="Carrinho" icon={ShoppingBag} pathname={pathname} badge={cartCount} haptic={haptic} />
-          <NavLink href="/perfil" label="Conta" icon={User} pathname={pathname} haptic={haptic} />
+      <nav className="fixed bottom-0 left-0 right-0 z-40 pointer-events-none">
+        <GlassSurface
+          tone="strong"
+          className="w-full rounded-t-2xl rounded-b-none border-x-0 border-b-0 border-t border-line/50 flex justify-center pointer-events-auto animate-fade-in-up"
+        >
+          <div className="max-w-md w-full px-4 pb-[env(safe-area-inset-bottom,0px)] pt-2 flex items-center justify-around h-16">
+            <NavLink href="/cardapio" label="Cardápio" icon={LayoutGrid} pathname={pathname} haptic={haptic} />
+            <NavLink href="/carrinho" label="Carrinho" icon={ShoppingBag} pathname={pathname} badge={cartCount} haptic={haptic} />
+            <NavLink href="/perfil" label="Conta" icon={User} pathname={pathname} haptic={haptic} />
+          </div>
         </GlassSurface>
       </nav>
     </div>
