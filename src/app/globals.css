@@ -235,6 +235,19 @@ textarea,
   box-shadow: var(--glass-shadow);
 }
 
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.4s var(--ease-expressive) both;
+}
+
 @keyframes fade-in-up {
   from {
     opacity: 0;

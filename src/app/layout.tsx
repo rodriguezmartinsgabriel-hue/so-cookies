@@ -2,6 +2,7 @@ import "./globals.css"
 import type { Metadata, Viewport } from "next"
 import { Inter, Space_Grotesk } from "next/font/google"
 import Providers from "./providers"
+import { LoadingScreen } from "@/components/layout/LoadingScreen"
 
 const inter = Inter({
   subsets: ["latin"],
@@ -90,7 +91,10 @@ export default function RootLayout({
           media="(device-width: 402px) and (device-height: 874px)"
           href="/icons/splash-1206x2622.png"
         />
-        <Providers>{children}</Providers>
+        <Providers>
+          <LoadingScreen />
+          {children}
+        </Providers>
       </body>
     </html>
   )
