@@ -7,13 +7,18 @@ import { motion } from "framer-motion"
 import { GlassSurface } from "@/components/ui/GlassSurface"
 import { ThemeToggle } from "@/components/ui/ThemeToggle"
 import { useHapticFeedback } from "@/hooks/useHapticFeedback"
+import { CartFloatingBar } from "./CartFloatingBar"
 
 export function CustomerShell({
   children,
   cartCount = 0,
+  cartTotal = 0,
+  showCartBar = true,
 }: {
   children: React.ReactNode
   cartCount?: number
+  cartTotal?: number
+  showCartBar?: boolean
 }) {
   const pathname = usePathname()
   const isAuthPage = pathname === "/entrar" || pathname === "/cadastro"
@@ -71,6 +76,10 @@ export function CustomerShell({
       </GlassSurface>
 
       <main className="max-w-md mx-auto px-4 py-4 pb-28">{children}</main>
+
+      {showCartBar && cartCount > 0 && (
+        <CartFloatingBar total={cartTotal} itemCount={cartCount} />
+      )}
 
       <nav className="fixed bottom-0 left-0 right-0 z-40 px-3 pb-[calc(env(safe-area-inset-bottom)+12px)] pointer-events-none">
         <GlassSurface tone="strong" className="max-w-md mx-auto flex items-center justify-around h-16 rounded-2xl pointer-events-auto">

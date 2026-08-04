@@ -214,7 +214,7 @@ export default function CarrinhoPage() {
   }
 
   return (
-    <CustomerShell cartCount={count}>
+    <CustomerShell cartCount={count} cartTotal={total} showCartBar={false}>
       <div className="space-y-4">
         <div>
           <h1 className="text-2xl font-bold text-ink">Carrinho</h1>

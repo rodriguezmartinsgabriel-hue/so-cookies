@@ -43,10 +43,23 @@ export default function CardapioPage() {
     return [...map.entries()]
   }, [products])
 
+  const productMap = useMemo(() => {
+    const map: Record<string, CatalogProduct> = {}
+    for (const p of products) map[p.id] = p
+    return map
+  }, [products])
+
+  const cartTotal = useMemo(() => {
+    return items.reduce((sum, i) => {
+      const product = productMap[i.productId]
+      return sum + (product ? product.price * i.qty : 0)
+    }, 0)
+  }, [items, productMap])
+
   const qtyFor = (id: string) => items.find((i) => i.productId === id)?.qty ?? 0
 
   return (
-    <CustomerShell cartCount={count}>
+    <CustomerShell cartCount={count} cartTotal={cartTotal}>
       <div className="space-y-6 cardapio-scroll">
         <motion.div
           initial={{ opacity: 0, y: -8 }}
