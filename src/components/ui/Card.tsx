@@ -23,7 +23,7 @@ export function Card({
       className={cn(
         "rounded-xl",
         padded && "p-4",
-        interactive && "transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg active:scale-[0.99] will-change-transform",
+        interactive && "transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg active:scale-[0.99]",
         className,
       )}
       {...props}

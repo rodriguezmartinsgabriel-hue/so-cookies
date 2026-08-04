@@ -31,7 +31,7 @@ export function StickyBottomCTA({
       animate={{ y: 0, opacity: 1 }}
       exit={{ y: 100, opacity: 0 }}
       transition={{ type: "spring", damping: reducedMotion ? 1 : 25, stiffness: reducedMotion ? 1 : 300 }}
-        className="fixed bottom-[calc(4rem+env(safe-area-inset-bottom))] left-0 right-0 z-50 px-4 pb-[calc(env(safe-area-inset-bottom)+12px)] pointer-events-none will-change-transform"
+        className="fixed bottom-[calc(4rem+env(safe-area-inset-bottom))] left-0 right-0 z-50 px-4 pb-[calc(env(safe-area-inset-bottom)+12px)] pointer-events-none"
     >
       <div className="max-w-md mx-auto pointer-events-auto">
         <motion.div
@@ -42,7 +42,7 @@ export function StickyBottomCTA({
         />
         <motion.div
           whileTap={reducedMotion ? {} : { scale: 0.98 }}
-          className="relative bg-paper/80 backdrop-blur-xl rounded-2xl border border-line/50 shadow-xl p-3"
+          className="relative bg-paper/80 backdrop-blur-sm rounded-2xl border border-line/50 shadow-xl p-3"
         >
           <div className="flex items-center justify-between mb-2">
             <div>

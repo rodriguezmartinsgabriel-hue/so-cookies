@@ -15,7 +15,7 @@ export function EmptyState({ icon, title, description, action }: EmptyStateProps
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, ease: "easeOut" }}
-      className="flex flex-col items-center text-center py-12 px-4 will-change-transform"
+      className="flex flex-col items-center text-center py-12 px-4"
     >
       {icon && (
         <motion.div

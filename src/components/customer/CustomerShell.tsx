@@ -118,7 +118,7 @@ function NavLink({
       whileTap={{ scale: 0.92 }}
       whileHover={{ scale: 1.05 }}
       transition={{ type: "spring", stiffness: 400, damping: 25 }}
-      className="flex flex-col items-center justify-center gap-0.5 w-16 h-14 rounded-lg relative will-change-transform"
+      className="flex flex-col items-center justify-center gap-0.5 w-16 h-14 rounded-lg relative"
     >
       <Link
         href={href}

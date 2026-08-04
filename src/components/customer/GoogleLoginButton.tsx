@@ -17,7 +17,7 @@ export function GoogleLoginButton({ next }: { next?: string | null }) {
       whileTap={{ scale: 0.97 }}
       whileHover={{ scale: 1.03 }}
       transition={{ type: "spring", stiffness: 400, damping: 25 }}
-      className="flex items-center justify-center gap-2.5 w-full h-12 border border-line rounded-lg bg-paper text-ink font-medium hover:bg-cream will-change-transform"
+      className="flex items-center justify-center gap-2.5 w-full h-12 border border-line rounded-lg bg-paper text-ink font-medium hover:bg-cream"
     >
       <GoogleIcon className="w-5 h-5 shrink-0" />
       Continuar com Google

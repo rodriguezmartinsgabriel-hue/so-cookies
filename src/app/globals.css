@@ -124,7 +124,6 @@ html {
 body {
   background-color: var(--paper);
   background-image: var(--ambient);
-  background-attachment: fixed;
   color: var(--ink);
   font-family: var(--font-body);
 }
@@ -177,14 +176,9 @@ textarea,
   html {
     -webkit-text-size-adjust: 100%;
   }
-
-  body {
-    -webkit-overflow-scrolling: touch;
-  }
 }
 
 .cardapio-scroll {
-  -webkit-overflow-scrolling: touch;
   overscroll-behavior-y: contain;
 }
 

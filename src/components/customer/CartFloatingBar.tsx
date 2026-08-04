@@ -25,7 +25,7 @@ export function CartFloatingBar({ total, itemCount }: CartFloatingBarProps) {
     <AnimatePresence>
       {itemCount > 0 && (
         <motion.div
-          className="fixed bottom-[calc(4rem+env(safe-area-inset-bottom,0px))] left-0 right-0 z-40 px-4 pb-2 pointer-events-none will-change-transform"
+          className="fixed bottom-[calc(4rem+env(safe-area-inset-bottom,0px))] left-0 right-0 z-40 px-4 pb-2 pointer-events-none"
           initial={{ y: 80, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: 80, opacity: 0 }}
@@ -37,7 +37,7 @@ export function CartFloatingBar({ total, itemCount }: CartFloatingBarProps) {
           className="pointer-events-auto block"
         >
           <motion.div
-            className="bg-paper/90 backdrop-blur-xl rounded-2xl border border-line/50 shadow-lg px-4 py-3 flex items-center justify-between"
+            className="bg-paper/90 backdrop-blur-sm rounded-2xl border border-line/50 shadow-lg px-4 py-3 flex items-center justify-between"
             whileTap={reducedMotion ? {} : { scale: 0.97 }}
             transition={{ type: "spring", stiffness: reducedMotion ? 1 : 400, damping: reducedMotion ? 1 : 20 }}
           >

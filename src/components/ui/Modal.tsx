@@ -57,7 +57,7 @@ export function Modal({
     <AnimatePresence>
       {open && (
         <motion.div
-          className="fixed inset-0 z-50 bg-ink/30 backdrop-blur-sm flex items-center justify-center p-4 will-change-opacity"
+          className="fixed inset-0 z-50 bg-ink/30 backdrop-blur-sm flex items-center justify-center p-4"
           role="dialog"
           aria-modal="true"
           aria-label={title}
@@ -71,7 +71,7 @@ export function Modal({
               ref={dialogRef}
               tone="strong"
               className={cn(
-                "w-full rounded-xl max-h-[85vh] overflow-y-auto flex flex-col will-change-transform",
+                "w-full rounded-xl max-h-[85vh] overflow-y-auto flex flex-col",
                sizes[size],
                className,
              )}

@@ -24,7 +24,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   if (status === "loading") {
     return (
-      <div className="h-screen flex items-center justify-center">
+      <div className="h-dvh flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-4xl font-bold text-ink">só</h1>
           <p className="text-muted text-sm mt-2">Carregando...</p>
@@ -40,7 +40,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const handleLogout = () => signOut({ callbackUrl: "/login" });
 
   return (
-    <div className="h-screen flex overflow-hidden">
+    <div className="h-dvh flex overflow-hidden">
       <OfflineBanner />
       <Sidebar />
       <div className="flex-1 flex flex-col min-w-0 min-h-0">
