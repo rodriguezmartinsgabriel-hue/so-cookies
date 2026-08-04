@@ -1,4 +1,5 @@
 import { type ClassValue, clsx } from "clsx";
+import { type ProductNutrition, computeProductNutrition } from "./recipe-nutrition";
 
 export function cn(...inputs: ClassValue[]) {
   return clsx(inputs);
@@ -40,6 +41,30 @@ export interface CatalogProduct {
   price: number
   unit: string
   image: string | null
+  description: string | null
+  nutrition: ProductNutrition | null
+}
+
+type CatalogRecipeIngredient = {
+  qty: number
+  unit: string
+  ingredient: {
+    name: string
+    brand: string | null
+    caloriesPer100g: number | null
+    proteinPer100g: number | null
+    carbsPer100g: number | null
+    fatPer100g: number | null
+    allergens: string[]
+    tags: string[]
+  }
+}
+
+type CatalogRecipe = {
+  image: string | null
+  yield: number
+  yieldUnit: string
+  ingredients: CatalogRecipeIngredient[]
 }
 
 export function toCatalogProduct(product: {
@@ -49,7 +74,8 @@ export function toCatalogProduct(product: {
   price: number
   unit: string
   image: string | null
-  recipes?: { image: string | null }[]
+  description?: string | null
+  recipes?: CatalogRecipe[]
 }): CatalogProduct {
   return {
     id: product.id,
@@ -58,5 +84,7 @@ export function toCatalogProduct(product: {
     price: product.price,
     unit: product.unit,
     image: product.image ?? product.recipes?.[0]?.image ?? null,
+    description: product.description ?? null,
+    nutrition: computeProductNutrition(product.recipes),
   }
 }

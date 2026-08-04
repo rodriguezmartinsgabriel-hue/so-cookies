@@ -39,7 +39,33 @@ export async function getCustomerCatalog(): Promise<CatalogProduct[]> {
   const products = await prisma.product.findMany({
     where: { active: true, deletedAt: null },
     orderBy: [{ category: "asc" }, { name: "asc" }],
-    include: { recipes: { select: { image: true } } },
+    include: {
+      recipes: {
+        select: {
+          image: true,
+          yield: true,
+          yieldUnit: true,
+          ingredients: {
+            select: {
+              qty: true,
+              unit: true,
+              ingredient: {
+                select: {
+                  name: true,
+                  brand: true,
+                  caloriesPer100g: true,
+                  proteinPer100g: true,
+                  carbsPer100g: true,
+                  fatPer100g: true,
+                  allergens: true,
+                  tags: true,
+                },
+              },
+            },
+          },
+        },
+      },
+    },
   })
   return products.map(toCatalogProduct)
 }

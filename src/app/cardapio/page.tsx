@@ -2,31 +2,17 @@
 
 import { useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
-import { Plus, Minus, Cookie } from "lucide-react"
-import NextImage from "next/image"
 import { CustomerShell } from "@/components/customer/CustomerShell"
+import { ProductCard } from "@/components/customer/ProductCard"
 import { useCart } from "@/hooks/useCart"
-import { Card } from "@/components/ui/Card"
-import { Button } from "@/components/ui/Button"
-
-type CatalogProduct = {
-  id: string
-  name: string
-  category: string
-  price: number
-  unit: string
-  image: string | null
-  description?: string | null
-}
-
-const formatBRL = (v: number) =>
-  v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
+import type { CatalogProduct } from "@/lib/utils"
 
 export default function CardapioPage() {
   const router = useRouter()
   const [products, setProducts] = useState<CatalogProduct[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
+  const [expandedId, setExpandedId] = useState<string | null>(null)
   const { items, addItem, setQty, count } = useCart()
 
   useEffect(() => {
@@ -81,58 +67,19 @@ export default function CardapioPage() {
                 {category}
               </h2>
               <div className="space-y-2">
-                {items.map((p) => {
-                  const qty = qtyFor(p.id)
-                  return (
-                    <Card
-                      key={p.id}
-                      padded={false}
-                      className="flex items-center gap-3 p-3"
-                    >
-                      {p.image ? (
-                        <NextImage src={p.image} alt={p.name} width={48} height={48} unoptimized className="w-12 h-12 rounded-lg object-cover shrink-0" />
-                      ) : (
-                        <div className="w-12 h-12 rounded-lg bg-cream border border-line flex items-center justify-center shrink-0">
-                          <Cookie className="w-5 h-5 text-kraft" />
-                        </div>
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-ink truncate">{p.name}</p>
-                        <p className="text-xs text-muted">{formatBRL(p.price)} / {p.unit}</p>
-                      </div>
-                      {qty === 0 ? (
-                        <Button
-                          variant="primary"
-                          size="sm"
-                          onClick={() => addItem(p.id)}
-                          aria-label={`Adicionar ${p.name}`}
-                        >
-                          <Plus className="w-3.5 h-3.5" /> Adicionar
-                        </Button>
-                      ) : (
-                        <div className="flex items-center gap-2">
-                          <Button
-                            variant="secondary"
-                            size="icon"
-                            onClick={() => setQty(p.id, qty - 1)}
-                            aria-label={`Diminuir ${p.name}`}
-                          >
-                            <Minus className="w-4 h-4" />
-                          </Button>
-                          <span className="w-6 text-center text-sm font-semibold text-ink">{qty}</span>
-                          <Button
-                            variant="primary"
-                            size="icon"
-                            onClick={() => setQty(p.id, qty + 1)}
-                            aria-label={`Aumentar ${p.name}`}
-                          >
-                            <Plus className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      )}
-                    </Card>
-                  )
-                })}
+                {items.map((p) => (
+                  <ProductCard
+                    key={p.id}
+                    product={p}
+                    qty={qtyFor(p.id)}
+                    expanded={expandedId === p.id}
+                    onToggle={() =>
+                      setExpandedId((prev) => (prev === p.id ? null : p.id))
+                    }
+                    onAdd={() => addItem(p.id)}
+                    onSetQty={(qty) => setQty(p.id, qty)}
+                  />
+                ))}
               </div>
             </section>
           ))}
