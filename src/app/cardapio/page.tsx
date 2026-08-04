@@ -6,7 +6,6 @@ import { CustomerShell } from "@/components/customer/CustomerShell"
 import { ProductCard } from "@/components/customer/ProductCard"
 import { useCart } from "@/hooks/useCart"
 import { EmptyState } from "@/components/ui/EmptyState"
-import { ShimmerSkeleton } from "@/components/ui/ShimmerSkeleton"
 import type { CatalogProduct } from "@/lib/utils"
 
 export default function CardapioPage() {
@@ -14,7 +13,6 @@ export default function CardapioPage() {
   const [products, setProducts] = useState<CatalogProduct[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
-  const [expandedId, setExpandedId] = useState<string | null>(null)
   const { items, addItem, setQty, count } = useCart()
 
   useEffect(() => {
@@ -57,7 +55,7 @@ export default function CardapioPage() {
         {loading && (
           <div className="space-y-2">
             {[1, 2, 3, 4, 5].map((i) => (
-              <ShimmerSkeleton key={i} variant="card" />
+              <div key={i} className="h-20 w-full bg-cream/50 rounded-xl" />
             ))}
           </div>
         )}
@@ -78,12 +76,8 @@ export default function CardapioPage() {
                     key={p.id}
                     product={p}
                     qty={qtyFor(p.id)}
-                    expanded={expandedId === p.id}
-                    onToggle={() =>
-                      setExpandedId((prev) => (prev === p.id ? null : p.id))
-                    }
                     onAdd={() => addItem(p.id)}
-                    onSetQty={(qty) => setQty(p.id, qty)}
+                    onSetQty={(q) => setQty(p.id, q)}
                   />
                 ))}
               </div>
