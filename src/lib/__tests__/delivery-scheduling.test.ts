@@ -9,6 +9,7 @@ import {
   generateRouteDates,
   buildSlots,
   usageKey,
+  windowLabelFor,
   type DeliveryRouteInput,
 } from "@/lib/delivery-scheduling"
 
@@ -24,6 +25,8 @@ function route(overrides: Partial<DeliveryRouteInput> = {}): DeliveryRouteInput 
     endDate: null,
     cutoffTime: "18:00",
     cutoffOffsetDays: 1,
+    windowStart: "12:00",
+    windowEnd: "18:00",
     capacityEnabled: false,
     maxOrders: null,
     maxItems: null,
@@ -68,6 +71,11 @@ describe("cutoff", () => {
 
   it("rótulo curto da data", () => {
     expect(dateLabelFor("2026-08-04")).toBe("Ter, 04/08")
+  })
+
+  it("rótulo da janela de entrega (12h-18h)", () => {
+    expect(windowLabelFor(route())).toBe("Entrega entre 12h e 18h")
+    expect(windowLabelFor({ windowStart: "13:30", windowEnd: "17:45" })).toBe("Entrega entre 13h30 e 17h45")
   })
 })
 
@@ -146,5 +154,18 @@ describe("buildSlots", () => {
     })
     const tue = slots.find((s) => s.date === "2026-08-04")
     expect(tue?.capacity).toMatchObject({ enabled: true, maxOrders: 10, maxItems: 100, usedOrders: 3, usedItems: 24 })
+  })
+
+  it("expõe a janela de entrega no slot", () => {
+    const slots = buildSlots({
+      routes: [{ ...route(), id: "tue", name: "Terça", dayOfWeek: 2, zoneName: "SP", windowStart: "12:00", windowEnd: "18:00" }],
+      blocked: [],
+      usage: new Map(),
+      now,
+    })
+    const tue = slots.find((s) => s.date === "2026-08-04")
+    expect(tue?.windowStart).toBe("12:00")
+    expect(tue?.windowEnd).toBe("18:00")
+    expect(tue?.windowLabel).toBe("Entrega entre 12h e 18h")
   })
 })

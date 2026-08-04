@@ -47,6 +47,8 @@ export interface DeliveryRouteInput {
   endDate: string | null
   cutoffTime: string // "HH:mm"
   cutoffOffsetDays: number
+  windowStart: string // "HH:mm" — início da janela de entrega
+  windowEnd: string // "HH:mm" — fim da janela de entrega
   capacityEnabled: boolean
   maxOrders: number | null
   maxItems: number | null
@@ -74,6 +76,9 @@ export interface DeliverySlot {
   cutoffAt: string // ISO instant
   cutoffLabel: string
   cutoffOffsetDays: number
+  windowStart: string
+  windowEnd: string
+  windowLabel: string
   open: boolean
   capacity: {
     enabled: boolean
@@ -156,6 +161,10 @@ export function cutoffLabelFor(route: Pick<DeliveryRouteInput, "cutoffTime" | "c
   return `${WEEKDAY_LONG[weekdayOf(cutoffKey)]}, ${timeLabel(route.cutoffTime)}`
 }
 
+export function windowLabelFor(route: Pick<DeliveryRouteInput, "windowStart" | "windowEnd">): string {
+  return `Entrega entre ${timeLabel(route.windowStart)} e ${timeLabel(route.windowEnd)}`
+}
+
 export function dateLabelFor(key: string): string {
   const [, m, d] = key.split("-").map(Number)
   return `${WEEKDAY_SHORT[weekdayOf(key)]}, ${pad(d)}/${pad(m)}`
@@ -234,6 +243,9 @@ export function buildSlots(params: BuildSlotsParams): DeliverySlot[] {
         cutoffAt: cutoff.toISOString(),
         cutoffLabel: cutoffLabelFor(route, date),
         cutoffOffsetDays: route.cutoffOffsetDays,
+        windowStart: route.windowStart,
+        windowEnd: route.windowEnd,
+        windowLabel: windowLabelFor(route),
         open: now.getTime() < cutoff.getTime(),
         capacity: {
           enabled: route.capacityEnabled,
@@ -250,7 +262,7 @@ export function buildSlots(params: BuildSlotsParams): DeliverySlot[] {
   return slots.filter((s) => s.open).slice(0, limit)
 }
 
-function toRouteInput(route: { id: string; name: string; zoneId: string; recurring: boolean; dayOfWeek: number | null; date: Date | null; startDate: Date | null; endDate: Date | null; cutoffTime: string; cutoffOffsetDays: number; capacityEnabled: boolean; maxOrders: number | null; maxItems: number | null; active: boolean }): DeliveryRouteInput {
+function toRouteInput(route: { id: string; name: string; zoneId: string; recurring: boolean; dayOfWeek: number | null; date: Date | null; startDate: Date | null; endDate: Date | null; cutoffTime: string; cutoffOffsetDays: number; windowStart: string; windowEnd: string; capacityEnabled: boolean; maxOrders: number | null; maxItems: number | null; active: boolean }): DeliveryRouteInput {
   return {
     id: route.id,
     name: route.name,
@@ -262,6 +274,8 @@ function toRouteInput(route: { id: string; name: string; zoneId: string; recurri
     endDate: route.endDate ? dateKey(route.endDate) : null,
     cutoffTime: route.cutoffTime,
     cutoffOffsetDays: route.cutoffOffsetDays,
+    windowStart: route.windowStart,
+    windowEnd: route.windowEnd,
     capacityEnabled: route.capacityEnabled,
     maxOrders: route.maxOrders,
     maxItems: route.maxItems,

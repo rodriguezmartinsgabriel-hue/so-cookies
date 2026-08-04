@@ -27,6 +27,9 @@ type DeliverySlot = {
   dateLabel: string
   cutoffAt: string
   cutoffLabel: string
+  windowStart: string
+  windowEnd: string
+  windowLabel: string
   open: boolean
   capacity: {
     enabled: boolean
@@ -46,7 +49,7 @@ type PublicOrder = {
   createdAt: string
   deliveryDate: string | null
   deliveryRouteId: string | null
-  deliveryRoute?: { id: string; name: string } | null
+  deliveryRoute?: { id: string; name: string; windowStart?: string; windowEnd?: string } | null
   deliveryAddress: string | null
   deliveryCep: string | null
   deliveryStreet: string | null
@@ -246,6 +249,11 @@ export default function PedidoPage({ params }: { params: Promise<{ id: string }>
                       <p className="text-xs text-muted mt-1 flex items-center justify-center gap-1">
                         <Truck className="w-3 h-3" /> {order.deliveryRoute?.name ?? "Entrega"}
                       </p>
+                      {order.deliveryRoute?.windowStart && order.deliveryRoute?.windowEnd && (
+                        <p className="text-xs text-muted mt-1">
+                          Entrega entre {order.deliveryRoute.windowStart} e {order.deliveryRoute.windowEnd}
+                        </p>
+                      )}
                       {order.deliveryStreet && (
                         <p className="text-xs text-muted mt-2 flex items-start justify-center gap-1 text-left">
                           <MapPin className="w-3 h-3 shrink-0 mt-0.5" />
@@ -384,6 +392,9 @@ export default function PedidoPage({ params }: { params: Promise<{ id: string }>
                         </div>
                         <p className={`text-xs mt-1 flex items-center gap-1 ${active ? "text-paper/80" : "text-muted"}`}>
                           <Clock className="w-3 h-3" /> Peça até {slot.cutoffLabel}
+                        </p>
+                        <p className={`text-xs mt-0.5 flex items-center gap-1 ${active ? "text-paper/80" : "text-muted"}`}>
+                          <Truck className="w-3 h-3" /> {slot.windowLabel}
                         </p>
                         {full && <p className="text-xs mt-1 font-medium text-danger">Rota lotada</p>}
                       </button>

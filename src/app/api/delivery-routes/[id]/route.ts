@@ -28,6 +28,8 @@ export async function PUT(
     if (parsed.endDate !== undefined) data.endDate = parseDate(parsed.endDate)
     if (parsed.cutoffTime !== undefined) data.cutoffTime = parsed.cutoffTime
     if (parsed.cutoffOffsetDays !== undefined) data.cutoffOffsetDays = parsed.cutoffOffsetDays
+    if (parsed.windowStart !== undefined) data.windowStart = parsed.windowStart
+    if (parsed.windowEnd !== undefined) data.windowEnd = parsed.windowEnd
     if (parsed.capacityEnabled !== undefined) data.capacityEnabled = parsed.capacityEnabled
     if (parsed.maxOrders !== undefined) data.maxOrders = parsed.maxOrders
     if (parsed.maxItems !== undefined) data.maxItems = parsed.maxItems

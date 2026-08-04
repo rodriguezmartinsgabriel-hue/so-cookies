@@ -85,6 +85,8 @@ async function main() {
         endDate: null,
         cutoffTime: "18:00",
         cutoffOffsetDays: 1,
+        windowStart: "12:00",
+        windowEnd: "18:00",
         capacityEnabled: false,
         maxOrders: null,
         maxItems: null,
