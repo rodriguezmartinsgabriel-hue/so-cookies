@@ -1,4 +1,4 @@
-import { PrismaClient, Coupon, CouponType } from '@/generated/prisma/client';
+import { PrismaClient, Coupon } from '@/generated/prisma/client';
 import type { Prisma } from '@/generated/prisma/client';
 
 export class CouponRepository {

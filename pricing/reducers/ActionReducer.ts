@@ -1,6 +1,5 @@
-import type { PricingState } from '../types';
+import type { PricingState, Discount, Log, Cashback, Tax, Bonus, Warning } from '../types';
 import type { PricingAction } from '../actions/PricingAction';
-import type { Discount, Log } from '../types';
 
 export class ActionReducer {
   private cloneState(state: PricingState): PricingState {
@@ -21,26 +20,26 @@ export class ActionReducer {
           newState = this.applyItemPriceChange(newState, action);
           break;
         case 'ADD_SHIPPING':
-          newState.shipping = { cost: (action as any).cost };
+          newState.shipping = { cost: action.value as number };
           break;
         case 'ADD_CASHBACK':
-          newState.cashbacks.push(action.value);
+          newState.cashbacks.push(action.value as Cashback);
           break;
         case 'ADD_TAX':
-          newState.taxes.push(action.value);
+          newState.taxes.push(action.value as Tax);
           break;
         case 'ADD_BONUS':
-          newState.bonuses.push(action.value);
+          newState.bonuses.push(action.value as Bonus);
           break;
         case 'ADD_WARNING':
-          newState.warnings.push(action.value);
+          newState.warnings.push(action.value as Warning);
           break;
         case 'ADD_LOG':
-          newState.logs.push(action.value);
+          newState.logs.push(action.value as Log);
           break;
         case 'BLOCK_CHECKOUT':
           newState.blocked = true;
-          newState.blockedReason = (action as any).message;
+          newState.blockedReason = action.message;
           break;
       }
     }
@@ -48,19 +47,19 @@ export class ActionReducer {
     return newState;
   }
 
-  private applyDiscount(state: PricingState, action: any): PricingState {
+  private applyDiscount(state: PricingState, action: PricingAction): PricingState {
     const newState = this.cloneState(state);
 
     if (action.appliedTo === 'subtotal') {
-      newState.subtotal = Math.max(0, (newState.subtotal || 0) - action.value);
+      newState.subtotal = Math.max(0, (newState.subtotal || 0) - (action.value as number));
     }
 
     const discount: Discount = {
       id: action.id,
       name: action.name || 'Desconto',
-      type: action.type,
-      value: action.value,
-      percentage: action.percentage,
+      type: action.type === 'ADD_DISCOUNT_PERCENTAGE' ? 'PERCENTAGE' : 'FIXED',
+      value: action.value as number,
+      percentage: action.percentage || 0,
       appliedTo: action.appliedTo
     };
 
@@ -69,13 +68,13 @@ export class ActionReducer {
     return newState;
   }
 
-  private applyItemPriceChange(state: PricingState, action: any): PricingState {
+  private applyItemPriceChange(state: PricingState, action: PricingAction): PricingState {
     const newState = this.cloneState(state);
 
     for (const item of newState.items) {
       if (item.productId === action.productId) {
-        item.calculatedPrice = action.newPrice;
-        item.priceAfterDiscount = action.newPrice;
+        item.calculatedPrice = action.newPrice as number;
+        item.priceAfterDiscount = action.newPrice as number;
       }
     }
 
@@ -111,8 +110,8 @@ export class ActionReducer {
     );
 
     const shippingTotal = state.shipping?.cost || 0;
-    const taxTotal = state.taxes.reduce((sum: number, t: any) => sum + t.value, 0);
-    const cashbackTotal = state.cashbacks.reduce((sum: number, c: any) => sum + c.value, 0);
+    const taxTotal = state.taxes.reduce((sum: number, t: Tax) => sum + t.value, 0);
+    const cashbackTotal = state.cashbacks.reduce((sum: number, c: Cashback) => sum + c.value, 0);
 
     return subtotal + shippingTotal + taxTotal - cashbackTotal;
   }
@@ -121,7 +120,7 @@ export class ActionReducer {
     return state.discounts;
   }
 
-  getAppliedWarnings(state: PricingState): any[] {
+  getAppliedWarnings(state: PricingState): Warning[] {
     return state.warnings;
   }
 

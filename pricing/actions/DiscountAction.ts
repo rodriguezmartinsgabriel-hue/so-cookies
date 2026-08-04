@@ -10,7 +10,7 @@ export class DiscountAction implements PricingAction {
     public value: number,
     public percentage: number,
     public appliedTo: 'items' | 'subtotal',
-    public metadata?: Record<string, any>
+    public metadata?: Record<string, unknown>
   ) {}
 }
 

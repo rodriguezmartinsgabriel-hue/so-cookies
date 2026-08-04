@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { z } from "zod"
-import { PricingEngine, ProductRepository, PriceTierRule, RuleRegistry, EventBus, PricingContext } from "@so-cookies/pricing"
+import { PricingEngine, ProductRepository, PriceTierRule, RuleRegistry, PricingContext } from "@so-cookies/pricing"
 import { prisma } from "@/lib/prisma"
 import { getCustomerSession } from "@/lib/customer-auth"
 
@@ -24,7 +24,8 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
     const parsed = pricingSchema.parse(body)
 
-    const productMap: Record<string, any> = {}
+    type ProductBrief = { id: string; name: string; price: number }
+    const productMap: Record<string, ProductBrief> = {}
     const products = await prisma.product.findMany({
       where: {
         id: { in: parsed.items.map(i => i.productId) },

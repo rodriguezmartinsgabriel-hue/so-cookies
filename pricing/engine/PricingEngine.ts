@@ -1,5 +1,6 @@
-import type { PricingContext, PricingState, PricingResult, PricingData } from '../types';
+import type { PricingContext, PricingState, PricingResult, PricingData, Logger, Metrics } from '../types';
 import type { PricingAction } from '../actions/PricingAction';
+import type { PrismaClient } from '@/generated/prisma/client';
 import { RulePipeline } from '../pipeline/RulePipeline';
 import { RuleExecutor } from '../executor/RuleExecutor';
 import { ActionReducer } from '../reducers/ActionReducer';
@@ -8,7 +9,12 @@ import { PricingCache } from '../cache/PricingCache';
 import { EventBus } from '../events/EventBus';
 import { PricingAudit } from '../audit/PricingAudit';
 import { PricingSummaryCalculator } from '../calculations/PricingSummaryCalculator';
-import { PricingRuleError } from '../errors';
+import type { RuleRegistry } from '../registry/RuleRegistry';
+import { ProductRepository } from '../repositories/ProductRepository';
+import { CouponRepository } from '../repositories/CouponRepository';
+import { CampaignRepository } from '../repositories/CampaignRepository';
+import { ShippingRepository } from '../repositories/ShippingRepository';
+import { PricingRepository } from '../repositories/PricingRepository';
 
 export class PricingEngine {
   private executor: RuleExecutor;
@@ -19,20 +25,20 @@ export class PricingEngine {
   private summaryCalculator: PricingSummaryCalculator;
 
   constructor(
-    private prisma: any,
-    private registry: any,
-    private logger: any,
-    private metrics: any
+    private prisma: PrismaClient,
+    private registry: RuleRegistry,
+    private logger: Logger,
+    private metrics: Metrics
   ) {
     this.pipeline = new RulePipeline();
     this.executor = new RuleExecutor(registry, logger);
     this.reducer = new ActionReducer();
     this.dataLoader = new PricingDataLoader(
-      registry.getRepository('product') as any,
-      registry.getRepository('coupon') as any,
-      registry.getRepository('campaign') as any,
-      registry.getRepository('shipping') as any,
-      registry.getRepository('pricing') as any,
+      registry.getRepository<ProductRepository>('product') ?? new ProductRepository(prisma),
+      registry.getRepository<CouponRepository>('coupon') ?? new CouponRepository(prisma),
+      registry.getRepository<CampaignRepository>('campaign') ?? new CampaignRepository(prisma),
+      registry.getRepository<ShippingRepository>('shipping') ?? new ShippingRepository(prisma),
+      registry.getRepository<PricingRepository>('pricing') ?? new PricingRepository(prisma),
       new PricingCache()
     );
     this.audit = new PricingAudit(prisma, new EventBus(), registry);

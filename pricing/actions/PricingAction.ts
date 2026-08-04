@@ -5,8 +5,15 @@ export interface PricingAction {
   timestamp: Date;
   type: PricingActionType;
   target: string;
-  value: any;
-  metadata?: Record<string, any>;
+  value: unknown;
+  metadata?: Record<string, unknown>;
+  // Campos específicos por tipo de ação (opcionais)
+  appliedTo?: 'items' | 'subtotal';
+  percentage?: number;
+  name?: string;
+  message?: string;
+  productId?: string;
+  newPrice?: number;
 }
 
 // Tipos de ações disponíveis

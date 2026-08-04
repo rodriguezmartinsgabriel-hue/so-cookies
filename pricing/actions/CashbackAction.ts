@@ -11,7 +11,7 @@ export class CashbackAction implements PricingAction {
     public percentage: number,
     public locked: boolean,
     public expiration?: Date,
-    public metadata?: Record<string, any>
+    public metadata?: Record<string, unknown>
   ) {}
 }
 

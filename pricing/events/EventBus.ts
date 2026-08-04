@@ -11,8 +11,8 @@ export interface PricingEvent {
   id: string;
   type: PricingEventType;
   timestamp: Date;
-  data: any;
-  metadata?: Record<string, any>;
+  data: unknown;
+  metadata?: Record<string, unknown>;
 }
 
 export class EventBus {
@@ -35,7 +35,7 @@ export class EventBus {
     }
   }
 
-  async emit(eventType: PricingEventType, data: any, metadata?: Record<string, any>): Promise<void> {
+  async emit(eventType: PricingEventType, data: unknown, metadata?: Record<string, unknown>): Promise<void> {
     const event: PricingEvent = {
       id: generateId(),
       type: eventType,

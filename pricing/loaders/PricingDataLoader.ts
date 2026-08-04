@@ -1,5 +1,5 @@
 import type { PricingContext, PricingData } from '../types';
-import type { Product, Customer, Coupon, Campaign, ShippingRate, PricingSettings } from '@/generated/prisma/client';
+import type { Product, Customer, Coupon, Campaign, ShippingRate, PricingSettings, PriceTier } from '@/generated/prisma/client';
 import { ProductRepository } from '../repositories/ProductRepository';
 import { CouponRepository } from '../repositories/CouponRepository';
 import { CampaignRepository } from '../repositories/CampaignRepository';
@@ -70,7 +70,7 @@ export class PricingDataLoader {
     return await this.productRepository.getCustomerById(customerId);
   }
 
-  private async loadPriceTiers(items: PricingContext['items']): Promise<Record<string, any[]>> {
+  private async loadPriceTiers(items: PricingContext['items']): Promise<Record<string, PriceTier[]>> {
     const productIds = items.map(item => item.productId);
     const tiers = await this.pricingRepository.getActivePriceTiersForProducts(productIds);
 
@@ -80,21 +80,21 @@ export class PricingDataLoader {
       }
       map[tier.productId].push(tier);
       return map;
-    }, {} as Record<string, any[]>);
+    }, {} as Record<string, PriceTier[]>);
   }
 
   private async loadCoupons(couponCode?: string): Promise<Coupon[]> {
     if (!couponCode) return [];
 
     const cacheKey = `coupon:${couponCode}`;
-    const cached = this.cache.get(cacheKey);
+    const cached = this.cache.get<Coupon[]>(cacheKey);
 
     if (cached) return cached;
 
     const coupon = await this.couponRepository.findByCode(couponCode);
 
     if (coupon) {
-      this.cache.set(cacheKey, coupon);
+      this.cache.set(cacheKey, [coupon]);
     }
 
     return coupon ? [coupon] : [];
@@ -102,7 +102,7 @@ export class PricingDataLoader {
 
   private async loadActiveCampaigns(): Promise<Campaign[]> {
     const cacheKey = 'campaigns:active';
-    const cached = this.cache.get(cacheKey);
+    const cached = this.cache.get<Campaign[]>(cacheKey);
 
     if (cached) return cached;
 
@@ -115,7 +115,7 @@ export class PricingDataLoader {
 
   private async loadShippingRates(channel: string): Promise<ShippingRate[]> {
     const cacheKey = `shipping:${channel}`;
-    const cached = this.cache.get(cacheKey);
+    const cached = this.cache.get<ShippingRate[]>(cacheKey);
 
     if (cached) return cached;
 

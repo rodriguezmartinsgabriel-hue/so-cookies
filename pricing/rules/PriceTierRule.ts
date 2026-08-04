@@ -1,5 +1,5 @@
 import type { PricingRule } from './PricingRule';
-import type { PricingContext, PricingState, PricingData } from '../types';
+import type { PricingContext, PricingState, PricingData, Logger } from '../types';
 import type { PricingAction } from '../actions/PricingAction';
 import { PricingPhase } from '../pipeline/RulePipeline';
 
@@ -12,20 +12,20 @@ export class PriceTierRule implements PricingRule {
   enabled = true;
 
   constructor(
-    private pricingRepository: any,
-    private logger: any
+    private pricingRepository: unknown,
+    private logger: Logger
   ) {}
 
-  async canApply(context: PricingContext, state: PricingState, data: PricingData): Promise<boolean> {
+  async canApply(_context: PricingContext, _state: PricingState, _data: PricingData): Promise<boolean> {
     return true;
   }
 
-  canApplySync(context: PricingContext, state: PricingState, data: PricingData): boolean {
+  canApplySync(_context: PricingContext, _state: PricingState, _data: PricingData): boolean {
     return true;
   }
 
   async apply(context: PricingContext, state: PricingState, data: PricingData): Promise<PricingAction[]> {
-    const actions: any[] = [];
+    const actions: PricingAction[] = [];
 
     for (const item of state.items) {
       const priceTiers = data.priceTiers[item.productId] || [];

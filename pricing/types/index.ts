@@ -10,7 +10,7 @@ export interface PricingContext {
     basePrice: number;
     name?: string;
   }>;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 // Estado transitório do cálculo de preços
@@ -47,7 +47,7 @@ export interface Discount {
   value: number;
   percentage: number;
   appliedTo?: 'items' | 'subtotal';
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 // Cashback (crédito futuro)
@@ -58,7 +58,7 @@ export interface Cashback {
   percentage: number;
   expiration?: Date;
   locked: boolean;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 // Imposto
@@ -68,7 +68,7 @@ export interface Tax {
   type: 'ICMS' | 'ISS' | 'NOTA_FISCAL';
   value: number;
   percentage: number;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 // Brinde
@@ -78,7 +78,7 @@ export interface Bonus {
   type: 'PRODUCT' | 'PERCENTAGE';
   value: number;
   appliedItems?: string[];
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 // Aviso/Advertência
@@ -86,7 +86,7 @@ export interface Warning {
   id: string;
   type: 'INFO' | 'WARNING' | 'ERROR';
   message: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 // Log
@@ -96,8 +96,8 @@ export interface Log {
   ruleId: string;
   ruleName: string;
   actionType: string;
-  value: any;
-  metadata?: Record<string, any>;
+  value: unknown;
+  metadata?: Record<string, unknown>;
 }
 
 // Resumo para usuário
@@ -135,8 +135,8 @@ export interface AuditEvent {
   ruleName: string;
   actionType: string;
   target: string;
-  value: any;
-  details: Record<string, any>;
+  value: unknown;
+  details: Record<string, unknown>;
 }
 
 // Evento de timeline (por fase)
@@ -149,12 +149,26 @@ export interface TimelineEvent {
   totalSubtotal: number;
 }
 
-import type { Product, Customer, Coupon, Campaign, ShippingRate, PricingSettings } from '@/generated/prisma/client';
+import type { Product, Customer, Coupon, Campaign, ShippingRate, PricingSettings, PriceTier } from '@/generated/prisma/client';
+
+// Logger mínimo aceito pelo Pricing Engine (compatível com console e mocks)
+export interface Logger {
+  log(...args: unknown[]): void;
+  error(...args: unknown[]): void;
+  warn?(...args: unknown[]): void;
+  info?(...args: unknown[]): void;
+  debug?(...args: unknown[]): void;
+}
+
+// Coleta de métricas do Pricing Engine
+export interface Metrics {
+  record(category: string, metric: string, value: number): void;
+}
 
 export interface PricingData {
   products: Record<string, Product>;
   customer?: Customer | null;
-  priceTiers: Record<string, any[]>;
+  priceTiers: Record<string, PriceTier[]>;
   coupons: Coupon[];
   campaigns: Campaign[];
   shippingRates: ShippingRate[];

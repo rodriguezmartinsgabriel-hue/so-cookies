@@ -10,7 +10,7 @@ export class TaxAction implements PricingAction {
     public value: number,
     public name: string,
     public percentage: number,
-    public metadata?: Record<string, any>
+    public metadata?: Record<string, unknown>
   ) {}
 }
 

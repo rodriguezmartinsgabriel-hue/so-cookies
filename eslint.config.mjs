@@ -5,6 +5,16 @@ import nextTs from "eslint-config-next/typescript";
 const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
+  // Parâmetros intencionalmente não usados (métodos de interface com assinatura fixa)
+  // seguem a convenção de prefixo "_".
+  {
+    rules: {
+      "@typescript-eslint/no-unused-vars": [
+        "warn",
+        { argsIgnorePattern: "^_", varsIgnorePattern: "^_", caughtErrorsIgnorePattern: "^_" },
+      ],
+    },
+  },
   // Override default ignores of eslint-config-next.
   globalIgnores([
     // Default ignores of eslint-config-next:
@@ -13,6 +23,8 @@ const eslintConfig = defineConfig([
     "build/**",
     "next-env.d.ts",
     "dump-xlsx.cjs",
+    // Código gerado automaticamente pelo Prisma (regerado a cada `prisma generate`)
+    "src/generated/**",
   ]),
 ]);
 

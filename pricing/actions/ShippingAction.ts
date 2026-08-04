@@ -9,7 +9,7 @@ export class ShippingAction implements PricingAction {
     public target: string,
     public value: number,
     public cost: number,
-    public metadata?: Record<string, any>
+    public metadata?: Record<string, unknown>
   ) {}
 }
 

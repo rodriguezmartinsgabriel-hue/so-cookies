@@ -1,14 +1,15 @@
-import type { PricingContext, PricingState, PricingData } from '../types';
+import type { PricingContext, PricingState, AuditTrail, TimelineEvent, AuditEvent } from '../types';
 import type { PricingAction } from '../actions/PricingAction';
 import type { EventBus } from '../events/EventBus';
-import type { AuditTrail, TimelineEvent } from '../types';
-import { PricingPhase } from '../pipeline/RulePipeline';
+import type { RuleRegistry } from '../registry/RuleRegistry';
+import type { PrismaClient } from '@/generated/prisma/client';
+import { PricingPhase } from '../pipeline/PricingPhase';
 
 export class PricingAudit {
   constructor(
-    private prisma: any,
+    private prisma: PrismaClient,
     private eventBus: EventBus,
-    private registry: any
+    private registry: RuleRegistry
   ) {}
 
   async createTrail(
@@ -38,7 +39,7 @@ export class PricingAudit {
     };
   }
 
-  private createTimeline(state: PricingState, events: any[]): TimelineEvent[] {
+  private createTimeline(state: PricingState, events: AuditEvent[]): TimelineEvent[] {
     const timeline: TimelineEvent[] = [];
 
     const phases = [
@@ -81,7 +82,7 @@ export class PricingAudit {
     return timeline;
   }
 
-  private async saveTrail(context: any, state: PricingState, actions: PricingAction[], executionTime: number): Promise<void> {
+  private async saveTrail(_context: PricingContext, _state: PricingState, _actions: PricingAction[], _executionTime: number): Promise<void> {
     // Implementar salvamento em banco
     // Exemplo: await prisma.pricingAudit.create({...})
   }

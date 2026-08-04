@@ -27,10 +27,10 @@ export class RulePipeline {
   getRules(): PricingRule[] {
     const rules: PricingRule[] = [];
 
-    for (const [phase, phaseRules] of this.phases.entries()) {
+    for (const phaseRules of this.phases.values()) {
       const sortedRules = [...phaseRules].sort((a, b) => {
-        const aWeight = (a as any).weight || (a as any).priority || 0;
-        const bWeight = (b as any).weight || (b as any).priority || 0;
+        const aWeight = a.weight || a.priority || 0;
+        const bWeight = b.weight || b.priority || 0;
         return aWeight - bWeight;
       });
       rules.push(...sortedRules);
@@ -42,8 +42,8 @@ export class RulePipeline {
   getPhaseRules(phase: PricingPhase): PricingRule[] {
     const phaseRules = this.phases.get(phase) || [];
     return [...phaseRules].sort((a, b) => {
-      const aWeight = (a as any).weight || (a as any).priority || 0;
-      const bWeight = (b as any).weight || (b as any).priority || 0;
+      const aWeight = a.weight || a.priority || 0;
+      const bWeight = b.weight || b.priority || 0;
       return aWeight - bWeight;
     });
   }
@@ -55,8 +55,8 @@ export class RulePipeline {
       timeline.push({
         phase,
         rules: [...phaseRules].sort((a, b) => {
-          const aWeight = (a as any).weight || (a as any).priority || 0;
-          const bWeight = (b as any).weight || (b as any).priority || 0;
+          const aWeight = a.weight || a.priority || 0;
+          const bWeight = b.weight || b.priority || 0;
           return aWeight - bWeight;
         })
       });

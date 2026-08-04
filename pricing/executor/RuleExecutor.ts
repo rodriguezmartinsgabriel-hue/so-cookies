@@ -1,15 +1,16 @@
 import type { PricingRule } from '../rules/PricingRule';
-import type { PricingContext, PricingState, PricingData } from '../types';
+import type { PricingContext, PricingState, PricingData, Logger } from '../types';
 import type { PricingAction } from '../actions/PricingAction';
-import { PricingRuleError } from '../errors/PricingRuleError';
+import type { RuleRegistry } from '../registry/RuleRegistry';
+import { PricingPhase } from '../pipeline/PricingPhase';
 import { RuleValidator } from './RuleValidator';
 
 export class RuleExecutor {
   private validator: RuleValidator;
 
   constructor(
-    private registry: any,
-    private logger: any
+    private registry: RuleRegistry,
+    private logger: Logger
   ) {
     this.validator = new RuleValidator(registry, logger);
   }
@@ -48,12 +49,12 @@ export class RuleExecutor {
 
   // Execução paralela apenas dentro da mesma fase
   async executeParallelInPhase(
-    phase: any,
+    phase: PricingPhase,
     context: PricingContext,
     state: PricingState,
     data: PricingData
   ): Promise<PricingAction[]> {
-    const phaseRules = this.registry.getPhaseRules(phase) as any[];
+    const phaseRules = this.registry.getPhaseRules(phase);
 
     const rulePromises = phaseRules.map(rule =>
       this.executeRule(rule, context, state, data)

@@ -1,6 +1,16 @@
 import { PrismaClient, PriceTier, PricingSettings } from '@/generated/prisma/client';
 import type { Prisma } from '@/generated/prisma/client';
 
+// Configurações de canal derivadas quando não há registro em PricingSettings
+export interface ChannelSettings {
+  id: string;
+  activatePriceTier: boolean;
+  activateCoupon: boolean;
+  activateCampaign: boolean;
+  activateB2B: boolean;
+  activateFreeShipping: boolean;
+}
+
 export class PricingRepository {
   constructor(private prisma: PrismaClient) {}
 
@@ -33,7 +43,7 @@ export class PricingRepository {
     });
   }
 
-  async getSettingsForChannel(channel: string): Promise<any> {
+  async getSettingsForChannel(_channel: string): Promise<PricingSettings | ChannelSettings> {
     const settings = await this.getSettings();
 
     if (!settings) {

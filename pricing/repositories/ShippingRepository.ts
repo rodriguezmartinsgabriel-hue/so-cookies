@@ -1,4 +1,4 @@
-import { PrismaClient, ShippingRate, ShippingRateType } from '@/generated/prisma/client';
+import { PrismaClient, ShippingRate } from '@/generated/prisma/client';
 import type { Prisma } from '@/generated/prisma/client';
 
 export class ShippingRepository {

@@ -10,7 +10,7 @@ export class BonusAction implements PricingAction {
     public value: number,
     public name: string,
     public appliedItems?: string[],
-    public metadata?: Record<string, any>
+    public metadata?: Record<string, unknown>
   ) {}
 }
 

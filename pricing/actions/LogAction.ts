@@ -7,11 +7,11 @@ export class LogAction implements PricingAction {
     public timestamp: Date,
     public type: PricingActionType,
     public target: string,
-    public value: any,
+    public value: unknown,
     public ruleId: string,
     public ruleName: string,
     public actionType: string,
-    public metadata?: Record<string, any>
+    public metadata?: Record<string, unknown>
   ) {}
 }
 

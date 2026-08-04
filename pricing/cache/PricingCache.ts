@@ -1,13 +1,13 @@
 export class PricingCache {
   private cache = new Map<string, {
-    data: any;
+    data: unknown;
     timestamp: number;
     ttl: number;
   }>();
 
   constructor(private defaultTTL: number = 5 * 60 * 1000) {}
 
-  set(key: string, data: any, ttl?: number): void {
+  set(key: string, data: unknown, ttl?: number): void {
     this.cache.set(key, {
       data,
       timestamp: Date.now(),
@@ -15,7 +15,7 @@ export class PricingCache {
     });
   }
 
-  get(key: string): any | null {
+  get<T>(key: string): T | null {
     const entry = this.cache.get(key);
 
     if (!entry) return null;
@@ -25,7 +25,7 @@ export class PricingCache {
       return null;
     }
 
-    return entry.data;
+    return entry.data as T;
   }
 
   delete(key: string): void {

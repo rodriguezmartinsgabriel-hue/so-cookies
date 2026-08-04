@@ -1,6 +1,7 @@
 import type { PricingRule } from './PricingRule';
-import type { PricingContext, PricingState, PricingData } from '../types';
+import type { PricingContext, PricingState, PricingData, Logger } from '../types';
 import type { PricingAction } from '../actions/PricingAction';
+import type { ShippingRepository } from '../repositories/ShippingRepository';
 import { PricingPhase } from '../pipeline/RulePipeline';
 import { EventBus } from '../events/EventBus';
 
@@ -13,30 +14,30 @@ export class ShippingRule implements PricingRule {
   enabled = true;
 
   constructor(
-    private shippingRepository: any,
+    private shippingRepository: unknown,
     private eventBus: EventBus,
-    private logger: any
+    private logger: Logger
   ) {}
 
-  async canApply(context: PricingContext, state: PricingState, data: PricingData): Promise<boolean> {
+  async canApply(context: PricingContext, _state: PricingState, _data: PricingData): Promise<boolean> {
     return context.channel === 'delivery';
   }
 
-  canApplySync(context: PricingContext, state: PricingState, data: PricingData): boolean {
+  canApplySync(context: PricingContext, _state: PricingState, _data: PricingData): boolean {
     return context.channel === 'delivery';
   }
 
-  async apply(context: PricingContext, state: PricingState, data: PricingData): Promise<PricingAction[]> {
-    const actions: any[] = [];
+  async apply(context: PricingContext, state: PricingState, _data: PricingData): Promise<PricingAction[]> {
+    const actions: PricingAction[] = [];
 
     // Calcular peso total
     const totalWeight = state.items.reduce((sum, item) => sum + item.qty, 0);
 
     // Buscar taxa de frete
-    const shippingRate = await this.shippingRepository.getRateByWeight(totalWeight, context.channel);
+    const shippingRate = await (this.shippingRepository as ShippingRepository).getRateByWeight(totalWeight, context.channel);
 
     if (shippingRate) {
-      state.shipping = shippingRate.cost;
+      state.shipping = { cost: shippingRate.basePrice };
 
       // Adicionar log
       actions.push({
@@ -46,7 +47,7 @@ export class ShippingRule implements PricingRule {
         value: {
           totalWeight,
           shippingRateName: shippingRate.name,
-          cost: shippingRate.cost
+          cost: shippingRate.basePrice
         },
         sourceRule: this.id,
         timestamp: new Date()
@@ -57,7 +58,7 @@ export class ShippingRule implements PricingRule {
         id: generateId(),
         type: 'ADD_SHIPPING',
         target: 'shipping',
-        value: shippingRate.cost,
+        value: shippingRate.basePrice,
         sourceRule: this.id,
         timestamp: new Date()
       });
@@ -66,7 +67,7 @@ export class ShippingRule implements PricingRule {
       await this.eventBus.emit('ShippingCalculated', {
         channel: context.channel,
         weight: totalWeight,
-        cost: shippingRate.cost,
+        cost: shippingRate.basePrice,
         rateName: shippingRate.name
       });
     } else {

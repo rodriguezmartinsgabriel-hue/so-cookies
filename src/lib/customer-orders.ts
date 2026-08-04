@@ -3,13 +3,7 @@ import { toCatalogProduct, type CatalogProduct } from "./utils"
 import { assertSlotAvailable, SlotError } from "./delivery-scheduling"
 import { PricingEngine } from "@so-cookies/pricing"
 import { ProductRepository } from "@so-cookies/pricing"
-import { CouponRepository } from "@so-cookies/pricing"
-import { CampaignRepository } from "@so-cookies/pricing"
-import { ShippingRepository } from "@so-cookies/pricing"
-import { PricingRepository } from "@so-cookies/pricing"
 import { RuleRegistry } from "@so-cookies/pricing"
-import { EventBus } from "@so-cookies/pricing"
-import { PricingAudit } from "@so-cookies/pricing"
 import { PriceTierRule } from "@so-cookies/pricing"
 import { PricingContext } from "@so-cookies/pricing"
 
@@ -81,17 +75,11 @@ export async function createCustomerOrder(
 
   // Inicializar Pricing Engine v2
   const productRepo = new ProductRepository(prisma)
-  const couponRepo = new CouponRepository(prisma)
-  const campaignRepo = new CampaignRepository(prisma)
-  const shippingRepo = new ShippingRepository(prisma)
-  const pricingRepo = new PricingRepository(prisma)
 
   const registry = new RuleRegistry()
-  registry.register(new PriceTierRule(productRepo, { log: () => {} }))
+  registry.register(new PriceTierRule(productRepo, { log: () => {}, error: () => {} }))
 
-  const eventBus = new EventBus()
-  const audit = new PricingAudit(prisma, eventBus, registry)
-  const engine = new PricingEngine(prisma, registry, { log: () => {} }, { record: () => void 0 })
+  const engine = new PricingEngine(prisma, registry, { log: () => {}, error: () => {} }, { record: () => void 0 })
 
   const totalItems = [...qtyByProduct.values()].reduce((sum, qty) => sum + qty, 0)
   const customer = await prisma.customer.findUnique({ where: { id: customerId } })
