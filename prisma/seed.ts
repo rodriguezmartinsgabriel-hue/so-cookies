@@ -41,22 +41,41 @@ async function main() {
   console.log("  ✅ Sale Channels (5)");
 
   // ─── Products (from Ficha Técnica) ───────────────────────────
+  // Assados
   const prodClassico = await prisma.product.upsert({
     where: { sku: "CK-CLASSICO" },
     update: {},
-    create: { id: "ck-classico", name: "Cookie Clássico", sku: "CK-CLASSICO", category: "Cookie", price: 15, cost: 2.57, margin: 0.6998, unit: "un" },
+    create: { id: "ck-classico", name: "Cookie Clássico", sku: "CK-CLASSICO", category: "Assados", price: 15, cost: 2.57, margin: 0.6998, unit: "un" },
   });
   const prodNino = await prisma.product.upsert({
     where: { sku: "CK-NINO" },
     update: {},
-    create: { id: "ck-nino", name: "Cookie Niño", sku: "CK-NINO", category: "Cookie", price: 15, cost: 3.33, margin: 0.6121, unit: "un" },
+    create: { id: "ck-nino", name: "Cookie Niño", sku: "CK-NINO", category: "Assados", price: 15, cost: 3.33, margin: 0.6121, unit: "un" },
   });
   const prod3Choc = await prisma.product.upsert({
     where: { sku: "CK-3CHOC" },
     update: {},
-    create: { id: "ck-3choc", name: "Cookie 3 Chocolates", sku: "CK-3CHOC", category: "Cookie", price: 15, cost: 3.03, margin: 0.6468, unit: "un" },
+    create: { id: "ck-3choc", name: "Cookie 3 Chocolates", sku: "CK-3CHOC", category: "Assados", price: 15, cost: 3.03, margin: 0.6468, unit: "un" },
   });
-  console.log("  ✅ Products (3)");
+  console.log("  ✅ Products Assados (3)");
+
+  // Congelados (variantes separadas)
+  const prodClassicoFz = await prisma.product.upsert({
+    where: { sku: "CK-CLASSICO-FZ" },
+    update: {},
+    create: { id: "ck-classico-fz", name: "Cookie Clássico - Congelado", sku: "CK-CLASSICO-FZ", category: "Congelados", price: 10, cost: 2.57, margin: 0.743, unit: "un" },
+  });
+  const prodNinoFz = await prisma.product.upsert({
+    where: { sku: "CK-NINO-FZ" },
+    update: {},
+    create: { id: "ck-nino-fz", name: "Cookie Niño - Congelado", sku: "CK-NINO-FZ", category: "Congelados", price: 10, cost: 3.33, margin: 0.667, unit: "un" },
+  });
+  const prod3ChocFz = await prisma.product.upsert({
+    where: { sku: "CK-3CHOC-FZ" },
+    update: {},
+    create: { id: "ck-3choc-fz", name: "Cookie 3 Chocolates - Congelado", sku: "CK-3CHOC-FZ", category: "Congelados", price: 10, cost: 3.03, margin: 0.697, unit: "un" },
+  });
+  console.log("  ✅ Products Congelados (3)");
 
   // ─── Delivery Zones & Routes ─────────────────────────────────
   const zoneCentro = await prisma.deliveryZone.upsert({
@@ -97,19 +116,39 @@ async function main() {
   console.log("  ✅ Delivery Routes (2)");
 
   // ─── Price Tiers ─────────────────────────────────────────────
-  // From Tabela de Preços: same tiers for all products
-  const tierDefs = [
+  // Assados
+  const assadoTierDefs = [
     { name: "Assado 1un", minQty: 1, maxQty: 2, price: 15 },
     { name: "Assado 3un", minQty: 3, maxQty: 9, price: 13 },
     { name: "Assado 10un", minQty: 10, maxQty: null, price: 10 },
+  ];
+  const congeladoTierDefs = [
     { name: "Congelado 4un", minQty: 4, maxQty: 4, price: 10 },
     { name: "Congelado 6un", minQty: 6, maxQty: 6, price: 9 },
     { name: "Congelado 8un", minQty: 8, maxQty: 8, price: 8.75 },
   ];
-  const productIds = [prodClassico.id, prodNino.id, prod3Choc.id];
+  const assadoProductIds = [prodClassico.id, prodNino.id, prod3Choc.id];
+  const congeladoProductIds = [prodClassicoFz.id, prodNinoFz.id, prod3ChocFz.id];
   let tierCount = 0;
-  for (const pid of productIds) {
-    for (const t of tierDefs) {
+  for (const pid of assadoProductIds) {
+    for (const t of assadoTierDefs) {
+      await prisma.priceTier.upsert({
+        where: { id: `${pid}-${t.name.replace(/\s/g, "").toLowerCase()}` },
+        update: {},
+        create: {
+          id: `${pid}-${t.name.replace(/\s/g, "").toLowerCase()}`,
+          productId: pid,
+          name: t.name,
+          minQty: t.minQty,
+          maxQty: t.maxQty,
+          price: t.price,
+        },
+      });
+      tierCount++;
+    }
+  }
+  for (const pid of congeladoProductIds) {
+    for (const t of congeladoTierDefs) {
       await prisma.priceTier.upsert({
         where: { id: `${pid}-${t.name.replace(/\s/g, "").toLowerCase()}` },
         update: {},
@@ -178,6 +217,29 @@ async function main() {
       },
     },
   });
+  // Cookie Clássico Congelado — mesma receita do assado
+  await prisma.recipe.upsert({
+    where: { id: "rec-classico-fz" },
+    update: {},
+    create: {
+      id: "rec-classico-fz", name: "Cookie Clássico - Congelado", yield: 11, yieldUnit: "un",
+      productId: prodClassicoFz.id, totalCost: 29.21,
+      ingredients: {
+        create: [
+          { ingredientId: "ing-manteiga", qty: 0.100, unit: "kg" },
+          { ingredientId: "ing-acucar-masc", qty: 0.120, unit: "kg" },
+          { ingredientId: "ing-acucar-ref", qty: 0.060, unit: "kg" },
+          { ingredientId: "ing-baunilha", qty: 0.00002, unit: "kg" },
+          { ingredientId: "ing-farinha", qty: 0.210, unit: "kg" },
+          { ingredientId: "ing-fermento", qty: 0.010, unit: "kg" },
+          { ingredientId: "ing-sal", qty: 0.005, unit: "kg" },
+          { ingredientId: "ing-ovos", qty: 0.100, unit: "kg" },
+          { ingredientId: "ing-choc-meio", qty: 0.175, unit: "kg" },
+          { ingredientId: "ing-cafe", qty: 0.015, unit: "kg" },
+        ],
+      },
+    },
+  });
   // Cookie Niño — lote 10 cookies, rende ~8.6, custo R$28.60
   await prisma.recipe.upsert({
     where: { id: "rec-nino" },
@@ -185,6 +247,28 @@ async function main() {
     create: {
       id: "rec-nino", name: "Cookie Niño", yield: 9, yieldUnit: "un",
       productId: prodNino.id, totalCost: 28.60,
+      ingredients: {
+        create: [
+          { ingredientId: "ing-manteiga", qty: 0.100, unit: "kg" },
+          { ingredientId: "ing-acucar-masc", qty: 0.110, unit: "kg" },
+          { ingredientId: "ing-acucar-ref", qty: 0.050, unit: "kg" },
+          { ingredientId: "ing-farinha", qty: 0.100, unit: "kg" },
+          { ingredientId: "ing-fermento", qty: 0.010, unit: "kg" },
+          { ingredientId: "ing-sal", qty: 0.005, unit: "kg" },
+          { ingredientId: "ing-ovos", qty: 0.105, unit: "kg" },
+          { ingredientId: "ing-choc-branco", qty: 0.125, unit: "kg" },
+          { ingredientId: "ing-leite-ninho", qty: 0.100, unit: "kg" },
+        ],
+      },
+    },
+  });
+  // Cookie Niño Congelado — mesma receita do assado
+  await prisma.recipe.upsert({
+    where: { id: "rec-nino-fz" },
+    update: {},
+    create: {
+      id: "rec-nino-fz", name: "Cookie Niño - Congelado", yield: 9, yieldUnit: "un",
+      productId: prodNinoFz.id, totalCost: 28.60,
       ingredients: {
         create: [
           { ingredientId: "ing-manteiga", qty: 0.100, unit: "kg" },
@@ -225,7 +309,32 @@ async function main() {
       },
     },
   });
-  console.log("  ✅ Recipes (3)");
+  // Cookie 3 Chocolates Congelado — mesma receita do assado
+  await prisma.recipe.upsert({
+    where: { id: "rec-3choc-fz" },
+    update: {},
+    create: {
+      id: "rec-3choc-fz", name: "Cookie 3 Chocolates - Congelado", yield: 11, yieldUnit: "un",
+      productId: prod3ChocFz.id, totalCost: 32.73,
+      ingredients: {
+        create: [
+          { ingredientId: "ing-manteiga", qty: 0.100, unit: "kg" },
+          { ingredientId: "ing-acucar-masc", qty: 0.120, unit: "kg" },
+          { ingredientId: "ing-acucar-ref", qty: 0.060, unit: "kg" },
+          { ingredientId: "ing-baunilha", qty: 0.00002, unit: "kg" },
+          { ingredientId: "ing-farinha", qty: 0.210, unit: "kg" },
+          { ingredientId: "ing-fermento", qty: 0.010, unit: "kg" },
+          { ingredientId: "ing-sal", qty: 0.005, unit: "kg" },
+          { ingredientId: "ing-ovos", qty: 0.105, unit: "kg" },
+          { ingredientId: "ing-choc-branco", qty: 0.100, unit: "kg" },
+          { ingredientId: "ing-choc-meio", qty: 0.100, unit: "kg" },
+          { ingredientId: "ing-cafe", qty: 0.030, unit: "kg" },
+          { ingredientId: "ing-cacau", qty: 0.020, unit: "kg" },
+        ],
+      },
+    },
+  });
+  console.log("  ✅ Recipes (6)");
 
   // ─── Sales (from Vendas sheet) ─────────────────────────────
   // All sales on 2026-07-24, channel WhatsApp, total R$419
@@ -241,11 +350,11 @@ async function main() {
       items: {
         create: [
           { productId: prodClassico.id, qty: 6, price: 13 },
-          { productId: prodClassico.id, qty: 1, price: 10 }, // congelado
+          { productId: prodClassicoFz.id, qty: 1, price: 10 },
           { productId: prodNino.id, qty: 7, price: 13 },
-          { productId: prodNino.id, qty: 1, price: 10 }, // congelado
+          { productId: prodNinoFz.id, qty: 1, price: 10 },
           { productId: prod3Choc.id, qty: 14, price: 15 },
-          { productId: prod3Choc.id, qty: 2, price: 10 }, // congelado
+          { productId: prod3ChocFz.id, qty: 2, price: 10 },
         ],
       },
     },
@@ -266,11 +375,11 @@ async function main() {
       items: {
         create: [
           { productId: prodClassico.id, qty: 6, price: 13 },
-          { productId: prodClassico.id, qty: 1, price: 10 },
+          { productId: prodClassicoFz.id, qty: 1, price: 10 },
           { productId: prodNino.id, qty: 7, price: 13 },
-          { productId: prodNino.id, qty: 1, price: 10 },
+          { productId: prodNinoFz.id, qty: 1, price: 10 },
           { productId: prod3Choc.id, qty: 14, price: 15 },
-          { productId: prod3Choc.id, qty: 2, price: 10 },
+          { productId: prod3ChocFz.id, qty: 2, price: 10 },
         ],
       },
     },

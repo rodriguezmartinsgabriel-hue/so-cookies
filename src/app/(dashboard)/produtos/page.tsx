@@ -326,7 +326,11 @@ export default function ProdutosPage() {
                 </FormField>
               </div>
               <FormField label="Categoria" required>
-                <Input type="text" placeholder="Ex: Doces, Salgados, Bebidas..." value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} />
+                <select id="sel-nome-label-input-type-text-placeholder-e" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink bg-paper focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink transition-colors">
+                  <option value="">Selecione uma categoria</option>
+                  <option value="Assados">Assados</option>
+                  <option value="Congelados">Congelados</option>
+                </select>
               </FormField>
               <div className="grid grid-cols-2 gap-3">
                 <FormField label="Preço (R$)" required>
