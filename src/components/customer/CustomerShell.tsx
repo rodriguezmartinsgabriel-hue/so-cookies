@@ -109,14 +109,20 @@ function NavLink({
 }) {
   const isActive = pathname === href || pathname.startsWith(href)
   return (
-    <Link
-      href={href}
-      aria-current={isActive ? "page" : undefined}
-      className={`flex flex-col items-center justify-center gap-0.5 w-16 h-14 rounded-lg transition-colors relative ${
-        isActive ? "text-ink" : "text-muted"
-      }`}
-      onClick={() => haptic.tap()}
+    <motion.div
+      whileTap={{ scale: 0.92 }}
+      whileHover={{ scale: 1.05 }}
+      transition={{ type: "spring", stiffness: 400, damping: 25 }}
+      className="flex flex-col items-center justify-center gap-0.5 w-16 h-14 rounded-lg relative will-change-transform"
     >
+      <Link
+        href={href}
+        aria-current={isActive ? "page" : undefined}
+        className={`absolute inset-0 flex flex-col items-center justify-center gap-0.5 w-full h-full rounded-lg transition-colors ${
+          isActive ? "text-ink" : "text-muted"
+        }`}
+        onClick={() => haptic.tap()}
+      >
       {badge > 0 && (
         <motion.span
           key={badge}
@@ -130,6 +136,7 @@ function NavLink({
       <Icon className="w-5 h-5" strokeWidth={1.5} />
       <span className="text-[10px] font-medium leading-none">{label}</span>
     </Link>
+    </motion.div>
   )
 }
 

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { CustomerShell } from "@/components/customer/CustomerShell"
 import { ProductCard } from "@/components/customer/ProductCard"
 import { useCart } from "@/hooks/useCart"
+import { usePricing } from "@/hooks/usePricing"
 import { EmptyState } from "@/components/ui/EmptyState"
 import { motion } from "framer-motion"
 import type { CatalogProduct } from "@/lib/utils"
@@ -15,6 +16,7 @@ export default function CardapioPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
   const { items, addItem, setQty, count } = useCart()
+  const { result: pricingResult } = usePricing({ channel: "pickup" })
 
   useEffect(() => {
     fetch("/api/public/catalog")
@@ -50,11 +52,12 @@ export default function CardapioPage() {
   }, [products])
 
   const cartTotal = useMemo(() => {
+    if (pricingResult) return pricingResult.total
     return items.reduce((sum, i) => {
       const product = productMap[i.productId]
       return sum + (product ? product.price * i.qty : 0)
     }, 0)
-  }, [items, productMap])
+  }, [items, productMap, pricingResult])
 
   const qtyFor = (id: string) => items.find((i) => i.productId === id)?.qty ?? 0
 

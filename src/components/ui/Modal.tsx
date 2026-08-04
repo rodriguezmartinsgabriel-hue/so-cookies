@@ -5,8 +5,9 @@ import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { GlassSurface } from "@/components/ui/GlassSurface";
+import { useHapticFeedback } from "@/hooks/useHapticFeedback";
 
-const MotionGlassSurface = motion(GlassSurface);
+const MotionGlassSurface = motion.create(GlassSurface);
 
 type ModalProps = {
   open: boolean;
@@ -33,6 +34,7 @@ export function Modal({
   footer,
   className,
 }: ModalProps) {
+  const haptic = useHapticFeedback()
   useEffect(() => {
     if (!open) return;
     function onKey(e: KeyboardEvent) {
@@ -50,7 +52,7 @@ export function Modal({
     <AnimatePresence>
       {open && (
         <motion.div
-          className="fixed inset-0 z-50 bg-ink/30 backdrop-blur-sm flex items-center justify-center p-4"
+          className="fixed inset-0 z-50 bg-ink/30 backdrop-blur-sm flex items-center justify-center p-4 will-change-opacity"
           role="dialog"
           aria-modal="true"
           aria-label={title}
@@ -60,10 +62,10 @@ export function Modal({
           exit={{ opacity: 0 }}
           transition={{ duration: 0.2 }}
         >
-          <MotionGlassSurface
-            tone="strong"
-            className={cn(
-              "w-full rounded-xl max-h-[85vh] overflow-y-auto flex flex-col",
+           <MotionGlassSurface
+             tone="strong"
+             className={cn(
+               "w-full rounded-xl max-h-[85vh] overflow-y-auto flex flex-col will-change-transform",
               sizes[size],
               className,
             )}
@@ -77,7 +79,7 @@ export function Modal({
               <div className="flex items-center justify-between px-4 py-3 border-b border-line shrink-0">
                 <h3 className="text-base font-bold text-ink">{title}</h3>
                 <button
-                  onClick={onClose}
+                  onClick={() => { haptic.tap(); onClose() }}
                   data-close-modal
                   aria-label="Fechar"
                   className="p-1.5 -m-1 rounded-md hover:bg-cream text-muted"

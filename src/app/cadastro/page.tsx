@@ -96,6 +96,7 @@ function CadastroForm() {
               id="name"
               name="name"
               type="text"
+              autoComplete="name"
               placeholder="Seu nome"
               required
             />
@@ -106,6 +107,7 @@ function CadastroForm() {
               id="email"
               name="email"
               type="email"
+              autoComplete="email"
               placeholder="seu@email.com"
               required
             />
@@ -116,6 +118,7 @@ function CadastroForm() {
               id="phone"
               name="phone"
               type="tel"
+              autoComplete="tel"
               placeholder="(11) 99999-9999"
             />
           </FormField>
@@ -125,6 +128,7 @@ function CadastroForm() {
               id="password"
               name="password"
               type="password"
+              autoComplete="new-password"
               placeholder="Mínimo 6 caracteres"
               required
               minLength={6}
@@ -136,7 +140,8 @@ function CadastroForm() {
               id="confirm"
               name="confirm"
               type="password"
-              placeholder="••••••••"
+              autoComplete="new-password"
+              placeholder="• • • • • • • •"
               required
               minLength={6}
             />

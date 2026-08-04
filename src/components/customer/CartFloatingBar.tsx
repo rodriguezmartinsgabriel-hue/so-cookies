@@ -19,17 +19,16 @@ export function CartFloatingBar({ total, itemCount }: CartFloatingBarProps) {
     haptic.tap()
   }, [haptic])
 
-  if (itemCount === 0) return null
-
   return (
     <AnimatePresence>
-      <motion.div
-        className="fixed bottom-[calc(4rem+12px+env(safe-area-inset-bottom))] left-0 right-0 z-40 px-4 pb-2 pointer-events-none"
-        initial={{ y: 80, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        exit={{ y: 80, opacity: 0 }}
-        transition={{ type: "spring", stiffness: 300, damping: 28 }}
-      >
+      {itemCount > 0 && (
+        <motion.div
+          className="fixed bottom-[calc(4rem+12px+env(safe-area-inset-bottom))] left-0 right-0 z-40 px-4 pb-2 pointer-events-none will-change-transform"
+          initial={{ y: 80, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          exit={{ y: 80, opacity: 0 }}
+          transition={{ type: "spring", stiffness: 300, damping: 28 }}
+        >
         <Link
           href="/carrinho"
           onClick={handleTap}
@@ -66,6 +65,7 @@ export function CartFloatingBar({ total, itemCount }: CartFloatingBarProps) {
           </motion.div>
         </Link>
       </motion.div>
+      )}
     </AnimatePresence>
   )
 }

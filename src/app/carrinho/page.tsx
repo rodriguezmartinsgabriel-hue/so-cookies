@@ -10,6 +10,7 @@ import { EmptyState } from "@/components/ui/EmptyState"
 import { useCart } from "@/hooks/useCart"
 import { usePricing } from "@/hooks/usePricing"
 import { useCountdown } from "@/hooks/useCountdown"
+import { useHapticFeedback } from "@/hooks/useHapticFeedback"
 import { Card } from "@/components/ui/Card"
 import { Button } from "@/components/ui/Button"
 import { CalorieBadge } from "@/components/ui/CalorieBadge"
@@ -62,6 +63,7 @@ const formatBRL = (v: number) =>
 export default function CarrinhoPage() {
   const router = useRouter()
   const { items, setQty, removeItem, clear, count } = useCart()
+  const haptic = useHapticFeedback()
   const [mode, setMode] = useState<"retirada" | "entrega">("retirada")
   const [couponDraft, setCouponDraft] = useState("")
   const [couponCode, setCouponCode] = useState("")
@@ -307,14 +309,14 @@ export default function CarrinhoPage() {
                 <div className="grid grid-cols-2 gap-2">
                   <button
                     type="button"
-                    onClick={() => setMode("retirada")}
+                    onClick={() => { haptic.selection(); setMode("retirada") }}
                     className={`flex items-center justify-center gap-2 h-12 rounded-lg border text-sm font-medium transition-colors ${mode === "retirada" ? "border-ink bg-ink text-paper" : "border-line text-ink hover:bg-cream"}`}
                   >
                     <Store className="w-4 h-4" /> Retirar na loja
                   </button>
                   <button
                     type="button"
-                    onClick={() => { setMode("entrega"); setSlotsLoading(true); setSlotsError("") }}
+                    onClick={() => { haptic.selection(); setMode("entrega"); setSlotsLoading(true); setSlotsError("") }}
                     className={`flex items-center justify-center gap-2 h-12 rounded-lg border text-sm font-medium transition-colors ${mode === "entrega" ? "border-ink bg-ink text-paper" : "border-line text-ink hover:bg-cream"}`}
                   >
                     <Truck className="w-4 h-4" /> Entrega agendada
@@ -379,35 +381,35 @@ export default function CarrinhoPage() {
                     <div className="grid grid-cols-3 gap-2">
                       <div className="col-span-1">
                         <FormField label="CEP">
-                          <Input type="text" inputMode="numeric" placeholder="00000-000" value={address.cep} onChange={(e) => setField("cep", e.target.value)} />
+                          <Input type="tel" inputMode="numeric" autoComplete="postal-code" placeholder="00000-000" value={address.cep} onChange={(e) => setField("cep", e.target.value)} />
                         </FormField>
                       </div>
                       <div className="col-span-2">
                         <FormField label="Cidade">
-                          <Input type="text" value={address.city} onChange={(e) => setField("city", e.target.value)} />
+                          <Input type="text" autoComplete="address-level2" value={address.city} onChange={(e) => setField("city", e.target.value)} />
                         </FormField>
                       </div>
                     </div>
                     <FormField label="Rua *">
-                      <Input type="text" value={address.street} onChange={(e) => setField("street", e.target.value)} />
+                      <Input type="text" autoComplete="address-line1" value={address.street} onChange={(e) => setField("street", e.target.value)} />
                     </FormField>
                     <div className="grid grid-cols-2 gap-2">
                       <FormField label="Número *">
-                        <Input type="text" value={address.number} onChange={(e) => setField("number", e.target.value)} />
+                        <Input type="text" autoComplete="address-line2" value={address.number} onChange={(e) => setField("number", e.target.value)} />
                       </FormField>
                       <FormField label="Complemento">
-                        <Input type="text" value={address.complement} onChange={(e) => setField("complement", e.target.value)} />
+                        <Input type="text" autoComplete="address-line2" value={address.complement} onChange={(e) => setField("complement", e.target.value)} />
                       </FormField>
                     </div>
                     <div className="grid grid-cols-3 gap-2">
                       <div className="col-span-2">
                         <FormField label="Bairro">
-                          <Input type="text" value={address.neighborhood} onChange={(e) => setField("neighborhood", e.target.value)} />
+                          <Input type="text" autoComplete="address-level3" value={address.neighborhood} onChange={(e) => setField("neighborhood", e.target.value)} />
                         </FormField>
                       </div>
                       <div>
                         <FormField label="UF *">
-                          <Input type="text" maxLength={2} placeholder="SP" value={address.state} onChange={(e) => setField("state", e.target.value.toUpperCase())} />
+                          <Input type="text" maxLength={2} autoComplete="address-level1" placeholder="SP" value={address.state} onChange={(e) => setField("state", e.target.value.toUpperCase())} />
                         </FormField>
                       </div>
                     </div>
@@ -420,10 +422,11 @@ export default function CarrinhoPage() {
               <div className="p-4 space-y-2">
                 <p className="text-sm font-semibold text-ink">Cupom de desconto</p>
                 <div className="flex gap-2">
-                  <Input
-                    type="text"
-                    placeholder="Digite o cupom"
-                    value={couponDraft}
+                    <Input
+                      type="text"
+                      autoComplete="off"
+                      placeholder="Digite o cupom"
+                      value={couponDraft}
                     onChange={(e) => setCouponDraft(e.target.value.toUpperCase())}
                     onKeyDown={(e) => {
                       if (e.key === "Enter" && couponDraft.trim()) {

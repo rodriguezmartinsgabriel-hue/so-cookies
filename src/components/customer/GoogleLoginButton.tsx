@@ -1,17 +1,27 @@
+"use client"
+
+import { motion } from "framer-motion"
+import { useHapticFeedback } from "@/hooks/useHapticFeedback"
+
 export function GoogleLoginButton({ next }: { next?: string | null }) {
+  const haptic = useHapticFeedback()
   const href =
     next && next.startsWith("/") && !next.startsWith("//")
       ? `/api/public/auth/oauth/google?next=${encodeURIComponent(next)}`
       : "/api/public/auth/oauth/google"
 
   return (
-    <a
+    <motion.a
       href={href}
-      className="flex items-center justify-center gap-2.5 w-full h-12 border border-line rounded-lg bg-paper text-ink font-medium hover:bg-cream active:scale-[0.98] transition-all"
+      onClick={() => haptic.tap()}
+      whileTap={{ scale: 0.97 }}
+      whileHover={{ scale: 1.03 }}
+      transition={{ type: "spring", stiffness: 400, damping: 25 }}
+      className="flex items-center justify-center gap-2.5 w-full h-12 border border-line rounded-lg bg-paper text-ink font-medium hover:bg-cream will-change-transform"
     >
       <GoogleIcon className="w-5 h-5 shrink-0" />
       Continuar com Google
-    </a>
+    </motion.a>
   )
 }
 

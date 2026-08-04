@@ -98,6 +98,7 @@ function EntrarForm() {
               id="email"
               name="email"
               type="email"
+              autoComplete="email"
               placeholder="seu@email.com"
               required
             />
@@ -108,7 +109,8 @@ function EntrarForm() {
               id="password"
               name="password"
               type="password"
-              placeholder="••••••••"
+              autoComplete="current-password"
+              placeholder="• • • • • • • •"
               required
             />
           </FormField>

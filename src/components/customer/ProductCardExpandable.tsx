@@ -1,7 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useRef, useState } from "react"
-import { motion, AnimatePresence } from "framer-motion"
+import { motion } from "framer-motion"
 import { X, Plus, Minus, ShoppingBag } from "lucide-react"
 import NextImage from "next/image"
 import type { CatalogProduct } from "@/lib/utils"
@@ -78,10 +78,9 @@ export function ProductCardExpandable({
   const n = product.nutrition
 
   return (
-    <AnimatePresence>
-      <motion.div
-        ref={overlayRef}
-        className="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
+    <motion.div
+      ref={overlayRef}
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center will-change-transform"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
@@ -181,8 +180,7 @@ export function ProductCardExpandable({
               </Button>
             </div>
           </div>
+          </motion.div>
         </motion.div>
-      </motion.div>
-    </AnimatePresence>
-  )
+      )
 }

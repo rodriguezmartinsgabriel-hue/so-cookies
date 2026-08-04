@@ -3,6 +3,7 @@
 import { useState, useCallback } from "react"
 import { Plus, Minus, Cookie } from "lucide-react"
 import NextImage from "next/image"
+import { motion, AnimatePresence } from "framer-motion"
 import type { CatalogProduct } from "@/lib/utils"
 import { formatBRL } from "@/lib/utils"
 import { Card } from "@/components/ui/Card"
@@ -137,15 +138,17 @@ export function ProductCard({
         </div>
       </Card>
 
-      {expanded && (
-        <ProductCardExpandable
-          product={product}
-          qty={qty}
-          onAdd={onAdd}
-          onSetQty={onSetQty}
-          onClose={handleClose}
-        />
-      )}
+      <AnimatePresence>
+        {expanded && (
+          <ProductCardExpandable
+            product={product}
+            qty={qty}
+            onAdd={onAdd}
+            onSetQty={onSetQty}
+            onClose={handleClose}
+          />
+        )}
+      </AnimatePresence>
     </>
   )
 }

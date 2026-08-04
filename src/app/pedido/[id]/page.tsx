@@ -10,6 +10,8 @@ import { Input } from "@/components/ui/Input"
 import { FormField } from "@/components/ui/FormField"
 import { GlassSurface } from "@/components/ui/GlassSurface"
 import { useFocusTrap } from "@/hooks/useFocusTrap"
+import { useCart } from "@/hooks/useCart"
+import { useHapticFeedback } from "@/hooks/useHapticFeedback"
 
 type PublicOrderItem = {
   id: string
@@ -98,6 +100,8 @@ export default function PedidoPage({ params }: { params: Promise<{ id: string }>
   const [order, setOrder] = useState<PublicOrder | null>(null)
   const [notFound, setNotFound] = useState(false)
   const [loading, setLoading] = useState(true)
+  const { count } = useCart()
+  const haptic = useHapticFeedback()
 
   const [showDeliveryModal, setShowDeliveryModal] = useState(false)
   const [slots, setSlots] = useState<DeliverySlot[]>([])
@@ -215,7 +219,7 @@ export default function PedidoPage({ params }: { params: Promise<{ id: string }>
   const canChange = order?.status === "PENDENTE"
 
   return (
-    <CustomerShell>
+    <CustomerShell cartCount={count}>
       <div className="space-y-4">
         <div>
           <h1 className="text-2xl font-bold text-ink">Pedido</h1>
@@ -314,7 +318,7 @@ export default function PedidoPage({ params }: { params: Promise<{ id: string }>
                 </Card>
 
                 {canChange && !cancelled && (
-                  <Button variant="secondary" size="md" className="w-full" onClick={openDeliveryModal}>
+                  <Button variant="secondary" size="md" className="w-full" onClick={() => { haptic.selection(); openDeliveryModal() }}>
                     <Truck className="w-4 h-4" />
                     {isDelivery ? "Alterar data / endereço de entrega" : "Agendar entrega"}
                   </Button>
@@ -361,7 +365,7 @@ export default function PedidoPage({ params }: { params: Promise<{ id: string }>
                   <h3 id="delivery-modal-title" className="text-lg font-bold text-ink">Entrega agendada</h3>
                   <p className="text-xs text-muted">Escolha uma rota disponível</p>
                 </div>
-                <button type="button" data-close-modal onClick={() => setShowDeliveryModal(false)} aria-label="Fechar" className="p-1.5 rounded-md hover:bg-cream text-muted">
+                <button type="button" data-close-modal onClick={() => { haptic.tap(); setShowDeliveryModal(false) }} aria-label="Fechar" className="p-1.5 rounded-md hover:bg-cream text-muted">
                   <X className="w-5 h-5" />
                 </button>
               </div>

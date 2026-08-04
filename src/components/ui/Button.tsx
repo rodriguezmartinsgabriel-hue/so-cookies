@@ -8,7 +8,7 @@ type ButtonProps = HTMLMotionProps<"button"> & {
 };
 
 const base =
-  "inline-flex items-center justify-center gap-2 font-medium rounded-lg transition-all active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none select-none";
+  "inline-flex items-center justify-center gap-2 font-medium rounded-lg transition-all disabled:opacity-50 disabled:pointer-events-none select-none";
 
 const variants = {
   primary: "bg-ink text-paper hover:bg-ink/90",
@@ -32,8 +32,9 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
     <motion.button
       ref={ref}
       type={type}
-      className={cn(base, variants[variant], sizes[size], className)}
-      whileTap={{ scale: 0.98 }}
+      className={cn(base, variants[variant], sizes[size], className, "will-change-transform")}
+      whileTap={{ scale: 0.97 }}
+      whileHover={{ scale: 1.03 }}
       {...props}
     >
       {children}

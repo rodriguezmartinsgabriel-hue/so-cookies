@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/Button"
 import { Input } from "@/components/ui/Input"
 import { FormField } from "@/components/ui/FormField"
 import { useHapticFeedback } from "@/hooks/useHapticFeedback"
+import { useCart } from "@/hooks/useCart"
 
 type Profile = {
   id: string
@@ -87,6 +88,7 @@ const itemVariants = {
 export default function PerfilPage() {
   const router = useRouter()
   const haptic = useHapticFeedback()
+  const { count } = useCart()
   const [profile, setProfile] = useState<Profile | null>(null)
   const [orders, setOrders] = useState<PublicOrder[]>([])
   const [loading, setLoading] = useState(true)
@@ -200,19 +202,19 @@ export default function PerfilPage() {
   ].filter(Boolean)
 
   const editFields = [
-    { label: "Nome", name: "name", value: editName, onChange: setEditName, placeholder: "Seu nome" },
-    { label: "Telefone", name: "phone", value: editPhone, onChange: setEditPhone, placeholder: "(11) 99999-9999" },
-    { label: "CEP", name: "cep", value: editAddress.cep, onChange: (v: string) => setEditAddress({ ...editAddress, cep: v }), placeholder: "00000-000" },
-    { label: "Cidade", name: "city", value: editAddress.city, onChange: (v: string) => setEditAddress({ ...editAddress, city: v }) },
-    { label: "Rua", name: "street", value: editAddress.street, onChange: (v: string) => setEditAddress({ ...editAddress, street: v }) },
-    { label: "Número", name: "number", value: editAddress.number, onChange: (v: string) => setEditAddress({ ...editAddress, number: v }) },
-    { label: "Complemento", name: "complement", value: editAddress.complement, onChange: (v: string) => setEditAddress({ ...editAddress, complement: v }) },
-    { label: "Bairro", name: "neighborhood", value: editAddress.neighborhood, onChange: (v: string) => setEditAddress({ ...editAddress, neighborhood: v }) },
-    { label: "UF", name: "state", value: editAddress.state, onChange: (v: string) => setEditAddress({ ...editAddress, state: v.toUpperCase() }), maxLength: 2 },
+    { label: "Nome", name: "name", value: editName, onChange: setEditName, placeholder: "Seu nome", autoComplete: "name" },
+    { label: "Telefone", name: "phone", value: editPhone, onChange: setEditPhone, placeholder: "(11) 99999-9999", autoComplete: "tel", type: "tel" },
+    { label: "CEP", name: "cep", value: editAddress.cep, onChange: (v: string) => setEditAddress({ ...editAddress, cep: v }), placeholder: "00000-000", autoComplete: "postal-code", type: "tel", inputMode: "numeric" as const },
+    { label: "Cidade", name: "city", value: editAddress.city, onChange: (v: string) => setEditAddress({ ...editAddress, city: v }), autoComplete: "address-level2" },
+    { label: "Rua", name: "street", value: editAddress.street, onChange: (v: string) => setEditAddress({ ...editAddress, street: v }), autoComplete: "address-line1" },
+    { label: "Número", name: "number", value: editAddress.number, onChange: (v: string) => setEditAddress({ ...editAddress, number: v }), autoComplete: "address-line2" },
+    { label: "Complemento", name: "complement", value: editAddress.complement, onChange: (v: string) => setEditAddress({ ...editAddress, complement: v }), autoComplete: "address-line2" },
+    { label: "Bairro", name: "neighborhood", value: editAddress.neighborhood, onChange: (v: string) => setEditAddress({ ...editAddress, neighborhood: v }), autoComplete: "off" },
+    { label: "UF", name: "state", value: editAddress.state, onChange: (v: string) => setEditAddress({ ...editAddress, state: v.toUpperCase() }), maxLength: 2, autoComplete: "address-level1" },
   ]
 
   return (
-    <CustomerShell>
+    <CustomerShell cartCount={count}>
       <motion.div
         variants={containerVariants}
         initial="hidden"
@@ -289,12 +291,12 @@ export default function PerfilPage() {
                     <div className="divide-y divide-line/50">
                       <div className="px-4 py-3">
                         <FormField label="Senha atual">
-                          <Input type="password" placeholder="Senha atual" value={pwCurrent} onChange={(e) => setPwCurrent(e.target.value)} />
+                          <Input type="password" autoComplete="current-password" placeholder="Senha atual" value={pwCurrent} onChange={(e) => setPwCurrent(e.target.value)} />
                         </FormField>
                       </div>
                       <div className="px-4 py-3">
                         <FormField label="Nova senha">
-                          <Input type="password" placeholder="Mínimo 6 caracteres" value={pwNew} onChange={(e) => setPwNew(e.target.value)} />
+                          <Input type="password" autoComplete="new-password" placeholder="Mínimo 6 caracteres" value={pwNew} onChange={(e) => setPwNew(e.target.value)} />
                         </FormField>
                       </div>
                       <div className="px-4 py-3">
@@ -316,12 +318,12 @@ export default function PerfilPage() {
                   ) : (
                     <div className="space-y-1">
                       {orders.map((o) => (
-                        <button
-                          key={o.id}
-                          type="button"
-                          className="w-full flex items-center justify-between px-4 py-3 hover:bg-line/30 transition-colors cursor-pointer"
-                          onClick={() => router.push(`/pedido/${o.id}`)}
-                        >
+                          <button
+                            key={o.id}
+                            type="button"
+                            className="w-full flex items-center justify-between px-4 py-3 hover:bg-line/30 transition-colors cursor-pointer"
+                            onClick={() => { haptic.tap(); router.push(`/pedido/${o.id}`) }}
+                          >
                           <div>
                             <p className="text-sm font-semibold text-ink">
                               #{o.id.slice(0, 6)} · {new Date(o.createdAt).toLocaleDateString("pt-BR")}

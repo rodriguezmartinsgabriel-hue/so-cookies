@@ -14,6 +14,8 @@ type ProfileEditListProps = {
     placeholder?: string
     type?: string
     maxLength?: number
+    autoComplete?: string
+    inputMode?: "none" | "text" | "decimal" | "numeric" | "tel" | "search" | "email" | "url"
   }[]
   onCancel: () => void
   onSave: () => void
@@ -30,6 +32,8 @@ export function ProfileEditList({ fields, onCancel, onSave, saving, saveLabel = 
             <Input
               id={field.name}
               type={field.type || "text"}
+              autoComplete={field.autoComplete}
+              inputMode={field.inputMode}
               value={field.value}
               onChange={(e) => field.onChange(e.target.value)}
               placeholder={field.placeholder}

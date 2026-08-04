@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useState } from "react"
+import { useSyncExternalStore, useCallback } from "react"
 
 export type CartItem = { productId: string; qty: number }
 
@@ -17,51 +17,119 @@ function loadCart(): CartItem[] {
   }
 }
 
+type CartState = { items: CartItem[]; count: number }
+type Listener = () => void
+
+function computeCount(items: CartItem[]): number {
+  return items.reduce((sum, i) => sum + i.qty, 0)
+}
+
+let lastStored: string | null =
+  typeof window !== "undefined" ? localStorage.getItem(STORAGE_KEY) : null
+
+let cartState: CartState = (() => {
+  const items = loadCart()
+  return { items, count: computeCount(items) }
+})()
+
+function getSnapshot(): CartState {
+  if (typeof window !== "undefined") {
+    const stored = localStorage.getItem(STORAGE_KEY)
+    if (stored !== lastStored) {
+      lastStored = stored
+      let items: CartItem[] = []
+      try {
+        items = stored ? (JSON.parse(stored) as CartItem[]) : []
+      } catch {}
+      cartState = { items, count: computeCount(items) }
+    }
+  }
+  return cartState
+}
+
+const listeners = new Set<Listener>()
+
+function persist(items: CartItem[]) {
+  try {
+    const json = JSON.stringify(items)
+    localStorage.setItem(STORAGE_KEY, json)
+    lastStored = json
+  } catch {}
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new StorageEvent("storage", { key: STORAGE_KEY }))
+  }
+}
+
+function setItems(next: CartItem[]) {
+  cartState = { items: next, count: computeCount(next) }
+  persist(next)
+  emit()
+}
+
+function emit() {
+  for (const l of listeners) l()
+}
+
+const cartStore = {
+  addItem(productId: string, qty = 1) {
+    const items = [...cartState.items]
+    const found = items.find((i) => i.productId === productId)
+    if (found) {
+      found.qty += qty
+    } else {
+      items.push({ productId, qty })
+    }
+    setItems(items)
+  },
+
+  setQty(productId: string, qty: number) {
+    if (qty <= 0) {
+      setItems(cartState.items.filter((i) => i.productId !== productId))
+    } else {
+      setItems(cartState.items.map((i) => (i.productId === productId ? { ...i, qty } : i)))
+    }
+  },
+
+  removeItem(productId: string) {
+    setItems(cartState.items.filter((i) => i.productId !== productId))
+  },
+
+  clear() {
+    setItems([])
+  },
+
+  subscribe(listener: Listener) {
+    listeners.add(listener)
+    return () => {
+      listeners.delete(listener)
+    }
+  },
+
+  getSnapshot,
+}
+
+if (typeof window !== "undefined") {
+  window.addEventListener("storage", (e: StorageEvent) => {
+    if (e.key === STORAGE_KEY) {
+      lastStored = e.newValue
+      const items = e.newValue ? (JSON.parse(e.newValue) as CartItem[]) : []
+      cartState = { items, count: computeCount(items) }
+      emit()
+    }
+  })
+}
+
 export function useCart() {
-  const [items, setItems] = useState<CartItem[]>(loadCart)
-
-  const persist = useCallback((next: CartItem[]) => {
-    setItems(next)
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(next))
-    } catch {}
-  }, [])
-
-  const addItem = useCallback(
-    (productId: string, qty = 1) => {
-      const next = [...items]
-      const found = next.find((i) => i.productId === productId)
-      if (found) {
-        found.qty += qty
-      } else {
-        next.push({ productId, qty })
-      }
-      persist(next)
-    },
-    [items, persist],
+  const { items, count } = useSyncExternalStore(
+    cartStore.subscribe,
+    cartStore.getSnapshot,
+    () => ({ items: [], count: 0 }),
   )
 
-  const setQty = useCallback(
-    (productId: string, qty: number) => {
-      if (qty <= 0) {
-        persist(items.filter((i) => i.productId !== productId))
-        return
-      }
-      persist(items.map((i) => (i.productId === productId ? { ...i, qty } : i)))
-    },
-    [items, persist],
-  )
-
-  const removeItem = useCallback(
-    (productId: string) => {
-      persist(items.filter((i) => i.productId !== productId))
-    },
-    [items, persist],
-  )
-
-  const clear = useCallback(() => persist([]), [persist])
-
-  const count = items.reduce((sum, i) => sum + i.qty, 0)
+  const addItem = useCallback((productId: string, qty = 1) => cartStore.addItem(productId, qty), [])
+  const setQty = useCallback((productId: string, qty: number) => cartStore.setQty(productId, qty), [])
+  const removeItem = useCallback((productId: string) => cartStore.removeItem(productId), [])
+  const clear = useCallback(() => cartStore.clear(), [])
 
   return { items, addItem, setQty, removeItem, clear, count }
 }
