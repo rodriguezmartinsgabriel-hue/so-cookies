@@ -2,25 +2,22 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { Minus, Plus, Trash2, ArrowRight, ShoppingBag, Cookie, Truck, Store, Clock } from "lucide-react"
+import { Minus, Plus, Trash2, ArrowRight, Cookie, Truck, Store, Clock } from "lucide-react"
 import NextImage from "next/image"
 import { CustomerShell } from "@/components/customer/CustomerShell"
+import { StickyBottomCTA } from "@/components/customer/StickyBottomCTA"
+import { EmptyState } from "@/components/ui/EmptyState"
 import { useCart } from "@/hooks/useCart"
 import { usePricing } from "@/hooks/usePricing"
 import { useCountdown } from "@/hooks/useCountdown"
 import { Card } from "@/components/ui/Card"
 import { Button } from "@/components/ui/Button"
+import { CalorieBadge } from "@/components/ui/CalorieBadge"
+import { ShimmerSkeleton } from "@/components/ui/ShimmerSkeleton"
 import { Input } from "@/components/ui/Input"
 import { FormField } from "@/components/ui/FormField"
 
-type CatalogProduct = {
-  id: string
-  name: string
-  category: string
-  price: number
-  unit: string
-  image: string | null
-}
+import type { CatalogProduct } from "@/lib/utils"
 
 type DeliverySlot = {
   date: string
@@ -223,17 +220,27 @@ export default function CarrinhoPage() {
           <p className="text-sm text-muted">Revise seu pedido antes de finalizar</p>
         </div>
 
-        {loading && <div className="text-center py-12 text-muted">Carregando...</div>}
-        {pricingLoading && <div className="text-center py-12 text-muted">Calculando preço...</div>}
+        {loading && (
+          <div className="space-y-2">
+            {[1, 2, 3].map((i) => (
+              <ShimmerSkeleton key={i} variant="card" />
+            ))}
+          </div>
+        )}
+        {pricingLoading && (
+          <div className="space-y-2">
+            {[1, 2].map((i) => (
+              <ShimmerSkeleton key={i} variant="text" />
+            ))}
+          </div>
+        )}
 
         {!loading && lines.length === 0 && (
-          <Card padded={false} className="text-center py-12">
-            <ShoppingBag className="w-8 h-8 mx-auto mb-2 text-muted" />
-            <p className="text-muted text-sm">Seu carrinho está vazio</p>
-            <Button variant="primary" size="sm" className="mt-3" onClick={() => router.push("/cardapio")}>
-              Ver cardápio
-            </Button>
-          </Card>
+          <EmptyState
+            title="Seu carrinho está vazio"
+            description="Adicione seus cookies favoritos e aproveite!"
+            action={{ label: "Ver cardápio", onClick: () => router.push("/cardapio") }}
+          />
         )}
 
         {!loading && lines.length > 0 && (
@@ -250,7 +257,10 @@ export default function CarrinhoPage() {
                   )}
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-ink truncate">{l.product.name}</p>
-                    <p className="text-xs text-muted">{formatBRL(l.product.price)}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-xs text-muted">{formatBRL(l.product.price)}</p>
+                      <CalorieBadge calories={l.product.nutrition?.caloriesPerUnit ?? null} variant="compact" />
+                    </div>
                   </div>
                   <div className="flex items-center gap-2">
                     <Button variant="secondary" size="icon" onClick={() => setQty(l.productId, l.qty - 1)} aria-label="Diminuir">
@@ -434,6 +444,15 @@ export default function CarrinhoPage() {
                   : "Finalizar pedido — retirada na loja"}
               {!submitting && <ArrowRight className="w-4 h-4" />}
             </Button>
+
+            <StickyBottomCTA
+              total={total}
+              itemCount={count}
+              label={mode === "entrega" ? `Finalizar — ${selectedSlot?.dateLabel ?? "entrega"}` : "Finalizar pedido"}
+              onPress={handleCheckout}
+              disabled={submitting}
+              loading={submitting}
+            />
           </>
         )}
       </div>

@@ -148,18 +148,45 @@ body {
   }
 }
 
+.motion-reduce *,
+.motion-reduce *::before,
+.motion-reduce *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+}
+
 *:focus-visible {
   outline: 2px solid var(--ink);
   outline-offset: 2px;
 }
 
-button[class*="p-1.5"][aria-label],
-button[class*="p-1"][aria-label] {
-  min-width: 44px;
+button,
+a,
+input,
+select,
+textarea,
+[role="button"],
+[role="link"] {
   min-height: 44px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  min-width: 44px;
+}
+
+@media (prefers-contrast: high) {
+  .glass-surface {
+    border-width: 2px;
+  }
+  .btn-primary {
+    border: 2px solid currentColor;
+  }
+}
+
+.will-change-transform {
+  will-change: transform;
+}
+
+.will-change-opacity {
+  will-change: opacity;
 }
 
 ::-webkit-scrollbar {
@@ -257,4 +284,11 @@ button[class*="p-1"][aria-label] {
   animation-delay: calc(var(--stagger, 0) * 45ms);
 }
 
+@keyframes shimmer-sweep {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
 
+.animate-shimmer-sweep {
+  animation: shimmer-sweep 1.5s infinite;
+}

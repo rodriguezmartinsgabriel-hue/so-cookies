@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation"
 import { CustomerShell } from "@/components/customer/CustomerShell"
 import { ProductCard } from "@/components/customer/ProductCard"
 import { useCart } from "@/hooks/useCart"
+import { EmptyState } from "@/components/ui/EmptyState"
+import { ShimmerSkeleton } from "@/components/ui/ShimmerSkeleton"
 import type { CatalogProduct } from "@/lib/utils"
 
 export default function CardapioPage() {
@@ -53,7 +55,11 @@ export default function CardapioPage() {
         </div>
 
         {loading && (
-          <div className="text-center py-12 text-muted">Carregando cardápio...</div>
+          <div className="space-y-2">
+            {[1, 2, 3, 4, 5].map((i) => (
+              <ShimmerSkeleton key={i} variant="card" />
+            ))}
+          </div>
         )}
         {error && (
           <div className="text-center py-12 text-danger">Não foi possível carregar o cardápio</div>
@@ -85,7 +91,11 @@ export default function CardapioPage() {
           ))}
 
         {!loading && !error && products.length === 0 && (
-          <div className="text-center py-12 text-muted">Cardápio vazio por enquanto</div>
+          <EmptyState
+            title="Cardápio vazio"
+            description="Nenhum produto disponível no momento. Volte mais tarde!"
+            action={{ label: "Atualizar", onClick: () => window.location.reload() }}
+          />
         )}
       </div>
     </CustomerShell>
