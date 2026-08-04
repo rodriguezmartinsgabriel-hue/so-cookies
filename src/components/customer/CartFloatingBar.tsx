@@ -24,7 +24,7 @@ export function CartFloatingBar({ total, itemCount }: CartFloatingBarProps) {
   return (
     <AnimatePresence>
       <motion.div
-        className="fixed bottom-16 left-0 right-0 z-40 px-4 pb-2 pointer-events-none"
+        className="fixed bottom-[calc(4rem+env(safe-area-inset-bottom))] left-0 right-0 z-40 px-4 pb-2 pointer-events-none"
         initial={{ y: 80, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         exit={{ y: 80, opacity: 0 }}

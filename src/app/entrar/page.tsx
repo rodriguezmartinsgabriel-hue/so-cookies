@@ -8,6 +8,7 @@ import { GoogleLoginButton } from "@/components/customer/GoogleLoginButton"
 import { Button } from "@/components/ui/Button"
 import { Input } from "@/components/ui/Input"
 import { FormField } from "@/components/ui/FormField"
+import { GlassSurface } from "@/components/ui/GlassSurface"
 
 const OAUTH_ERROR_MESSAGES: Record<string, string> = {
   too_many_requests: "Muitas tentativas. Tente novamente em instantes.",
@@ -19,7 +20,20 @@ const OAUTH_ERROR_MESSAGES: Record<string, string> = {
 
 export default function EntrarPage() {
   return (
-    <Suspense fallback={null}>
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-paper">
+          <GlassSurface tone="strong" className="max-w-md mx-auto px-6 py-8 rounded-2xl">
+            <div className="flex flex-col items-center gap-4">
+              <div className="w-12 h-12 rounded-full bg-ink/5 flex items-center justify-center">
+                <div className="w-6 h-6 rounded-full bg-accent" />
+              </div>
+              <p className="text-sm text-muted font-medium">Carregando...</p>
+            </div>
+          </GlassSurface>
+        </div>
+      }
+    >
       <EntrarForm />
     </Suspense>
   )

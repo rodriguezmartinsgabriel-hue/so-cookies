@@ -1,15 +1,16 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 
 export function useCountdown(target: string | null): string {
   const [label, setLabel] = useState("")
-  const [prevTarget, setPrevTarget] = useState<string | null>(target)
+  const prevTargetRef = useRef<string | null>(target)
 
-  if (target !== prevTarget) {
-    setPrevTarget(target)
+  useEffect(() => {
+    if (target === prevTargetRef.current) return
+    prevTargetRef.current = target
     setLabel("")
-  }
+  }, [target])
 
   useEffect(() => {
     if (!target) return

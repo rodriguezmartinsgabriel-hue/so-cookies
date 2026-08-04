@@ -92,7 +92,10 @@ export default function CarrinhoPage() {
         return r.json()
       })
       .then((data) => {
-        if (!data) return
+        if (!data) {
+          setError("Não foi possível carregar o catálogo")
+          return
+        }
         const map: Record<string, CatalogProduct> = {}
         for (const p of data) map[p.id] = p
         setProducts(map)
