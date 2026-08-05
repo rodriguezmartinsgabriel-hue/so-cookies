@@ -6,6 +6,9 @@ import { Minus, Plus, Trash2, Cookie, Truck, Store, Clock } from "lucide-react"
 import NextImage from "next/image"
 import { CustomerShell } from "@/components/customer/CustomerShell"
 import { StickyBottomCTA } from "@/components/customer/StickyBottomCTA"
+import { CheckoutStepper } from "@/components/customer/CheckoutStepper"
+import { OrderNotesField } from "@/components/customer/OrderNotesField"
+import { OrderConfirmDialog } from "@/components/customer/OrderConfirmDialog"
 import { EmptyState } from "@/components/ui/EmptyState"
 import { useCart } from "@/hooks/useCart"
 import { usePricing } from "@/hooks/usePricing"
@@ -81,6 +84,9 @@ export default function CarrinhoPage() {
   const [slotsError, setSlotsError] = useState("")
   const [selectedSlot, setSelectedSlot] = useState<DeliverySlot | null>(null)
   const [address, setAddress] = useState<AddressState>(EMPTY_ADDRESS)
+  const [checkoutStep, setCheckoutStep] = useState<1 | 2 | 3>(1)
+  const [orderNotes, setOrderNotes] = useState("")
+  const [showConfirm, setShowConfirm] = useState(false)
 
   useEffect(() => {
     fetch("/api/public/catalog")
@@ -163,18 +169,30 @@ export default function CarrinhoPage() {
     setAddress((prev) => ({ ...prev, [key]: value }))
   }
 
-  async function handleCheckout() {
-    setError("")
-    if (mode === "entrega") {
-      if (!selectedSlot) {
-        setError("Selecione uma data de entrega")
-        return
-      }
-      if (!address.street || !address.number || !address.city || !address.state) {
-        setError("Preencha o endereço de entrega (rua, número, cidade e estado)")
-        return
+  function validateStep(step: number): string | null {
+    if (step === 2) {
+      if (mode === "entrega") {
+        if (!selectedSlot) return "Selecione uma data de entrega"
+        if (!address.street || !address.number || !address.city || !address.state) {
+          return "Preencha o endereço de entrega (rua, número, cidade e estado)"
+        }
       }
     }
+    return null
+  }
+
+  function handleAdvance(to: 2 | 3) {
+    const error = validateStep(checkoutStep)
+    if (error) {
+      setError(error)
+      return
+    }
+    setError("")
+    setCheckoutStep(to)
+  }
+
+  async function handleCheckout() {
+    setError("")
     setSubmitting(true)
     try {
       const body: Record<string, unknown> = {
@@ -182,6 +200,7 @@ export default function CarrinhoPage() {
       }
       const code = couponCode.trim()
       if (code) body.couponCode = code
+      if (orderNotes.trim()) body.notes = orderNotes.trim()
       if (mode === "entrega" && selectedSlot) {
         body.deliveryDate = selectedSlot.date
         body.deliveryRouteId = selectedSlot.routeId
@@ -210,6 +229,7 @@ export default function CarrinhoPage() {
       }
       const order = await res.json()
       clear()
+      setShowConfirm(false)
       router.push(`/pedido/${order.id}`)
     } finally {
       setSubmitting(false)
@@ -249,225 +269,304 @@ export default function CarrinhoPage() {
 
         {!loading && lines.length > 0 && (
           <>
-            <AnimatePresence mode="popLayout">
-              <div className="space-y-2">
-                {lines.map((l) => (
-                  <motion.div
-                    key={l.productId}
-                    layout
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -20, height: 0 }}
-                    transition={{ duration: 0.25, ease: "easeOut" }}
-                  >
-                    <Card key={l.productId} padded={false} className="flex items-center gap-3 p-3">
-                      {l.product.image ? (
-                        <NextImage src={l.product.image} alt={l.product.name} width={44} height={44} unoptimized className="w-11 h-11 rounded-lg object-cover shrink-0" />
-                      ) : (
-                        <div className="w-11 h-11 rounded-lg bg-cream border border-line flex items-center justify-center shrink-0">
-                          <Cookie className="w-5 h-5 text-kraft" />
-                        </div>
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-ink truncate">{l.product.name}</p>
-                        <div className="flex items-center gap-2">
-                          <p className="text-xs text-muted">{formatBRL(l.product.price)}</p>
-                          <CalorieBadge calories={l.product.nutrition?.caloriesPerUnit ?? null} variant="compact" />
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Button variant="secondary" size="icon" className="!h-11 !w-11" onClick={() => setQty(l.productId, l.qty - 1)} aria-label="Diminuir">
-                          <Minus className="w-4 h-4" />
-                        </Button>
-                        <motion.span
-                          key={l.qty}
-                          initial={{ scale: 0.5 }}
-                          animate={{ scale: 1 }}
-                          transition={{ type: "spring", stiffness: 400, damping: 20 }}
-                          className="w-6 text-center text-sm font-semibold text-ink"
-                        >
-                          {l.qty}
-                        </motion.span>
-                        <Button variant="primary" size="icon" className="!h-11 !w-11" onClick={() => setQty(l.productId, l.qty + 1)} aria-label="Aumentar">
-                          <Plus className="w-4 h-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="!h-11 !w-11" onClick={() => removeItem(l.productId)} aria-label="Remover">
-                          <Trash2 className="w-4 h-4 text-danger" />
-                        </Button>
-                      </div>
-                    </Card>
-                  </motion.div>
-                ))}
-              </div>
-            </AnimatePresence>
-
-            <Card padded={false}>
-              <div className="p-4">
-                <p className="text-sm font-semibold text-ink mb-3">Como você quer receber?</p>
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => { haptic.selection(); setMode("retirada") }}
-                    className={`flex items-center justify-center gap-2 h-12 rounded-lg border text-sm font-medium transition-colors ${mode === "retirada" ? "border-ink bg-ink text-paper" : "border-line text-ink hover:bg-cream"}`}
-                  >
-                    <Store className="w-4 h-4" /> Retirar na loja
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => { haptic.selection(); setMode("entrega"); setSlotsLoading(true); setSlotsError("") }}
-                    className={`flex items-center justify-center gap-2 h-12 rounded-lg border text-sm font-medium transition-colors ${mode === "entrega" ? "border-ink bg-ink text-paper" : "border-line text-ink hover:bg-cream"}`}
-                  >
-                    <Truck className="w-4 h-4" /> Entrega agendada
-                  </button>
-                </div>
-              </div>
-
-              {mode === "entrega" && (
-                <div className="border-t border-line p-4 space-y-4">
-                  <div>
-                    <p className="text-sm font-semibold text-ink mb-2">Escolha a data da entrega</p>
-                    {slotsLoading && <p className="text-sm text-muted">Carregando datas...</p>}
-                    {slotsError && <p className="text-sm text-danger">{slotsError}</p>}
-                    {!slotsLoading && !slotsError && slots.length === 0 && (
-                      <p className="text-sm text-muted">Não há rotas de entrega disponíveis no momento.</p>
-                    )}
-                    {!slotsLoading && slots.length > 0 && (
-                      <div className="space-y-2">
-                        {slots.map((slot) => {
-                          const active = selectedSlot?.routeId === slot.routeId && selectedSlot?.date === slot.date
-                          const full = slot.capacity.enabled && ((slot.capacity.maxOrders != null && slot.capacity.usedOrders >= slot.capacity.maxOrders) || (slot.capacity.maxItems != null && slot.capacity.usedItems >= slot.capacity.maxItems))
-                          return (
-                            <button
-                              key={`${slot.routeId}-${slot.date}`}
-                              type="button"
-                              disabled={full}
-                              onClick={() => setSelectedSlot(slot)}
-                              className={`w-full text-left p-3 rounded-lg border transition-colors ${full ? "opacity-50 cursor-not-allowed border-line bg-cream/30" : active ? "border-ink bg-ink text-paper" : "border-line bg-paper hover:bg-cream/50"}`}
-                            >
-                              <div className="flex items-center justify-between gap-2">
-                                <span className={`text-sm font-semibold ${active ? "text-paper" : "text-ink"}`}>{slot.dateLabel}</span>
-                                <span className={`text-xs font-medium ${active ? "text-paper/80" : "text-muted"}`}>{slot.zoneName}</span>
-                              </div>
-                              <p className={`text-xs mt-1 flex items-center gap-1 ${active ? "text-paper/80" : "text-muted"}`}>
-                                <Clock className="w-3 h-3" /> Peça até {slot.cutoffLabel}
-                              </p>
-                              <p className={`text-xs mt-0.5 flex items-center gap-1 ${active ? "text-paper/80" : "text-muted"}`}>
-                                <Truck className="w-3 h-3" /> {slot.windowLabel}
-                              </p>
-                              {full && (
-                                <p className="text-xs mt-1 font-medium text-danger">Rota lotada</p>
-                              )}
-                            </button>
-                          )
-                        })}
-                      </div>
-                    )}
-                    {selectedSlot && (
-                      <div className="mt-2 space-y-1">
-                        <p className="text-xs text-muted flex items-center gap-1">
-                          <Clock className="w-3 h-3" /> Fecha em <CountdownLabel target={selectedSlot.cutoffAt} className="font-semibold text-ink" />
-                        </p>
-                        <p className="text-xs text-muted flex items-center gap-1">
-                          <Truck className="w-3 h-3" /> {selectedSlot.windowLabel}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="space-y-3">
-                    <p className="text-sm font-semibold text-ink">Endereço de entrega</p>
-                    <div className="grid grid-cols-3 gap-2">
-                      <div className="col-span-1">
-                        <FormField label="CEP">
-                          <Input type="tel" inputMode="numeric" autoComplete="postal-code" placeholder="00000-000" value={address.cep} onChange={(e) => setField("cep", e.target.value)} />
-                        </FormField>
-                      </div>
-                      <div className="col-span-2">
-                        <FormField label="Cidade">
-                          <Input type="text" autoComplete="address-level2" value={address.city} onChange={(e) => setField("city", e.target.value)} />
-                        </FormField>
-                      </div>
-                    </div>
-                    <FormField label="Rua *">
-                      <Input type="text" autoComplete="address-line1" value={address.street} onChange={(e) => setField("street", e.target.value)} />
-                    </FormField>
-                    <div className="grid grid-cols-2 gap-2">
-                      <FormField label="Número *">
-                        <Input type="text" autoComplete="address-line2" value={address.number} onChange={(e) => setField("number", e.target.value)} />
-                      </FormField>
-                      <FormField label="Complemento">
-                        <Input type="text" autoComplete="address-line2" value={address.complement} onChange={(e) => setField("complement", e.target.value)} />
-                      </FormField>
-                    </div>
-                    <div className="grid grid-cols-3 gap-2">
-                      <div className="col-span-2">
-                        <FormField label="Bairro">
-                          <Input type="text" autoComplete="address-level3" value={address.neighborhood} onChange={(e) => setField("neighborhood", e.target.value)} />
-                        </FormField>
-                      </div>
-                      <div>
-                        <FormField label="UF *">
-                          <Input type="text" maxLength={2} autoComplete="address-level1" placeholder="SP" value={address.state} onChange={(e) => setField("state", e.target.value.toUpperCase())} />
-                        </FormField>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </Card>
-
-            <Card padded={false}>
-              <div className="p-4 space-y-2">
-                <p className="text-sm font-semibold text-ink">Cupom de desconto</p>
-                <div className="flex gap-2">
-                    <Input
-                      type="text"
-                      autoComplete="off"
-                      placeholder="Digite o cupom"
-                      value={couponDraft}
-                    onChange={(e) => setCouponDraft(e.target.value.toUpperCase())}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" && couponDraft.trim()) {
-                        setCouponCode(couponDraft.trim().toUpperCase())
-                      }
-                    }}
-                    aria-label="Cupom de desconto"
-                  />
-                  <Button variant="secondary" size="md" onClick={() => setCouponCode(couponDraft.trim().toUpperCase())} disabled={!couponDraft.trim()}>
-                    Aplicar
-                  </Button>
-                </div>
-                {couponCode && result?.state.warnings && result.state.warnings.length > 0 && (
-                  <ul className="space-y-1">
-                    {result.state.warnings.map((w, idx) => (
-                      <li key={idx} className="text-xs text-danger">{w.message}</li>
-                    ))}
-                  </ul>
-                )}
-                {couponCode && result?.summary.discountTotal ? (
-                  <p className="text-xs text-success">
-                    Desconto aplicado: {formatBRL(result.summary.discountTotal)}
-                  </p>
-                ) : null}
-              </div>
-            </Card>
-
-            <div className="flex items-center justify-between border-t border-line pt-3">
-              <p className="text-sm text-muted">Total</p>
-              <p className="text-lg font-bold text-ink">{formatBRL(total)}</p>
-            </div>
+            <CheckoutStepper current={checkoutStep} onStep={setCheckoutStep} />
 
             {error && <p className="text-sm text-danger">{error}</p>}
             {pricingError && <p className="text-sm text-danger">{pricingError}</p>}
 
-            <StickyBottomCTA
-              total={total}
-              itemCount={count}
-              label={mode === "entrega" ? `Finalizar — ${selectedSlot?.dateLabel ?? "entrega"}` : "Finalizar pedido"}
-              onPress={handleCheckout}
-              disabled={submitting}
-              loading={submitting}
-            />
+            {checkoutStep === 1 && (
+              <>
+                <AnimatePresence mode="popLayout">
+                  <div className="space-y-2">
+                    {lines.map((l) => (
+                      <motion.div
+                        key={l.productId}
+                        layout
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -20, height: 0 }}
+                        transition={{ duration: 0.25, ease: "easeOut" }}
+                      >
+                        <Card key={l.productId} padded={false} className="flex items-center gap-3 p-3">
+                          {l.product.image ? (
+                            <NextImage src={l.product.image} alt={l.product.name} width={44} height={44} unoptimized className="w-11 h-11 rounded-lg object-cover shrink-0" />
+                          ) : (
+                            <div className="w-11 h-11 rounded-lg bg-cream border border-line flex items-center justify-center shrink-0">
+                              <Cookie className="w-5 h-5 text-kraft" />
+                            </div>
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-semibold text-ink truncate">{l.product.name}</p>
+                            <div className="flex items-center gap-2">
+                              <p className="text-xs text-muted">{formatBRL(l.product.price)}</p>
+                              <CalorieBadge calories={l.product.nutrition?.caloriesPerUnit ?? null} variant="compact" />
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Button variant="secondary" size="icon" className="!h-11 !w-11" onClick={() => setQty(l.productId, l.qty - 1)} aria-label="Diminuir">
+                              <Minus className="w-4 h-4" />
+                            </Button>
+                            <motion.span
+                              key={l.qty}
+                              initial={{ scale: 0.5 }}
+                              animate={{ scale: 1 }}
+                              transition={{ type: "spring", stiffness: 400, damping: 20 }}
+                              className="w-6 text-center text-sm font-semibold text-ink"
+                            >
+                              {l.qty}
+                            </motion.span>
+                            <Button variant="primary" size="icon" className="!h-11 !w-11" onClick={() => setQty(l.productId, l.qty + 1)} aria-label="Aumentar">
+                              <Plus className="w-4 h-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="!h-11 !w-11" onClick={() => removeItem(l.productId)} aria-label="Remover">
+                              <Trash2 className="w-4 h-4 text-danger" />
+                            </Button>
+                          </div>
+                        </Card>
+                      </motion.div>
+                    ))}
+                  </div>
+                </AnimatePresence>
+
+                <StickyBottomCTA
+                  total={total}
+                  itemCount={count}
+                  label="Avançar para entrega"
+                  onPress={() => handleAdvance(2)}
+                  disabled={submitting}
+                  loading={submitting}
+                />
+              </>
+            )}
+
+            {checkoutStep === 2 && (
+              <Card padded={false}>
+                <div className="p-4">
+                  <p className="text-sm font-semibold text-ink mb-3">Como você quer receber?</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => { haptic.selection(); setMode("retirada") }}
+                      className={`flex items-center justify-center gap-2 h-12 rounded-lg border text-sm font-medium transition-colors ${mode === "retirada" ? "border-ink bg-ink text-paper" : "border-line text-ink hover:bg-cream"}`}
+                    >
+                      <Store className="w-4 h-4" /> Retirar na loja
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { haptic.selection(); setMode("entrega"); setSlotsLoading(true); setSlotsError("") }}
+                      className={`flex items-center justify-center gap-2 h-12 rounded-lg border text-sm font-medium transition-colors ${mode === "entrega" ? "border-ink bg-ink text-paper" : "border-line text-ink hover:bg-cream"}`}
+                    >
+                      <Truck className="w-4 h-4" /> Entrega agendada
+                    </button>
+                  </div>
+                </div>
+
+                {mode === "entrega" && (
+                  <div className="border-t border-line p-4 space-y-4">
+                    <div>
+                      <p className="text-sm font-semibold text-ink mb-2">Escolha a data da entrega</p>
+                      {slotsLoading && <p className="text-sm text-muted">Carregando datas...</p>}
+                      {slotsError && <p className="text-sm text-danger">{slotsError}</p>}
+                      {!slotsLoading && !slotsError && slots.length === 0 && (
+                        <p className="text-sm text-muted">Não há rotas de entrega disponíveis no momento.</p>
+                      )}
+                      {!slotsLoading && slots.length > 0 && (
+                        <div className="space-y-2">
+                          {slots.map((slot) => {
+                            const active = selectedSlot?.routeId === slot.routeId && selectedSlot?.date === slot.date
+                            const full = slot.capacity.enabled && ((slot.capacity.maxOrders != null && slot.capacity.usedOrders >= slot.capacity.maxOrders) || (slot.capacity.maxItems != null && slot.capacity.usedItems >= slot.capacity.maxItems))
+                            return (
+                              <button
+                                key={`${slot.routeId}-${slot.date}`}
+                                type="button"
+                                disabled={full}
+                                onClick={() => setSelectedSlot(slot)}
+                                className={`w-full text-left p-3 rounded-lg border transition-colors ${full ? "opacity-50 cursor-not-allowed border-line bg-cream/30" : active ? "border-ink bg-ink text-paper" : "border-line bg-paper hover:bg-cream/50"}`}
+                              >
+                                <div className="flex items-center justify-between gap-2">
+                                  <span className={`text-sm font-semibold ${active ? "text-paper" : "text-ink"}`}>{slot.dateLabel}</span>
+                                  <span className={`text-xs font-medium ${active ? "text-paper/80" : "text-muted"}`}>{slot.zoneName}</span>
+                                </div>
+                                <p className={`text-xs mt-1 flex items-center gap-1 ${active ? "text-paper/80" : "text-muted"}`}>
+                                  <Clock className="w-3 h-3" /> Peça até {slot.cutoffLabel}
+                                </p>
+                                <p className={`text-xs mt-0.5 flex items-center gap-1 ${active ? "text-paper/80" : "text-muted"}`}>
+                                  <Truck className="w-3 h-3" /> {slot.windowLabel}
+                                </p>
+                                {full && (
+                                  <p className="text-xs mt-1 font-medium text-danger">Rota lotada</p>
+                                )}
+                              </button>
+                            )
+                          })}
+                        </div>
+                      )}
+                      {selectedSlot && (
+                        <div className="mt-2 space-y-1">
+                          <p className="text-xs text-muted flex items-center gap-1">
+                            <Clock className="w-3 h-3" /> Fecha em <CountdownLabel target={selectedSlot.cutoffAt} className="font-semibold text-ink" />
+                          </p>
+                          <p className="text-xs text-muted flex items-center gap-1">
+                            <Truck className="w-3 h-3" /> {selectedSlot.windowLabel}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="space-y-3">
+                      <p className="text-sm font-semibold text-ink">Endereço de entrega</p>
+                      <div className="grid grid-cols-3 gap-2">
+                        <div className="col-span-1">
+                          <FormField label="CEP">
+                            <Input type="tel" inputMode="numeric" autoComplete="postal-code" placeholder="00000-000" value={address.cep} onChange={(e) => setField("cep", e.target.value)} />
+                          </FormField>
+                        </div>
+                        <div className="col-span-2">
+                          <FormField label="Cidade">
+                            <Input type="text" autoComplete="address-level2" value={address.city} onChange={(e) => setField("city", e.target.value)} />
+                          </FormField>
+                        </div>
+                      </div>
+                      <FormField label="Rua *">
+                        <Input type="text" autoComplete="address-line1" value={address.street} onChange={(e) => setField("street", e.target.value)} />
+                      </FormField>
+                      <div className="grid grid-cols-2 gap-2">
+                        <FormField label="Número *">
+                          <Input type="text" autoComplete="address-line2" value={address.number} onChange={(e) => setField("number", e.target.value)} />
+                        </FormField>
+                        <FormField label="Complemento">
+                          <Input type="text" autoComplete="address-line2" value={address.complement} onChange={(e) => setField("complement", e.target.value)} />
+                        </FormField>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2">
+                        <div className="col-span-2">
+                          <FormField label="Bairro">
+                            <Input type="text" autoComplete="address-level3" value={address.neighborhood} onChange={(e) => setField("neighborhood", e.target.value)} />
+                          </FormField>
+                        </div>
+                        <div>
+                          <FormField label="UF *">
+                            <Input type="text" maxLength={2} autoComplete="address-level1" placeholder="SP" value={address.state} onChange={(e) => setField("state", e.target.value.toUpperCase())} />
+                          </FormField>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div className="border-t border-line p-4">
+                  <StickyBottomCTA
+                    total={total}
+                    itemCount={count}
+                    label="Avançar para revisão"
+                    onPress={() => handleAdvance(3)}
+                    disabled={submitting}
+                    loading={submitting}
+                  />
+                </div>
+              </Card>
+            )}
+
+            {checkoutStep === 3 && (
+              <>
+                <Card padded={false}>
+                  <div className="p-4 space-y-3">
+                    <p className="text-sm font-semibold text-ink">Resumo dos itens</p>
+                    {lines.map((l) => (
+                      <div key={l.productId} className="flex items-center justify-between text-sm">
+                        <span className="text-ink">{l.qty}x {l.product.name}</span>
+                        <span className="text-muted">{formatBRL(l.product.price * l.qty)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </Card>
+
+                {mode === "entrega" && selectedSlot && (
+                  <Card padded={false}>
+                    <div className="p-4 space-y-1">
+                      <p className="text-sm font-semibold text-ink flex items-center gap-1.5"><Truck className="w-4 h-4" /> Entrega</p>
+                      <p className="text-sm text-ink">{selectedSlot.dateLabel}</p>
+                      <p className="text-xs text-muted">{selectedSlot.windowLabel}</p>
+                      {address.street && (
+                        <p className="text-xs text-muted">
+                          {address.street}, {address.number}
+                          {address.neighborhood ? ` · ${address.neighborhood}` : ""}
+                          {address.city ? ` · ${address.city}` : ""}
+                          {address.state ? ` - ${address.state}` : ""}
+                        </p>
+                      )}
+                    </div>
+                  </Card>
+                )}
+
+                <OrderNotesField value={orderNotes} onChange={setOrderNotes} />
+
+                <Card padded={false}>
+                  <div className="p-4 space-y-2">
+                    <p className="text-sm font-semibold text-ink">Cupom de desconto</p>
+                    <div className="flex gap-2">
+                      <Input
+                        type="text"
+                        autoComplete="off"
+                        placeholder="Digite o cupom"
+                        value={couponDraft}
+                        onChange={(e) => setCouponDraft(e.target.value.toUpperCase())}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" && couponDraft.trim()) {
+                            setCouponCode(couponDraft.trim().toUpperCase())
+                          }
+                        }}
+                        aria-label="Cupom de desconto"
+                      />
+                      <Button variant="secondary" size="md" onClick={() => setCouponCode(couponDraft.trim().toUpperCase())} disabled={!couponDraft.trim()}>
+                        Aplicar
+                      </Button>
+                    </div>
+                    {couponCode && result?.state.warnings && result.state.warnings.length > 0 && (
+                      <ul className="space-y-1">
+                        {result.state.warnings.map((w, idx) => (
+                          <li key={idx} className="text-xs text-danger">{w.message}</li>
+                        ))}
+                      </ul>
+                    )}
+                    {couponCode && result?.summary.discountTotal ? (
+                      <p className="text-xs text-success">
+                        Desconto aplicado: {formatBRL(result.summary.discountTotal)}
+                      </p>
+                    ) : null}
+                  </div>
+                </Card>
+
+                <div className="flex items-center justify-between border-t border-line pt-3">
+                  <p className="text-sm text-muted">Total</p>
+                  <p className="text-lg font-bold text-ink">{formatBRL(total)}</p>
+                </div>
+
+                <StickyBottomCTA
+                  total={total}
+                  itemCount={count}
+                  label="Finalizar pedido"
+                  onPress={() => setShowConfirm(true)}
+                  disabled={submitting}
+                  loading={submitting}
+                />
+              </>
+            )}
+
+            {showConfirm && (
+              <OrderConfirmDialog
+                lines={lines}
+                mode={mode}
+                selectedSlot={selectedSlot ? { dateLabel: selectedSlot.dateLabel, windowLabel: selectedSlot.windowLabel } : null}
+                address={mode === "entrega" ? { street: address.street, number: address.number, neighborhood: address.neighborhood, city: address.city, state: address.state } : null}
+                couponCode={couponCode}
+                discountTotal={result?.summary.discountTotal}
+                total={total}
+                onConfirm={handleCheckout}
+                onCancel={() => setShowConfirm(false)}
+                loading={submitting}
+              />
+            )}
           </>
         )}
       </div>
