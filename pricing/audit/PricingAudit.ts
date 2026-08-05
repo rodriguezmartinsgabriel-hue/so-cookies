@@ -1,22 +1,26 @@
 import type { PricingContext, PricingState, AuditTrail, TimelineEvent, AuditEvent } from '../types';
 import type { PricingAction } from '../actions/PricingAction';
-import type { EventBus } from '../events/EventBus';
 import type { RuleRegistry } from '../registry/RuleRegistry';
-import type { PrismaClient } from '@/generated/prisma/client';
 import { PricingPhase } from '../pipeline/PricingPhase';
 
+const PHASES: PricingPhase[] = [
+  PricingPhase.BASE,
+  PricingPhase.ITEM,
+  PricingPhase.ORDER,
+  PricingPhase.CUSTOMER,
+  PricingPhase.PAYMENT,
+  PricingPhase.SHIPPING,
+  PricingPhase.POST_PROCESSING,
+];
+
 export class PricingAudit {
-  constructor(
-    private prisma: PrismaClient,
-    private eventBus: EventBus,
-    private registry: RuleRegistry
-  ) {}
+  constructor(private registry: RuleRegistry) {}
 
   async createTrail(
-    context: PricingContext,
+    _context: PricingContext,
     state: PricingState,
     actions: PricingAction[],
-    executionTime: number
+    _executionTime: number
   ): Promise<AuditTrail> {
     const events = actions.map(action => ({
       timestamp: action.timestamp,
@@ -28,10 +32,7 @@ export class PricingAudit {
       details: action.metadata || {}
     }));
 
-    const timeline = this.createTimeline(state, events);
-
-    // Salvar no banco
-    await this.saveTrail(context, state, actions, executionTime);
+    const timeline = this.createTimeline(state, actions, events);
 
     return {
       events,
@@ -39,52 +40,61 @@ export class PricingAudit {
     };
   }
 
-  private createTimeline(state: PricingState, events: AuditEvent[]): TimelineEvent[] {
+  private createTimeline(state: PricingState, actions: PricingAction[], events: AuditEvent[]): TimelineEvent[] {
     const timeline: TimelineEvent[] = [];
 
-    const phases = [
-      PricingPhase.BASE,
-      PricingPhase.ITEM,
-      PricingPhase.ORDER,
-      PricingPhase.CUSTOMER,
-      PricingPhase.PAYMENT,
-      PricingPhase.SHIPPING,
-      PricingPhase.POST_PROCESSING
-    ];
+    const actionById = new Map(actions.map(action => [action.id, action]));
+    const discountByAction = new Map<string, number>();
+    for (const discount of state.discounts) {
+      const action = actionById.get(discount.id);
+      if (action) {
+        discountByAction.set(action.id, discount.value);
+      }
+    }
 
-    for (const phase of phases) {
-      const phaseEvents = events.filter(e => {
-        // Verificar se o evento pertence a esta fase
-        const rule = this.registry.get(e.ruleId);
-        return rule?.getPhase() === phase;
-      });
+    const runningItems = new Map(state.items.map(item => [item.productId, { ...item }]));
+    let subtotal = state.items.reduce((sum, item) => sum + item.basePrice * item.qty, 0);
+    let accumulatedOrderDiscount = 0;
 
-      const discount = state.discounts.reduce((sum, d) => {
-        const rule = this.registry.get(d.id);
-        return rule && rule.getPhase() === phase ? sum + d.value : sum;
+    for (const phase of PHASES) {
+      const phaseActions = actions.filter(action => this.getRulePhase(action.sourceRule) === phase);
+      const phaseEvents = events.filter(event => this.getRulePhase(event.ruleId) === phase);
+
+      // Reduzir preços de itens aplicados nesta fase (ex.: faixas de quantidade)
+      let phaseItemDiscount = 0;
+      for (const action of phaseActions) {
+        if (action.type === 'CHANGE_ITEM_PRICE' && action.productId && typeof action.newPrice === 'number') {
+          const item = runningItems.get(action.productId);
+          if (item && item.priceAfterDiscount > action.newPrice) {
+            phaseItemDiscount += (item.priceAfterDiscount - action.newPrice) * item.qty;
+            item.priceAfterDiscount = action.newPrice;
+          }
+        }
+      }
+      subtotal -= phaseItemDiscount;
+
+      // Descontos de pedido (subtotal) produzidos nesta fase
+      const phaseOrderDiscount = phaseActions.reduce((sum, action) => {
+        if (action.appliedTo !== 'subtotal') return sum;
+        return sum + (discountByAction.get(action.id) ?? 0);
       }, 0);
-
-      const subtotal = state.items.reduce((sum, item) => {
-        const rule = this.registry.get(item.productId);
-        return rule && rule.getPhase() === phase ? sum + item.priceAfterDiscount * item.qty : sum;
-      }, 0);
+      accumulatedOrderDiscount += phaseOrderDiscount;
 
       timeline.push({
         timestamp: new Date(),
         phase,
-        phaseIndex: phases.indexOf(phase),
-        events: phaseEvents.map(e => e.actionType),
-        totalDiscount: discount,
-        totalSubtotal: subtotal
+        phaseIndex: PHASES.indexOf(phase),
+        events: phaseEvents.map(event => event.actionType),
+        totalDiscount: Math.max(0, phaseItemDiscount + phaseOrderDiscount),
+        totalSubtotal: Math.max(0, subtotal - accumulatedOrderDiscount),
       });
     }
 
     return timeline;
   }
 
-  private async saveTrail(_context: PricingContext, _state: PricingState, _actions: PricingAction[], _executionTime: number): Promise<void> {
-    // Implementar salvamento em banco
-    // Exemplo: await prisma.pricingAudit.create({...})
+  private getRulePhase(ruleId: string): PricingPhase | undefined {
+    return this.registry.get(ruleId)?.getPhase();
   }
 
   private getRuleName(ruleId: string): string {
@@ -92,9 +102,3 @@ export class PricingAudit {
     return rule?.name || ruleId;
   }
 }
-
-
-
-
-
-

@@ -1,12 +1,11 @@
 import type { PricingContext, PricingState, PricingResult, PricingData, Logger, Metrics } from '../types';
 import type { PricingAction } from '../actions/PricingAction';
 import type { PrismaClient } from '@/generated/prisma/client';
-import { RulePipeline } from '../pipeline/RulePipeline';
+import { PricingPhase } from '../pipeline/PricingPhase';
 import { RuleExecutor } from '../executor/RuleExecutor';
 import { ActionReducer } from '../reducers/ActionReducer';
 import { PricingDataLoader } from '../loaders/PricingDataLoader';
 import { PricingCache } from '../cache/PricingCache';
-import { EventBus } from '../events/EventBus';
 import { PricingAudit } from '../audit/PricingAudit';
 import { PricingSummaryCalculator } from '../calculations/PricingSummaryCalculator';
 import type { RuleRegistry } from '../registry/RuleRegistry';
@@ -16,9 +15,18 @@ import { CampaignRepository } from '../repositories/CampaignRepository';
 import { ShippingRepository } from '../repositories/ShippingRepository';
 import { PricingRepository } from '../repositories/PricingRepository';
 
+const PHASE_TIMELINE: PricingPhase[] = [
+  PricingPhase.BASE,
+  PricingPhase.ITEM,
+  PricingPhase.ORDER,
+  PricingPhase.CUSTOMER,
+  PricingPhase.PAYMENT,
+  PricingPhase.SHIPPING,
+  PricingPhase.POST_PROCESSING,
+];
+
 export class PricingEngine {
   private executor: RuleExecutor;
-  private pipeline: RulePipeline;
   private reducer: ActionReducer;
   private dataLoader: PricingDataLoader;
   private audit: PricingAudit;
@@ -30,7 +38,6 @@ export class PricingEngine {
     private logger: Logger,
     private metrics: Metrics
   ) {
-    this.pipeline = new RulePipeline();
     this.executor = new RuleExecutor(registry, logger);
     this.reducer = new ActionReducer();
     this.dataLoader = new PricingDataLoader(
@@ -41,7 +48,7 @@ export class PricingEngine {
       registry.getRepository<PricingRepository>('pricing') ?? new PricingRepository(prisma),
       new PricingCache()
     );
-    this.audit = new PricingAudit(prisma, new EventBus(), registry);
+    this.audit = new PricingAudit(registry);
     this.summaryCalculator = new PricingSummaryCalculator();
   }
 
@@ -112,11 +119,9 @@ export class PricingEngine {
   ): Promise<PricingAction[]> {
     const allActions: PricingAction[] = [];
 
-    const phases = this.pipeline.getPhaseTimeline();
-
-    for (const phase of phases) {
+    for (const phase of PHASE_TIMELINE) {
       const phaseActions = await this.executor.executeParallelInPhase(
-        phase.phase,
+        phase,
         context,
         state,
         data
@@ -129,10 +134,6 @@ export class PricingEngine {
     }
 
     return allActions;
-  }
-
-  getPipeline(): RulePipeline {
-    return this.pipeline;
   }
 
   getExecutor(): RuleExecutor {

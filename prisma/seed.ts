@@ -166,6 +166,28 @@ async function main() {
   }
   console.log(`  ✅ Price Tiers (${tierCount})`);
 
+  // ─── Pricing Settings (opt-in explícito) ─────────────────────
+  // Sem esta linha, o Pricing Engine não ativa nenhuma promoção por padrão.
+  // Faixas de quantidade (tiers) ficam ativas porque o seed as provisiona.
+  await prisma.pricingSettings.upsert({
+    where: { id: "default" },
+    update: {},
+    create: {
+      id: "default",
+      key: "default",
+      value: {
+        activatePriceTier: true,
+        activateCoupon: false,
+        activateCampaign: false,
+        activateB2B: false,
+        activateFreeShipping: false,
+        b2bDiscountPercent: 0,
+      },
+      description: "Configuração padrão de precificação (opt-in)",
+    },
+  });
+  console.log("  ✅ Pricing Settings (1)");
+
   // ─── Ingredients (from Ficha Técnica) ────────────────────────
   const ingData = [
     // id, name, costPerKg, supplier

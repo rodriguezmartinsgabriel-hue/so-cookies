@@ -55,6 +55,11 @@ describe('PricingEngine v2', () => {
     expect(result.summary.subtotal).toBeCloseTo(75, 2);
     expect(result.summary.discountTotal).toBeCloseTo(0, 2);
     expect(result.state.warnings).toHaveLength(0);
+
+    for (const timelineEvent of result.auditTrail.timeline) {
+      expect(timelineEvent.totalDiscount).toBeCloseTo(0, 2);
+      expect(timelineEvent.totalSubtotal).toBeCloseTo(75, 2);
+    }
   });
 
   it('aplica cupom percentual sobre o subtotal', async () => {
@@ -200,5 +205,14 @@ describe('PricingEngine v2', () => {
     expect(result.summary.discountTotal).toBeCloseTo(15, 2);
     expect(result.summary.total).toBeCloseTo(60, 2);
     expect(result.total).toBe(result.summary.total);
+
+    // Timeline: desconto do cupom atribuído à fase PAYMENT e subtotal acumulado
+    const paymentPhase = result.auditTrail.timeline.find((t) => t.phase === 'PAYMENT');
+    expect(paymentPhase?.totalDiscount).toBeCloseTo(15, 2);
+    expect(paymentPhase?.totalSubtotal).toBeCloseTo(60, 2);
+
+    // Subtotal acumulado permanece após todas as fases
+    const postProcessing = result.auditTrail.timeline.find((t) => t.phase === 'POST_PROCESSING');
+    expect(postProcessing?.totalSubtotal).toBeCloseTo(60, 2);
   });
 });

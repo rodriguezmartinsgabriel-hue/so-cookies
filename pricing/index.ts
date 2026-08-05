@@ -24,34 +24,6 @@ export type {
   PricingActionType
 } from './actions/PricingAction';
 
-export {
-  DiscountAction
-} from './actions/DiscountAction';
-
-export {
-  ShippingAction
-} from './actions/ShippingAction';
-
-export {
-  CashbackAction
-} from './actions/CashbackAction';
-
-export {
-  TaxAction
-} from './actions/TaxAction';
-
-export {
-  BonusAction
-} from './actions/BonusAction';
-
-export {
-  WarningAction
-} from './actions/WarningAction';
-
-export {
-  LogAction
-} from './actions/LogAction';
-
 // Repositories
 export {
   ProductRepository
@@ -85,9 +57,8 @@ export {
 
 // Pipeline
 export {
-  PricingPhase,
-  RulePipeline
-} from './pipeline/RulePipeline';
+  PricingPhase
+} from './pipeline/PricingPhase';
 
 // Executor
 export {

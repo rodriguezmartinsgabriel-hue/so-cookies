@@ -2,15 +2,30 @@ import { PrismaClient, PriceTier, PricingSettings } from '@/generated/prisma/cli
 import type { Prisma } from '@/generated/prisma/client';
 import type { ChannelConfig } from '../types';
 
+// Configuração padrão explícita (opt-in). Sem uma linha PricingSettings no banco,
+// nenhuma promoção é ativada silenciosamente: cupons, campanhas, B2B e frete grátis
+// só passam a valer quando o usuário criar/atualizar as configurações.
+export const DEFAULT_CHANNEL_CONFIG: ChannelConfig = {
+  id: 'default',
+  activatePriceTier: false,
+  activateCoupon: false,
+  activateCampaign: false,
+  activateB2B: false,
+  activateFreeShipping: false,
+  b2bDiscountPercent: 0,
+};
+
+export const DEFAULT_CHANNEL_CONFIG_JSON = {
+  activatePriceTier: false,
+  activateCoupon: false,
+  activateCampaign: false,
+  activateB2B: false,
+  activateFreeShipping: false,
+  b2bDiscountPercent: 0,
+};
+
 export class PricingRepository {
   constructor(private prisma: PrismaClient) {}
-
-  async getActivePriceTiers(productId: string): Promise<PriceTier[]> {
-    return await this.prisma.priceTier.findMany({
-      where: { productId, enabled: true },
-      orderBy: [{ minQty: 'asc' }]
-    });
-  }
 
   async getActivePriceTiersForProducts(productIds: string[]): Promise<PriceTier[]> {
     return await this.prisma.priceTier.findMany({
@@ -34,45 +49,47 @@ export class PricingRepository {
     });
   }
 
+  // Garante que a linha 'default' existe com configuração explícita (idempotente).
+  async ensureDefaultSettings(): Promise<PricingSettings> {
+    return await this.prisma.pricingSettings.upsert({
+      where: { id: 'default' },
+      update: {},
+      create: {
+        id: 'default',
+        key: 'default',
+        value: DEFAULT_CHANNEL_CONFIG_JSON,
+        description: 'Configuração padrão de precificação (opt-in)',
+      },
+    });
+  }
+
   async getChannelConfig(channel: string): Promise<ChannelConfig> {
     void channel;
-    const settings = await this.getSettings();
 
-    const raw = settings?.value && typeof settings.value === 'object' && !Array.isArray(settings.value)
+    let settings = await this.getSettings();
+
+    // Sem configuração explícita, nada é ativado silenciosamente e a linha
+    // 'default' é criada para tornar o estado explícito nas próximas leituras.
+    if (!settings) {
+      settings = await this.ensureDefaultSettings();
+    }
+
+    const raw = settings.value && typeof settings.value === 'object' && !Array.isArray(settings.value)
       ? settings.value as Record<string, unknown>
       : {};
 
-    const flag = (key: string, fallback: boolean): boolean =>
-      typeof raw[key] === 'boolean' ? (raw[key] as boolean) : fallback;
+    const flag = (key: string): boolean =>
+      typeof raw[key] === 'boolean' ? (raw[key] as boolean) : DEFAULT_CHANNEL_CONFIG[key as keyof ChannelConfig] as boolean;
 
     return {
-      id: settings?.id ?? 'default',
-      activatePriceTier: flag('activatePriceTier', true),
-      activateCoupon: flag('activateCoupon', true),
-      activateCampaign: flag('activateCampaign', true),
-      activateB2B: flag('activateB2B', true),
-      activateFreeShipping: flag('activateFreeShipping', true),
-      b2bDiscountPercent: typeof raw.b2bDiscountPercent === 'number' ? (raw.b2bDiscountPercent as number) : 10,
+      id: settings.id ?? 'default',
+      activatePriceTier: flag('activatePriceTier'),
+      activateCoupon: flag('activateCoupon'),
+      activateCampaign: flag('activateCampaign'),
+      activateB2B: flag('activateB2B'),
+      activateFreeShipping: flag('activateFreeShipping'),
+      b2bDiscountPercent: typeof raw.b2bDiscountPercent === 'number' ? (raw.b2bDiscountPercent as number) : DEFAULT_CHANNEL_CONFIG.b2bDiscountPercent,
     };
-  }
-
-  async createPriceTier(data: Prisma.PriceTierCreateInput): Promise<PriceTier> {
-    return await this.prisma.priceTier.create({
-      data
-    });
-  }
-
-  async updatePriceTier(id: string, data: Prisma.PriceTierUpdateInput): Promise<PriceTier> {
-    return await this.prisma.priceTier.update({
-      where: { id },
-      data
-    });
-  }
-
-  async deletePriceTier(id: string): Promise<void> {
-    await this.prisma.priceTier.delete({
-      where: { id }
-    });
   }
 }
 

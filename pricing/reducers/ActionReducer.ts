@@ -100,53 +100,6 @@ export class ActionReducer {
 
     return newState;
   }
-
-  applyItemPriceChangeToAll(state: PricingState, newPrice: number): PricingState {
-    const newState = this.cloneState(state);
-
-    for (const item of newState.items) {
-      item.calculatedPrice = newPrice;
-      item.priceAfterDiscount = newPrice;
-    }
-
-    return newState;
-  }
-
-  resetSubtotal(state: PricingState): PricingState {
-    const newState = this.cloneState(state);
-
-    newState.subtotal = state.items.reduce(
-      (sum, item) => sum + item.priceAfterDiscount * item.qty,
-      0
-    );
-
-    return newState;
-  }
-
-  calculateTotal(state: PricingState): number {
-    const subtotal = state.items.reduce(
-      (sum, item) => sum + item.priceAfterDiscount * item.qty,
-      0
-    );
-
-    const shippingTotal = state.shipping?.cost || 0;
-    const taxTotal = state.taxes.reduce((sum: number, t: Tax) => sum + t.value, 0);
-    const cashbackTotal = state.cashbacks.reduce((sum: number, c: Cashback) => sum + c.value, 0);
-
-    return subtotal + shippingTotal + taxTotal - cashbackTotal;
-  }
-
-  getAppliedDiscounts(state: PricingState): Discount[] {
-    return state.discounts;
-  }
-
-  getAppliedWarnings(state: PricingState): Warning[] {
-    return state.warnings;
-  }
-
-  getAppliedLogs(state: PricingState): Log[] {
-    return state.logs;
-  }
 }
 
 

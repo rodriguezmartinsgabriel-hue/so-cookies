@@ -1,7 +1,7 @@
 import { createId } from '../ids';
 import type { PricingContext, PricingState, PricingData, Logger } from '../types';
 import type { PricingAction } from '../actions/PricingAction';
-import { PricingPhase } from '../pipeline/RulePipeline';
+import { PricingPhase } from '../pipeline/PricingPhase';
 
 export interface PricingRule {
   id: string;

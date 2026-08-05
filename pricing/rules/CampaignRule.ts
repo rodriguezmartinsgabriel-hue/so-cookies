@@ -3,7 +3,7 @@ import type { PricingRule } from './PricingRule';
 import type { PricingContext, PricingState, PricingData, Logger } from '../types';
 import type { PricingAction } from '../actions/PricingAction';
 import type { CampaignRepository } from '../repositories/CampaignRepository';
-import { PricingPhase } from '../pipeline/RulePipeline';
+import { PricingPhase } from '../pipeline/PricingPhase';
 import { EventBus } from '../events/EventBus';
 
 interface CampaignConditions {
