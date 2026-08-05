@@ -383,6 +383,21 @@ textarea,
   animation: toast-in 0.25s var(--ease-expressive) both;
 }
 
+@keyframes toast-out {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.98);
+  }
+}
+
+.animate-toast-out {
+  animation: toast-out 0.18s var(--ease-expressive) both;
+}
+
 .stagger > * {
   animation: fade-in-up 0.35s var(--ease-expressive) both;
   animation-delay: calc(var(--stagger, 0) * 45ms);

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { Component } from "react";
-import { render, screen, act, fireEvent } from "@testing-library/react";
+import { render, screen, act, fireEvent, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ToastProvider, useToast } from "@/components/ui/Toast";
 
@@ -90,7 +90,7 @@ describe("Toast", () => {
     expect(screen.getByText("Test toast")).toBeInTheDocument();
     const closeBtn = screen.getByRole("button", { name: "Fechar" });
     await userEvent.click(closeBtn);
-    expect(screen.queryByText("Test toast")).toBeNull();
+    await waitFor(() => expect(screen.queryByText("Test toast")).toBeNull());
   });
 
   it("auto-dismisses after 4 seconds", () => {
@@ -101,7 +101,7 @@ describe("Toast", () => {
       fireEvent.click(trigger);
     });
     expect(screen.getByText("Test toast")).toBeInTheDocument();
-    act(() => vi.advanceTimersByTime(4000));
+    act(() => vi.advanceTimersByTime(4200));
     expect(screen.queryByText("Test toast")).toBeNull();
   });
 });

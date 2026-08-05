@@ -9,8 +9,8 @@ import { StickyBottomCTA } from "@/components/customer/StickyBottomCTA"
 import { EmptyState } from "@/components/ui/EmptyState"
 import { useCart } from "@/hooks/useCart"
 import { usePricing } from "@/hooks/usePricing"
-import { useCountdown } from "@/hooks/useCountdown"
 import { useHapticFeedback } from "@/hooks/useHapticFeedback"
+import { CountdownLabel } from "@/components/customer/CountdownLabel"
 import { Card } from "@/components/ui/Card"
 import { Button } from "@/components/ui/Button"
 import { CalorieBadge } from "@/components/ui/CalorieBadge"
@@ -81,8 +81,6 @@ export default function CarrinhoPage() {
   const [slotsError, setSlotsError] = useState("")
   const [selectedSlot, setSelectedSlot] = useState<DeliverySlot | null>(null)
   const [address, setAddress] = useState<AddressState>(EMPTY_ADDRESS)
-
-  const countdown = useCountdown(selectedSlot?.cutoffAt ?? null)
 
   useEffect(() => {
     fetch("/api/public/catalog")
@@ -367,7 +365,7 @@ export default function CarrinhoPage() {
                     {selectedSlot && (
                       <div className="mt-2 space-y-1">
                         <p className="text-xs text-muted flex items-center gap-1">
-                          <Clock className="w-3 h-3" /> Fecha em <span className="font-semibold text-ink">{countdown}</span>
+                          <Clock className="w-3 h-3" /> Fecha em <CountdownLabel target={selectedSlot.cutoffAt} className="font-semibold text-ink" />
                         </p>
                         <p className="text-xs text-muted flex items-center gap-1">
                           <Truck className="w-3 h-3" /> {selectedSlot.windowLabel}

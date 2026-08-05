@@ -2,8 +2,9 @@
 
 import { useCallback, useEffect, useState } from "react"
 import Link from "next/link"
-import { Check, Package, Clock, Store, Truck, MapPin, X } from "lucide-react"
+import { Package, Clock, Store, Truck, MapPin, X } from "lucide-react"
 import { CustomerShell } from "@/components/customer/CustomerShell"
+import { OrderStatusTimeline, statusLabel, statusOrder } from "@/components/customer/OrderStatusTimeline"
 import { Card } from "@/components/ui/Card"
 import { Button } from "@/components/ui/Button"
 import { Input } from "@/components/ui/Input"
@@ -71,18 +72,6 @@ type AddressState = {
   neighborhood: string
   city: string
   state: string
-}
-
-const statusOrder = ["PENDENTE", "CONFIRMADO", "PRODUCAO", "PRONTO", "ENTREGA", "CONCLUIDO"]
-
-const statusLabel: Record<string, string> = {
-  PENDENTE: "Recebido",
-  CONFIRMADO: "Confirmado",
-  PRODUCAO: "Em produção",
-  PRONTO: "Pronto para retirar",
-  ENTREGA: "Em entrega",
-  CONCLUIDO: "Finalizado",
-  CANCELADO: "Cancelado",
 }
 
 const formatBRL = (v: number) =>
@@ -290,31 +279,7 @@ export default function PedidoPage({ params }: { params: Promise<{ id: string }>
                     <span className="text-sm font-semibold text-ink">{statusLabel[order.status]}</span>
                   </div>
 
-                  {stepIndex >= 0 && !cancelled && (
-                    <ol className="space-y-3">
-                      {statusOrder.map((st, idx) => {
-                        const done = idx <= stepIndex
-                        const isCurrent = idx === stepIndex
-                        return (
-                          <li key={st} className="flex items-center gap-3">
-                            <span
-                              className={`w-6 h-6 flex items-center justify-center rounded-full ${
-                                done ? "bg-success text-paper" : "bg-cream text-muted border border-line"
-                              }`}
-                            >
-                              {done && <Check className="w-4 h-4" />}
-                            </span>
-                            <span
-                              className={`text-sm ${isCurrent ? "font-semibold text-ink" : done ? "text-ink" : "text-muted"}`}
-                            >
-                              {statusLabel[st]}
-                            </span>
-                            {isCurrent && <Clock className="w-3.5 h-3.5 text-muted" />}
-                          </li>
-                        )
-                      })}
-                    </ol>
-                  )}
+                  {stepIndex >= 0 && !cancelled && <OrderStatusTimeline status={order.status} />}
                 </Card>
 
                 {canChange && !cancelled && (
