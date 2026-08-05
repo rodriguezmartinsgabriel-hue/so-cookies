@@ -1,8 +1,8 @@
 "use client"
 
 import { useCallback, useEffect, useRef, useState } from "react"
-import { motion } from "framer-motion"
-import { X, ArrowLeft, Plus, Minus, ShoppingBag } from "lucide-react"
+import { motion, useMotionValue, useTransform } from "framer-motion"
+import { X, Plus, Minus, ShoppingBag } from "lucide-react"
 import NextImage from "next/image"
 import type { CatalogProduct } from "@/lib/utils"
 import { formatBRL } from "@/lib/utils"
@@ -14,7 +14,6 @@ import { useReducedMotion } from "@/hooks/useReducedMotion"
 type ProductCardExpandableProps = {
   product: CatalogProduct
   qty: number
-  onAdd: () => void
   onSetQty: (qty: number) => void
   onClose: () => void
 }
@@ -40,19 +39,49 @@ const TAG_LABELS: Record<string, string> = {
 export function ProductCardExpandable({
   product,
   qty,
-  onAdd,
   onSetQty,
   onClose,
 }: ProductCardExpandableProps) {
   const haptic = useHapticFeedback()
   const overlayRef = useRef<HTMLDivElement>(null)
+  const sheetRef = useRef<HTMLDivElement>(null)
   const [imageLoaded, setImageLoaded] = useState(false)
   const reducedMotion = useReducedMotion()
+  const dragY = useMotionValue(0)
+  const isDragging = useRef(false)
+  const dragStartY = useRef(0)
 
-  const handleAdd = useCallback(() => {
-    haptic.tap()
-    onAdd()
-  }, [onAdd, haptic])
+  const backdropOpacity = useTransform(
+    dragY,
+    [0, 120],
+    [1, 0],
+  )
+
+  const handleDragStart = useCallback((e: React.PointerEvent) => {
+    if (reducedMotion) return
+    isDragging.current = true
+    dragStartY.current = e.clientY
+    dragY.set(0)
+  }, [reducedMotion, dragY])
+
+  const handleDragMove = useCallback((e: React.PointerEvent) => {
+    if (!isDragging.current) return
+    const delta = e.clientY - dragStartY.current
+    if (delta > 0) {
+      dragY.set(delta)
+    }
+  }, [dragY])
+
+  const handleDragEnd = useCallback((e: React.PointerEvent) => {
+    if (!isDragging.current) return
+    isDragging.current = false
+    const delta = e.clientY - dragStartY.current
+    if (delta > 80) {
+      onClose()
+    } else {
+      dragY.set(0)
+    }
+  }, [onClose, dragY])
 
   const handleQtyDown = useCallback(() => {
     haptic.tap()
@@ -90,7 +119,7 @@ export function ProductCardExpandable({
   return (
     <motion.div
       ref={overlayRef}
-      className="fixed inset-0 z-30 sm:z-[60] flex items-end sm:items-center justify-center"
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
@@ -100,16 +129,28 @@ export function ProductCardExpandable({
       aria-modal="true"
       aria-label={product.name}
     >
-      <div className="absolute inset-0 bg-ink/40 backdrop-blur-md" />
+      <motion.div
+        className="absolute inset-0 bg-ink/40 backdrop-blur-md"
+        style={{ opacity: backdropOpacity }}
+      />
 
       <motion.div
+        ref={sheetRef}
         className="relative w-full max-w-md mx-auto bg-paper rounded-t-2xl sm:rounded-2xl shadow-2xl max-h-[95dvh] flex flex-col overflow-hidden pb-[env(safe-area-inset-bottom,0px)] sm:pb-0"
+        style={{ y: dragY }}
         initial={{ y: "100%", opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         exit={{ y: "100%", opacity: 0 }}
         transition={{ type: "spring", stiffness: reducedMotion ? 1 : 300, damping: reducedMotion ? 1 : 28 }}
         onClick={(e) => e.stopPropagation()}
       >
+        <div
+          className="mx-auto mt-2 mb-1 h-1 w-10 rounded-full bg-ink/20 sm:hidden"
+          aria-hidden="true"
+          onPointerDown={handleDragStart}
+          onPointerMove={handleDragMove}
+          onPointerUp={handleDragEnd}
+        />
         <div className="relative shrink-0 h-[40vh] sm:h-[45vh] bg-cream overflow-hidden">
           {product.image ? (
             <>
@@ -121,9 +162,11 @@ export function ProductCardExpandable({
                 alt={product.name}
                 fill
                 unoptimized
+                priority
                 sizes="(max-width: 448px) 100vw, 448px"
                 className={`w-full h-full object-cover transition-opacity duration-300 ${imageLoaded ? "opacity-100" : "opacity-0"}`}
                 onLoad={() => setImageLoaded(true)}
+                onError={() => setImageLoaded(true)}
               />
             </>
           ) : (
@@ -145,16 +188,6 @@ export function ProductCardExpandable({
         </div>
 
         <div className="flex-1 overflow-y-auto overscroll-contain px-5 py-4 space-y-4">
-          <div className="flex items-center gap-2 mb-1">
-            <button
-              type="button"
-              onClick={handleClose}
-              className="flex items-center gap-1 text-sm text-muted hover:text-ink transition-colors"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              Voltar ao cardápio
-            </button>
-          </div>
           <div>
             <h2 className="text-xl font-bold text-ink">{product.name}</h2>
             <p className="text-sm text-muted mt-0.5">{formatBRL(product.price)} / {product.unit}</p>
@@ -189,16 +222,13 @@ export function ProductCardExpandable({
           )}
         </div>
 
-        <div className="shrink-0 flex items-center gap-3 px-5 py-3 border-t border-line bg-paper">
+        <div className="shrink-0 flex items-center justify-center gap-3 px-5 py-3 border-t border-line bg-paper">
           <Button variant="secondary" size="icon" onClick={handleQtyDown} aria-label="Diminuir quantidade">
             <Minus className="w-4 h-4" />
           </Button>
           <span className="w-8 text-center text-lg font-bold text-ink">{qty}</span>
           <Button variant="primary" size="icon" onClick={handleQtyUp} aria-label="Aumentar quantidade">
             <Plus className="w-4 h-4" />
-          </Button>
-          <Button variant="primary" size="lg" className="flex-1" onClick={handleAdd}>
-            {qty === 0 ? "Adicionar" : "Adicionar ao carrinho"}
           </Button>
         </div>
       </motion.div>

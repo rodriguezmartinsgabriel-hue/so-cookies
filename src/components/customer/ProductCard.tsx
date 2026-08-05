@@ -143,7 +143,6 @@ export function ProductCard({
           <ProductCardExpandable
             product={product}
             qty={qty}
-            onAdd={onAdd}
             onSetQty={onSetQty}
             onClose={handleClose}
           />
