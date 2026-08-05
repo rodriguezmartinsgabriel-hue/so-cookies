@@ -117,16 +117,16 @@ export default function CardapioPage() {
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Buscar no cardápio"
             aria-label="Buscar no cardápio"
-            className="!h-11 pl-9 pr-9"
+            className="!h-11 pl-9 pr-11"
           />
           {hasSearch && (
             <button
               type="button"
               onClick={() => setQuery("")}
               aria-label="Limpar busca"
-              className="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full flex items-center justify-center text-muted hover:bg-cream transition-colors"
+              className="absolute right-2 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full flex items-center justify-center text-muted hover:bg-cream transition-colors"
             >
-              <X className="w-4 h-4" />
+              <X className="w-5 h-5" />
             </button>
           )}
         </div>

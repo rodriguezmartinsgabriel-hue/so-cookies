@@ -288,13 +288,16 @@ export default function CarrinhoPage() {
                         transition={{ duration: 0.25, ease: "easeOut" }}
                       >
                         <Card key={l.productId} padded={false} className="flex items-center gap-3 p-3">
-                          {l.product.image ? (
-                            <NextImage src={l.product.image} alt={l.product.name} width={44} height={44} unoptimized className="w-11 h-11 rounded-lg object-cover shrink-0" />
-                          ) : (
-                            <div className="w-11 h-11 rounded-lg bg-cream border border-line flex items-center justify-center shrink-0">
-                              <Cookie className="w-5 h-5 text-kraft" />
-                            </div>
-                          )}
+                      {l.product.image ? (
+                        <div className="relative w-16 h-16 shrink-0">
+                          <ShimmerSkeleton variant="image" className="absolute inset-0" />
+                          <NextImage src={l.product.image} alt={l.product.name} width={64} height={64} unoptimized className="w-16 h-16 rounded-lg object-cover shrink-0 relative" onLoadingComplete={() => {}} loading="lazy" />
+                        </div>
+                      ) : (
+                        <div className="w-16 h-16 rounded-lg bg-cream border border-line flex items-center justify-center shrink-0">
+                          <Cookie className="w-6 h-6 text-kraft" />
+                        </div>
+                      )}
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-semibold text-ink truncate">{l.product.name}</p>
                             <div className="flex items-center gap-2">
