@@ -77,6 +77,14 @@ export function ProductCardExpandable({
     return () => document.removeEventListener("keydown", onKey)
   }, [handleClose])
 
+  useEffect(() => {
+    const prev = document.body.style.overflow
+    document.body.style.overflow = "hidden"
+    return () => {
+      document.body.style.overflow = prev
+    }
+  }, [])
+
   const n = product.nutrition
 
   return (
@@ -95,7 +103,7 @@ export function ProductCardExpandable({
       <div className="absolute inset-0 bg-ink/40 backdrop-blur-md" />
 
       <motion.div
-        className="relative w-full max-w-md mx-auto bg-paper rounded-t-2xl sm:rounded-2xl overflow-hidden shadow-2xl"
+        className="relative w-full max-w-md mx-auto bg-paper rounded-t-2xl sm:rounded-2xl overflow-y-auto overflow-x-hidden shadow-2xl max-h-[92dvh]"
         initial={{ y: "100%", opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         exit={{ y: "100%", opacity: 0 }}
@@ -130,7 +138,7 @@ export function ProductCardExpandable({
                 type="button"
                 onClick={handleClose}
                 aria-label="Fechar"
-                className="absolute top-4 right-4 w-10 h-10 rounded-full bg-ink/30 backdrop-blur-sm flex items-center justify-center text-paper hover:bg-ink/50 transition-colors"
+                className="absolute top-4 right-4 w-11 h-11 rounded-full bg-ink/30 backdrop-blur-sm flex items-center justify-center text-paper hover:bg-ink/50 transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>

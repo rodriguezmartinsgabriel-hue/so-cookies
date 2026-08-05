@@ -121,16 +121,16 @@ export function ProductCard({
 
         <div className="shrink-0">
           {qty === 0 ? (
-            <Button variant="primary" size="sm" onClick={(e) => { e.stopPropagation(); onAdd() }}>
+            <Button variant="primary" size="sm" className="!h-11" onClick={(e) => { e.stopPropagation(); onAdd() }}>
               <Plus className="w-4 h-4" />
             </Button>
           ) : (
             <div className="flex items-center gap-1">
-              <Button variant="secondary" size="icon" onClick={(e) => { e.stopPropagation(); onSetQty(qty - 1) }} aria-label={`Diminuir ${product.name}`}>
+              <Button variant="secondary" size="icon" className="!h-11 !w-11" onClick={(e) => { e.stopPropagation(); onSetQty(qty - 1) }} aria-label={`Diminuir ${product.name}`}>
                 <Minus className="w-3 h-3" />
               </Button>
               <span className="w-5 text-center text-xs font-semibold text-ink">{qty}</span>
-              <Button variant="primary" size="icon" onClick={(e) => { e.stopPropagation(); onSetQty(qty + 1) }} aria-label={`Aumentar ${product.name}`}>
+              <Button variant="primary" size="icon" className="!h-11 !w-11" onClick={(e) => { e.stopPropagation(); onSetQty(qty + 1) }} aria-label={`Aumentar ${product.name}`}>
                 <Plus className="w-3 h-3" />
               </Button>
             </div>

@@ -26,7 +26,7 @@ export function CustomerShell({
 
   if (isAuthPage) {
     return (
-      <div className="min-h-screen">
+      <div className="min-h-dvh">
         <GlassSurface
           as="header"
           tone="strong"
@@ -45,7 +45,7 @@ export function CustomerShell({
   }
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-dvh">
       <GlassSurface as="header" tone="strong" className="sticky top-0 z-40 rounded-none border-0">
         <div className="max-w-md mx-auto px-4 pt-[env(safe-area-inset-top,0px)] h-14 flex items-center justify-between">
           <Link href="/cardapio" className="font-bold text-ink">

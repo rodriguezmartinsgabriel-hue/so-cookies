@@ -122,7 +122,7 @@ export default function PedidoPage({ params }: { params: Promise<{ id: string }>
       }
       if (!res.ok) return
       const data = await res.json()
-      setOrder(data)
+      setOrder((prev) => (JSON.stringify(prev) === JSON.stringify(data) ? prev : data))
     } finally {
       setLoading(false)
     }

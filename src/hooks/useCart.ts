@@ -20,6 +20,8 @@ function loadCart(): CartItem[] {
 type CartState = { items: CartItem[]; count: number }
 type Listener = () => void
 
+const EMPTY_CART: CartState = { items: [], count: 0 }
+
 function computeCount(items: CartItem[]): number {
   return items.reduce((sum, i) => sum + i.qty, 0)
 }
@@ -111,6 +113,7 @@ const cartStore = {
 if (typeof window !== "undefined") {
   window.addEventListener("storage", (e: StorageEvent) => {
     if (e.key === STORAGE_KEY) {
+      if (e.newValue === lastStored) return
       lastStored = e.newValue
       const items = e.newValue ? (JSON.parse(e.newValue) as CartItem[]) : []
       cartState = { items, count: computeCount(items) }
@@ -123,7 +126,7 @@ export function useCart() {
   const { items, count } = useSyncExternalStore(
     cartStore.subscribe,
     cartStore.getSnapshot,
-    () => ({ items: [], count: 0 }),
+    () => EMPTY_CART,
   )
 
   const addItem = useCallback((productId: string, qty = 1) => cartStore.addItem(productId, qty), [])

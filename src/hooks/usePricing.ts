@@ -55,51 +55,53 @@ export function usePricing(options?: UsePricingOptions) {
 
     const cartKey = `${channel}|${couponCode ?? ''}|${cartItems.map(i => `${i.productId}:${i.qty}`).join('|')}`
     if (cartKey === lastCartKeyRef.current) return
-    lastCartKeyRef.current = cartKey
 
     let cancelled = false
-    const controller = new AbortController()
+    let controller: AbortController | null = null
+    const timeout = setTimeout(() => {
+      lastCartKeyRef.current = cartKey
+      controller = new AbortController()
+      setLoading(true)
+      setError(null)
 
-    async function run() {
-      if (!cancelled) {
-        setLoading(true)
-        setError(null)
-      }
-      try {
-        const res = await fetch('/api/public/pricing', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            items: cartItems.map(i => ({
-              productId: i.productId,
-              qty: i.qty
-            })),
-            channel,
-            couponCode: couponCode || undefined
-          }),
-          signal: controller.signal
-        })
+      async function run() {
+        try {
+          const res = await fetch('/api/public/pricing', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              items: cartItems.map(i => ({
+                productId: i.productId,
+                qty: i.qty
+              })),
+              channel,
+              couponCode: couponCode || undefined
+            }),
+            signal: controller!.signal
+          })
 
-        if (!res.ok) {
-          const data = await res.json().catch(() => null)
-          throw new Error(data?.error || 'Failed to calculate price')
+          if (!res.ok) {
+            const data = await res.json().catch(() => null)
+            throw new Error(data?.error || 'Failed to calculate price')
+          }
+
+          if (!cancelled) setPricingResult(await res.json() as PricingResult)
+        } catch (err) {
+          if (cancelled || controller?.signal.aborted) return
+          if (err instanceof Error) setError(err.message)
+          else setError('Erro ao calcular preço')
+        } finally {
+          if (!cancelled) setLoading(false)
         }
-
-        if (!cancelled) setPricingResult(await res.json() as PricingResult)
-      } catch (err) {
-        if (cancelled || controller.signal.aborted) return
-        if (err instanceof Error) setError(err.message)
-        else setError('Erro ao calcular preço')
-      } finally {
-        if (!cancelled) setLoading(false)
       }
-    }
 
-    run()
+      run()
+    }, 400)
 
     return () => {
       cancelled = true
-      controller.abort()
+      clearTimeout(timeout)
+      controller?.abort()
     }
   }, [cartItems, couponCode, channel])
 

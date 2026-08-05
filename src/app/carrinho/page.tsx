@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { Minus, Plus, Trash2, ArrowRight, Cookie, Truck, Store, Clock } from "lucide-react"
+import { Minus, Plus, Trash2, Cookie, Truck, Store, Clock } from "lucide-react"
 import NextImage from "next/image"
 import { CustomerShell } from "@/components/customer/CustomerShell"
 import { StickyBottomCTA } from "@/components/customer/StickyBottomCTA"
@@ -278,7 +278,7 @@ export default function CarrinhoPage() {
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Button variant="secondary" size="icon" onClick={() => setQty(l.productId, l.qty - 1)} aria-label="Diminuir">
+                        <Button variant="secondary" size="icon" className="!h-11 !w-11" onClick={() => setQty(l.productId, l.qty - 1)} aria-label="Diminuir">
                           <Minus className="w-4 h-4" />
                         </Button>
                         <motion.span
@@ -290,10 +290,10 @@ export default function CarrinhoPage() {
                         >
                           {l.qty}
                         </motion.span>
-                        <Button variant="primary" size="icon" onClick={() => setQty(l.productId, l.qty + 1)} aria-label="Aumentar">
+                        <Button variant="primary" size="icon" className="!h-11 !w-11" onClick={() => setQty(l.productId, l.qty + 1)} aria-label="Aumentar">
                           <Plus className="w-4 h-4" />
                         </Button>
-                        <Button variant="ghost" size="icon" onClick={() => removeItem(l.productId)} aria-label="Remover">
+                        <Button variant="ghost" size="icon" className="!h-11 !w-11" onClick={() => removeItem(l.productId)} aria-label="Remover">
                           <Trash2 className="w-4 h-4 text-danger" />
                         </Button>
                       </div>
@@ -461,15 +461,6 @@ export default function CarrinhoPage() {
 
             {error && <p className="text-sm text-danger">{error}</p>}
             {pricingError && <p className="text-sm text-danger">{pricingError}</p>}
-
-            <Button size="lg" variant="primary" className="w-full" onClick={handleCheckout} disabled={submitting}>
-              {submitting
-                ? "Finalizando..."
-                : mode === "entrega"
-                  ? `Finalizar pedido — entrega em ${selectedSlot?.dateLabel ?? "rota escolhida"}`
-                  : "Finalizar pedido — retirada na loja"}
-              {!submitting && <ArrowRight className="w-4 h-4" />}
-            </Button>
 
             <StickyBottomCTA
               total={total}
