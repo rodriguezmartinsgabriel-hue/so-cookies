@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { Package, Clock, Store, Truck, MapPin, X, RotateCcw, XCircle, AlertTriangle } from "lucide-react"
+import { Package, Clock, Store, Truck, MapPin, X, RotateCcw, XCircle, AlertTriangle, Share2, Check } from "lucide-react"
 import { CustomerShell } from "@/components/customer/CustomerShell"
 import { OrderStatusTimeline, statusLabel, statusOrder } from "@/components/customer/OrderStatusTimeline"
 import { Card } from "@/components/ui/Card"
@@ -81,29 +81,56 @@ const formatBRL = (v: number) =>
 const WEEKDAY_SHORT = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"]
 
 function dateLabel(dateStr: string): string {
-  const [y, m, d] = dateStr.split("-").map(Number)
-  const wd = new Date(Date.UTC(y, m - 1, d)).getUTCDay()
-  return `${WEEKDAY_SHORT[wd]}, ${String(d).padStart(2, "0")}/${String(m).padStart(2, "0")}`
+   const [y, m, d] = dateStr.split("-").map(Number)
+   const wd = new Date(Date.UTC(y, m - 1, d)).getUTCDay()
+   return `${WEEKDAY_SHORT[wd]}, ${String(d).padStart(2, "0")}/${String(m).padStart(2, "0")}`
 }
 
-export default function PedidoPage({ params }: { params: Promise<{ id: string }> }) {
-  const [order, setOrder] = useState<PublicOrder | null>(null)
-  const [notFound, setNotFound] = useState(false)
-  const [loading, setLoading] = useState(true)
-   const { count } = useCart()
-   const haptic = useHapticFeedback()
-   const router = useRouter()
+function getEtaMinutes(status: string): number | null {
+   switch (status) {
+      case "PENDENTE": return 15
+      case "CONFIRMADO": return 20
+      case "PRODUCAO": return 25
+      case "PRONTO": return 10
+      case "ENTREGA": return 30
+      case "CONCLUIDO": return 0
+      default: return null
+   }
+}
 
-  const [showDeliveryModal, setShowDeliveryModal] = useState(false)
-  const [showCancelConfirm, setShowCancelConfirm] = useState(false)
-  const [actionLoading, setActionLoading] = useState(false)
-  const [slots, setSlots] = useState<DeliverySlot[]>([])
-  const [slotsLoading, setSlotsLoading] = useState(false)
-  const [selectedSlot, setSelectedSlot] = useState<DeliverySlot | null>(null)
-  const [address, setAddress] = useState<AddressState>({ cep: "", street: "", number: "", complement: "", neighborhood: "", city: "", state: "" })
-  const [saving, setSaving] = useState(false)
-  const deliveryModalRef = useFocusTrap(showDeliveryModal)
-  const [deliveryError, setDeliveryError] = useState("")
+async function handleShareOrder(orderId: string) {
+   const url = `${window.location.origin}/pedido/${orderId}`
+   if (navigator.share) {
+      try {
+         await navigator.share({ title: "Meu pedido", text: "Acompanhe meu pedido", url })
+      } catch {
+         await navigator.clipboard.writeText(url)
+      }
+   } else {
+      await navigator.clipboard.writeText(url)
+   }
+ }
+
+export default function PedidoPage({ params }: { params: Promise<{ id: string }> }) {
+   const [order, setOrder] = useState<PublicOrder | null>(null)
+   const [notFound, setNotFound] = useState(false)
+   const [loading, setLoading] = useState(true)
+    const { count } = useCart()
+    const haptic = useHapticFeedback()
+    const router = useRouter()
+
+   const [showDeliveryModal, setShowDeliveryModal] = useState(false)
+   const [showCancelConfirm, setShowCancelConfirm] = useState(false)
+   const [actionLoading, setActionLoading] = useState(false)
+   const [slots, setSlots] = useState<DeliverySlot[]>([])
+   const [slotsLoading, setSlotsLoading] = useState(false)
+   const [selectedSlot, setSelectedSlot] = useState<DeliverySlot | null>(null)
+   const [address, setAddress] = useState<AddressState>({ cep: "", street: "", number: "", complement: "", neighborhood: "", city: "", state: "" })
+   const [saving, setSaving] = useState(false)
+   const deliveryModalRef = useFocusTrap(showDeliveryModal)
+   const [deliveryError, setDeliveryError] = useState("")
+
+   const etaMinutes = order ? getEtaMinutes(order.status) : null
 
   const load = useCallback(async (id: string) => {
     try {
@@ -265,13 +292,25 @@ export default function PedidoPage({ params }: { params: Promise<{ id: string }>
     <CustomerShell cartCount={count}>
       <div className="space-y-4">
         <div>
-          <h1 className="text-2xl font-bold text-ink">Pedido</h1>
-          {order && (
-            <p className="text-sm text-muted">
-              #{order.id.slice(0, 6)} · {new Date(order.createdAt).toLocaleString("pt-BR")}
-            </p>
-          )}
-        </div>
+           <div className="flex items-center justify-between">
+             <h1 className="text-2xl font-bold text-ink">Pedido</h1>
+             {order && (
+               <button
+                 type="button"
+                 onClick={() => handleShareOrder(order.id)}
+                 className="p-2 rounded-lg hover:bg-cream transition-colors text-muted"
+                 aria-label="Compartilhar pedido"
+               >
+                 <Share2 className="w-5 h-5" />
+               </button>
+             )}
+           </div>
+           {order && (
+             <p className="text-sm text-muted">
+               #{order.id.slice(0, 6)} · {new Date(order.createdAt).toLocaleString("pt-BR")}
+             </p>
+           )}
+         </div>
 
         {loading && <div className="text-center py-12 text-muted">Carregando pedido...</div>}
 
@@ -334,6 +373,18 @@ export default function PedidoPage({ params }: { params: Promise<{ id: string }>
                   </div>
 
                   {stepIndex >= 0 && !cancelled && <OrderStatusTimeline status={order.status} />}
+                  {etaMinutes !== null && etaMinutes > 0 && !cancelled && (
+                    <div className="mt-2 flex items-center gap-1.5 text-xs text-muted">
+                      <Clock className="w-3 h-3" />
+                      Tempo estimado: ~{etaMinutes} min
+                    </div>
+                  )}
+                  {etaMinutes === 0 && !cancelled && (
+                    <div className="mt-2 flex items-center gap-1.5 text-xs text-success">
+                      <Check className="w-3 h-3" />
+                      Pedido concluído
+                    </div>
+                  )}
                 </Card>
 
                 {canChange && !cancelled && (

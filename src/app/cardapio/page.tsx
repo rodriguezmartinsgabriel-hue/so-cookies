@@ -1,8 +1,8 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useState, useRef } from "react"
 import { useRouter } from "next/navigation"
-import { Search, X } from "lucide-react"
+import { Search, X, ArrowUp } from "lucide-react"
 import { CustomerShell } from "@/components/customer/CustomerShell"
 import { ProductCard } from "@/components/customer/ProductCard"
 import { useCart } from "@/hooks/useCart"
@@ -12,13 +12,23 @@ import { Input } from "@/components/ui/Input"
 import type { CatalogProduct } from "@/lib/utils"
 
 export default function CardapioPage() {
-  const router = useRouter()
-  const [products, setProducts] = useState<CatalogProduct[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(false)
-  const [query, setQuery] = useState("")
-  const { items, addItem, setQty, count } = useCart()
-  const { result: pricingResult } = usePricing({ channel: "pickup" })
+   const router = useRouter()
+   const [products, setProducts] = useState<CatalogProduct[]>([])
+   const [loading, setLoading] = useState(true)
+   const [error, setError] = useState(false)
+   const [query, setQuery] = useState("")
+   const { items, addItem, setQty, count } = useCart()
+   const { result: pricingResult } = usePricing({ channel: "pickup" })
+   const [showBackToTop, setShowBackToTop] = useState(false)
+   const scrollRef = useRef<HTMLDivElement>(null)
+
+   useEffect(() => {
+     const ref = scrollRef.current
+     if (!ref) return
+     const handler = () => setShowBackToTop(ref.scrollTop > 400)
+     ref.addEventListener("scroll", handler, { passive: true })
+     return () => ref.removeEventListener("scroll", handler)
+   }, [])
 
   useEffect(() => {
     fetch("/api/public/catalog")
@@ -100,7 +110,7 @@ export default function CardapioPage() {
 
   return (
     <CustomerShell cartCount={count} cartTotal={cartTotal}>
-      <div className="space-y-6 cardapio-scroll">
+       <div className="space-y-4 cardapio-scroll" ref={scrollRef}>
         <div className="animate-fade-in-up">
           <h1 className="text-2xl font-bold text-ink">Cardápio</h1>
           <p className="text-sm text-muted">Escolha seus cookies — retirada na loja</p>
@@ -176,14 +186,25 @@ export default function CardapioPage() {
         )}
 
         {!loading && !error && products.length > 0 && filtered.length === 0 && (
-          <div className="text-center py-12">
-            <p className="text-base font-semibold text-ink">Nada encontrado</p>
-            <p className="text-sm text-muted mt-1">
-              Não achamos nenhum item para &ldquo;{query.trim()}&rdquo;.
-            </p>
-          </div>
-        )}
-      </div>
-    </CustomerShell>
+           <div className="text-center py-12">
+             <p className="text-base font-semibold text-ink">Nada encontrado</p>
+             <p className="text-sm text-muted mt-1">
+               Não achamos nenhum item para &ldquo;{query.trim()}&rdquo;.
+             </p>
+           </div>
+         )}
+
+         {showBackToTop && (
+           <button
+             type="button"
+             onClick={() => scrollRef.current?.scrollTo({ top: 0, behavior: "smooth" })}
+             className="fixed bottom-20 right-4 z-40 w-11 h-11 rounded-full bg-ink text-paper flex items-center justify-center shadow-lg hover:bg-ink/90 transition-colors"
+             aria-label="Voltar ao topo"
+           >
+             <ArrowUp className="w-5 h-5" />
+           </button>
+         )}
+       </div>
+     </CustomerShell>
   )
 }
