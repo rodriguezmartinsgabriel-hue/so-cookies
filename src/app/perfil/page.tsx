@@ -15,11 +15,8 @@ import { Input } from "@/components/ui/Input"
 import { FormField } from "@/components/ui/FormField"
 import { useHapticFeedback } from "@/hooks/useHapticFeedback"
 import { useCart } from "@/hooks/useCart"
-
-import type { AddressState, PublicOrder } from "@/lib/customer-types"
-
-const formatBRL = (v: number) =>
-  v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
+import { formatBRL } from "@/lib/utils"
+import { EMPTY_ADDRESS, type AddressState, type Profile, type PublicOrder, statusLabel } from "@/lib/customer-types"
 
 const containerVariants = {
   hidden: { opacity: 0 },

@@ -23,45 +23,10 @@ import { FormField } from "@/components/ui/FormField"
 import { motion, AnimatePresence } from "framer-motion"
 
 import type { CatalogProduct } from "@/lib/utils"
-
-type DeliverySlot = {
-  date: string
-  routeId: string
-  routeName: string
-  zoneId: string
-  zoneName: string
-  weekdayLabel: string
-  dateLabel: string
-  cutoffAt: string
-  cutoffLabel: string
-  cutoffOffsetDays: number
-  windowStart: string
-  windowEnd: string
-  windowLabel: string
-  open: boolean
-  capacity: {
-    enabled: boolean
-    maxOrders: number | null
-    maxItems: number | null
-    usedOrders: number
-    usedItems: number
-  }
-}
-
-type AddressState = {
-  cep: string
-  street: string
-  number: string
-  complement: string
-  neighborhood: string
-  city: string
-  state: string
-}
-
-const EMPTY_ADDRESS: AddressState = { cep: "", street: "", number: "", complement: "", neighborhood: "", city: "", state: "" }
-
-const formatBRL = (v: number) =>
-  v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
+import { formatBRL } from "@/lib/utils"
+import type { DeliverySlot } from "@/lib/customer-types"
+import { EMPTY_ADDRESS, type AddressState } from "@/lib/customer-types"
+import { AddressForm } from "@/components/customer/AddressForm"
 
 export default function CarrinhoPage() {
   const router = useRouter()
