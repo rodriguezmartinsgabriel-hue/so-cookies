@@ -247,13 +247,13 @@ export default function CarrinhoPage() {
                     {lines.map((l) => (
                       <motion.div
                         key={l.productId}
-                        layout
+                        layout="position"
                         initial={{ opacity: 0, x: 20 }}
                         animate={{ opacity: 1, x: 0 }}
                         exit={{ opacity: 0, x: -20, scale: 0.97 }}
                         transition={{ duration: 0.25, ease: "easeOut" }}
                       >
-                        <Card padded={false} className="flex items-center gap-2 sm:gap-3 p-3">
+                        <Card padded={false} className="flex items-center gap-2 sm:gap-3 p-3 overflow-hidden">
                           {l.product.image ? (
                             <div className="relative w-14 h-14 sm:w-16 sm:h-16 shrink-0">
                               <Skeleton
@@ -325,8 +325,9 @@ export default function CarrinhoPage() {
             )}
 
             {checkoutStep === 2 && (
-              <Card padded={false}>
-                <div className="p-4">
+              <>
+                <Card padded={false}>
+                  <div className="p-4">
                   <p className="text-sm font-semibold text-ink mb-3">Como você quer receber?</p>
                   <div className="grid grid-cols-2 gap-2">
                     <button
@@ -439,17 +440,17 @@ export default function CarrinhoPage() {
                   </div>
                 )}
 
-                <div className="border-t border-line p-4">
-                  <StickyBottomCTA
-                    total={total}
-                    itemCount={count}
-                    label="Avançar para revisão"
-                    onPress={() => handleAdvance(3)}
-                    disabled={submitting}
-                    loading={submitting}
-                  />
-                </div>
-              </Card>
+                </Card>
+
+                <StickyBottomCTA
+                  total={total}
+                  itemCount={count}
+                  label="Avançar para revisão"
+                  onPress={() => handleAdvance(3)}
+                  disabled={submitting}
+                  loading={submitting}
+                />
+              </>
             )}
 
             {checkoutStep === 3 && (

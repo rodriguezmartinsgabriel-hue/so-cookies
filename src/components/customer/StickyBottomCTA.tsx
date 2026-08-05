@@ -33,7 +33,7 @@ export function StickyBottomCTA({
       transition={{ type: "spring", damping: reducedMotion ? 1 : 25, stiffness: reducedMotion ? 1 : 300 }}
         className="fixed bottom-[calc(4rem+env(safe-area-inset-bottom))] left-0 right-0 z-50 px-4 pb-[calc(env(safe-area-inset-bottom)+12px)] pointer-events-none"
     >
-      <div className="max-w-md mx-auto pointer-events-auto">
+      <div className="relative max-w-md mx-auto pointer-events-auto">
         <motion.div
           className="absolute inset-0 bg-paper"
           initial={{ opacity: 0 }}
