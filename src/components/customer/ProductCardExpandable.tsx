@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react"
 import { motion } from "framer-motion"
-import { X, Plus, Minus, ShoppingBag } from "lucide-react"
+import { X, ArrowLeft, Plus, Minus, ShoppingBag } from "lucide-react"
 import NextImage from "next/image"
 import type { CatalogProduct } from "@/lib/utils"
 import { formatBRL } from "@/lib/utils"
@@ -90,7 +90,7 @@ export function ProductCardExpandable({
   return (
     <motion.div
       ref={overlayRef}
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
+      className="fixed inset-0 z-30 sm:z-[60] flex items-end sm:items-center justify-center"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
@@ -103,7 +103,7 @@ export function ProductCardExpandable({
       <div className="absolute inset-0 bg-ink/40 backdrop-blur-md" />
 
       <motion.div
-        className="relative w-full max-w-md mx-auto bg-paper rounded-t-2xl sm:rounded-2xl shadow-2xl max-h-[95dvh] flex flex-col overflow-hidden pb-[env(safe-area-inset-bottom,0px)]"
+        className="relative w-full max-w-md mx-auto bg-paper rounded-t-2xl sm:rounded-2xl shadow-2xl max-h-[95dvh] flex flex-col overflow-hidden pb-[env(safe-area-inset-bottom,0px)] sm:pb-0"
         initial={{ y: "100%", opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         exit={{ y: "100%", opacity: 0 }}
@@ -145,6 +145,16 @@ export function ProductCardExpandable({
         </div>
 
         <div className="flex-1 overflow-y-auto overscroll-contain px-5 py-4 space-y-4">
+          <div className="flex items-center gap-2 mb-1">
+            <button
+              type="button"
+              onClick={handleClose}
+              className="flex items-center gap-1 text-sm text-muted hover:text-ink transition-colors"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Voltar ao cardápio
+            </button>
+          </div>
           <div>
             <h2 className="text-xl font-bold text-ink">{product.name}</h2>
             <p className="text-sm text-muted mt-0.5">{formatBRL(product.price)} / {product.unit}</p>
