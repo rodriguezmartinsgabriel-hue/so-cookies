@@ -1,5 +1,5 @@
 import type { EntityTable } from "dexie"
-import { db, getLastSyncTime, setLastSyncTime, addSyncError, clearSyncErrorsFor, type LocalOrder, type LocalSale, type LocalCashFlow, type LocalProduction, type LocalProduct, type LocalIngredient, type LocalRecipe, type LocalDocument, type LocalDeliveryCost, type LocalContact, type LocalContactInteraction, type LocalPriceTier, type SyncQueueItem } from "./db-local"
+import { db, getLastSyncTime, setLastSyncTime, addSyncError, clearSyncErrorsFor, type LocalOrder, type LocalSale, type LocalCashFlow, type LocalProduction, type LocalProduct, type LocalIngredient, type LocalRecipe, type LocalDocument, type LocalDeliveryCost, type LocalContact, type LocalContactInteraction, type LocalPriceTier, type LocalChannel, type SyncQueueItem } from "./db-local"
 import { emitDataRefresh } from "./refresh-events"
 import { MAX_PUSH_BODY } from "./files"
 
@@ -20,6 +20,8 @@ const ENTITY_TABLES: Record<string, string> = {
 }
 
 const SYNC_INTERVAL_MS = 25_000
+
+const MAX_PUSH_ATTEMPTS = 10
 
 const RECONCILE_INTERVAL_MS = 5 * 60 * 1000
 
@@ -135,6 +137,11 @@ export async function pushPendingChanges() {
         if (!p.ok) {
           if (item && typeof p.queueId === "number") {
             const attempts = (item.attempts || 0) + 1
+            if (attempts >= MAX_PUSH_ATTEMPTS) {
+              await db.syncQueue.delete(p.queueId)
+              await addSyncError({ entity: item.entity, action: item.action, error: p.error || "Erro desconhecido", dropped: true, itemKey })
+              continue
+            }
             await db.syncQueue.update(p.queueId, { attempts, lastAttemptAt: new Date().toISOString() })
           }
           await addSyncError({ entity: item?.entity || "desconhecido", action: item?.action || "?", error: p.error || "Erro desconhecido", dropped: false, itemKey })
@@ -194,7 +201,7 @@ async function writeRows<TLocal extends LocalSyncRow>(
   const skip = await pullUnsyncedIds(table)
   const toWrite = rows
     .filter((r) => !skip.has(r.id))
-    .map((r) => ({ ...r, _synced: true, _updatedAt: new Date().toISOString() } as TLocal))
+    .map((r) => ({ ...r, _synced: true, _updatedAt: (r as { updatedAt?: string }).updatedAt || new Date().toISOString() } as TLocal))
   if (!toWrite.length) return 0
   await table.bulkPut(toWrite)
   return toWrite.length
@@ -270,13 +277,14 @@ export async function pullChanges() {
       pulled += await writeRows(db.deliveryCosts, data.deliveryCosts as LocalDeliveryCost[] | undefined)
       pulled += await writeRows(db.contacts, data.contacts as LocalContact[] | undefined)
       pulled += await writeRows(db.contactInteractions, data.contactInteractions as LocalContactInteraction[] | undefined)
+      pulled += await writeRows(db.channels, data.channels as LocalChannel[] | undefined)
 
       const recipeRows = data.recipes as Array<Omit<LocalRecipe, "ingredients"> & { ingredients?: unknown }> | undefined
       if (recipeRows?.length) {
         const skip = await pullUnsyncedIds(db.recipes)
         const toWrite = recipeRows
           .filter((r) => !skip.has(r.id))
-          .map((r) => ({ ...r, ingredients: JSON.stringify(r.ingredients || []), _synced: true, _updatedAt: new Date().toISOString() }))
+          .map((r) => ({ ...r, ingredients: JSON.stringify(r.ingredients || []), _synced: true, _updatedAt: (r as { updatedAt?: string }).updatedAt || new Date().toISOString() }))
         if (toWrite.length) {
           await db.recipes.bulkPut(toWrite)
           pulled += toWrite.length

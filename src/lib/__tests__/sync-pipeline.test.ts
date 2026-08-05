@@ -586,4 +586,62 @@ describe("sync pipeline", () => {
     expect(recipeUpdate?.action).toBe("update")
     expect(recipeUpdate?.data.ingredients).toEqual([])
   })
+
+  it("pull escreve canais vindos do servidor marcando como sincronizados", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => {
+        return new Response(
+          JSON.stringify({ channels: [{ id: "srv-c", name: "Balcão", commission: 0 }] }),
+          { status: 200 },
+        )
+      }),
+    )
+
+    const result = await pullChanges()
+    expect(result.pulled).toBe(1)
+
+    const row = await db.channels.get("srv-c")
+    expect(row?.name).toBe("Balcão")
+    expect(row?._synced).toBe(true)
+  })
+
+  it("pull carimba _updatedAt com o updatedAt do servidor (não o relógio local)", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => {
+        return new Response(
+          JSON.stringify({ products: [{ id: "srv-p2", name: "Cookie", sku: "ck-3", category: "Doces", price: 12, cost: 5, margin: 58.33, unit: "un", active: true, updatedAt: "2026-08-01T12:00:00.000Z" }] }),
+          { status: 200 },
+        )
+      }),
+    )
+
+    const result = await pullChanges()
+    expect(result.pulled).toBe(1)
+
+    const row = await db.products.get("srv-p2")
+    expect(row?._updatedAt).toBe("2026-08-01T12:00:00.000Z")
+  })
+
+  it("dead-letter: item reprovado em muitas tentativas é descartado com erro dropped", async () => {
+    await db.syncQueue.add({ id: 22, action: "update", entity: "cashFlow", data: { id: "server-1", description: "" }, attempts: 9, lastAttemptAt: "2020-01-01T00:00:00.000Z", createdAt: iso })
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => {
+        return new Response(JSON.stringify({ ok: false, processed: [{ queueId: 22, ok: false, error: "Dados inválidos" }] }), { status: 200 })
+      }),
+    )
+
+    await pushPendingChanges()
+
+    const queue = await db.syncQueue.toArray()
+    expect(queue).toHaveLength(0)
+
+    const errs = await db.syncErrors.toArray()
+    expect(errs).toHaveLength(1)
+    expect(errs[0].dropped).toBe(true)
+    expect(errs[0].itemKey).toBe("cashFlow:server-1")
+  })
 })

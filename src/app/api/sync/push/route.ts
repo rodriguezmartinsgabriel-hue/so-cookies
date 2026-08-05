@@ -177,6 +177,12 @@ export async function POST(request: Request) {
 
     data = resolveRefs(data, sessionMap)
 
+    if (action === "create" && !tempId) {
+      entry.error = "create requer tempId (chave de idempotência)"
+      processed.push(entry)
+      continue
+    }
+
     try {
       switch (key) {
         case "order:create": {
@@ -230,14 +236,17 @@ export async function POST(request: Request) {
         }
         case "sale:update": {
           const { id, items, ...saleData } = data
-          const updated = await prisma.sale.update({
-            where: { id },
-            data: { ...saleData, ...(saleData.date ? { createdAt: new Date(saleData.date) } : {}) },
+          const updated = await prisma.$transaction(async (tx) => {
+            const row = await tx.sale.update({
+              where: { id },
+              data: { ...saleData, ...(saleData.date ? { createdAt: new Date(saleData.date) } : {}) },
+            })
+            if (items) {
+              await tx.saleItem.deleteMany({ where: { saleId: id } })
+              await tx.saleItem.createMany({ data: items.map((i: { productId: string; qty: number; price: number }) => ({ saleId: id, ...i })) })
+            }
+            return row
           })
-          if (items) {
-            await prisma.saleItem.deleteMany({ where: { saleId: id } })
-            await prisma.saleItem.createMany({ data: items.map((i: { productId: string; qty: number; price: number }) => ({ saleId: id, ...i })) })
-          }
           entry.ok = true
           entry.realId = updated.id
           break
@@ -619,8 +628,10 @@ export async function POST(request: Request) {
   try {
     const cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
     await prisma.syncApply.deleteMany({ where: { appliedAt: { lt: cutoff } } })
+    const deleteCutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+    await prisma.syncDelete.deleteMany({ where: { createdAt: { lt: deleteCutoff } } })
   } catch (e) {
-    console.error("Falha ao purgar SyncApply:", e)
+    console.error("Falha ao purgar SyncApply/SyncDelete:", e)
   }
 
   return NextResponse.json({ ok: processed.every((p) => p.ok), processed })

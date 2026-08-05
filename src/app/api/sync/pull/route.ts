@@ -16,7 +16,9 @@ export async function POST(request: Request) {
     const sinceDate = since ? new Date(since) : new Date(0)
     if (isNaN(sinceDate.getTime())) sinceDate.setTime(0)
 
-    const [orders, sales, cashFlow, productions, products, ingredients, recipes, documents, deliveryCosts, contacts, contactInteractions, priceTiers, deletions] = await Promise.all([
+    const serverTime = new Date().toISOString()
+
+    const [orders, sales, cashFlow, productions, products, ingredients, recipes, documents, deliveryCosts, contacts, contactInteractions, priceTiers, deletions, channels] = await Promise.all([
       prisma.order.findMany({
         where: { updatedAt: { gt: sinceDate } },
         include: { items: { include: { product: { select: { id: true, name: true } } } } },
@@ -61,9 +63,10 @@ export async function POST(request: Request) {
         where: { createdAt: { gt: sinceDate } },
         select: { entity: true, recordId: true },
       }),
+      prisma.saleChannel.findMany({}),
     ])
 
-    const data = { orders, sales, cashFlow, productions, products, ingredients, recipes, documents, deliveryCosts, contacts, contactInteractions, priceTiers, deletions, serverTime: new Date().toISOString() }
+    const data = { orders, sales, cashFlow, productions, products, ingredients, recipes, documents, deliveryCosts, contacts, contactInteractions, priceTiers, deletions, channels, serverTime }
 
     return NextResponse.json(data)
   } catch {
