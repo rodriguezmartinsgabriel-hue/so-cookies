@@ -57,3 +57,26 @@ public/swe-worker*
 # planilhas exportadas
 parsed_output.txt
 planilha_data.*
+
+# cópia duplicada antiga do app (submodule removido)
+/so-cookies-app/
+
+# artefatos de debug (movidos para backups/)
+/backups/
+/*.zip
+/test-*.js
+/test-login.ps1
+/check-*.js
+/start-*.js
+/final-*.js
+/quick-start.js
+/simple-server.js
+/cookies.txt
+
+# arquivos de trabalho não-versionados
+/DESIGN.md
+/PLANO_APP_PEQUENAS_EMPRESAS.md
+/*.xlsx
+/xlsx_extracted/
+/package.json.backup
+/package-lock.json.backup

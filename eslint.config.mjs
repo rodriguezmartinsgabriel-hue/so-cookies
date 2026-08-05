@@ -24,7 +24,9 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     "dump-xlsx.cjs",
     // Código gerado automaticamente pelo Prisma (regerado a cada `prisma generate`)
-    "src/generated/**",
+    "**/generated/**",
+    // Artefatos de backup/debug mantidos fora do versionamento
+    "backups/**",
   ]),
 ]);
 

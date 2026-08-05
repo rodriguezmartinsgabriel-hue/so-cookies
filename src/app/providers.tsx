@@ -4,7 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { SessionProvider } from "next-auth/react"
 import { ThemeProvider } from "next-themes"
 import { Analytics } from "@vercel/analytics/react"
-import { motion, MotionConfig } from "framer-motion"
+import { MotionConfig } from "framer-motion"
 import { useState } from "react"
 import { ToastProvider } from "@/components/ui/Toast"
 

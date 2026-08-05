@@ -2,7 +2,6 @@
 
 import { useSyncExternalStore } from "react"
 
-const STORAGE_KEY = "motion-preference"
 type MotionPreference = "reduce" | "no-preference"
 
 function getSnapshot(): MotionPreference {
