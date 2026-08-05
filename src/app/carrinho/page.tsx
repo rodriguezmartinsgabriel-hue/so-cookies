@@ -23,7 +23,7 @@ import { FormField } from "@/components/ui/FormField"
 import { motion, AnimatePresence } from "framer-motion"
 
 import type { CatalogProduct } from "@/lib/utils"
-import { formatBRL } from "@/lib/utils"
+import { cn, formatBRL } from "@/lib/utils"
 import type { DeliverySlot } from "@/lib/customer-types"
 import { EMPTY_ADDRESS, type AddressState } from "@/lib/customer-types"
 import { AddressForm } from "@/components/customer/AddressForm"
@@ -52,6 +52,7 @@ export default function CarrinhoPage() {
   const [checkoutStep, setCheckoutStep] = useState<1 | 2 | 3>(1)
   const [orderNotes, setOrderNotes] = useState("")
   const [showConfirm, setShowConfirm] = useState(false)
+  const [loadedImages, setLoadedImages] = useState<Record<string, boolean>>({})
 
   useEffect(() => {
     fetch("/api/public/catalog")
@@ -249,20 +250,36 @@ export default function CarrinhoPage() {
                         layout
                         initial={{ opacity: 0, x: 20 }}
                         animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: -20, height: 0 }}
+                        exit={{ opacity: 0, x: -20, scale: 0.97 }}
                         transition={{ duration: 0.25, ease: "easeOut" }}
                       >
-                        <Card key={l.productId} padded={false} className="flex items-center gap-3 p-3">
-                      {l.product.image ? (
-                        <div className="relative w-16 h-16 shrink-0">
-                          <Skeleton variant="image" className="absolute inset-0" />
-                          <NextImage src={l.product.image} alt={l.product.name} width={64} height={64} unoptimized className="w-16 h-16 rounded-lg object-cover shrink-0 relative" onLoadingComplete={() => {}} loading="lazy" />
-                        </div>
-                      ) : (
-                        <div className="w-16 h-16 rounded-lg bg-cream border border-line flex items-center justify-center shrink-0">
-                          <Cookie className="w-6 h-6 text-kraft" />
-                        </div>
-                      )}
+                        <Card padded={false} className="flex items-center gap-2 sm:gap-3 p-3">
+                          {l.product.image ? (
+                            <div className="relative w-14 h-14 sm:w-16 sm:h-16 shrink-0">
+                              <Skeleton
+                                variant="image"
+                                className={cn(
+                                  "absolute inset-0 rounded-xl transition-opacity duration-300",
+                                  loadedImages[l.productId] ? "opacity-0 pointer-events-none" : "opacity-100",
+                                )}
+                              />
+                              <NextImage
+                                src={l.product.image}
+                                alt={l.product.name}
+                                width={64}
+                                height={64}
+                                unoptimized
+                                className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl object-cover shrink-0 relative drop-shadow-[0_4px_12px_rgba(0,0,0,0.12)]"
+                                onLoadingComplete={() => setLoadedImages((prev) => ({ ...prev, [l.productId]: true }))}
+                                onError={() => setLoadedImages((prev) => ({ ...prev, [l.productId]: true }))}
+                                loading="lazy"
+                              />
+                            </div>
+                          ) : (
+                            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl bg-cream border border-line flex items-center justify-center shrink-0">
+                              <Cookie className="w-6 h-6 text-kraft" />
+                            </div>
+                          )}
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-semibold text-ink truncate">{l.product.name}</p>
                             <div className="flex items-center gap-2">
@@ -270,7 +287,7 @@ export default function CarrinhoPage() {
                               <CalorieBadge calories={l.product.nutrition?.caloriesPerUnit ?? null} variant="compact" />
                             </div>
                           </div>
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-1 sm:gap-2">
                             <Button variant="secondary" size="icon" className="!h-11 !w-11" onClick={() => setQty(l.productId, l.qty - 1)} aria-label="Diminuir">
                               <Minus className="w-4 h-4" />
                             </Button>
