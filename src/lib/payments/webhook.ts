@@ -47,33 +47,3 @@ export function verifyWebhookSignature(input: SignatureInput): boolean {
   const expected = createHmac("sha256", secret).update(manifest).digest("hex")
   return safeEqual(v1, expected)
 }
-
-export function diagnoseWebhookSignature(input: SignatureInput) {
-  const { secret, xSignature, xRequestId, dataId } = input
-  const parts = parseSignature(xSignature)
-  const ts = parts.ts
-  const v1 = parts.v1
-
-  const hmacHex = (manifest: string) =>
-    secret ? createHmac("sha256", secret).update(manifest).digest("hex") : null
-
-  const manifestWithRequestId = buildManifest(dataId, xRequestId, ts ?? "")
-  const manifestWithoutRequestId = buildManifest(dataId, null, ts ?? "")
-
-  const matchWithRequestId =
-    Boolean(secret && xRequestId && ts && v1) &&
-    safeEqual(v1 as string, hmacHex(manifestWithRequestId) ?? "")
-  const matchWithoutRequestId =
-    Boolean(secret && ts && v1) && safeEqual(v1 as string, hmacHex(manifestWithoutRequestId) ?? "")
-
-  return {
-    secretConfigured: Boolean(secret),
-    xSignaturePresent: Boolean(xSignature),
-    xRequestIdPresent: Boolean(xRequestId),
-    dataIdPresent: Boolean(dataId),
-    tsParsed: Boolean(ts),
-    v1Parsed: Boolean(v1),
-    matchWithRequestId,
-    matchWithoutRequestId,
-  }
-}

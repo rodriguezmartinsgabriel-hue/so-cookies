@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest"
 import { createHmac } from "crypto"
-import { verifyWebhookSignature, diagnoseWebhookSignature } from "@/lib/payments/webhook"
+import { verifyWebhookSignature } from "@/lib/payments/webhook"
 
 const SECRET = "chave-secreta-de-teste"
 
@@ -53,51 +53,5 @@ describe("verifyWebhookSignature", () => {
     const v1 = createHmac("sha256", SECRET).update(manifest).digest("hex")
     const xSignature = `ts=${ts},v1=${v1}`
     expect(verifyWebhookSignature({ secret: SECRET, xSignature, xRequestId: null, dataId })).toBe(true)
-  })
-})
-
-describe("diagnoseWebhookSignature", () => {
-  const dataId = "123456"
-  const xRequestId = "req-1"
-  const ts = "1742505638683"
-
-  it("sinaliza match com request-id quando a assinatura usa request-id", () => {
-    const v1 = createHmac("sha256", SECRET).update(`id:${dataId};request-id:${xRequestId};ts:${ts};`).digest("hex")
-    const xSignature = `ts=${ts},v1=${v1}`
-    const diag = diagnoseWebhookSignature({ secret: SECRET, xSignature, xRequestId, dataId })
-    expect(diag.secretConfigured).toBe(true)
-    expect(diag.xSignaturePresent).toBe(true)
-    expect(diag.xRequestIdPresent).toBe(true)
-    expect(diag.dataIdPresent).toBe(true)
-    expect(diag.tsParsed).toBe(true)
-    expect(diag.v1Parsed).toBe(true)
-    expect(diag.matchWithRequestId).toBe(true)
-    expect(diag.matchWithoutRequestId).toBe(false)
-  })
-
-  it("sinaliza match sem request-id quando a assinatura omite o header", () => {
-    const v1 = createHmac("sha256", SECRET).update(`id:${dataId};ts:${ts};`).digest("hex")
-    const xSignature = `ts=${ts},v1=${v1}`
-    const diag = diagnoseWebhookSignature({ secret: SECRET, xSignature, xRequestId: null, dataId })
-    expect(diag.xRequestIdPresent).toBe(false)
-    expect(diag.matchWithoutRequestId).toBe(true)
-    expect(diag.matchWithRequestId).toBe(false)
-  })
-
-  it("sinaliza secretConfigured false quando não há secret", () => {
-    const v1 = createHmac("sha256", SECRET).update(`id:${dataId};ts:${ts};`).digest("hex")
-    const xSignature = `ts=${ts},v1=${v1}`
-    const diag = diagnoseWebhookSignature({ secret: null, xSignature, xRequestId: null, dataId })
-    expect(diag.secretConfigured).toBe(false)
-    expect(diag.matchWithRequestId).toBe(false)
-    expect(diag.matchWithoutRequestId).toBe(false)
-  })
-
-  it("sinaliza false para ambos os matches com secret errado", () => {
-    const v1 = createHmac("sha256", SECRET).update(`id:${dataId};ts:${ts};`).digest("hex")
-    const xSignature = `ts=${ts},v1=${v1}`
-    const diag = diagnoseWebhookSignature({ secret: "outro-secret", xSignature, xRequestId: null, dataId })
-    expect(diag.matchWithRequestId).toBe(false)
-    expect(diag.matchWithoutRequestId).toBe(false)
   })
 })
