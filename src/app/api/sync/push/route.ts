@@ -127,7 +127,7 @@ async function applyCreate(
 }
 
 export async function POST(request: Request) {
-  const { error, session } = await requireAuth("OPERACIONAL")
+  const { error, session } = await requireAuth(request, "OPERACIONAL")
   if (error) return error
 
   let changes: unknown

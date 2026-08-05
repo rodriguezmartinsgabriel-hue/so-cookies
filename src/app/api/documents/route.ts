@@ -5,7 +5,7 @@ import { createDocumentSchema, getZodIssues } from "@/lib/validation";
 import type { DocumentCategory } from "@/generated/prisma/enums";
 
 export async function GET(request: Request) {
-  const { error } = await requireAuth()
+  const { error } = await requireAuth(request)
   if (error) return error
   try {
     const { searchParams } = new URL(request.url);
@@ -20,7 +20,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const { error } = await requireAuth("OPERACIONAL")
+  const { error } = await requireAuth(request, "OPERACIONAL")
   if (error) return error
   try {
     const json = await request.json();

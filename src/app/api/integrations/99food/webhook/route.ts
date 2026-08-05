@@ -2,9 +2,14 @@ import { NextResponse } from "next/server"
 import { find99FoodAccountByMerchant, is99FoodCredentials } from "@/lib/integrations/accounts"
 import { processInboundOrderEvent } from "@/lib/integrations/events"
 import { verifyHmacSha256 } from "@/lib/integrations/signature"
+import { isBodyTooLarge, ninentyNineFoodWebhookSchema } from "@/lib/integrations/schemas"
 
 export async function POST(request: Request) {
   const raw = await request.text()
+  if (isBodyTooLarge(request, raw)) {
+    return new NextResponse(null, { status: 413 })
+  }
+
   const appId = request.headers.get("x-app-id")
   const shoppId = request.headers.get("x-app-shopp-id") || request.headers.get("x-app-merchantid")
   const signature = request.headers.get("x-app-signature")
@@ -22,22 +27,15 @@ export async function POST(request: Request) {
     return new NextResponse(null, { status: 403 })
   }
 
-  type WebhookEvent = {
-    eventId?: unknown
-    eventType?: unknown
-    orderId?: unknown
-    orderURL?: unknown
-    createdAt?: unknown
-  }
-
-  let payload: WebhookEvent
+  let payload: unknown
   try {
-    payload = JSON.parse(raw) as WebhookEvent
+    payload = JSON.parse(raw)
   } catch {
     return new NextResponse(null, { status: 400 })
   }
 
-  if (!payload?.eventId || !payload?.eventType || !payload?.orderId) {
+  const parsed = ninentyNineFoodWebhookSchema.safeParse(payload)
+  if (!parsed.success) {
     return new NextResponse(null, { status: 400 })
   }
 
@@ -46,11 +44,11 @@ export async function POST(request: Request) {
       platform: "99FOOD",
       account,
       event: {
-        eventId: String(payload.eventId),
-        eventType: String(payload.eventType),
-        orderId: String(payload.orderId),
-        orderUrl: typeof payload.orderURL === "string" ? payload.orderURL : undefined,
-        createdAt: typeof payload.createdAt === "string" ? payload.createdAt : undefined,
+        eventId: String(parsed.data.eventId),
+        eventType: String(parsed.data.eventType),
+        orderId: String(parsed.data.orderId),
+        orderUrl: parsed.data.orderURL,
+        createdAt: parsed.data.createdAt,
       },
     })
   } catch {

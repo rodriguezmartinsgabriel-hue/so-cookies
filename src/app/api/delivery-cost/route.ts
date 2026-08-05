@@ -3,8 +3,8 @@ import { prisma } from "@/lib/prisma"
 import { requireAuth } from "@/lib/api-auth"
 import { createDeliveryCostSchema, getZodIssues } from "@/lib/validation"
 
-export async function GET() {
-  const { error } = await requireAuth()
+export async function GET(request: Request) {
+  const { error } = await requireAuth(request)
   if (error) return error
   try {
     const costs = await prisma.deliveryCost.findMany()
@@ -15,7 +15,7 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const { error } = await requireAuth("OPERACIONAL")
+  const { error } = await requireAuth(request, "OPERACIONAL")
   if (error) return error
   try {
     const json = await request.json()

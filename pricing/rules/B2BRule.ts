@@ -1,3 +1,4 @@
+import { createId } from '../ids';
 import type { PricingRule } from './PricingRule';
 import type { PricingContext, PricingState, PricingData, Logger } from '../types';
 import type { PricingAction } from '../actions/PricingAction';
@@ -68,5 +69,5 @@ export class B2BRule implements PricingRule {
 }
 
 function generateId(): string {
-  return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+  return createId();
 }

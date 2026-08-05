@@ -3,8 +3,8 @@ import { getSales, createSale } from "@/lib/db"
 import { requireAuth } from "@/lib/api-auth"
 import { createSaleSchema, getZodIssues } from "@/lib/validation"
 
-export async function GET() {
-  const { error } = await requireAuth()
+export async function GET(request: Request) {
+  const { error } = await requireAuth(request)
   if (error) return error
 
   try {
@@ -16,7 +16,7 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const { error } = await requireAuth("OPERACIONAL")
+  const { error } = await requireAuth(request, "OPERACIONAL")
   if (error) return error
   try {
     const json = await request.json()

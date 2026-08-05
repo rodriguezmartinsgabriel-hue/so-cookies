@@ -4,10 +4,10 @@ import { getContactInteractions, createContactInteraction } from "@/lib/db"
 import { createInteractionSchema, getZodIssues } from "@/lib/validation"
 
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { error } = await requireAuth()
+  const { error } = await requireAuth(request)
   if (error) return error
   try {
     const { id } = await params
@@ -22,7 +22,7 @@ export async function POST(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { error } = await requireAuth("OPERACIONAL")
+  const { error } = await requireAuth(request, "OPERACIONAL")
   if (error) return error
   try {
     const { id } = await params

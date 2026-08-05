@@ -7,8 +7,8 @@ function parseDate(v: string | null | undefined): Date | null {
   return v ? new Date(`${v}T00:00:00.000Z`) : null
 }
 
-export async function GET() {
-  const { error } = await requireAuth()
+export async function GET(request: Request) {
+  const { error } = await requireAuth(request)
   if (error) return error
   try {
     const routes = await prisma.deliveryRoute.findMany({
@@ -22,7 +22,7 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const { error } = await requireAuth("ADMIN")
+  const { error } = await requireAuth(request, "ADMIN")
   if (error) return error
   try {
     const json = await request.json()

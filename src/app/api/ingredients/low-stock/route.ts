@@ -2,8 +2,8 @@ import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { requireAuth } from "@/lib/api-auth"
 
-export async function GET() {
-  const { error } = await requireAuth()
+export async function GET(request: Request) {
+  const { error } = await requireAuth(request)
   if (error) return error
   try {
     const data = await prisma.ingredient.findMany()

@@ -1,0 +1,23 @@
+﻿schema: spec-driven
+
+context: |
+  Project: So Cookies & Cafe - App de Gestao e Loja Online
+  Tech stack: Next.js 16 (Turbopack, React 19, App Router), Tailwind CSS v4, Prisma 7 + PostgreSQL (Supabase), NextAuth v5, Serwist (PWA)
+  Domains: cookiesecafes.com (store/client), app.cookiesecafes.com (staff dashboard)
+  Pricing Engine v2 in pricing/ with pipeline phases: BASE, ITEM, ORDER, CUSTOMER, PAYMENT, SHIPPING, POST_PROCESSING
+  15 staff dashboard modules: Usuarios, Produtos, Estoque, Receitas, Vendas, Pedidos, Caixa, Producao, Delivery, Relatorios, Indicadores, Canais, Contatos, Documentos, Integracoes
+  Client areas: Entrar, Cadastro, Cardapio, Carrinho, Pedido, Perfil
+  Security: bcryptjs for passwords, NextAuth v5 JWT with httpOnly cookies, HMAC signatures for integrations (iFood, 99Food), rate limiting on auth routes
+  Accessibility: WCAG AA, focus traps, prefers-reduced-motion, color-scheme light dark
+  Testing: Vitest, 242 tests passing
+  Deploy: Vercel with GitHub Actions CI/CD
+
+# Per-artifact rules (optional)
+# Add custom rules for specific artifacts.
+# Example:
+#   rules:
+#     proposal:
+#       - Keep proposals under 500 words
+#       - Always include a "Non-goals" section
+#     tasks:
+#       - Break tasks into chunks of max 2 hours

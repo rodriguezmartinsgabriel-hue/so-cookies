@@ -1,9 +1,32 @@
 import { auth } from "@/lib/auth"
 import { NextResponse } from "next/server"
+import { rateLimit } from "@/lib/rate-limit"
+import { isAllowedOrigin } from "@/lib/security"
 
 export type Role = "ADMIN" | "OPERACIONAL" | "VISUALIZADOR"
 
-export async function requireAuth(minRole?: Role) {
+export const STAFF_RATE_LIMIT = 120
+export const STAFF_RATE_WINDOW_MS = 60_000
+
+const UNSAFE_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"])
+
+export async function requireAuth(request: Request, minRole?: Role) {
+  const limited = rateLimit(request, STAFF_RATE_LIMIT, STAFF_RATE_WINDOW_MS)
+  if (!limited.ok) {
+    return {
+      error: NextResponse.json(
+        { error: "Muitas requisições. Tente novamente mais tarde." },
+        { status: 429, headers: { "Retry-After": String(limited.retryAfterSeconds) } },
+      ),
+      session: null,
+    }
+  }
+
+  const origin = request.headers.get("origin")
+  if (UNSAFE_METHODS.has(request.method) && origin && !isAllowedOrigin(origin)) {
+    return { error: NextResponse.json({ error: "Origem não permitida" }, { status: 403 }), session: null }
+  }
+
   const session = await auth()
   if (!session?.user?.id) {
     return { error: NextResponse.json({ error: "Não autenticado" }, { status: 401 }), session: null }

@@ -3,8 +3,8 @@ import { prisma } from "@/lib/prisma"
 import { requireAuth } from "@/lib/api-auth"
 import { createChannelSchema, getZodIssues } from "@/lib/validation"
 
-export async function GET() {
-  const { error } = await requireAuth()
+export async function GET(request: Request) {
+  const { error } = await requireAuth(request)
   if (error) return error
   try {
     const data = await prisma.saleChannel.findMany()
@@ -15,7 +15,7 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const { error } = await requireAuth("ADMIN")
+  const { error } = await requireAuth(request, "ADMIN")
   if (error) return error
   try {
     const json = await request.json()

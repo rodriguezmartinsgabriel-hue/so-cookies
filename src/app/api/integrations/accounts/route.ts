@@ -5,7 +5,7 @@ import { accountCreateSchema } from "@/lib/integrations/validation"
 import { getZodIssues } from "@/lib/validation"
 
 export async function GET(request: Request) {
-  const { error } = await requireAuth("ADMIN")
+  const { error } = await requireAuth(request, "ADMIN")
   if (error) return error
   try {
     const origin = new URL(request.url).origin
@@ -20,7 +20,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const { error } = await requireAuth("ADMIN")
+  const { error } = await requireAuth(request, "ADMIN")
   if (error) return error
   try {
     const json = await request.json()

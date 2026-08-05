@@ -151,9 +151,8 @@ export {
 } from './errors/PricingRuleError';
 
 // Utility functions
-export function generateId(): string {
-  return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-}
+export { createId as generateId } from './ids';
+export { createId } from './ids';
 
 export { formatBRL, formatCurrency } from "@/lib/utils"
 

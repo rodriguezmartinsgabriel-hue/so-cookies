@@ -4,7 +4,7 @@ import { getContacts, createContact } from "@/lib/db"
 import { createContactSchema, getZodIssues } from "@/lib/validation"
 
 export async function GET(request: Request) {
-  const { error } = await requireAuth()
+  const { error } = await requireAuth(request)
   if (error) return error
   try {
     const url = new URL(request.url)
@@ -18,7 +18,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const { error } = await requireAuth("OPERACIONAL")
+  const { error } = await requireAuth(request, "OPERACIONAL")
   if (error) return error
   try {
     const json = await request.json()

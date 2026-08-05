@@ -1,6 +1,17 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { getHostRole } from "@/lib/hosts";
+import { isAllowedOrigin } from "@/lib/security";
+
+const CORS_ALLOW_METHODS = "GET, POST, PUT, PATCH, DELETE, OPTIONS";
+const CORS_ALLOW_HEADERS = "Content-Type, Authorization";
+
+function setCorsHeaders(response: NextResponse, origin: string) {
+  response.headers.set("Access-Control-Allow-Origin", origin);
+  response.headers.set("Vary", "Origin");
+  response.headers.set("Access-Control-Allow-Methods", CORS_ALLOW_METHODS);
+  response.headers.set("Access-Control-Allow-Headers", CORS_ALLOW_HEADERS);
+}
 
 function isCustomerRoute(pathname: string) {
   return (
@@ -53,7 +64,7 @@ function isWebhookRoute(pathname: string) {
   );
 }
 
-export function proxy(request: NextRequest) {
+function routeRequest(request: NextRequest): NextResponse {
   const { pathname } = request.nextUrl;
   const role = getHostRole(request.nextUrl.hostname);
 
@@ -99,6 +110,29 @@ export function proxy(request: NextRequest) {
   }
 
   return NextResponse.next();
+}
+
+export function proxy(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+  const isApiPath = pathname.startsWith("/api");
+  const origin = request.headers.get("origin");
+  const allowedOrigin = origin && isAllowedOrigin(origin) ? origin : null;
+
+  if (isApiPath && request.method === "OPTIONS") {
+    if (!allowedOrigin) {
+      return new NextResponse(null, { status: 403 });
+    }
+    const response = new NextResponse(null, { status: 204 });
+    setCorsHeaders(response, allowedOrigin);
+    response.headers.set("Access-Control-Max-Age", "86400");
+    return response;
+  }
+
+  const response = routeRequest(request);
+  if (isApiPath && allowedOrigin) {
+    setCorsHeaders(response, allowedOrigin);
+  }
+  return response;
 }
 
 export const config = {
