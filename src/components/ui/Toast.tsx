@@ -4,7 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useRef, useState, ty
 import { CheckCircle2, AlertTriangle, Info, X } from "lucide-react";
 import { GlassSurface } from "@/components/ui/GlassSurface";
 
-type ToastVariant = "success" | "danger" | "info";
+type ToastVariant = "success" | "danger" | "info" | "warning";
 
 type ToastItem = {
   id: number;
@@ -14,7 +14,12 @@ type ToastItem = {
   exiting?: boolean;
 };
 
-const TOAST_DURATION = 4000;
+const TOAST_DURATIONS: Record<ToastVariant, number> = {
+  success: 3000,
+  danger: 5000,
+  info: 4000,
+  warning: 4000,
+};
 const TOAST_EXIT_MS = 180;
 
 type ToastContextValue = {
@@ -53,7 +58,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     (variant: ToastVariant, title: string, message?: string) => {
       const id = Date.now() + Math.random();
       setToasts((prev) => [...prev.slice(-2), { id, variant, title, message }]);
-      const timer = setTimeout(() => dismiss(id), TOAST_DURATION);
+      const timer = setTimeout(() => dismiss(id), TOAST_DURATIONS[variant]);
       timers.current.set(id, timer);
     },
     [dismiss],
@@ -83,6 +88,7 @@ const icons: Record<ToastVariant, ReactNode> = {
   success: <CheckCircle2 className="w-5 h-5 text-success" />,
   danger: <AlertTriangle className="w-5 h-5 text-danger" />,
   info: <Info className="w-5 h-5 text-info" />,
+  warning: <AlertTriangle className="w-5 h-5 text-warning" />,
 };
 
 function ToastCard({ item, onClose }: { item: ToastItem; onClose: () => void }) {

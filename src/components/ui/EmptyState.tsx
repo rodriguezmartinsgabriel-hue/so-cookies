@@ -22,7 +22,7 @@ export function EmptyState({ icon, title, description, action }: EmptyStateProps
           initial={{ scale: 0.8, rotate: -5 }}
           animate={{ scale: 1, rotate: 0 }}
           transition={{ type: "spring", stiffness: 200, delay: 0.1 }}
-          className="w-20 h-20 mx-auto mb-4 text-muted/50"
+          className="w-8 h-8 mx-auto mb-3 text-muted"
         >
           {icon}
         </motion.div>

@@ -30,10 +30,10 @@ export function CustomerShell({
         <GlassSurface
           as="header"
           tone="strong"
-          className="sticky top-0 z-40 rounded-none border-0"
+          className="sticky top-0 z-40 rounded-none border-0 w-full"
         >
-          <div className="max-w-md mx-auto px-4 pt-[env(safe-area-inset-top,0px)] h-14 flex items-center justify-between">
-            <Link href="/cardapio" className="font-bold text-ink">
+          <div className="max-w-md mx-auto px-4 pt-[calc(env(safe-area-inset-top,0px)+0.75rem)] pb-3 flex items-center justify-between min-h-14">
+            <Link href="/cardapio" className="font-bold text-ink truncate">
               Só Cookies & Café
             </Link>
             <ThemeToggle />
@@ -46,16 +46,16 @@ export function CustomerShell({
 
   return (
     <div className="min-h-dvh">
-      <GlassSurface as="header" tone="strong" className="sticky top-0 z-40 rounded-none border-0">
-        <div className="max-w-md mx-auto px-4 pt-[env(safe-area-inset-top,0px)] h-14 flex items-center justify-between">
-          <Link href="/cardapio" className="font-bold text-ink">
+      <GlassSurface as="header" tone="strong" className="sticky top-0 z-40 rounded-none border-0 w-full">
+        <div className="max-w-md mx-auto px-4 pt-[calc(env(safe-area-inset-top,0px)+0.75rem)] pb-3 flex items-center justify-between min-h-14">
+          <Link href="/cardapio" className="font-bold text-ink truncate">
             Só Cookies & Café
           </Link>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 shrink-0">
             <ThemeToggle />
             <Link
               href="/carrinho"
-              className="relative p-2 rounded-lg hover:bg-cream transition-colors"
+              className="relative min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg hover:bg-cream transition-colors"
               aria-label="Carrinho"
               onClick={() => haptic.tap()}
             >
@@ -65,7 +65,7 @@ export function CustomerShell({
                   key={cartCount}
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
-                  className="absolute -top-0.5 -right-0.5 min-w-4 h-4 px-1 rounded-full bg-ink text-paper text-[10px] font-bold flex items-center justify-center"
+                  className="absolute top-0 right-0 min-w-4 h-4 px-1 rounded-full bg-accent text-paper text-[10px] font-bold flex items-center justify-center"
                 >
                   {cartCount}
                 </motion.span>
@@ -86,7 +86,7 @@ export function CustomerShell({
           tone="strong"
           className="w-full rounded-t-2xl rounded-b-none border-x-0 border-b-0 border-t border-line/50 flex justify-center pointer-events-auto animate-fade-in-up"
         >
-          <div className="max-w-md w-full px-4 pb-[env(safe-area-inset-bottom,0px)] pt-2 flex items-center justify-around h-16">
+          <div className="w-full max-w-md px-2 pb-[env(safe-area-inset-bottom,0px)] pt-2 flex items-center justify-around h-16">
             <NavLink href="/cardapio" label="Cardápio" icon={LayoutGrid} pathname={pathname} haptic={haptic} />
             <NavLink href="/carrinho" label="Carrinho" icon={ShoppingBag} pathname={pathname} badge={cartCount} haptic={haptic} />
             <NavLink href="/perfil" label="Conta" icon={User} pathname={pathname} haptic={haptic} />
@@ -124,7 +124,7 @@ function NavLink({
         href={href}
         aria-current={isActive ? "page" : undefined}
         className={`absolute inset-0 flex flex-col items-center justify-center gap-0.5 w-full h-full rounded-lg transition-colors ${
-          isActive ? "text-ink" : "text-muted"
+          isActive ? "text-accent" : "text-muted"
         }`}
         onClick={() => haptic.tap()}
       >
@@ -133,7 +133,7 @@ function NavLink({
           key={badge}
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
-          className="absolute top-1 right-2 min-w-4 h-4 px-1 rounded-full bg-ink text-paper text-[10px] font-bold flex items-center justify-center"
+          className="absolute top-1 right-2 min-w-4 h-4 px-1 rounded-full bg-accent text-paper text-[10px] font-bold flex items-center justify-center"
         >
           {badge}
         </motion.span>

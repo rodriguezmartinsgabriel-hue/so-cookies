@@ -17,7 +17,7 @@ import { CountdownLabel } from "@/components/customer/CountdownLabel"
 import { Card } from "@/components/ui/Card"
 import { Button } from "@/components/ui/Button"
 import { CalorieBadge } from "@/components/ui/CalorieBadge"
-import { ShimmerSkeleton } from "@/components/ui/ShimmerSkeleton"
+import { Skeleton } from "@/components/ui/Skeleton"
 import { Input } from "@/components/ui/Input"
 import { FormField } from "@/components/ui/FormField"
 import { motion, AnimatePresence } from "framer-motion"
@@ -212,14 +212,14 @@ export default function CarrinhoPage() {
         {loading && (
           <div className="space-y-2">
             {[1, 2, 3].map((i) => (
-              <ShimmerSkeleton key={i} variant="card" />
+              <Skeleton key={i} variant="card" />
             ))}
           </div>
         )}
         {pricingLoading && (
           <div className="space-y-2">
             {[1, 2].map((i) => (
-              <ShimmerSkeleton key={i} variant="text" />
+              <Skeleton key={i} variant="text" />
             ))}
           </div>
         )}
@@ -255,7 +255,7 @@ export default function CarrinhoPage() {
                         <Card key={l.productId} padded={false} className="flex items-center gap-3 p-3">
                       {l.product.image ? (
                         <div className="relative w-16 h-16 shrink-0">
-                          <ShimmerSkeleton variant="image" className="absolute inset-0" />
+                          <Skeleton variant="image" className="absolute inset-0" />
                           <NextImage src={l.product.image} alt={l.product.name} width={64} height={64} unoptimized className="w-16 h-16 rounded-lg object-cover shrink-0 relative" onLoadingComplete={() => {}} loading="lazy" />
                         </div>
                       ) : (

@@ -94,7 +94,7 @@ export function ProductCardExpandable({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      transition={{ duration: reducedMotion ? 0 : 0.25, ease: "easeInOut" }}
+      transition={{ duration: reducedMotion ? 0 : 0.25 }}
       onClick={handleClose}
       role="dialog"
       aria-modal="true"
@@ -103,94 +103,95 @@ export function ProductCardExpandable({
       <div className="absolute inset-0 bg-ink/40 backdrop-blur-md" />
 
       <motion.div
-        className="relative w-full max-w-md mx-auto bg-paper rounded-t-2xl sm:rounded-2xl overflow-y-auto overflow-x-hidden shadow-2xl max-h-[92dvh]"
+        className="relative w-full max-w-md mx-auto bg-paper rounded-t-2xl sm:rounded-2xl shadow-2xl max-h-[95dvh] flex flex-col overflow-hidden pb-[env(safe-area-inset-bottom,0px)]"
         initial={{ y: "100%", opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         exit={{ y: "100%", opacity: 0 }}
         transition={{ type: "spring", stiffness: reducedMotion ? 1 : 300, damping: reducedMotion ? 1 : 28 }}
         onClick={(e) => e.stopPropagation()}
       >
-          <div className="relative">
-            <div className="w-full aspect-square bg-cream relative overflow-hidden">
-              {product.image ? (
-                <>
-                  {!imageLoaded && (
-                    <div className="absolute inset-0 bg-cream/50 animate-pulse" />
-                  )}
-                  <NextImage
-                    src={product.image}
-                    alt={product.name}
-                    fill
-                    unoptimized
-                    className={`w-full h-full object-cover transition-opacity duration-300 ${imageLoaded ? "opacity-100" : "opacity-0"}`}
-                    onLoad={() => setImageLoaded(true)}
-                  />
-                </>
-              ) : (
-                <div className="w-full h-full flex items-center justify-center bg-cream">
-                  <div className="w-24 h-24 rounded-full bg-ink/5 flex items-center justify-center">
-                    <ShoppingBag className="w-10 h-10 text-kraft" strokeWidth={1.5} />
-                  </div>
-                </div>
+        <div className="relative shrink-0 h-[40vh] sm:h-[45vh] bg-cream overflow-hidden">
+          {product.image ? (
+            <>
+              {!imageLoaded && (
+                <div className="absolute inset-0 bg-cream/50 animate-pulse" />
               )}
-
-              <button
-                type="button"
-                onClick={handleClose}
-                aria-label="Fechar"
-                className="absolute top-4 right-4 w-11 h-11 rounded-full bg-ink/30 backdrop-blur-sm flex items-center justify-center text-paper hover:bg-ink/50 transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
+              <NextImage
+                src={product.image}
+                alt={product.name}
+                fill
+                unoptimized
+                sizes="(max-width: 448px) 100vw, 448px"
+                className={`w-full h-full object-cover transition-opacity duration-300 ${imageLoaded ? "opacity-100" : "opacity-0"}`}
+                onLoad={() => setImageLoaded(true)}
+              />
+            </>
+          ) : (
+            <div className="w-full h-full flex items-center justify-center bg-cream">
+              <div className="w-24 h-24 rounded-full bg-ink/5 flex items-center justify-center">
+                <ShoppingBag className="w-10 h-10 text-kraft" strokeWidth={1.5} />
+              </div>
             </div>
+          )}
 
-            <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-paper via-paper/80 to-transparent" />
+          <button
+            type="button"
+            onClick={handleClose}
+            aria-label="Fechar"
+            className="absolute top-3 right-3 sm:top-4 sm:right-4 w-11 h-11 rounded-full bg-ink/30 backdrop-blur-sm flex items-center justify-center text-paper hover:bg-ink/50 transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto overscroll-contain px-5 py-4 space-y-4">
+          <div>
+            <h2 className="text-xl font-bold text-ink">{product.name}</h2>
+            <p className="text-sm text-muted mt-0.5">{formatBRL(product.price)} / {product.unit}</p>
           </div>
 
-          <div className="px-5 pb-6 pt-4 space-y-4">
-            <div>
-              <h2 className="text-xl font-bold text-ink">{product.name}</h2>
-              <p className="text-sm text-muted mt-0.5">{formatBRL(product.price)} / {product.unit}</p>
+          {n?.tags && n.tags.length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              {n.tags.slice(0, 3).map((t) => (
+                <span key={t} className="inline-flex items-center rounded-full bg-accent/10 px-2.5 py-1 text-xs font-medium text-accent">
+                  {TAG_LABELS[t] ?? t}
+                </span>
+              ))}
             </div>
+          )}
 
-            {n?.tags && n.tags.length > 0 && (
-              <div className="flex flex-wrap gap-1.5">
-                {n.tags.slice(0, 3).map((t) => (
-                  <span key={t} className="inline-flex items-center rounded-full bg-accent/10 px-2.5 py-1 text-xs font-medium text-accent">
-                    {TAG_LABELS[t] ?? t}
-                  </span>
-                ))}
-              </div>
-            )}
-
-            {n && n.allergens.length > 0 && (
-              <div className="flex flex-wrap gap-1.5">
-                {n.allergens.map((a) => (
-                  <span key={a} className="inline-flex items-center rounded-full bg-danger/10 px-2.5 py-1 text-xs font-medium text-danger">
-                    {ALLERGEN_LABELS[a] ?? a}
-                  </span>
-                ))}
-              </div>
-            )}
-
-            <div className="flex items-center gap-4 py-2">
-              <CalorieBadge calories={n?.caloriesPerUnit ?? null} variant="inline" />
+          {n && n.allergens.length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              {n.allergens.map((a) => (
+                <span key={a} className="inline-flex items-center rounded-full bg-danger/10 px-2.5 py-1 text-xs font-medium text-danger">
+                  {ALLERGEN_LABELS[a] ?? a}
+                </span>
+              ))}
             </div>
+          )}
 
-            <div className="flex items-center gap-3 pt-2 border-t border-line">
-              <Button variant="secondary" size="icon" onClick={handleQtyDown} aria-label="Diminuir quantidade">
-                <Minus className="w-4 h-4" />
-              </Button>
-              <span className="w-8 text-center text-lg font-bold text-ink">{qty}</span>
-              <Button variant="primary" size="icon" onClick={handleQtyUp} aria-label="Aumentar quantidade">
-                <Plus className="w-4 h-4" />
-              </Button>
-              <Button variant="primary" size="lg" className="flex-1 ml-3" onClick={handleAdd}>
-                {qty === 0 ? "Adicionar" : "Adicionar ao carrinho"}
-              </Button>
-            </div>
+          <div className="flex items-center gap-4 py-2">
+            <CalorieBadge calories={n?.caloriesPerUnit ?? null} variant="inline" />
           </div>
-          </motion.div>
-        </motion.div>
-      )
+
+          {product.description && (
+            <p className="text-sm text-muted leading-relaxed">{product.description}</p>
+          )}
+        </div>
+
+        <div className="shrink-0 flex items-center gap-3 px-5 py-3 border-t border-line bg-paper">
+          <Button variant="secondary" size="icon" onClick={handleQtyDown} aria-label="Diminuir quantidade">
+            <Minus className="w-4 h-4" />
+          </Button>
+          <span className="w-8 text-center text-lg font-bold text-ink">{qty}</span>
+          <Button variant="primary" size="icon" onClick={handleQtyUp} aria-label="Aumentar quantidade">
+            <Plus className="w-4 h-4" />
+          </Button>
+          <Button variant="primary" size="lg" className="flex-1" onClick={handleAdd}>
+            {qty === 0 ? "Adicionar" : "Adicionar ao carrinho"}
+          </Button>
+        </div>
+      </motion.div>
+    </motion.div>
+  )
 }

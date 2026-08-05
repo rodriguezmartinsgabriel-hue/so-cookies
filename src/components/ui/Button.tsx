@@ -11,10 +11,10 @@ const base =
   "inline-flex items-center justify-center gap-2 font-medium rounded-lg transition-all disabled:opacity-50 disabled:pointer-events-none select-none";
 
 const variants = {
-  primary: "bg-ink text-paper hover:bg-ink/90",
-  secondary: "bg-paper/70 border border-line text-ink hover:bg-cream backdrop-blur-sm",
+  primary: "bg-accent text-paper hover:opacity-90",
+  secondary: "bg-paper border border-line text-ink hover:bg-cream",
   ghost: "text-muted hover:bg-cream hover:text-ink",
-  danger: "bg-danger text-paper hover:bg-danger/90",
+  danger: "bg-danger text-paper hover:opacity-90",
 };
 
 const sizes = {
@@ -34,7 +34,6 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       type={type}
       className={cn(base, variants[variant], sizes[size], className)}
       whileTap={{ scale: 0.97 }}
-      whileHover={{ scale: 1.03 }}
       {...props}
     >
       {children}

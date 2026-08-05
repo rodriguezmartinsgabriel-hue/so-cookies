@@ -35,7 +35,7 @@ export function StickyBottomCTA({
     >
       <div className="max-w-md mx-auto pointer-events-auto">
         <motion.div
-          className="absolute inset-0 bg-gradient-to-t from-paper via-paper/90 to-transparent"
+          className="absolute inset-0 bg-paper"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: reducedMotion ? 0 : 0.3, delay: reducedMotion ? 0 : 0.1 }}

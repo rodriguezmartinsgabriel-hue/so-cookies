@@ -8,7 +8,7 @@ describe("Button", () => {
     render(<Button>Click me</Button>);
     const button = screen.getByRole("button", { name: "Click me" });
     expect(button).toBeInTheDocument();
-    expect(button).toHaveClass("bg-ink", "text-paper");
+    expect(button).toHaveClass("bg-accent", "text-paper");
   });
 
   it("applies variant classes correctly", () => {
@@ -60,7 +60,7 @@ describe("Button", () => {
     render(<Button className="my-custom">X</Button>);
     const button = screen.getByRole("button", { name: "X" });
     expect(button).toHaveClass("my-custom");
-    expect(button).toHaveClass("bg-ink");
+    expect(button).toHaveClass("bg-accent");
   });
 
   it("icon size variant renders square button", () => {
