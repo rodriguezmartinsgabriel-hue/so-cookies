@@ -1,9 +1,12 @@
-import { spawnSync } from "node:child_process"
 import { createSerwistRoute } from "@serwist/turbopack"
 
-const revision =
-  spawnSync("git", ["rev-parse", "HEAD"], { encoding: "utf-8" })
-    .stdout?.trim() || crypto.randomUUID()
+// Revision used by Serwist to version the precached offline page.
+// Prefer environment variables (stable per deploy, no spawnSync overhead)
+// over shelling out to git, as recommended by Serwist's own docs.
+const revision: string =
+  process.env.VERCEL_GIT_COMMIT_SHA ||
+  process.env.VERCEL_DEPLOYMENT_ID ||
+  crypto.randomUUID()
 
 export const { dynamic, dynamicParams, revalidate, generateStaticParams, GET } =
   createSerwistRoute({
