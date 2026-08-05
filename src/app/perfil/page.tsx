@@ -2,72 +2,21 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { LogOut, User, MapPin, Phone, Mail, Lock, Package, Pencil, ChevronRight, AlertTriangle } from "lucide-react"
+import { LogOut, User, MapPin, Phone, Mail, Lock, Package, Pencil, ChevronRight, AlertTriangle, RotateCcw, XCircle } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { CustomerShell } from "@/components/customer/CustomerShell"
 import { ProfileHeader } from "@/components/customer/ProfileHeader"
 import { ProfileSection } from "@/components/customer/ProfileSection"
 import { ProfileRow } from "@/components/customer/ProfileRow"
 import { ProfileEditList } from "@/components/customer/ProfileEditList"
+import { AddressForm } from "@/components/customer/AddressForm"
 import { Button } from "@/components/ui/Button"
 import { Input } from "@/components/ui/Input"
 import { FormField } from "@/components/ui/FormField"
 import { useHapticFeedback } from "@/hooks/useHapticFeedback"
 import { useCart } from "@/hooks/useCart"
 
-type Profile = {
-  id: string
-  name: string
-  email: string
-  phone: string | null
-  addressCep?: string | null
-  addressStreet?: string | null
-  addressNumber?: string | null
-  addressComplement?: string | null
-  addressNeighborhood?: string | null
-  addressCity?: string | null
-  addressState?: string | null
-  hasPassword?: boolean
-}
-
-type AddressState = {
-  cep: string
-  street: string
-  number: string
-  complement: string
-  neighborhood: string
-  city: string
-  state: string
-}
-
-const EMPTY_ADDRESS: AddressState = { cep: "", street: "", number: "", complement: "", neighborhood: "", city: "", state: "" }
-
-type PublicOrderItem = {
-  id: string
-  qty: number
-  price: number
-  product: { id: string; name: string } | null
-  name: string | null
-}
-
-type PublicOrder = {
-  id: string
-  status: string
-  total: number
-  pickupCode: string | null
-  createdAt: string
-  items: PublicOrderItem[]
-}
-
-const statusLabel: Record<string, string> = {
-  PENDENTE: "Recebido",
-  CONFIRMADO: "Confirmado",
-  PRODUCAO: "Em produção",
-  PRONTO: "Pronto",
-  ENTREGA: "Em entrega",
-  CONCLUIDO: "Finalizado",
-  CANCELADO: "Cancelado",
-}
+import type { AddressState, PublicOrder } from "@/lib/customer-types"
 
 const formatBRL = (v: number) =>
   v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
@@ -195,7 +144,7 @@ export default function PerfilPage() {
     }
   }
 
-  const addressValue = [
+const addressValue = [
     profile?.addressStreet && profile?.addressNumber ? `${profile.addressStreet}, ${profile.addressNumber}` : profile?.addressStreet,
     profile?.addressComplement,
     profile?.addressNeighborhood,
@@ -213,6 +162,21 @@ export default function PerfilPage() {
     { label: "Bairro", name: "neighborhood", value: editAddress.neighborhood, onChange: (v: string) => setEditAddress({ ...editAddress, neighborhood: v }), autoComplete: "off" },
     { label: "UF", name: "state", value: editAddress.state, onChange: (v: string) => setEditAddress({ ...editAddress, state: v.toUpperCase() }), maxLength: 2, autoComplete: "address-level1" },
   ]
+
+  const quickFillAddress = () => {
+    if (profile?.addressStreet && profile?.addressNumber) {
+      setEditAddress({
+        cep: profile.addressCep || "",
+        street: profile.addressStreet,
+        number: profile.addressNumber,
+        complement: profile.addressComplement || "",
+        neighborhood: profile.addressNeighborhood || "",
+        city: profile.addressCity || "",
+        state: profile.addressState || "",
+      })
+      haptic.tap()
+    }
+  }
 
   return (
     <CustomerShell cartCount={count}>
@@ -274,7 +238,27 @@ export default function PerfilPage() {
 
               <motion.div variants={itemVariants}>
                 <ProfileSection icon={<MapPin className="w-4 h-4" />} title="Endereço de Entrega">
-                  {editing ? null : (
+                  {editing ? (
+                    <>
+                      <AddressForm
+                        address={editAddress}
+                        onChange={setEditAddress}
+                        showOptionalFields={false}
+                      />
+                      <div className="px-4 mt-3">
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          className="w-full"
+                          onClick={quickFillAddress}
+                          disabled={!profile?.addressStreet || !profile?.addressNumber}
+                        >
+                          <MapPin className="w-4 h-4" />
+                          Usar endereço salvo
+                        </Button>
+                      </div>
+                    </>
+                  ) : (
                     <>
                       {addressValue.length > 0 ? (
                         <ProfileRow label="Endereço" value={addressValue.join(" · ")} />
@@ -352,9 +336,9 @@ export default function PerfilPage() {
                 ) : (
                   <div className="flex items-center gap-2 p-3 rounded-lg border border-danger/30 bg-danger/5">
                     <AlertTriangle className="w-4 h-4 text-danger shrink-0" />
-                    <p className="text-sm text-ink flex-1">Tem certeza que deseja sair?</p>
-                    <Button variant="secondary" size="sm" onClick={() => setShowLogoutConfirm(false)}>Cancelar</Button>
-                    <Button size="sm" className="bg-danger text-paper hover:bg-danger/90" onClick={handleLogout}>Sair</Button>
+                    <p className="text-sm text-ink flex-1">Tem certeza que deseja sair? Esta ação não pode ser desfeita.</p>
+                    <Button variant="secondary" size="sm" onClick={() => setShowLogoutConfirm(false)}>Voltar</Button>
+                    <Button size="sm" className="bg-danger text-paper hover:bg-danger/90" onClick={handleLogout} disabled={saving}>Sair</Button>
                   </div>
                 )}
               </motion.div>
