@@ -5,6 +5,7 @@ import { SerwistProvider } from "@serwist/turbopack/react"
 import Providers from "./providers"
 import { LoadingScreen } from "@/components/layout/LoadingScreen"
 import { UpdateWatcher } from "@/components/pwa/UpdateWatcher"
+import { WebVitals } from "@/components/layout/WebVitals"
 
 const inter = Inter({
   subsets: ["latin"],
@@ -74,6 +75,10 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body className="h-full font-body">
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="theme-color" content="#111111" />
         <link
           rel="apple-touch-startup-image"
           media="(device-width: 393px) and (device-height: 852px)"
@@ -98,6 +103,7 @@ export default function RootLayout({
           <Providers>
             <LoadingScreen />
             <UpdateWatcher />
+            <WebVitals />
             {children}
           </Providers>
         </SerwistProvider>

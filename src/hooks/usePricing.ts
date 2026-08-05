@@ -49,6 +49,7 @@ export function usePricing(options?: UsePricingOptions) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const lastCartKeyRef = useRef<string>('')
+  const lastResultRef = useRef<PricingResult | null>(null)
 
   useEffect(() => {
     if (!cartItems.length) return
@@ -61,6 +62,10 @@ export function usePricing(options?: UsePricingOptions) {
     const timeout = setTimeout(() => {
       lastCartKeyRef.current = cartKey
       controller = new AbortController()
+
+      if (lastResultRef.current) {
+        setPricingResult(lastResultRef.current)
+      }
       setLoading(true)
       setError(null)
 
@@ -85,7 +90,11 @@ export function usePricing(options?: UsePricingOptions) {
             throw new Error(data?.error || 'Failed to calculate price')
           }
 
-          if (!cancelled) setPricingResult(await res.json() as PricingResult)
+          const result = await res.json() as PricingResult
+          if (!cancelled) {
+            lastResultRef.current = result
+            setPricingResult(result)
+          }
         } catch (err) {
           if (cancelled || controller?.signal.aborted) return
           if (err instanceof Error) setError(err.message)

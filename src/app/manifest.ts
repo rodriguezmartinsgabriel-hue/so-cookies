@@ -10,6 +10,30 @@ export default function manifest(): MetadataRoute.Manifest {
     background_color: "#F7F3EC",
     theme_color: "#111111",
     orientation: "portrait",
+    categories: ["food", "restaurant", "ordering"],
+    shortcuts: [
+      {
+        name: "Cardápio",
+        short_name: "Cardápio",
+        description: "Ver cardápio e pedir",
+        url: "/cardapio",
+        icons: [{ src: "/icons/icon-192.png", sizes: "192x192", type: "image/png" }],
+      },
+      {
+        name: "Carrinho",
+        short_name: "Carrinho",
+        description: "Ver carrinho de pedidos",
+        url: "/carrinho",
+        icons: [{ src: "/icons/icon-192.png", sizes: "192x192", type: "image/png" }],
+      },
+      {
+        name: "Pedidos",
+        short_name: "Pedidos",
+        description: "Ver pedidos anteriores",
+        url: "/pedido",
+        icons: [{ src: "/icons/icon-192.png", sizes: "192x192", type: "image/png" }],
+      },
+    ],
     icons: [
       {
         src: "/icons/icon-192.png",

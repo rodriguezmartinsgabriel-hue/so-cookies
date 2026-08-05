@@ -14,7 +14,8 @@ export function useQueryData<E extends DataEntity>(entity: E) {
   const query = useQuery({
     queryKey: [entity],
     queryFn: () => repository[entity].getAll() as Promise<EntityRow<E>[]>,
-    staleTime: 30_000,
+    staleTime: 10_000,
+    gcTime: 60_000,
   })
 
   const invalidate = useCallback(() => {

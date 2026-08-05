@@ -1,6 +1,6 @@
 import { defaultCache } from "@serwist/next/worker"
 import type { PrecacheEntry, SerwistGlobalConfig } from "serwist"
-import { Serwist, NetworkFirst, ExpirationPlugin, CacheableResponsePlugin } from "serwist"
+import { Serwist, StaleWhileRevalidate, ExpirationPlugin, CacheableResponsePlugin } from "serwist"
 import { pushPendingChanges, pullChanges } from "../lib/sync-service"
 
 declare global {
@@ -20,21 +20,21 @@ const serwist = new Serwist({
     {
       matcher: ({ request, sameOrigin, url }) =>
         sameOrigin && request.method === "GET" && url.pathname.startsWith("/api/"),
-      handler: new NetworkFirst({
+      handler: new StaleWhileRevalidate({
         cacheName: "api-get",
-        networkTimeoutSeconds: 3,
         plugins: [
           new CacheableResponsePlugin({ statuses: [0, 200] }),
-          new ExpirationPlugin({ maxEntries: 50, maxAgeSeconds: 7 * 24 * 60 * 60 }),
+          new ExpirationPlugin({ maxEntries: 100, maxAgeSeconds: 7 * 24 * 60 * 60 }),
         ],
       }),
     },
     {
       matcher: ({ request }) => request.destination === "document",
-      handler: new NetworkFirst({
+      handler: new StaleWhileRevalidate({
         cacheName: "pages",
-        networkTimeoutSeconds: 4,
-        plugins: [new ExpirationPlugin({ maxEntries: 30, maxAgeSeconds: 7 * 24 * 60 * 60 })],
+        plugins: [
+          new ExpirationPlugin({ maxEntries: 30, maxAgeSeconds: 7 * 24 * 60 * 60 }),
+        ],
       }),
     },
     ...defaultCache,
