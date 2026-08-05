@@ -75,6 +75,9 @@ export async function getPixPayment(paymentId: string): Promise<MercadoPagoPixPa
     headers: { Authorization: `Bearer ${mpAccessToken()}` },
   })
   if (!res.ok) {
+    if (res.status === 404) {
+      throw new PaymentError("PAYMENT_NOT_FOUND", "Pagamento não encontrado no Mercado Pago")
+    }
     throw new PaymentError("PROVIDER_ERROR", `Mercado Pago falhou ao consultar pagamento (${res.status})`)
   }
   return res.json() as Promise<MercadoPagoPixPayment>

@@ -33,7 +33,8 @@ export async function POST(request: Request) {
 
   try {
     await handlePaymentWebhook({ paymentId: dataId })
-  } catch {
+  } catch (error) {
+    console.error("[webhook] erro ao processar", error)
     return NextResponse.json({ error: "Erro ao processar webhook" }, { status: 500 })
   }
 

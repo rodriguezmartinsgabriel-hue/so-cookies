@@ -74,7 +74,21 @@ export async function createOrderPayment(orderId: string) {
 }
 
 export async function handlePaymentWebhook(input: { paymentId: string }): Promise<{ ok: true; action: string }> {
-  const payment = await getPixPayment(input.paymentId)
+  let payment: Awaited<ReturnType<typeof getPixPayment>>
+  try {
+    payment = await getPixPayment(input.paymentId)
+  } catch (error) {
+    if (error instanceof PaymentError && error.code === "PAYMENT_NOT_FOUND") {
+      await logPaymentEvent({
+        paymentId: input.paymentId,
+        action: "payment.updated",
+        status: "IGNORED",
+        payload: { error: "payment_not_found" },
+      })
+      return { ok: true, action: "payment_not_found" }
+    }
+    throw error
+  }
 
   let order: { id: string; total: number; status: string; paymentStatus: string | null } | null = null
   const externalRef = payment.external_reference

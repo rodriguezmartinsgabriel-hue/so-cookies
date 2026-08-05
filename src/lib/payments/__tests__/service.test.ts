@@ -187,6 +187,27 @@ describe("handlePaymentWebhook", () => {
     expect(mocks.orderUpdate).not.toHaveBeenCalled()
   })
 
+  it("pagamento não encontrado no MP é ignorado com 200", async () => {
+    mocks.getPixPayment.mockRejectedValue(new PaymentError("PAYMENT_NOT_FOUND", "Pagamento não encontrado no Mercado Pago"))
+    mocks.orderFindUnique.mockResolvedValue(null)
+
+    const result = await handlePaymentWebhook({ paymentId: "999" })
+
+    expect(result).toEqual({ ok: true, action: "payment_not_found" })
+    expect(mocks.orderUpdate).not.toHaveBeenCalled()
+    expect(mocks.paymentEventCreate).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({ action: "payment.updated", status: "IGNORED" }),
+    }))
+  })
+
+  it("erro do provedor (não 404) propaga", async () => {
+    mocks.getPixPayment.mockRejectedValue(new PaymentError("PROVIDER_ERROR", "falha"))
+    mocks.orderFindUnique.mockResolvedValue(null)
+
+    await expect(handlePaymentWebhook({ paymentId: "999" })).rejects.toMatchObject({ code: "PROVIDER_ERROR" })
+    expect(mocks.paymentEventCreate).not.toHaveBeenCalled()
+  })
+
   it("notificação sem pedido correspondente é ignorada", async () => {
     mocks.getPixPayment.mockResolvedValue({
       id: 999,

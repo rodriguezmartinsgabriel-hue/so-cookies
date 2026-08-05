@@ -129,13 +129,23 @@ describe("mercadopago.getPixPayment", () => {
     }))
   })
 
-  it("lança PaymentError em resposta não-ok", async () => {
+  it("lança PAYMENT_NOT_FOUND em resposta 404", async () => {
     process.env.MERCADO_PAGO_ACCESS_TOKEN = "APP_USR-teste"
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
       ok: false,
       status: 404,
       json: async () => ({}),
     }))
-    await expect(getPixPayment("123")).rejects.toBeInstanceOf(PaymentError)
+    await expect(getPixPayment("123")).rejects.toMatchObject({ code: "PAYMENT_NOT_FOUND" })
+  })
+
+  it("lança PROVIDER_ERROR em resposta 500", async () => {
+    process.env.MERCADO_PAGO_ACCESS_TOKEN = "APP_USR-teste"
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
+      ok: false,
+      status: 500,
+      json: async () => ({}),
+    }))
+    await expect(getPixPayment("123")).rejects.toMatchObject({ code: "PROVIDER_ERROR" })
   })
 })
