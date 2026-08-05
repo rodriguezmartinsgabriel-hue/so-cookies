@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from "react"
 import { usePathname } from "next/navigation"
 import Image from "next/image"
 
+const SPLASH_KEY = "splash-shown"
+
 const CLIENT_ROUTES = ["/", "/cardapio", "/carrinho", "/entrar", "/cadastro", "/perfil", "/pedido", "/pedidos", "/vendas", "/contatos", "/estoque", "/produtos", "/receitas", "/canais", "/caixa", "/delivery", "/rotas", "/integracoes", "/producao", "/documentos", "/relatorios", "/usuarios", "/indicadores"]
 
 function isClientRoute(pathname: string) {
@@ -12,25 +14,43 @@ function isClientRoute(pathname: string) {
   )
 }
 
+function hasSplashBeenShown(): boolean {
+  try {
+    return sessionStorage.getItem(SPLASH_KEY) === "true"
+  } catch {
+    return true
+  }
+}
+
+function markSplashShown() {
+  try {
+    sessionStorage.setItem(SPLASH_KEY, "true")
+  } catch {}
+}
+
 export function LoadingScreen() {
   const pathname = usePathname()
   const [phase, setPhase] = useState<"hidden" | "visible" | "fading" | "done">("hidden")
-  const dismissed = useRef(false)
+  const mounted = useRef(false)
 
   useEffect(() => {
+    if (mounted.current) return
     if (!isClientRoute(pathname)) return
-    if (dismissed.current) return
-    dismissed.current = true
+    if (hasSplashBeenShown()) return
+    mounted.current = true
 
-    setPhase("visible")
+    const show = setTimeout(() => {
+      setPhase("visible")
+      markSplashShown()
+      const fade = setTimeout(() => setPhase("fading"), 1500)
+      const done = setTimeout(() => setPhase("done"), 2100)
+      return () => {
+        clearTimeout(fade)
+        clearTimeout(done)
+      }
+    }, 50)
 
-    const timer = setTimeout(() => {
-      setPhase("fading")
-      const timer2 = setTimeout(() => setPhase("done"), 600)
-      return () => clearTimeout(timer2)
-    }, 1500)
-
-    return () => clearTimeout(timer)
+    return () => clearTimeout(show)
   }, [pathname])
 
   if (!isClientRoute(pathname)) return null

@@ -1,8 +1,10 @@
 import "./globals.css"
 import type { Metadata, Viewport } from "next"
 import { Inter, Space_Grotesk } from "next/font/google"
+import { SerwistProvider } from "@serwist/turbopack/react"
 import Providers from "./providers"
 import { LoadingScreen } from "@/components/layout/LoadingScreen"
+import { UpdateWatcher } from "@/components/pwa/UpdateWatcher"
 
 const inter = Inter({
   subsets: ["latin"],
@@ -52,7 +54,7 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#000000" },
+    { media: "(prefers-color-scheme: light)", color: "#111111" },
     { media: "(prefers-color-scheme: dark)", color: "#ede9e2" },
   ],
   width: "device-width",
@@ -92,10 +94,13 @@ export default function RootLayout({
           media="(device-width: 402px) and (device-height: 874px)"
           href="/icons/splash-1206x2622.png"
         />
-        <Providers>
-          <LoadingScreen />
-          {children}
-        </Providers>
+        <SerwistProvider swUrl="/serwist/sw.js" reloadOnOnline={false}>
+          <Providers>
+            <LoadingScreen />
+            <UpdateWatcher />
+            {children}
+          </Providers>
+        </SerwistProvider>
       </body>
     </html>
   )
