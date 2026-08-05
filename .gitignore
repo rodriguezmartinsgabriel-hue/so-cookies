@@ -80,3 +80,9 @@ planilha_data.*
 /xlsx_extracted/
 /package.json.backup
 /package-lock.json.backup
+
+# opencode tooling local
+/.opencode/
+/.agents/
+/opencode.json
+/skills-lock.json
