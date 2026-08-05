@@ -201,7 +201,25 @@ export async function createCustomerOrder(
     try {
       await createOrderPayment(order.id)
     } catch (e) {
-      await prisma.order.delete({ where: { id: order.id } }).catch(() => {})
+      const message = e instanceof Error ? e.message : String(e)
+      console.error("[orders] Falha ao criar pagamento PIX para pedido %s: %s", order.id, message)
+      if (e instanceof PaymentError) {
+        await prisma.order.update({
+          where: { id: order.id },
+          data: {
+            paymentStatus: "EXPIRADO",
+            paymentProvider: "MERCADO_PAGO",
+            paymentExpiresAt: new Date(),
+            status: "CANCELADO",
+            updatedAt: new Date(),
+          },
+        }).catch(() => {})
+        const failed = await prisma.order.findUnique({
+          where: { id: order.id },
+          include: { items: { include: { product: true } }, deliveryRoute: true, deliveryZone: true },
+        })
+        if (failed) return failed
+      }
       throw e
     }
     const paid = await prisma.order.findUnique({
