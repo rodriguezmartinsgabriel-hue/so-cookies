@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { LogOut, User, MapPin, Phone, Mail, Lock, Package, Pencil, ChevronRight } from "lucide-react"
+import { LogOut, User, MapPin, Phone, Mail, Lock, Package, Pencil, ChevronRight, AlertTriangle } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { CustomerShell } from "@/components/customer/CustomerShell"
 import { ProfileHeader } from "@/components/customer/ProfileHeader"
@@ -101,6 +101,7 @@ export default function PerfilPage() {
   const [pwNew, setPwNew] = useState("")
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState<{ type: "ok" | "err"; text: string } | null>(null)
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
 
   useEffect(() => {
     Promise.all([
@@ -344,9 +345,18 @@ export default function PerfilPage() {
               </motion.div>
 
               <motion.div variants={itemVariants} className="pt-2 pb-4">
-                <Button variant="secondary" size="md" className="w-full" onClick={handleLogout}>
-                  <span className="text-danger"><LogOut className="w-4 h-4" /> Sair</span>
-                </Button>
+                {!showLogoutConfirm ? (
+                  <Button variant="secondary" size="md" className="w-full" onClick={() => setShowLogoutConfirm(true)}>
+                    <span className="text-danger"><LogOut className="w-4 h-4" /> Sair</span>
+                  </Button>
+                ) : (
+                  <div className="flex items-center gap-2 p-3 rounded-lg border border-danger/30 bg-danger/5">
+                    <AlertTriangle className="w-4 h-4 text-danger shrink-0" />
+                    <p className="text-sm text-ink flex-1">Tem certeza que deseja sair?</p>
+                    <Button variant="secondary" size="sm" onClick={() => setShowLogoutConfirm(false)}>Cancelar</Button>
+                    <Button size="sm" className="bg-danger text-paper hover:bg-danger/90" onClick={handleLogout}>Sair</Button>
+                  </div>
+                )}
               </motion.div>
             </motion.div>
           )}

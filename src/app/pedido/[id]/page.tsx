@@ -1,8 +1,9 @@
 "use client"
 
 import { useCallback, useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { Package, Clock, Store, Truck, MapPin, X } from "lucide-react"
+import { Package, Clock, Store, Truck, MapPin, X, RotateCcw, XCircle, AlertTriangle } from "lucide-react"
 import { CustomerShell } from "@/components/customer/CustomerShell"
 import { OrderStatusTimeline, statusLabel, statusOrder } from "@/components/customer/OrderStatusTimeline"
 import { Card } from "@/components/ui/Card"
@@ -89,10 +90,13 @@ export default function PedidoPage({ params }: { params: Promise<{ id: string }>
   const [order, setOrder] = useState<PublicOrder | null>(null)
   const [notFound, setNotFound] = useState(false)
   const [loading, setLoading] = useState(true)
-  const { count } = useCart()
-  const haptic = useHapticFeedback()
+   const { count } = useCart()
+   const haptic = useHapticFeedback()
+   const router = useRouter()
 
   const [showDeliveryModal, setShowDeliveryModal] = useState(false)
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false)
+  const [actionLoading, setActionLoading] = useState(false)
   const [slots, setSlots] = useState<DeliverySlot[]>([])
   const [slotsLoading, setSlotsLoading] = useState(false)
   const [selectedSlot, setSelectedSlot] = useState<DeliverySlot | null>(null)
@@ -202,6 +206,56 @@ export default function PedidoPage({ params }: { params: Promise<{ id: string }>
     }
   }
 
+  async function handleCancelOrder() {
+    if (!order) return
+    setActionLoading(true)
+    setDeliveryError("")
+    try {
+      const res = await fetch(`/api/public/orders/${order.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "CANCELADO" }),
+      })
+      if (!res.ok) {
+        const data = await res.json().catch(() => null)
+        setDeliveryError(data?.error || "Não foi possível cancelar o pedido")
+        return
+      }
+      setShowCancelConfirm(false)
+      await load(order.id)
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
+  async function handleReorder() {
+    if (!order) return
+    setActionLoading(true)
+    try {
+      const body = {
+        items: order.items.map((item) => ({ productId: item.product?.id ?? "", qty: item.qty })),
+      }
+      const res = await fetch("/api/public/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      })
+      if (res.status === 401) {
+        router.push(`/entrar?next=${encodeURIComponent("/pedido/" + order.id)}`)
+        return
+      }
+      if (!res.ok) {
+        const data = await res.json().catch(() => null)
+        setDeliveryError(data?.error || "Não foi possível repetir o pedido")
+        return
+      }
+      const newOrder = await res.json()
+      router.push(`/pedido/${newOrder.id}`)
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
   const stepIndex = order ? statusOrder.indexOf(order.status) : -1
   const cancelled = order?.status === "CANCELADO"
   const isDelivery = Boolean(order?.deliveryDate)
@@ -287,6 +341,31 @@ export default function PedidoPage({ params }: { params: Promise<{ id: string }>
                     <Truck className="w-4 h-4" />
                     {isDelivery ? "Alterar data / endereço de entrega" : "Agendar entrega"}
                   </Button>
+                )}
+
+                {order.status === "PENDENTE" && !cancelled && (
+                  <Button variant="danger" size="md" className="w-full" onClick={() => setShowCancelConfirm(true)} disabled={actionLoading}>
+                    <XCircle className="w-4 h-4" />
+                    Cancelar pedido
+                  </Button>
+                )}
+
+                {order.status === "CONCLUIDO" && (
+                  <Button size="md" className="w-full" onClick={handleReorder} disabled={actionLoading}>
+                    <RotateCcw className="w-4 h-4" />
+                    Pedir de novo
+                  </Button>
+                )}
+
+                {showCancelConfirm && (
+                  <div className="flex items-center gap-2 p-3 rounded-lg border border-danger/30 bg-danger/5">
+                    <AlertTriangle className="w-4 h-4 text-danger shrink-0" />
+                    <p className="text-sm text-ink flex-1">Tem certeza? Esta ação não pode ser desfeita.</p>
+                    <Button variant="secondary" size="sm" onClick={() => setShowCancelConfirm(false)}>Voltar</Button>
+                    <Button size="sm" className="bg-danger text-paper hover:bg-danger/90" onClick={handleCancelOrder} disabled={actionLoading}>
+                      {actionLoading ? "Cancelando..." : "Cancelar"}
+                    </Button>
+                  </div>
                 )}
 
                 <Card>
