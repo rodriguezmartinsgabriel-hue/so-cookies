@@ -318,12 +318,20 @@ export default function PedidosPage() {
                             <span className="text-xs font-medium text-muted">#{o.id.slice(0, 6)}</span>
                             <span className="text-xs text-muted">{o.createdAt ? new Date(o.createdAt).toLocaleDateString("pt-BR") : ""}</span>
                           </div>
-                          <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2">
                           <p className="text-sm font-medium text-ink truncate">{o.customer}</p>
                           {o.customerId && (
                             <Badge variant="info" className="shrink-0" title="Cliente cadastrado pelo app">
                               <Smartphone className="w-3 h-3" /> App
                             </Badge>
+                          )}
+                          {o.paymentStatus === "PAGO" && (
+                            <Badge variant="success" className="shrink-0">
+                              <Check className="w-3 h-3" /> Pago
+                            </Badge>
+                          )}
+                          {o.paymentStatus === "AGUARDANDO_PAGAMENTO" && (
+                            <Badge variant="warning" className="shrink-0">PIX</Badge>
                           )}
                         </div>
                           <div className="flex items-center justify-between mt-2">
@@ -434,7 +442,20 @@ export default function PedidosPage() {
                 )}
                 <div>
                   <p className="text-xs text-muted uppercase tracking-wide mb-1">Status</p>
-                  <Badge variant="neutral">{order.status}</Badge>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Badge variant="neutral">{order.status}</Badge>
+                    {order.paymentStatus === "PAGO" && (
+                      <Badge variant="success">
+                        <Check className="w-3 h-3" /> Pago via {order.paymentProvider === "MERCADO_PAGO" ? "PIX" : order.paymentProvider || "online"}
+                      </Badge>
+                    )}
+                    {order.paymentStatus === "AGUARDANDO_PAGAMENTO" && (
+                      <Badge variant="warning">Aguardando pagamento</Badge>
+                    )}
+                    {order.paymentStatus === "EXPIRADO" && (
+                      <Badge variant="danger">Pagamento expirado</Badge>
+                    )}
+                  </div>
                 </div>
                 {order.pickupCode && (
                   <div>

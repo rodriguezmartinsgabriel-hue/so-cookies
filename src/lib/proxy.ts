@@ -26,7 +26,9 @@ function isCustomerRoute(pathname: string) {
     pathname === "/perfil" ||
     pathname.startsWith("/perfil/") ||
     pathname === "/pedido" ||
-    pathname.startsWith("/pedido/")
+    pathname.startsWith("/pedido/") ||
+    pathname === "/pagamento" ||
+    pathname.startsWith("/pagamento/")
   );
 }
 
@@ -39,7 +41,8 @@ function isProtectedCustomerRoute(pathname: string) {
     (pathname === "/cardapio" || pathname.startsWith("/cardapio/")) ||
     (pathname === "/carrinho" || pathname.startsWith("/carrinho/")) ||
     (pathname === "/perfil" || pathname.startsWith("/perfil/")) ||
-    (pathname === "/pedido" || pathname.startsWith("/pedido/"))
+    (pathname === "/pedido" || pathname.startsWith("/pedido/")) ||
+    (pathname === "/pagamento" || pathname.startsWith("/pagamento/"))
   );
 }
 
@@ -60,7 +63,8 @@ function isInfraRoute(pathname: string) {
 function isWebhookRoute(pathname: string) {
   return (
     pathname.startsWith("/api/integrations/99food/webhook") ||
-    pathname.startsWith("/api/integrations/ifood/webhook")
+    pathname.startsWith("/api/integrations/ifood/webhook") ||
+    pathname.startsWith("/api/payments/webhook/mercadopago")
   );
 }
 

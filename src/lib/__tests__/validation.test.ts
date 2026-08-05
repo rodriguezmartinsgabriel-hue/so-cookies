@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { createOrderSchema, createSaleSchema, createIngredientSchema, createCashFlowSchema, createRecipeSchema, updateRecipeSchema, createDocumentSchema, updateDocumentSchema, createProductionSchema, createPriceTierSchema, createProductSchema, updateCustomerProfileSchema } from "@/lib/validation"
+import { createOrderSchema, createSaleSchema, createIngredientSchema, createCashFlowSchema, createRecipeSchema, updateRecipeSchema, createDocumentSchema, updateDocumentSchema, createProductionSchema, createPriceTierSchema, createProductSchema, updateCustomerProfileSchema, createCustomerOrderSchema } from "@/lib/validation"
 
 describe("createOrderSchema", () => {
   it("accepts valid order", () => {
@@ -314,5 +314,21 @@ describe("updateCustomerProfileSchema", () => {
 
   it("rejects empty object (nothing to update)", () => {
     expect(() => updateCustomerProfileSchema.parse({})).toThrow()
+  })
+})
+
+describe("createCustomerOrderSchema", () => {
+  const base = { items: [{ productId: "p1", qty: 2 }] }
+
+  it("aceita paymentMethod PIX", () => {
+    expect(createCustomerOrderSchema.safeParse({ ...base, paymentMethod: "PIX" }).success).toBe(true)
+  })
+
+  it("aceita pedido sem paymentMethod (padrão atual)", () => {
+    expect(createCustomerOrderSchema.safeParse(base).success).toBe(true)
+  })
+
+  it("rejeita paymentMethod desconhecido", () => {
+    expect(createCustomerOrderSchema.safeParse({ ...base, paymentMethod: "CARTÃO" }).success).toBe(false)
   })
 })

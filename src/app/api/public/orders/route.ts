@@ -3,6 +3,7 @@ import { requireCustomer } from "@/lib/customer-auth"
 import { createCustomerOrder, getCustomerOrders } from "@/lib/customer-orders"
 import { createCustomerOrderSchema, getZodIssues } from "@/lib/validation"
 import { SlotError } from "@/lib/delivery-scheduling"
+import { PaymentError } from "@/lib/payments/errors"
 import { rateLimit } from "@/lib/rate-limit"
 
 export async function GET() {
@@ -35,6 +36,10 @@ export async function POST(request: Request) {
     }
     if (e instanceof SlotError) {
       const status = e.code === "NOT_FOUND" ? 404 : 409
+      return NextResponse.json({ error: e.message, code: e.code }, { status })
+    }
+    if (e instanceof PaymentError) {
+      const status = e.code === "PAYMENTS_DISABLED" ? 503 : 400
       return NextResponse.json({ error: e.message, code: e.code }, { status })
     }
     return NextResponse.json({ error: "Erro ao criar pedido" }, { status: 500 })

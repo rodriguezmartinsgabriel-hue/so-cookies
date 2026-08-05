@@ -3,6 +3,8 @@ import { toCatalogProduct, type CatalogProduct } from "./utils"
 import { assertSlotAvailable, SlotError } from "./delivery-scheduling"
 import { buildPricingEngine } from "@so-cookies/pricing"
 import { PricingContext } from "@so-cookies/pricing"
+import { createOrderPayment } from "./payments/service"
+import { PaymentError } from "./payments/errors"
 
 const PICKUP_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
 
@@ -75,6 +77,7 @@ export async function createCustomerOrder(
   input: {
     items: { productId: string; qty: number }[]
     couponCode?: string | null
+    paymentMethod?: "PIX" | null
     deliveryDate?: string | null
     deliveryRouteId?: string | null
     deliveryCep?: string | null
@@ -169,7 +172,7 @@ export async function createCustomerOrder(
 
   const total = pricingResult.total
 
-  return prisma.order.create({
+  const order = await prisma.order.create({
     data: {
       channel: "Só App",
       customer: customer.name,
@@ -193,6 +196,22 @@ export async function createCustomerOrder(
     },
     include: { items: { include: { product: true } }, deliveryRoute: true, deliveryZone: true },
   })
+
+  if (input.paymentMethod === "PIX") {
+    try {
+      await createOrderPayment(order.id)
+    } catch (e) {
+      await prisma.order.delete({ where: { id: order.id } }).catch(() => {})
+      throw e
+    }
+    const paid = await prisma.order.findUnique({
+      where: { id: order.id },
+      include: { items: { include: { product: true } }, deliveryRoute: true, deliveryZone: true },
+    })
+    if (paid) return paid
+  }
+
+  return order
 }
 
 export async function updateCustomerOrder(
@@ -298,6 +317,47 @@ export async function updateCustomerOrder(
   return prisma.order.update({
     where: { id: orderId },
     data,
+    include: { items: { include: { product: true } }, deliveryRoute: true, deliveryZone: true },
+  })
+}
+
+export async function retryCustomerOrderPayment(customerId: string, orderId: string) {
+  const existing = await prisma.order.findFirst({
+    where: { id: orderId, customerId },
+    include: { items: { select: { qty: true } } },
+  })
+  if (!existing) throw new SlotError("NOT_FOUND", "Pedido não encontrado")
+  if (existing.paymentStatus === "PAGO") {
+    throw new PaymentError("ALREADY_PAID", "Este pedido já foi pago")
+  }
+
+  const expired =
+    existing.paymentStatus === "EXPIRADO" ||
+    (existing.paymentStatus === "AGUARDANDO_PAGAMENTO" &&
+      existing.paymentExpiresAt != null &&
+      existing.paymentExpiresAt.getTime() < Date.now())
+  if (!expired) {
+    throw new PaymentError("PAYMENT_PENDING", "O pagamento atual ainda está válido")
+  }
+
+  const totalItems = existing.items.reduce((s, i) => s + i.qty, 0)
+  if (existing.deliveryRouteId && existing.deliveryDate) {
+    await assertSlotAvailable({
+      routeId: existing.deliveryRouteId,
+      date: existing.deliveryDate.toISOString().slice(0, 10),
+      newItems: totalItems,
+      excludeOrderId: orderId,
+    })
+  }
+
+  await createOrderPayment(orderId)
+  await prisma.order.update({
+    where: { id: orderId },
+    data: { status: "PENDENTE", paidAt: null, updatedAt: new Date() },
+  })
+
+  return prisma.order.findUnique({
+    where: { id: orderId },
     include: { items: { include: { product: true } }, deliveryRoute: true, deliveryZone: true },
   })
 }

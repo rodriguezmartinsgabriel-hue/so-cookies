@@ -239,12 +239,23 @@ model Order {
   platformFee          Float?
   confirmBy            DateTime?
   pickupCode           String?
+
+  paymentStatus       PaymentStatus?
+  paymentProvider     String?
+  paymentProviderId   String?   @unique
+  paymentExternalRef  String?
+  paymentQrCode       String?   @db.Text
+  paymentQrCodeBase64 String?   @db.Text
+  paymentExpiresAt    DateTime?
+  paidAt              DateTime?
+
   createdAt            DateTime    @default(now())
   updatedAt            DateTime    @updatedAt
 
-  items         OrderItem[]
-  sale          Sale?
-  deliveryCosts DeliveryCost[]
+  items          OrderItem[]
+  sale           Sale?
+  deliveryCosts  DeliveryCost[]
+  paymentEvents  PaymentEvent[]
 
   customerId  String?
   customerRef Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
@@ -274,6 +285,30 @@ enum OrderStatus {
   ENTREGA
   CONCLUIDO
   CANCELADO
+}
+
+enum PaymentStatus {
+  AGUARDANDO_PAGAMENTO
+  PAGO
+  EXPIRADO
+  CANCELADO
+}
+
+model PaymentEvent {
+  id         String   @id @default(cuid())
+  orderId    String?
+  paymentId  String?
+  type       String
+  action     String
+  payload    Json
+  status     String   @default("RECEIVED")
+  receivedAt DateTime @default(now())
+
+  order Order? @relation(fields: [orderId], references: [id], onDelete: SetNull)
+
+  @@index([orderId])
+  @@index([paymentId])
+  @@index([receivedAt])
 }
 
 model OrderItem {

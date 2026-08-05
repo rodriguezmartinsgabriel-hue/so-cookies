@@ -163,6 +163,7 @@ export default function CarrinhoPage() {
     try {
       const body: Record<string, unknown> = {
         items: lines.map((l) => ({ productId: l.productId, qty: l.qty })),
+        paymentMethod: "PIX",
       }
       const code = couponCode.trim()
       if (code) body.couponCode = code
@@ -196,7 +197,7 @@ export default function CarrinhoPage() {
       const order = await res.json()
       clear()
       setShowConfirm(false)
-      router.push(`/pedido/${order.id}`)
+      router.push(`/pagamento/${order.id}`)
     } finally {
       setSubmitting(false)
     }

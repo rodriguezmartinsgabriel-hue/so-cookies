@@ -155,6 +155,8 @@ export type Order = {
   confirmBy: string | null
   pickupCode: string | null
   customerId: string | null
+  paymentStatus: string | null
+  paymentProvider: string | null
   customerRef?: { id: string; name: string; email: string | null; phone: string | null } | null
   createdAt: string
   updatedAt: string

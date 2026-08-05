@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { Package, Clock, Store, Truck, MapPin, X, RotateCcw, XCircle, AlertTriangle, Share2, Check } from "lucide-react"
+import { Package, Clock, Store, Truck, MapPin, X, RotateCcw, XCircle, AlertTriangle, Share2, Check, QrCode } from "lucide-react"
 import { CustomerShell } from "@/components/customer/CustomerShell"
 import { OrderStatusTimeline, statusLabel, statusOrder } from "@/components/customer/OrderStatusTimeline"
 import { Card } from "@/components/ui/Card"
@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/Button"
 import { Input } from "@/components/ui/Input"
 import { FormField } from "@/components/ui/FormField"
 import { GlassSurface } from "@/components/ui/GlassSurface"
+import { Badge } from "@/components/ui/Badge"
 import { useFocusTrap } from "@/hooks/useFocusTrap"
 import { useCart } from "@/hooks/useCart"
 import { useHapticFeedback } from "@/hooks/useHapticFeedback"
@@ -63,6 +64,7 @@ type PublicOrder = {
   deliveryCity: string | null
   deliveryState: string | null
   items: PublicOrderItem[]
+  paymentStatus?: string | null
 }
 
 type AddressState = {
@@ -385,7 +387,21 @@ export default function PedidoPage({ params }: { params: Promise<{ id: string }>
                       Pedido concluído
                     </div>
                   )}
+                  {order.paymentStatus === "PAGO" && (
+                    <div className="mt-3 border-t border-line pt-3">
+                      <Badge variant="success">
+                        <Check className="w-3 h-3" /> Pago via PIX
+                      </Badge>
+                    </div>
+                  )}
                 </Card>
+
+                {order.paymentStatus === "AGUARDANDO_PAGAMENTO" && order.status === "PENDENTE" && (
+                  <Button size="md" className="w-full" onClick={() => router.push(`/pagamento/${order.id}`)}>
+                    <QrCode className="w-4 h-4" />
+                    Completar pagamento via PIX
+                  </Button>
+                )}
 
                 {canChange && !cancelled && (
                   <Button variant="secondary" size="md" className="w-full" onClick={() => { haptic.selection(); openDeliveryModal() }}>

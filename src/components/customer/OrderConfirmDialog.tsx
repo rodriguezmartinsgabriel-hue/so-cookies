@@ -88,6 +88,12 @@ export function OrderConfirmDialog({
             </div>
           )}
 
+          <div className="mb-3">
+            <p className="text-sm font-semibold text-ink mb-1">Pagamento</p>
+            <p className="text-xs text-ink">PIX (QR Code) · pagamento antecipado</p>
+            <p className="text-xs text-muted mt-0.5">O pedido é confirmado automaticamente após a confirmação do pagamento.</p>
+          </div>
+
           <div className="flex items-center justify-between border-t border-line pt-3 mb-4">
             <span className="font-semibold text-ink">Total</span>
             <span className="text-xl font-bold text-ink">{formatBRL(total)}</span>
