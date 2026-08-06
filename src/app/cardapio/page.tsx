@@ -95,6 +95,14 @@ export default function CardapioPage() {
     return map
   }, [items])
 
+  const resolvedPriceByProduct = useMemo(() => {
+    const map = new Map<string, number>()
+    for (const it of pricingResult?.state.items ?? []) {
+      if (it.qty > 0) map.set(it.productId, it.priceAfterDiscount)
+    }
+    return map
+  }, [pricingResult])
+
   const categoryStart = useMemo(() => {
     const start = new Map<string, number>()
     let running = 0
@@ -169,6 +177,8 @@ export default function CardapioPage() {
                         onCollapse={() => setExpandedId(null)}
                         onAdd={() => addItem(p.id)}
                         onSetQty={(q) => setQty(p.id, q)}
+                        availableTiers={pricingResult?.state.availableTiers?.[p.id]}
+                        resolvedUnitPrice={resolvedPriceByProduct.get(p.id)}
                       />
                     </div>
                   )

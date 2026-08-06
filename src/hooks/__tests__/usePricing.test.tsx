@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest"
-import { renderHook, waitFor } from "@testing-library/react"
-import { usePricing } from "@/hooks/usePricing"
+import { renderHook, waitFor, act } from "@testing-library/react"
+import { usePricing, PRICING_DEBOUNCE_MS } from "@/hooks/usePricing"
 
 vi.mock("@/hooks/useCart", () => ({
   useCart: vi.fn(),
@@ -226,5 +226,103 @@ describe("usePricing", () => {
       },
       { timeout: 2000 },
     )
+  })
+
+  it("coalesces rapid quantity changes via debounce (PRICING_DEBOUNCE_MS)", async () => {
+    mockCart([{ productId: "p1", qty: 1 }])
+    const fetchSpy = mockFetchSuccess(samplePricingResult)
+
+    const { result, rerender } = renderHook(
+      ({ qty }: { qty: number }) => {
+        ;(useCart as ReturnType<typeof vi.fn>).mockReturnValue({ items: [{ productId: "p1", qty }] })
+        return usePricing()
+      },
+      { initialProps: { qty: 1 } },
+    )
+
+    await waitFor(
+      () => {
+        expect(result.current.result).toEqual(samplePricingResult)
+      },
+      { timeout: 2000 },
+    )
+    expect(fetchSpy).toHaveBeenCalledTimes(1)
+
+    // Mudanças rápidas (antes do debounce expirar) devem coalescer em um único fetch.
+    rerender({ qty: 2 })
+    rerender({ qty: 3 })
+    rerender({ qty: 4 })
+
+    await waitFor(
+      () => {
+        expect(fetchSpy).toHaveBeenCalledTimes(2)
+      },
+      { timeout: 2000 },
+    )
+    const [, opts] = (fetchSpy as ReturnType<typeof vi.fn>).mock.calls[1]
+    expect(JSON.parse(opts.body).items).toEqual([{ productId: "p1", qty: 4 }])
+  })
+
+  it("exposes PRICING_DEBOUNCE_MS as a small (<100ms) constant for instant feel", () => {
+    expect(PRICING_DEBOUNCE_MS).toBeLessThanOrEqual(100)
+  })
+
+  it("applies an optimistic preview based on available tiers from the previous result", async () => {
+    const tiersResult = {
+      ...samplePricingResult,
+      state: {
+        ...samplePricingResult.state,
+        availableTiers: {
+          p1: [
+            { id: "t1", productId: "p1", name: "Leve 3", minQty: 3, maxQty: 9, price: 9 },
+            { id: "t2", productId: "p1", name: "Leve 10", minQty: 10, maxQty: null, price: 8 },
+          ],
+        },
+      },
+    }
+
+    // Estado inicial: qty=1.
+    mockCart([{ productId: "p1", qty: 1 }])
+    mockFetchSuccess(tiersResult)
+
+    const { result, rerender } = renderHook(
+      ({ qty }: { qty: number }) => {
+        ;(useCart as ReturnType<typeof vi.fn>).mockReturnValue({ items: [{ productId: "p1", qty }] })
+        return usePricing()
+      },
+      { initialProps: { qty: 1 } },
+    )
+
+    // Aguarda o primeiro fetch terminar — popula lastResultRef com availableTiers.
+    await waitFor(() => {
+      expect(result.current.result?.state.availableTiers).toBeDefined()
+    })
+
+    // Bloqueia novos fetches (fetch pendurado infinito).
+    let resolvePending: ((v: unknown) => void) | null = null
+    global.fetch = vi.fn().mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolvePending = resolve
+        }),
+    ) as unknown as typeof fetch
+
+    // Muda para qty=3. Após o debounce, o optimistic preview deve aplicar
+    // o tier "Leve 3" (price 9) imediatamente, mesmo com o fetch em voo.
+    rerender({ qty: 3 })
+
+    await waitFor(() => {
+      const items = result.current.result?.state.items ?? []
+      const item = items.find((it) => it.productId === "p1")
+      expect(item?.priceAfterDiscount).toBe(9)
+    })
+
+    // Cleanup: resolve o fetch pendurado se ele tiver sido iniciado.
+    await act(async () => {
+      if (resolvePending) {
+        resolvePending({ ok: true, json: async () => tiersResult })
+      }
+      await Promise.resolve()
+    })
   })
 })

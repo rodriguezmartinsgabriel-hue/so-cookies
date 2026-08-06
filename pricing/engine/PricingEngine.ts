@@ -78,9 +78,13 @@ export class PricingEngine {
     const summary = this.summaryCalculator.calculate(newState)
     this.metrics.record("pricing", "totals_calculation_time", Date.now() - totalsStart)
 
+    // 5.5 Expor tiers disponíveis no estado para a UI cliente poder mostrar
+    //     progressão ("Faltam N para R$ X,XX/un"). Read-only, não muda regras.
+    const stateWithTiers = this.attachAvailableTiers(newState, data)
+
     // 6. Criar resultado
     const result: PricingResult = {
-      state: newState,
+      state: stateWithTiers,
       total: summary.total,
       summary,
       auditTrail: await this.audit.createTrail(context, newState, actions, Date.now() - startTime),
@@ -110,6 +114,23 @@ export class PricingEngine {
       blocked: false,
       version: "1.0.0",
     }
+  }
+
+  private attachAvailableTiers(state: PricingState, data: PricingData): PricingState {
+    const availableTiers: Record<string, Array<{ id: string; productId: string; name: string; minQty: number; maxQty: number | null; price: number }>> = {}
+    for (const [productId, tiers] of Object.entries(data.priceTiers ?? {})) {
+      availableTiers[productId] = tiers
+        .filter((t) => t.enabled)
+        .map((t) => ({
+          id: t.id,
+          productId: t.productId,
+          name: t.name,
+          minQty: t.minQty,
+          maxQty: t.maxQty ?? null,
+          price: t.price.toNumber(),
+        }))
+    }
+    return { ...state, availableTiers }
   }
 
   private async executePhases(

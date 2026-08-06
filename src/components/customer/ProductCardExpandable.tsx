@@ -4,17 +4,21 @@ import { useCallback, useEffect, useRef, useState } from "react"
 import { Plus, Minus, ShoppingBag } from "lucide-react"
 import NextImage from "next/image"
 import type { CatalogProduct } from "@/lib/utils"
-import { formatBRL } from "@/lib/utils"
 import { Button } from "@/components/ui/Button"
 import { CalorieBadge } from "@/components/ui/CalorieBadge"
 import { NutritionFacts } from "@/components/customer/NutritionFacts"
+import { PriceTag } from "@/components/customer/PriceTag"
+import { VolumeDiscountHint } from "@/components/customer/VolumeDiscountHint"
 import { useHapticFeedback } from "@/hooks/useHapticFeedback"
+import type { AvailablePriceTier } from "@/hooks/usePricing"
 
 type ProductCardExpandableProps = {
   product: CatalogProduct
   qty: number
   onSetQty: (qty: number) => void
   onCollapse: () => void
+  availableTiers?: AvailablePriceTier[]
+  resolvedUnitPrice?: number
 }
 
 const ALLERGEN_LABELS: Record<string, string> = {
@@ -35,7 +39,14 @@ const TAG_LABELS: Record<string, string> = {
   SEM_LACTOSE: "Sem lactose",
 }
 
-export function ProductCardExpandable({ product, qty, onSetQty, onCollapse }: ProductCardExpandableProps) {
+export function ProductCardExpandable({
+  product,
+  qty,
+  onSetQty,
+  onCollapse,
+  availableTiers,
+  resolvedUnitPrice,
+}: ProductCardExpandableProps) {
   const haptic = useHapticFeedback()
   const panelRef = useRef<HTMLDivElement>(null)
   const activeElementRef = useRef<HTMLElement | null>(null)
@@ -130,9 +141,25 @@ export function ProductCardExpandable({ product, qty, onSetQty, onCollapse }: Pr
           <div className="min-w-0 flex flex-col gap-3 animate-fade-in-up">
             <div>
               <h2 className="text-xl font-bold text-ink">{product.name}</h2>
-              <p className="text-sm text-muted mt-0.5">
-                {formatBRL(product.price)} / {product.unit}
-              </p>
+              <div className="mt-0.5">
+                <PriceTag
+                  basePrice={product.price}
+                  qty={qty}
+                  unit={product.unit}
+                  tiers={availableTiers}
+                  resolvedUnitPrice={resolvedUnitPrice}
+                  size="md"
+                />
+              </div>
+              {qty > 0 && availableTiers && availableTiers.length > 0 && (
+                <div className="mt-2">
+                  <VolumeDiscountHint
+                    tiers={availableTiers}
+                    qty={qty}
+                    basePrice={product.price}
+                  />
+                </div>
+              )}
             </div>
 
             <div className="flex items-center gap-2 flex-wrap">

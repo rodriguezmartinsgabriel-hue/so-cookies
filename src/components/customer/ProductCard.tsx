@@ -4,11 +4,13 @@ import { useCallback, memo } from "react"
 import { Plus, Minus, Cookie, ChevronDown } from "lucide-react"
 import NextImage from "next/image"
 import type { CatalogProduct } from "@/lib/utils"
-import { formatBRL } from "@/lib/utils"
 import { Card } from "@/components/ui/Card"
 import { Button } from "@/components/ui/Button"
 import { CalorieBadge } from "@/components/ui/CalorieBadge"
+import { PriceTag } from "@/components/customer/PriceTag"
+import { VolumeDiscountHint } from "@/components/customer/VolumeDiscountHint"
 import { useHapticFeedback } from "@/hooks/useHapticFeedback"
+import type { AvailablePriceTier } from "@/hooks/usePricing"
 import { ProductCardExpandable } from "./ProductCardExpandable"
 
 type ProductCardProps = {
@@ -19,6 +21,10 @@ type ProductCardProps = {
   onCollapse: () => void
   onAdd: () => void
   onSetQty: (qty: number) => void
+  /** Tiers de preço disponíveis para este produto (do Pricing Engine). */
+  availableTiers?: AvailablePriceTier[]
+  /** Preço unitário já calculado pelo Pricing Engine (após descontos). */
+  resolvedUnitPrice?: number
 }
 
 const ALLERGEN_LABELS: Record<string, string> = {
@@ -39,7 +45,7 @@ const TAG_LABELS: Record<string, string> = {
   SEM_LACTOSE: "Sem lactose",
 }
 
-export const ProductCard = memo(function ProductCard({ product, qty, isExpanded, onExpand, onCollapse, onAdd, onSetQty }: ProductCardProps) {
+export const ProductCard = memo(function ProductCard({ product, qty, isExpanded, onExpand, onCollapse, onAdd, onSetQty, availableTiers, resolvedUnitPrice }: ProductCardProps) {
   const haptic = useHapticFeedback()
   const n = product.nutrition
 
@@ -125,11 +131,24 @@ export const ProductCard = memo(function ProductCard({ product, qty, isExpanded,
         <div className="min-w-0 flex-1">
           <p className="text-sm font-semibold text-ink truncate">{product.name}</p>
           <div className="flex items-center gap-2 flex-wrap mt-0.5">
-            <p className="text-xs text-muted">
-              {formatBRL(product.price)} / {product.unit}
-            </p>
+            <PriceTag
+              basePrice={product.price}
+              qty={qty}
+              unit={product.unit}
+              tiers={availableTiers}
+              resolvedUnitPrice={resolvedUnitPrice}
+            />
             <CalorieBadge calories={n?.caloriesPerUnit ?? null} variant="inline" />
           </div>
+          {qty > 0 && availableTiers && availableTiers.length > 0 && (
+            <div className="mt-1">
+              <VolumeDiscountHint
+                tiers={availableTiers}
+                qty={qty}
+                basePrice={product.price}
+              />
+            </div>
+          )}
 
           {n?.tags && n.tags.length > 0 && (
             <div className="flex flex-wrap gap-1 mt-1">
@@ -203,7 +222,16 @@ export const ProductCard = memo(function ProductCard({ product, qty, isExpanded,
       </div>
 
       {/* Painel expandido inline (sem overlay, sem modal) */}
-      {isExpanded && <ProductCardExpandable product={product} qty={qty} onSetQty={onSetQty} onCollapse={onCollapse} />}
+      {isExpanded && (
+        <ProductCardExpandable
+          product={product}
+          qty={qty}
+          onSetQty={onSetQty}
+          onCollapse={onCollapse}
+          availableTiers={availableTiers}
+          resolvedUnitPrice={resolvedUnitPrice}
+        />
+      )}
     </Card>
   )
 })

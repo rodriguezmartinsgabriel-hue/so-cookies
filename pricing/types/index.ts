@@ -28,6 +28,18 @@ export interface PricingState {
   shipping?: { cost: number }
   freeShipping?: boolean
   subtotal?: number
+  /** Tiers de preço disponíveis por produto (somente leitura, exposto no payload público para a UI). */
+  availableTiers?: Record<string, PriceTierView[]>
+}
+
+// Visão pública (read-only) de um PriceTier exposta no payload público.
+export interface PriceTierView {
+  id: string
+  productId: string
+  name: string
+  minQty: number
+  maxQty: number | null
+  price: number
 }
 
 // Item de preço

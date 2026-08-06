@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import { Minus, Plus, Trash2, Cookie, Truck, Store, Clock } from "lucide-react"
 import NextImage from "next/image"
@@ -20,6 +20,8 @@ import { CalorieBadge } from "@/components/ui/CalorieBadge"
 import { Skeleton } from "@/components/ui/Skeleton"
 import { Input } from "@/components/ui/Input"
 import { FormField } from "@/components/ui/FormField"
+import { PriceTag } from "@/components/customer/PriceTag"
+import { VolumeDiscountHint } from "@/components/customer/VolumeDiscountHint"
 import { motion, AnimatePresence } from "framer-motion"
 
 import type { CatalogProduct } from "@/lib/utils"
@@ -131,6 +133,15 @@ export default function CarrinhoPage() {
 
   // Usar Pricing Engine v2 quando disponível, caso contrário usar cálculo simples
   const total = result?.total ?? lines.reduce((s, l) => s + l.product.price * l.qty, 0)
+
+  // Mapa de preço unitário efetivo por produto (com tier aplicado) para o PriceTag.
+  const resolvedUnitPriceByProduct = useMemo(() => {
+    const map = new Map<string, number>()
+    for (const it of result?.state.items ?? []) {
+      if (it.qty > 0) map.set(it.productId, it.priceAfterDiscount)
+    }
+    return map
+  }, [result])
 
   function setField<K extends keyof AddressState>(key: K, value: string) {
     setAddress((prev) => ({ ...prev, [key]: value }))
@@ -284,10 +295,25 @@ export default function CarrinhoPage() {
                           )}
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-semibold text-ink truncate">{l.product.name}</p>
-                            <div className="flex items-center gap-2">
-                              <p className="text-xs text-muted">{formatBRL(l.product.price)}</p>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <PriceTag
+                                basePrice={l.product.price}
+                                qty={l.qty}
+                                unit={l.product.unit}
+                                tiers={result?.state.availableTiers?.[l.productId]}
+                                resolvedUnitPrice={resolvedUnitPriceByProduct.get(l.productId)}
+                              />
                               <CalorieBadge calories={l.product.nutrition?.caloriesPerUnit ?? null} variant="compact" />
                             </div>
+                            {l.qty > 0 && result?.state.availableTiers?.[l.productId]?.length ? (
+                              <div className="mt-1 max-w-[18rem]">
+                                <VolumeDiscountHint
+                                  tiers={result.state.availableTiers[l.productId]}
+                                  qty={l.qty}
+                                  basePrice={l.product.price}
+                                />
+                              </div>
+                            ) : null}
                           </div>
                           <div className="flex items-center gap-1 sm:gap-2">
                             <Button
@@ -535,14 +561,27 @@ export default function CarrinhoPage() {
                 <Card padded={false}>
                   <div className="p-4 space-y-3">
                     <p className="text-sm font-semibold text-ink">Resumo dos itens</p>
-                    {lines.map((l) => (
-                      <div key={l.productId} className="flex items-center justify-between text-sm">
-                        <span className="text-ink">
-                          {l.qty}x {l.product.name}
-                        </span>
-                        <span className="text-muted">{formatBRL(l.product.price * l.qty)}</span>
-                      </div>
-                    ))}
+                    {lines.map((l) => {
+                      const resolved = resolvedUnitPriceByProduct.get(l.productId)
+                      const hasDiscount = resolved !== undefined && resolved < l.product.price
+                      return (
+                        <div key={l.productId} className="flex items-center justify-between text-sm gap-3">
+                          <span className="text-ink min-w-0 truncate">
+                            {l.qty}x {l.product.name}
+                          </span>
+                          <div className="flex flex-col items-end shrink-0">
+                            <span className="font-semibold text-ink">
+                              {formatBRL((resolved ?? l.product.price) * l.qty)}
+                            </span>
+                            {hasDiscount && (
+                              <span className="text-[11px] text-muted line-through decoration-muted/60">
+                                {formatBRL(l.product.price * l.qty)}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      )
+                    })}
                   </div>
                 </Card>
 

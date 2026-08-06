@@ -3,6 +3,17 @@
 import { useCart } from "./useCart"
 import { useState, useEffect, useRef } from "react"
 
+export const PRICING_DEBOUNCE_MS = 80
+
+export interface AvailablePriceTier {
+  id: string
+  productId: string
+  name: string
+  minQty: number
+  maxQty: number | null
+  price: number
+}
+
 export interface PricingResult {
   state: {
     items: Array<{
@@ -19,6 +30,7 @@ export interface PricingResult {
     shipping?: { cost: number }
     warnings?: Array<{ message: string; type?: string }>
     freeShipping?: boolean
+    availableTiers?: Record<string, AvailablePriceTier[]>
   }
   total: number
   summary: {
@@ -63,7 +75,14 @@ export function usePricing(options?: UsePricingOptions) {
       lastCartKeyRef.current = cartKey
       controller = new AbortController()
 
-      if (lastResultRef.current) {
+      // Optimistic preview: enquanto o fetch real não volta, aplicamos os tiers
+      // conhecidos localmente (do resultado anterior) ao novo cartKey, para que a
+      // UI reaja de forma instantânea à mudança de quantidade.
+      const optimistic = buildOptimisticResult(lastResultRef.current, cartItems, channel, couponCode)
+      if (optimistic) {
+        lastResultRef.current = optimistic
+        setPricingResult(optimistic)
+      } else if (lastResultRef.current) {
         setPricingResult(lastResultRef.current)
       }
       setLoading(true)
@@ -105,7 +124,7 @@ export function usePricing(options?: UsePricingOptions) {
       }
 
       run()
-    }, 400)
+    }, PRICING_DEBOUNCE_MS)
 
     return () => {
       cancelled = true
@@ -120,5 +139,63 @@ export function usePricing(options?: UsePricingOptions) {
     loading: isEmpty ? false : loading,
     error,
     formatBRL: (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }),
+  }
+}
+
+/**
+ * Constrói um resultado otimista reaproveitando o `availableTiers` do último
+ * resultado conhecido. Aplica a faixa correspondente à `qty` de cada item para
+ * que a UI mostre o preço com desconto imediatamente, sem esperar o fetch real.
+ *
+ * Se não houver `availableTiers` ainda (primeira chamada), retorna null e a UI
+ * mantém o último estado conhecido sem desconto.
+ */
+function buildOptimisticResult(
+  last: PricingResult | null,
+  cartItems: Array<{ productId: string; qty: number }>,
+  _channel: string,
+  _couponCode: string | null,
+): PricingResult | null {
+  if (!last) return null
+  const tiersByProduct = last.state.availableTiers
+  if (!tiersByProduct) return null
+
+  const optimisticItems = cartItems.map((i) => {
+    const prev = last.state.items.find((it) => it.productId === i.productId)
+    const basePrice = prev?.basePrice ?? 0
+    const tiers = tiersByProduct[i.productId] ?? []
+    const tier = tiers.find((t) => t.minQty <= i.qty && (t.maxQty === null || t.maxQty >= i.qty))
+    const finalUnitPrice = tier ? tier.price : basePrice
+    return {
+      productId: i.productId,
+      name: prev?.name ?? "",
+      qty: i.qty,
+      basePrice,
+      calculatedPrice: finalUnitPrice,
+      priceAfterDiscount: finalUnitPrice,
+    }
+  })
+
+  const subtotal = optimisticItems.reduce((s, it) => s + it.priceAfterDiscount * it.qty, 0)
+  const originalPrice = optimisticItems.reduce((s, it) => s + it.basePrice * it.qty, 0)
+  const discountTotal = Math.max(0, originalPrice - subtotal)
+  const discountPercent = originalPrice > 0 ? (discountTotal / originalPrice) * 100 : 0
+
+  return {
+    ...last,
+    state: {
+      ...last.state,
+      items: optimisticItems,
+      subtotal,
+    },
+    total: subtotal + (last.state.shipping?.cost ?? 0),
+    summary: {
+      ...last.summary,
+      originalPrice,
+      subtotal,
+      discountTotal,
+      discountPercent,
+      total: subtotal + (last.summary.shippingTotal ?? 0),
+    },
   }
 }
