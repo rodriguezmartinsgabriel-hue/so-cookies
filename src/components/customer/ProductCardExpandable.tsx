@@ -109,15 +109,14 @@ export function ProductCardExpandable({ product, qty, onSetQty, onCollapse }: Pr
           {/* FOTO GRANDE */}
           <div className="relative w-full aspect-square md:aspect-[4/3] rounded-xl overflow-hidden bg-cream animate-scale-in">
             {product.image ? (
-              <NextImage
-                src={product.image}
-                alt={product.name}
-                fill
-                unoptimized
-                priority
-                sizes="(max-width: 768px) 100vw, 224px"
-                className="w-full h-full object-cover"
-              />
+            <NextImage
+              src={product.image}
+              alt={product.name}
+              fill
+              priority
+              sizes="(max-width: 768px) 100vw, 224px"
+              className="w-full h-full object-cover"
+            />
             ) : (
               <div className="w-full h-full flex items-center justify-center bg-cream">
                 <div className="w-24 h-24 rounded-full bg-ink/5 flex items-center justify-center">

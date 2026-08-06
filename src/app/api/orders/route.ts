@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { getOrders, createOrder } from "@/lib/db"
+import { getOrdersPaginated, createOrder } from "@/lib/db"
 import { requireAuth } from "@/lib/api-auth"
 import { createOrderSchema, getZodIssues } from "@/lib/validation"
 
@@ -8,8 +8,11 @@ export async function GET(request: Request) {
   if (error) return error
 
   try {
-    const orders = await getOrders()
-    return NextResponse.json(orders)
+    const { searchParams } = new URL(request.url)
+    const cursor = searchParams.get("cursor")
+    const limit = Number(searchParams.get("limit")) || undefined
+    const result = await getOrdersPaginated({ cursor, take: limit })
+    return NextResponse.json(result)
   } catch {
     return NextResponse.json({ error: "Erro ao listar pedidos" }, { status: 500 })
   }

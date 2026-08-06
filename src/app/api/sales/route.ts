@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { getSales, createSale } from "@/lib/db"
+import { getSalesPaginated, createSale } from "@/lib/db"
 import { requireAuth } from "@/lib/api-auth"
 import { createSaleSchema, getZodIssues } from "@/lib/validation"
 
@@ -8,8 +8,11 @@ export async function GET(request: Request) {
   if (error) return error
 
   try {
-    const sales = await getSales()
-    return NextResponse.json(sales)
+    const { searchParams } = new URL(request.url)
+    const cursor = searchParams.get("cursor")
+    const limit = Number(searchParams.get("limit")) || undefined
+    const result = await getSalesPaginated({ cursor, take: limit })
+    return NextResponse.json(result)
   } catch {
     return NextResponse.json({ error: "Erro ao listar vendas" }, { status: 500 })
   }

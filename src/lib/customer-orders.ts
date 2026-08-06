@@ -42,35 +42,77 @@ export async function getCustomerCatalog(): Promise<CatalogProduct[]> {
   const products = await prisma.product.findMany({
     where: { active: true, deletedAt: null },
     orderBy: [{ category: "asc" }, { name: "asc" }],
-    include: {
-      recipes: {
+  })
+
+  if (products.length === 0) return []
+
+  const productIds = products.map((p) => p.id)
+  const recipes = await prisma.recipe.findMany({
+    where: { productId: { in: productIds } },
+    select: {
+      productId: true,
+      image: true,
+      yield: true,
+      yieldUnit: true,
+      ingredients: {
         select: {
-          image: true,
-          yield: true,
-          yieldUnit: true,
-          ingredients: {
+          qty: true,
+          unit: true,
+          ingredient: {
             select: {
-              qty: true,
-              unit: true,
-              ingredient: {
-                select: {
-                  name: true,
-                  brand: true,
-                  caloriesPer100g: true,
-                  proteinPer100g: true,
-                  carbsPer100g: true,
-                  fatPer100g: true,
-                  allergens: true,
-                  tags: true,
-                },
-              },
+              name: true,
+              brand: true,
+              caloriesPer100g: true,
+              proteinPer100g: true,
+              carbsPer100g: true,
+              fatPer100g: true,
+              allergens: true,
+              tags: true,
             },
           },
         },
       },
     },
   })
-  return products.map(toCatalogProduct)
+
+  const recipesByProduct = new Map<string, typeof recipes>()
+  for (const recipe of recipes) {
+    const list = recipesByProduct.get(recipe.productId ?? "") ?? []
+    list.push(recipe)
+    recipesByProduct.set(recipe.productId ?? "", list)
+  }
+
+  return products.map((product) => {
+    const productRecipes = recipesByProduct.get(product.id) ?? []
+    return toCatalogProduct({
+      id: product.id,
+      name: product.name,
+      category: product.category,
+      price: product.price,
+      unit: product.unit,
+      image: product.image,
+      description: product.description,
+      recipes: productRecipes.map((r) => ({
+        image: r.image,
+        yield: r.yield,
+        yieldUnit: r.yieldUnit,
+        ingredients: r.ingredients.map((ri) => ({
+          qty: ri.qty,
+          unit: ri.unit,
+          ingredient: {
+            name: ri.ingredient.name,
+            brand: ri.ingredient.brand,
+            caloriesPer100g: ri.ingredient.caloriesPer100g,
+            proteinPer100g: ri.ingredient.proteinPer100g,
+            carbsPer100g: ri.ingredient.carbsPer100g,
+            fatPer100g: ri.ingredient.fatPer100g,
+            allergens: ri.ingredient.allergens,
+            tags: ri.ingredient.tags,
+          },
+        })),
+      })),
+    })
+  })
 }
 
 export async function createCustomerOrder(

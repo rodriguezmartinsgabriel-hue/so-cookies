@@ -3,7 +3,7 @@ import type { Role, ContactType, InteractionType, DocumentCategory } from "@/gen
 import type { Prisma } from "@/generated/prisma/client"
 import type { Decimal } from "@prisma/client/runtime/client"
 import { pushOrderStatusToPlatform } from "./integrations/push"
-import { computeMargin, toNumber } from "./utils"
+import { computeMargin, toNumber, type ListArgs, type Paginated } from "./utils"
 
 export function isNotFoundError(e: unknown): boolean {
   return typeof e === "object" && e !== null && "code" in e && e.code === "P2025"
@@ -65,6 +65,20 @@ export async function getDashboardKpis() {
 
 export async function getProducts() {
   return prisma.product.findMany({ where: { deletedAt: null }, orderBy: { name: "asc" } })
+}
+
+export async function getProductsPaginated(args: ListArgs = {}): Promise<Paginated<Awaited<ReturnType<typeof getProducts>>[number]>> {
+  const take = args.take ?? 50
+  const rows = await prisma.product.findMany({
+    take: take + 1,
+    ...(args.cursor ? { cursor: { id: args.cursor }, skip: 1 } : {}),
+    orderBy: { name: "asc" },
+    where: { deletedAt: null },
+  })
+  const hasMore = rows.length > take
+  const data = hasMore ? rows.slice(0, take) : rows
+  const nextCursor = hasMore ? (rows[take]?.id ?? null) : null
+  return { data, nextCursor }
 }
 
 export async function getAllProducts() {
@@ -187,6 +201,23 @@ export async function getOrders() {
     },
     orderBy: { createdAt: "desc" },
   })
+}
+
+export async function getOrdersPaginated(args: ListArgs = {}): Promise<Paginated<Awaited<ReturnType<typeof getOrders>>[number]>> {
+  const take = args.take ?? 50
+  const rows = await prisma.order.findMany({
+    take: take + 1,
+    ...(args.cursor ? { cursor: { id: args.cursor }, skip: 1 } : {}),
+    orderBy: { createdAt: "desc" },
+    include: {
+      items: { include: { product: true } },
+      customerRef: { select: { id: true, name: true, email: true, phone: true } },
+    },
+  })
+  const hasMore = rows.length > take
+  const data = hasMore ? rows.slice(0, take) : rows
+  const nextCursor = hasMore ? (rows[take]?.id ?? null) : null
+  return { data, nextCursor }
 }
 
 export async function getOrder(id: string) {
@@ -483,6 +514,20 @@ export async function getSales() {
     include: { channel: true, items: { include: { product: true } }, user: { select: userSafeSelect } },
     orderBy: { createdAt: "desc" },
   })
+}
+
+export async function getSalesPaginated(args: ListArgs = {}): Promise<Paginated<Awaited<ReturnType<typeof getSales>>[number]>> {
+  const take = args.take ?? 50
+  const rows = await prisma.sale.findMany({
+    take: take + 1,
+    ...(args.cursor ? { cursor: { id: args.cursor }, skip: 1 } : {}),
+    orderBy: { createdAt: "desc" },
+    include: { channel: true, items: { include: { product: true } }, user: { select: userSafeSelect } },
+  })
+  const hasMore = rows.length > take
+  const data = hasMore ? rows.slice(0, take) : rows
+  const nextCursor = hasMore ? (rows[take]?.id ?? null) : null
+  return { data, nextCursor }
 }
 
 export async function getSale(id: string) {

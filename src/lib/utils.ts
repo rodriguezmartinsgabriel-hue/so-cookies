@@ -34,6 +34,10 @@ export function formatBRL(value: number): string {
 
 export const formatCurrency = formatBRL
 
+/** Tipos para paginação cursor-based. */
+export type ListArgs = { cursor?: string | null; take?: number }
+export type Paginated<T> = { data: T[]; nextCursor: string | null }
+
 export function resolveProductImage(
   product: { image?: string | null },
   recipe?: { image?: string | null } | null,

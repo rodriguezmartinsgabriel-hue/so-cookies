@@ -110,7 +110,8 @@ export function ProductCard({ product, qty, isExpanded, onExpand, onCollapse, on
                 src={product.image}
                 alt={product.name}
                 fill
-                unoptimized
+                sizes="(max-width: 768px) 64px, 64px"
+                loading="lazy"
                 className="w-full h-full object-cover drop-shadow-[0_4px_12px_rgba(0,0,0,0.12)]"
               />
             ) : (

@@ -59,7 +59,7 @@ export function Sidebar() {
       <div className="flex items-center justify-between h-14 px-3 border-b border-line">
         {!collapsed && (
           <div className="flex items-center gap-2">
-            <Image src="/logo.svg" alt="Só Cookies & Café" width={40} height={40} unoptimized className="h-10 w-auto" />
+            <Image src="/logo.svg" alt="Só Cookies & Café" width={40} height={40} className="h-10 w-auto" />
             <span className="text-sm font-medium text-muted hidden sm:block">Só Cookies</span>
           </div>
         )}

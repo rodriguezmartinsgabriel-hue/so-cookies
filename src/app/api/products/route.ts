@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { getProducts, createProduct } from "@/lib/db"
+import { getProductsPaginated, createProduct } from "@/lib/db"
 import { requireAuth } from "@/lib/api-auth"
 import { createProductSchema, getZodIssues } from "@/lib/validation"
 
@@ -8,8 +8,11 @@ export async function GET(request: Request) {
   if (error) return error
 
   try {
-    const products = await getProducts()
-    return NextResponse.json(products)
+    const { searchParams } = new URL(request.url)
+    const cursor = searchParams.get("cursor")
+    const limit = Number(searchParams.get("limit")) || undefined
+    const result = await getProductsPaginated({ cursor, take: limit })
+    return NextResponse.json(result)
   } catch {
     return NextResponse.json({ error: "Erro ao listar produtos" }, { status: 500 })
   }

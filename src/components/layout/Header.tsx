@@ -87,7 +87,7 @@ export function Header({ user, onLogout }: { user?: User; onLogout: () => void }
             <ChevronLeft className="w-6 h-6" strokeWidth={1.5} />
           </button>
         )}
-        <Image src="/logo.svg" alt="Só Cookies & Café" width={32} height={32} unoptimized className="h-8 w-auto" />
+        <Image src="/logo.svg" alt="Só Cookies & Café" width={32} height={32} className="h-8 w-auto" />
       </div>
 
       <div className="hidden lg:block" />
