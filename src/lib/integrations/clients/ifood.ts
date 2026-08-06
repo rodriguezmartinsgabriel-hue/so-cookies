@@ -5,9 +5,16 @@ import type { PlatformOrderDetails } from "../normalize"
 const IFOOD_TOKEN_URL = "https://merchant-api.ifood.com.br/authentication/v1.0/oauth/token"
 export const IFOOD_ORDER_BASE = "https://merchant-api.ifood.com.br/order/v1.0"
 
-export async function getIfoodToken(account: AccountRecord): Promise<string> {
+const DEFAULT_TTL_MS = 50 * 60 * 1000
+
+export async function getIfoodToken(account: AccountRecord, prisma?: { integrationAccount: { update: (args: { where: { id: string }, data: { cachedToken: string, tokenExpiresAt: Date } }) => Promise<unknown> } }): Promise<string> {
   const creds = account.credentials
   if (is99FoodCredentials(creds)) throw new Error("Credenciais iFood inválidas")
+
+  if (account.cachedToken && account.tokenExpiresAt && account.tokenExpiresAt.getTime() > Date.now()) {
+    return account.cachedToken
+  }
+
   const res = await fetch(IFOOD_TOKEN_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json", Accept: "application/json" },
@@ -21,6 +28,17 @@ export async function getIfoodToken(account: AccountRecord): Promise<string> {
   const json = await res.json()
   const token = json?.accessToken || json?.access_token
   if (!token) throw new Error("iFood token ausente na resposta")
+
+  const ttlMs = json?.expires_in ? Math.max(0, json.expires_in * 1000 - 60_000) : DEFAULT_TTL_MS
+  const tokenExpiresAt = new Date(Date.now() + ttlMs)
+
+  if (prisma) {
+    await prisma.integrationAccount.update({
+      where: { id: account.id },
+      data: { cachedToken: token, tokenExpiresAt },
+    })
+  }
+
   return token
 }
 

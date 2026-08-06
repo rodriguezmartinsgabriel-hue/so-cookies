@@ -46,6 +46,8 @@ const account99 = {
   storeName: null,
   enabled: true,
   credentials: { appId: "a", appShoppId: "s", clientSecret: "x" },
+  cachedToken: null,
+  tokenExpiresAt: null,
   lastSyncAt: null,
   lastError: null,
 }

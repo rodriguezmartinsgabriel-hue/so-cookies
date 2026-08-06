@@ -13,6 +13,8 @@ function toAccountRecord(row: {
   storeName: string | null
   enabled: boolean
   credentials: string
+  cachedToken: string | null
+  tokenExpiresAt: Date | null
   lastSyncAt: Date | null
   lastError: string | null
 }): AccountRecord {
@@ -22,6 +24,8 @@ function toAccountRecord(row: {
     storeName: row.storeName,
     enabled: row.enabled,
     credentials: decryptCredentials<AccountCredentials>(row.credentials),
+    cachedToken: row.cachedToken,
+    tokenExpiresAt: row.tokenExpiresAt,
     lastSyncAt: row.lastSyncAt ? row.lastSyncAt.toISOString() : null,
     lastError: row.lastError,
   }

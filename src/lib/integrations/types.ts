@@ -20,6 +20,8 @@ export type AccountRecord = {
   storeName: string | null
   enabled: boolean
   credentials: AccountCredentials
+  cachedToken: string | null
+  tokenExpiresAt: Date | null
   lastSyncAt: string | null
   lastError: string | null
 }

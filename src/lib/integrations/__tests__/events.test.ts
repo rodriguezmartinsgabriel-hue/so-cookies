@@ -40,6 +40,8 @@ const account99: AccountRecord = {
   storeName: "Loja 1",
   enabled: true,
   credentials: { appId: "app", appShoppId: "shop", clientSecret: "secret" },
+  cachedToken: null,
+  tokenExpiresAt: null,
   lastSyncAt: null,
   lastError: null,
 }
