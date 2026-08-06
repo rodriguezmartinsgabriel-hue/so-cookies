@@ -77,16 +77,24 @@ export function ProductCardExpandable({
     return () => document.removeEventListener("keydown", onKey)
   }, [handleCollapse])
 
-  const handleQtyDown = useCallback(() => {
-    if (qty <= 0) return
-    haptic.tap()
-    onSetQty(qty - 1)
-  }, [qty, onSetQty, haptic])
+  const handleQtyDown = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation()
+      if (qty <= 0) return
+      haptic.tap()
+      onSetQty(qty - 1)
+    },
+    [qty, onSetQty, haptic],
+  )
 
-  const handleQtyUp = useCallback(() => {
-    haptic.tap()
-    onSetQty(qty + 1)
-  }, [qty, onSetQty, haptic])
+  const handleQtyUp = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation()
+      haptic.tap()
+      onSetQty(qty + 1)
+    },
+    [qty, onSetQty, haptic],
+  )
 
   const n = product.nutrition
 
@@ -100,13 +108,18 @@ export function ProductCardExpandable({
       initial={{ opacity: 0, height: 0 }}
       animate={{ opacity: 1, height: "auto" }}
       exit={{ opacity: 0, height: 0 }}
-      transition={{ duration, ease: EASE_EXPRESSIVE }}
+      transition={{
+        height: { duration, ease: EASE_EXPRESSIVE },
+        opacity: { duration: duration * 0.6, ease: EASE_EXPRESSIVE },
+      }}
       className="overflow-hidden focus:outline-none"
     >
       <div className="grid grid-cols-1 md:grid-cols-[14rem_1fr] gap-4 p-3 pt-0">
-        {/* FOTO GRANDE — morph compartilhado com a miniatura do header */}
+        {/* FOTO GRANDE — entrada suave sem morph */}
         <motion.div
-          layoutId={`photo-${product.id}`}
+          initial={{ opacity: 0, scale: 0.96 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: duration * 0.9, ease: EASE_EXPRESSIVE, delay: duration * 0.05 }}
           className="relative w-full aspect-square md:aspect-[4/3] rounded-xl overflow-hidden bg-cream"
         >
           {product.image ? (
@@ -129,7 +142,12 @@ export function ProductCardExpandable({
         </motion.div>
 
         {/* CONTEÚDO à direita */}
-        <div className="min-w-0 flex flex-col gap-3">
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: duration * 0.7, ease: EASE_EXPRESSIVE, delay: duration * 0.1 }}
+          className="min-w-0 flex flex-col gap-3"
+        >
           <div>
             <h2 className="text-xl font-bold text-ink">{product.name}</h2>
             <p className="text-sm text-muted mt-0.5">
@@ -162,7 +180,7 @@ export function ProductCardExpandable({
           </div>
 
           {product.description && (
-            <p className="text-sm text-muted leading-relaxed">{product.description}</p>
+            <p className="text-sm text-muted leading-relaxed text-pretty">{product.description}</p>
           )}
 
           <NutritionFacts nutrition={n} />
@@ -183,34 +201,38 @@ export function ProductCardExpandable({
             </div>
           )}
 
-          <div className="flex items-center gap-2 pt-1">
-            <Button
-              variant="secondary"
-              size="icon"
-              className="!h-11 !w-11"
-              onClick={handleQtyDown}
-              aria-label="Diminuir quantidade"
-              disabled={qty <= 0}
-            >
-              <Minus className="w-4 h-4" />
-            </Button>
-            <span
-              className="w-8 text-center text-lg font-bold text-ink"
-              aria-label={`Quantidade atual ${qty}`}
-            >
-              {qty}
-            </span>
-            <Button
-              variant="primary"
-              size="icon"
-              className="!h-11 !w-11"
-              onClick={handleQtyUp}
-              aria-label="Aumentar quantidade"
-            >
-              <Plus className="w-4 h-4" />
-            </Button>
+          <div className="flex items-center pt-1">
+            <div className="inline-flex items-center gap-1 rounded-full bg-ink/[0.05] p-1">
+              <Button
+                variant="secondary"
+                size="icon"
+                className="!h-10 !w-10 !rounded-full"
+                whileTap={{ scale: 0.9 }}
+                onClick={handleQtyDown}
+                aria-label="Diminuir quantidade"
+                disabled={qty <= 0}
+              >
+                <Minus className="w-4 h-4" />
+              </Button>
+              <span
+                className="min-w-9 text-center text-base font-semibold text-ink tabular-nums"
+                aria-label={`Quantidade atual ${qty}`}
+              >
+                {qty}
+              </span>
+              <Button
+                variant="primary"
+                size="icon"
+                className="!h-10 !w-10 !rounded-full"
+                whileTap={{ scale: 0.9 }}
+                onClick={handleQtyUp}
+                aria-label="Aumentar quantidade"
+              >
+                <Plus className="w-4 h-4" />
+              </Button>
+            </div>
           </div>
-        </div>
+        </motion.div>
       </div>
     </motion.div>
   )

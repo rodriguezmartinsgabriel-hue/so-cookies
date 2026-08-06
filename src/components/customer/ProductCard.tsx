@@ -1,7 +1,7 @@
 "use client"
 
 import { useCallback } from "react"
-import { motion, AnimatePresence } from "framer-motion"
+import { AnimatePresence } from "framer-motion"
 import { Plus, Minus, Cookie, ChevronDown } from "lucide-react"
 import NextImage from "next/image"
 import type { CatalogProduct } from "@/lib/utils"
@@ -115,12 +115,9 @@ export function ProductCard({
         onKeyDown={handleHeaderKeyDown}
         className="flex items-center gap-3 p-3 cursor-pointer select-none"
       >
-        {/* FOTO miniatura — só no estado colapsado (morph via layoutId) */}
+        {/* FOTO miniatura — só no estado colapsado */}
         {!isExpanded && (
-          <motion.div
-            layoutId={`photo-${product.id}`}
-            className="relative shrink-0 w-16 h-16 rounded-xl overflow-hidden bg-cream border border-line"
-          >
+          <div className="relative shrink-0 w-16 h-16 rounded-xl overflow-hidden bg-cream border border-line">
             {product.image ? (
               <NextImage
                 src={product.image}
@@ -134,7 +131,7 @@ export function ProductCard({
                 <Cookie className="w-6 h-6 text-kraft" strokeWidth={1.5} />
               </div>
             )}
-          </motion.div>
+          </div>
         )}
 
         <div className="min-w-0 flex-1">

@@ -76,6 +76,16 @@ describe("ProductCard", () => {
     expect(props.onSetQty).toHaveBeenCalledWith(1)
   })
 
+  it("calls onSetQty when the expanded panel stepper is clicked", async () => {
+    const user = userEvent.setup()
+    const props = setup({ qty: 2, isExpanded: true })
+    await user.click(screen.getByRole("button", { name: /aumentar quantidade/i }))
+    expect(props.onSetQty).toHaveBeenCalledWith(3)
+    await user.click(screen.getByRole("button", { name: /diminuir quantidade/i }))
+    expect(props.onSetQty).toHaveBeenCalledWith(1)
+    expect(props.onCollapse).not.toHaveBeenCalled()
+  })
+
   it("hides the header quantity controls when expanded to avoid duplicates", () => {
     setup({ qty: 3, isExpanded: true })
     expect(screen.queryByRole("button", { name: /aumentar cookie de chocolate/i })).not.toBeInTheDocument()
