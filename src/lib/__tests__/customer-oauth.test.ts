@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { describe, it, expect, beforeEach, vi, afterEach } from "vitest"
+import { describe, it, expect, beforeEach, vi, afterEach, beforeAll } from "vitest"
 import { SignJWT } from "jose"
 
 const store = vi.hoisted(() => {
@@ -53,12 +53,19 @@ vi.mock("@/lib/prisma", () => ({ prisma: store.mockPrisma }))
 
 import {
   buildGoogleAuthorizeUrl,
+  createOAuthState,
   exchangeGoogleCode,
   findOrCreateOAuthCustomer,
   oauthErrorRedirect,
   sanitizeNext,
+  signOAuthState,
   verifyGoogleIdToken,
+  verifyOAuthState,
 } from "@/lib/customer-oauth"
+
+beforeAll(() => {
+  process.env.NEXTAUTH_SECRET = "test-secret"
+})
 
 const secret = new TextEncoder().encode("test-secret")
 
@@ -288,6 +295,59 @@ describe("findOrCreateOAuthCustomer", () => {
     })
     const customer = [...store.customers.values()].find((c) => c.id === result.customerId)
     expect(customer?.name).toBe("sem.nome")
+  })
+})
+
+describe("signOAuthState / verifyOAuthState", () => {
+  it("round-trips nonce and next", async () => {
+    const state = await signOAuthState({ nonce: "n1", next: "/perfil" })
+    const payload = await verifyOAuthState(state)
+    expect(payload).toEqual({ nonce: "n1", next: "/perfil" })
+  })
+
+  it("round-trips without next", async () => {
+    const state = await signOAuthState({ nonce: "n2" })
+    const payload = await verifyOAuthState(state)
+    expect(payload).toEqual({ nonce: "n2", next: undefined })
+  })
+
+  it("creates a fresh nonce per state", async () => {
+    const a = createOAuthState()
+    const b = createOAuthState()
+    expect(a.nonce).toBeTruthy()
+    expect(a.nonce).not.toBe(b.nonce)
+  })
+
+  it("returns null for a tampered token", async () => {
+    const state = await signOAuthState({ nonce: "n3" })
+    const tampered = state.slice(0, -2) + (state.endsWith("a") ? "b" : "a")
+    await expect(verifyOAuthState(tampered)).resolves.toBeNull()
+  })
+
+  it("returns null for a token signed with a different secret", async () => {
+    process.env.NEXTAUTH_SECRET = "other-secret"
+    try {
+      const state = await signOAuthState({ nonce: "n4" })
+      process.env.NEXTAUTH_SECRET = "test-secret"
+      await expect(verifyOAuthState(state)).resolves.toBeNull()
+    } finally {
+      process.env.NEXTAUTH_SECRET = "test-secret"
+    }
+  })
+
+  it("returns null for a malformed token", async () => {
+    await expect(verifyOAuthState("not-a-jwt")).resolves.toBeNull()
+  })
+
+  it("returns null for an expired token", async () => {
+    vi.useFakeTimers()
+    try {
+      const state = await signOAuthState({ nonce: "n5" })
+      vi.advanceTimersByTime(11 * 60 * 1000)
+      await expect(verifyOAuthState(state)).resolves.toBeNull()
+    } finally {
+      vi.useRealTimers()
+    }
   })
 })
 

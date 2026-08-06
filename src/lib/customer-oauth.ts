@@ -1,6 +1,5 @@
-import { createRemoteJWKSet, jwtVerify, type JWTPayload } from "jose"
+import { createRemoteJWKSet, jwtVerify, SignJWT, type JWTPayload } from "jose"
 import { randomBytes } from "node:crypto"
-import { cookies } from "next/headers"
 import { prisma } from "@/lib/prisma"
 
 const GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth"
@@ -8,7 +7,6 @@ const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token"
 const GOOGLE_CERTS_URL = "https://www.googleapis.com/oauth2/v3/certs"
 const GOOGLE_ISSUERS = ["https://accounts.google.com", "accounts.google.com"]
 
-const OAUTH_STATE_COOKIE = "socookie_oauth_state"
 const OAUTH_STATE_MAX_AGE = 10 * 60
 
 export type OAuthProvider = "google"
@@ -33,42 +31,42 @@ export function getGoogleClientSecret(): string | null {
 
 export function createOAuthState() {
   return {
-    state: randomBytes(16).toString("hex"),
     nonce: randomBytes(16).toString("hex"),
   }
 }
 
 export type OAuthStatePayload = {
-  state: string
   nonce: string
   next?: string
 }
 
-export async function setOAuthStateCookie(payload: OAuthStatePayload) {
-  const store = await cookies()
-  store.set(OAUTH_STATE_COOKIE, JSON.stringify(payload), {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    path: "/",
-    maxAge: OAUTH_STATE_MAX_AGE,
-  })
+function getOAuthStateSecret(): Uint8Array {
+  const secret = process.env.CUSTOMER_AUTH_SECRET || process.env.NEXTAUTH_SECRET
+  if (!secret) {
+    throw new Error("CUSTOMER_AUTH_SECRET or NEXTAUTH_SECRET must be set")
+  }
+  return new TextEncoder().encode(secret)
 }
 
-export async function getOAuthStateCookie(): Promise<OAuthStatePayload | null> {
-  const store = await cookies()
-  const raw = store.get(OAUTH_STATE_COOKIE)?.value
-  if (!raw) return null
+export async function signOAuthState(payload: OAuthStatePayload): Promise<string> {
+  return new SignJWT({ nonce: payload.nonce, next: payload.next })
+    .setProtectedHeader({ alg: "HS256" })
+    .setIssuedAt()
+    .setExpirationTime(new Date(Date.now() + OAUTH_STATE_MAX_AGE * 1000))
+    .sign(getOAuthStateSecret())
+}
+
+export async function verifyOAuthState(token: string): Promise<OAuthStatePayload | null> {
   try {
-    return JSON.parse(raw) as OAuthStatePayload
+    const { payload } = await jwtVerify(token, getOAuthStateSecret())
+    if (typeof payload.nonce !== "string" || !payload.nonce) return null
+    return {
+      nonce: payload.nonce,
+      next: typeof payload.next === "string" ? payload.next : undefined,
+    }
   } catch {
     return null
   }
-}
-
-export async function clearOAuthStateCookie() {
-  const store = await cookies()
-  store.delete(OAUTH_STATE_COOKIE)
 }
 
 export function sanitizeNext(next: string | null | undefined): string | null {

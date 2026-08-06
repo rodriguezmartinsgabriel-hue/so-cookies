@@ -5,7 +5,7 @@ import {
   getGoogleClientId,
   getRequestOrigin,
   sanitizeNext,
-  setOAuthStateCookie,
+  signOAuthState,
 } from "@/lib/customer-oauth"
 import { rateLimit } from "@/lib/rate-limit"
 
@@ -23,10 +23,10 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Login Google não configurado" }, { status: 500 })
   }
 
-  const { state, nonce } = createOAuthState()
+  const { nonce } = createOAuthState()
   const url = new URL(request.url)
   const next = sanitizeNext(url.searchParams.get("next"))
-  await setOAuthStateCookie({ state, nonce, next: next ?? undefined })
+  const state = await signOAuthState({ nonce, next: next ?? undefined })
 
   const redirectUri = new URL("/api/public/auth/oauth/google/callback", getRequestOrigin(request)).toString()
   const authorizeUrl = buildGoogleAuthorizeUrl({ clientId, redirectUri, state, nonce })

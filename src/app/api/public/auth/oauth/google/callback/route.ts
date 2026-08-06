@@ -1,14 +1,13 @@
 import {
-  clearOAuthStateCookie,
   exchangeGoogleCode,
   findOrCreateOAuthCustomer,
   getGoogleClientId,
   getGoogleClientSecret,
-  getOAuthStateCookie,
   getRequestOrigin,
   oauthErrorRedirect,
   sanitizeNext,
   verifyGoogleIdToken,
+  verifyOAuthState,
 } from "@/lib/customer-oauth"
 import { setCustomerCookie } from "@/lib/customer-auth"
 import { syncCustomerToContact } from "@/lib/customer-contact"
@@ -24,14 +23,12 @@ export async function GET(request: Request) {
   const stateParam = url.searchParams.get("state")
   const code = url.searchParams.get("code")
 
-  const saved = await getOAuthStateCookie()
-  await clearOAuthStateCookie()
+  const saved = stateParam ? await verifyOAuthState(stateParam) : null
 
-  if (!saved || !stateParam || saved.state !== stateParam) {
+  if (!saved) {
     console.warn("[oauth] invalid_state", {
-      hasCookie: Boolean(saved),
       hasStateParam: Boolean(stateParam),
-      mismatch: Boolean(saved && stateParam && saved.state !== stateParam),
+      invalidSignature: Boolean(stateParam),
     })
     return oauthErrorRedirect(request, "invalid_state")
   }
