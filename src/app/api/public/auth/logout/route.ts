@@ -5,3 +5,8 @@ export async function POST() {
   await clearCustomerCookie()
   return NextResponse.json({ ok: true })
 }
+
+export async function GET() {
+  await clearCustomerCookie()
+  return NextResponse.json({ ok: true })
+}

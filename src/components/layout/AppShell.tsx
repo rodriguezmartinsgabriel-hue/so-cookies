@@ -9,6 +9,7 @@ import { Header } from "./Header";
 import { OfflineBanner } from "@/components/pwa/OfflineBanner";
 import { PullToRefresh } from "@/components/ui/PullToRefresh";
 import { emitDataRefresh } from "@/lib/refresh-events";
+import { clearSWCaches } from "@/lib/sw";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { data: session, status } = useSession();
@@ -37,7 +38,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     return null;
   }
 
-  const handleLogout = () => signOut({ callbackUrl: "/login" });
+  const handleLogout = async () => {
+    await clearSWCaches()
+    signOut({ callbackUrl: "/login" })
+  }
 
   return (
     <div className="h-dvh flex overflow-hidden">

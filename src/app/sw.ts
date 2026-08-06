@@ -1,6 +1,6 @@
 import { defaultCache } from "@serwist/next/worker"
 import type { PrecacheEntry, SerwistGlobalConfig } from "serwist"
-import { Serwist, StaleWhileRevalidate, ExpirationPlugin, CacheableResponsePlugin } from "serwist"
+import { Serwist, NetworkFirst, ExpirationPlugin, CacheableResponsePlugin } from "serwist"
 import { pushPendingChanges, pullChanges } from "../lib/sync-service"
 
 declare global {
@@ -11,6 +11,8 @@ declare global {
 
 declare const self: ServiceWorkerGlobalScope
 
+const CACHE_VERSION = process.env.VERCEL_GIT_COMMIT_SHA || process.env.VERCEL_DEPLOYMENT_ID || "dev"
+
 const serwist = new Serwist({
   precacheEntries: self.__SW_MANIFEST,
   skipWaiting: true,
@@ -18,28 +20,31 @@ const serwist = new Serwist({
   navigationPreload: true,
   runtimeCaching: [
     {
-      matcher: ({ request, sameOrigin, url }) =>
-        sameOrigin &&
+      matcher: ({ request, url }) =>
         request.method === "GET" &&
-        url.pathname.startsWith("/api/") &&
-        !url.pathname.startsWith("/api/public/auth/") &&
-        !url.pathname.startsWith("/api/auth"),
-      handler: new StaleWhileRevalidate({
-        cacheName: "api-get",
+        url.pathname.startsWith("/icons/"),
+      handler: new NetworkFirst({
+        cacheName: `icons-${CACHE_VERSION}`,
         plugins: [
           new CacheableResponsePlugin({ statuses: [0, 200] }),
-          new ExpirationPlugin({ maxEntries: 100, maxAgeSeconds: 7 * 24 * 60 * 60 }),
+          new ExpirationPlugin({ maxEntries: 100, maxAgeSeconds: 365 * 24 * 60 * 60 }),
         ],
       }),
     },
     {
       matcher: ({ request, url }) =>
-        request.destination === "document" &&
-        !url.pathname.startsWith("/api/"),
-      handler: new StaleWhileRevalidate({
-        cacheName: "pages",
+        request.method === "GET" &&
+        (url.pathname.endsWith(".woff2") ||
+          url.pathname.endsWith(".woff") ||
+          url.pathname.endsWith(".ttf") ||
+          url.pathname.endsWith(".png") ||
+          url.pathname.endsWith(".jpg") ||
+          url.pathname.endsWith(".svg")),
+      handler: new NetworkFirst({
+        cacheName: `static-assets-${CACHE_VERSION}`,
         plugins: [
-          new ExpirationPlugin({ maxEntries: 30, maxAgeSeconds: 7 * 24 * 60 * 60 }),
+          new CacheableResponsePlugin({ statuses: [0, 200] }),
+          new ExpirationPlugin({ maxEntries: 100, maxAgeSeconds: 30 * 24 * 60 * 60 }),
         ],
       }),
     },
@@ -69,6 +74,9 @@ self.addEventListener("message", (event) => {
   if (event.data?.type === "TRIGGER_SYNC") {
     event.waitUntil(handleBackgroundSync())
   }
+  if (event.data?.type === "CLEAR_CACHES") {
+    event.waitUntil(handleClearCaches())
+  }
 })
 
 async function handleBackgroundSync() {
@@ -77,5 +85,15 @@ async function handleBackgroundSync() {
     await pullChanges()
   } catch (e) {
     console.error("Background sync failed:", e)
+  }
+}
+
+async function handleClearCaches() {
+  try {
+    const cacheNames = await caches.keys()
+    await Promise.all(cacheNames.map((name) => caches.delete(name)))
+    self.clients.claim()
+  } catch (e) {
+    console.error("Failed to clear caches:", e)
   }
 }
