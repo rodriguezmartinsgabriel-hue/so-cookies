@@ -48,21 +48,27 @@ export function ProductCardExpandable({
   const haptic = useHapticFeedback()
   const reducedMotion = useReducedMotion()
   const panelRef = useRef<HTMLDivElement>(null)
+  const activeElementRef = useRef<HTMLElement | null>(null)
 
   const id = `panel-${product.id}`
+  const duration = reducedMotion ? 0 : 0.28
 
-  // Foco: marcar o painel como focável para foco move-se nele ao expandir.
-  // (Não usamos focus trap aqui porque é expansão inline, não modal.)
+  // Guarda o elemento que tinha foco antes de abrir (para restaurar ao recolher).
   useEffect(() => {
+    activeElementRef.current =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null
     panelRef.current?.focus({ preventScroll: true })
+    return () => {
+      activeElementRef.current?.focus?.()
+    }
   }, [])
 
-  // Escape recolhe o card expandido (mantém a tecla Escape como gesto de saída).
   const handleCollapse = useCallback(() => {
     haptic.selection()
     onCollapse()
   }, [onCollapse, haptic])
 
+  // Escape recolhe o card expandido.
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") handleCollapse()
@@ -84,8 +90,6 @@ export function ProductCardExpandable({
 
   const n = product.nutrition
 
-  const duration = reducedMotion ? 0 : 0.28
-
   return (
     <motion.div
       ref={panelRef}
@@ -100,10 +104,10 @@ export function ProductCardExpandable({
       className="overflow-hidden focus:outline-none"
     >
       <div className="grid grid-cols-1 md:grid-cols-[14rem_1fr] gap-4 p-3 pt-0">
-        {/* FOTO LARGA (layout compartilhado via layoutId) */}
+        {/* FOTO GRANDE — morph compartilhado com a miniatura do header */}
         <motion.div
           layoutId={`photo-${product.id}`}
-          className="relative w-full aspect-square md:aspect-auto md:h-full min-h-[12rem] rounded-xl overflow-hidden bg-cream"
+          className="relative w-full aspect-square md:aspect-[4/3] rounded-xl overflow-hidden bg-cream"
         >
           {product.image ? (
             <NextImage
@@ -127,12 +131,7 @@ export function ProductCardExpandable({
         {/* CONTEÚDO à direita */}
         <div className="min-w-0 flex flex-col gap-3">
           <div>
-            <motion.h2
-              layoutId={`name-${product.id}`}
-              className="text-xl font-bold text-ink"
-            >
-              {product.name}
-            </motion.h2>
+            <h2 className="text-xl font-bold text-ink">{product.name}</h2>
             <p className="text-sm text-muted mt-0.5">
               {formatBRL(product.price)} / {product.unit}
             </p>
@@ -140,7 +139,8 @@ export function ProductCardExpandable({
 
           <div className="flex items-center gap-2 flex-wrap">
             <CalorieBadge calories={n?.caloriesPerUnit ?? null} variant="inline" />
-            {n?.tags && n.tags.length > 0 && (
+            {n?.tags &&
+              n.tags.length > 0 &&
               n.tags.slice(0, 3).map((t) => (
                 <span
                   key={t}
@@ -148,9 +148,9 @@ export function ProductCardExpandable({
                 >
                   {TAG_LABELS[t] ?? t}
                 </span>
-              ))
-            )}
-            {n && n.allergens.length > 0 && (
+              ))}
+            {n &&
+              n.allergens.length > 0 &&
               n.allergens.map((a) => (
                 <span
                   key={a}
@@ -158,8 +158,7 @@ export function ProductCardExpandable({
                 >
                   {ALLERGEN_LABELS[a] ?? a}
                 </span>
-              ))
-            )}
+              ))}
           </div>
 
           {product.description && (
