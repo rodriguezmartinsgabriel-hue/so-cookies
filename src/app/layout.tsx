@@ -75,6 +75,12 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body className="h-full font-body">
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              '(function(){try{if(sessionStorage.getItem("splash-shown")==="true"){document.documentElement.classList.add("splash-skip")}}catch(e){}})();',
+          }}
+        />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="mobile-web-app-capable" content="yes" />

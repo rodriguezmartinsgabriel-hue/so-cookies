@@ -258,6 +258,10 @@ textarea,
   animation: splash-in 0.4s var(--ease-expressive) both;
 }
 
+html.splash-skip .loading-screen {
+  display: none;
+}
+
 .loading-screen-exit {
   animation: splash-out 0.5s var(--ease-expressive) both;
 }

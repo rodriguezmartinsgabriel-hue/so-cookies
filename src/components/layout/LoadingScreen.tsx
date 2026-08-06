@@ -13,14 +13,6 @@ function isClientRoute(pathname: string) {
   )
 }
 
-function hasSplashBeenShown(): boolean {
-  try {
-    return sessionStorage.getItem(SPLASH_KEY) === "true"
-  } catch {
-    return true
-  }
-}
-
 function markSplashShown() {
   try {
     sessionStorage.setItem(SPLASH_KEY, "true")
@@ -29,27 +21,21 @@ function markSplashShown() {
 
 export function LoadingScreen() {
   const pathname = usePathname()
-  const [phase, setPhase] = useState<"hidden" | "visible" | "fading" | "done">("hidden")
+  const [phase, setPhase] = useState<"hidden" | "visible" | "fading" | "done">("visible")
   const mounted = useRef(false)
 
   useEffect(() => {
     if (mounted.current) return
     if (!isClientRoute(pathname)) return
-    if (hasSplashBeenShown()) return
     mounted.current = true
 
-    const show = setTimeout(() => {
-      setPhase("visible")
-      markSplashShown()
-      const fade = setTimeout(() => setPhase("fading"), 1500)
-      const done = setTimeout(() => setPhase("done"), 2100)
-      return () => {
-        clearTimeout(fade)
-        clearTimeout(done)
-      }
-    }, 50)
-
-    return () => clearTimeout(show)
+    markSplashShown()
+    const fade = setTimeout(() => setPhase("fading"), 1500)
+    const done = setTimeout(() => setPhase("done"), 2100)
+    return () => {
+      clearTimeout(fade)
+      clearTimeout(done)
+    }
   }, [pathname])
 
   if (!isClientRoute(pathname)) return null
