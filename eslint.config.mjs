@@ -23,6 +23,10 @@ const eslintConfig = defineConfig([
     "build/**",
     "next-env.d.ts",
     "dump-xlsx.cjs",
+    // Coverage & E2E reports gerados
+    "coverage/**",
+    "playwright-report/**",
+    "test-results/**",
     // Código gerado automaticamente pelo Prisma (regerado a cada `prisma generate`)
     "**/generated/**",
     // Artefatos de backup/debug mantidos fora do versionamento
