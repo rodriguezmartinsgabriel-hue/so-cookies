@@ -8,6 +8,7 @@ const withBundleAnalyzerConfig = withBundleAnalyzer({
 export default withBundleAnalyzerConfig(
   withSerwist({
     turbopack: {},
+    poweredByHeader: false,
     experimental: {
       serverActions: {
         bodySizeLimit: "2mb",

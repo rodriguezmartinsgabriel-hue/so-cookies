@@ -6,6 +6,32 @@ import { isAllowedOrigin } from "@/lib/security";
 const CORS_ALLOW_METHODS = "GET, POST, PUT, PATCH, DELETE, OPTIONS";
 const CORS_ALLOW_HEADERS = "Content-Type, Authorization";
 
+function generateNonce() {
+  return crypto.randomUUID();
+}
+
+function getCspHeader(nonce: string) {
+  const directives = [
+    "default-src 'self'",
+    `script-src 'self' 'nonce-${nonce}'`,
+    "style-src 'self' 'unsafe-inline'",
+    "img-src 'self' data: https:",
+    "font-src 'self' https://fonts.gstatic.com",
+    "connect-src 'self'",
+    "frame-src 'none'",
+    "object-src 'none'",
+    "base-uri 'self'",
+    "form-action 'self'",
+  ];
+  return directives.join("; ");
+}
+
+function setSecurityHeaders(response: NextResponse, nonce: string) {
+  response.headers.set("Content-Security-Policy", getCspHeader(nonce));
+  response.headers.set("Cross-Origin-Opener-Policy", "same-origin");
+  response.headers.set("Cross-Origin-Resource-Policy", "same-origin");
+}
+
 function setCorsHeaders(response: NextResponse, origin: string) {
   response.headers.set("Access-Control-Allow-Origin", origin);
   response.headers.set("Vary", "Origin");
@@ -122,12 +148,17 @@ export function proxy(request: NextRequest) {
   const origin = request.headers.get("origin");
   const allowedOrigin = origin && isAllowedOrigin(origin) ? origin : null;
 
+  const nonce = generateNonce();
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set("x-nonce", nonce);
+
   if (isApiPath && request.method === "OPTIONS") {
     if (!allowedOrigin) {
       return new NextResponse(null, { status: 403 });
     }
     const response = new NextResponse(null, { status: 204 });
     setCorsHeaders(response, allowedOrigin);
+    setSecurityHeaders(response, nonce);
     response.headers.set("Access-Control-Max-Age", "86400");
     return response;
   }
@@ -136,6 +167,7 @@ export function proxy(request: NextRequest) {
   if (isApiPath && allowedOrigin) {
     setCorsHeaders(response, allowedOrigin);
   }
+  setSecurityHeaders(response, nonce);
   return response;
 }
 

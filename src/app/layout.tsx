@@ -1,3 +1,4 @@
+import { headers } from "next/headers";
 import "./globals.css"
 import type { Metadata, Viewport } from "next"
 import { Inter, Space_Grotesk } from "next/font/google"
@@ -63,11 +64,12 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode
 }>) {
+  const nonce = (await headers()).get("x-nonce") || "";
   return (
     <html
       lang="pt-BR"
@@ -76,6 +78,7 @@ export default function RootLayout({
     >
       <body className="h-full font-body">
         <script
+          nonce={nonce}
           dangerouslySetInnerHTML={{
             __html:
               '(function(){try{if(sessionStorage.getItem("splash-shown")==="true"){document.documentElement.classList.add("splash-skip")}}catch(e){}})();',
