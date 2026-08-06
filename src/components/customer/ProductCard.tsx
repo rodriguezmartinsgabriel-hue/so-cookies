@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback } from "react"
+import { useCallback, memo } from "react"
 import { Plus, Minus, Cookie, ChevronDown } from "lucide-react"
 import NextImage from "next/image"
 import type { CatalogProduct } from "@/lib/utils"
@@ -39,7 +39,7 @@ const TAG_LABELS: Record<string, string> = {
   SEM_LACTOSE: "Sem lactose",
 }
 
-export function ProductCard({ product, qty, isExpanded, onExpand, onCollapse, onAdd, onSetQty }: ProductCardProps) {
+export const ProductCard = memo(function ProductCard({ product, qty, isExpanded, onExpand, onCollapse, onAdd, onSetQty }: ProductCardProps) {
   const haptic = useHapticFeedback()
   const n = product.nutrition
 
@@ -206,4 +206,4 @@ export function ProductCard({ product, qty, isExpanded, onExpand, onCollapse, on
       {isExpanded && <ProductCardExpandable product={product} qty={qty} onSetQty={onSetQty} onCollapse={onCollapse} />}
     </Card>
   )
-}
+})
