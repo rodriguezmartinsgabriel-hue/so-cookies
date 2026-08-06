@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from "react"
 import { usePathname } from "next/navigation"
-import Image from "next/image"
 
 const SPLASH_KEY = "splash-shown"
 
@@ -58,18 +57,17 @@ export function LoadingScreen() {
 
   return (
     <div
-      className={`loading-screen fixed inset-0 z-50 flex items-center justify-center bg-paper transition-opacity duration-500 ${phase === "fading" ? "loading-screen-exit" : "loading-screen-enter"}`}
+      className={`loading-screen fixed inset-0 z-50 flex items-center justify-center bg-paper ${phase === "fading" ? "loading-screen-exit" : "loading-screen-enter"}`}
     >
-      <div className="loading-logo-wrapper">
-        <Image
-          src="/so-cookies-logo.svg"
-          alt="Só Cookies & Café"
-          width={120}
-          height={120}
-          unoptimized
-          priority
-          className="loading-logo h-24 w-auto sm:h-28 md:h-32"
-        />
+      <div className="loading-card-wrapper">
+        <div className="loading-card">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/so-cookies-logo-final.png"
+            alt="Só Cookies & Café"
+            className="loading-logo-img h-20 w-20 sm:h-24 sm:w-24 md:h-28 md:w-28"
+          />
+        </div>
       </div>
     </div>
   )

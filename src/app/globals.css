@@ -253,78 +253,60 @@ textarea,
   animation: fade-in 0.4s var(--ease-expressive) both;
 }
 
-@keyframes loading-screen-enter {
-  from {
-    opacity: 0;
-    transform: scale(1.02);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
 .loading-screen-enter {
-  animation: loading-screen-enter 0.5s var(--ease-expressive) both;
-}
-
-@keyframes loading-screen-exit {
-  from {
-    opacity: 1;
-    transform: scale(1);
-  }
-  to {
-    opacity: 0;
-    transform: scale(0.98);
-  }
+  animation: splash-in 0.6s var(--ease-expressive) both;
 }
 
 .loading-screen-exit {
-  animation: loading-screen-exit 0.6s var(--ease-expressive) both;
+  animation: splash-out 0.5s var(--ease-expressive) both;
 }
 
-@keyframes loading-logo-enter {
-  0% {
+@keyframes splash-in {
+  from {
     opacity: 0;
-    transform: scale(0.85) translateY(8px);
+    transform: scale(0.8);
   }
-  60% {
+  to {
     opacity: 1;
-  }
-  100% {
-    opacity: 1;
-    transform: scale(1) translateY(0);
+    transform: scale(1);
   }
 }
 
-.loading-logo-wrapper {
-  animation: loading-logo-enter 0.7s var(--ease-expressive) both;
-  animation-delay: 0.1s;
-}
-
-@keyframes loading-logo-exit {
+@keyframes splash-out {
   from {
     opacity: 1;
-    transform: scale(1) translateY(0);
+    transform: scale(1);
   }
   to {
     opacity: 0;
-    transform: scale(0.95) translateY(-4px);
+    transform: scale(0.95);
   }
 }
 
-.loading-screen-exit .loading-logo-wrapper {
-  animation: loading-logo-exit 0.6s var(--ease-expressive) both;
+.loading-card-wrapper {
+  animation: splash-in 0.7s var(--ease-expressive) both;
+  animation-delay: 0.1s;
 }
 
-.loading-logo {
-  filter: brightness(0) saturate(100%);
+.loading-screen-exit .loading-card-wrapper {
+  animation: splash-out 0.5s var(--ease-expressive) both;
 }
 
-:root.dark .loading-logo,
-[data-theme="dark"] .loading-logo,
-.dark .loading-logo {
-  filter: brightness(0) saturate(100%) invert(1);
+.loading-card {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #ffffff;
+  border-radius: 1.5rem;
+  padding: 1.5rem;
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.04),
+    0 12px 32px -8px rgba(0, 0, 0, 0.18);
+}
+
+.loading-logo-img {
+  object-fit: contain;
+  display: block;
 }
 
 @keyframes fade-in-up {
