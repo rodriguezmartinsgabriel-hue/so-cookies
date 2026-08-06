@@ -1,8 +1,10 @@
 import { prisma } from "@/lib/prisma"
 import { Prisma } from "@/generated/prisma/client"
+import type { Decimal } from "@prisma/client/runtime/client"
 import { createPixPayment, getPixPayment } from "./mercadopago"
 import { PAYMENT_PROVIDER, PAYMENT_TTL_MS, isMercadoPagoConfigured, mpNotificationUrl } from "./config"
 import { PaymentError } from "./errors"
+import { toNumber } from "../utils"
 
 type PaymentEventInput = {
   orderId?: string | null
@@ -43,7 +45,7 @@ export async function createOrderPayment(orderId: string) {
   const externalRef = `order:${order.id}`
 
   const payment = await createPixPayment({
-    transactionAmount: order.total,
+    transactionAmount: toNumber(order.total),
     description: `Pedido Só Cookies & Café ${order.pickupCode ?? ""}`.trim(),
     payerEmail,
     externalReference: externalRef,
@@ -90,7 +92,7 @@ export async function handlePaymentWebhook(input: { paymentId: string }): Promis
     throw error
   }
 
-  let order: { id: string; total: number; status: string; paymentStatus: string | null } | null = null
+  let order: { id: string; total: Decimal | number; status: string; paymentStatus: string | null } | null = null
   const externalRef = payment.external_reference
   if (externalRef?.startsWith("order:")) {
     order = await prisma.order.findUnique({
@@ -115,7 +117,7 @@ export async function handlePaymentWebhook(input: { paymentId: string }): Promis
     return { ok: true, action: "ignored" }
   }
 
-  const amountMatches = Math.abs(payment.transaction_amount - order.total) <= 0.01
+  const amountMatches = Math.abs(payment.transaction_amount - toNumber(order.total)) <= 0.01
   if (!amountMatches) {
     await logPaymentEvent({
       orderId: order.id,

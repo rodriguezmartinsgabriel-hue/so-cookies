@@ -14,6 +14,7 @@ import type { CouponRepository } from "../repositories/CouponRepository"
 import type { CampaignRepository } from "../repositories/CampaignRepository"
 import type { ShippingRepository } from "../repositories/ShippingRepository"
 import type { PricingRepository } from "../repositories/PricingRepository"
+import { Decimal } from "@prisma/client/runtime/client"
 
 type ProductProps = Partial<Product>
 type CustomerProps = Partial<Customer>
@@ -29,7 +30,7 @@ export const productFactory = (overrides: ProductProps = {}): Product =>
     name: "Cookie Clássico",
     sku: "COOK-001",
     category: "Cookies",
-    price: 15,
+    price: new Decimal(15),
     cost: 5,
     margin: 66.67,
     unit: "un",
@@ -67,8 +68,8 @@ export const couponFactory = (overrides: CouponProps = {}): Coupon =>
     name: "Welcome 10%",
     description: null,
     type: "PERCENTAGE",
-    value: 10,
-    minOrderValue: 0,
+    value: new Decimal(10),
+    minOrderValue: new Decimal(0),
     maxDiscount: null,
     usageLimit: 100,
     usedCount: 0,
@@ -107,9 +108,9 @@ export const shippingRateFactory = (overrides: ShippingRateProps = {}): Shipping
     channel: "delivery",
     zoneId: null,
     type: "FLAT_RATE",
-    basePrice: 10,
-    pricePerKm: 0,
-    minOrderValue: 0,
+    basePrice: new Decimal(10),
+    pricePerKm: new Decimal(0),
+    minOrderValue: new Decimal(0),
     freeShippingThreshold: null,
     enabled: true,
     minWeight: 0,
@@ -144,7 +145,7 @@ export const priceTierFactory = (overrides: PriceTierProps = {}): PriceTier =>
     name: "Leve 5",
     minQty: 5,
     maxQty: null,
-    price: 12,
+    price: new Decimal(12),
     enabled: true,
     createdAt: new Date("2024-01-01"),
     updatedAt: new Date("2024-01-01"),

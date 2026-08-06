@@ -38,7 +38,7 @@ export class PriceTierRule implements PricingRule {
 
       if (applicableTier) {
         const oldPrice = item.calculatedPrice
-        const newPrice = applicableTier.price
+        const newPrice = applicableTier.price.toNumber()
         const discountValue = oldPrice - newPrice
         const discountPercent = (discountValue / oldPrice) * 100
 

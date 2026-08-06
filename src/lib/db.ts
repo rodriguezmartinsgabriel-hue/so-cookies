@@ -1,8 +1,9 @@
 import { prisma } from "./prisma"
 import type { Role, ContactType, InteractionType, DocumentCategory } from "@/generated/prisma/enums"
 import type { Prisma } from "@/generated/prisma/client"
+import type { Decimal } from "@prisma/client/runtime/client"
 import { pushOrderStatusToPlatform } from "./integrations/push"
-import { computeMargin } from "./utils"
+import { computeMargin, toNumber } from "./utils"
 
 export function isNotFoundError(e: unknown): boolean {
   return typeof e === "object" && e !== null && "code" in e && e.code === "P2025"
@@ -32,9 +33,9 @@ export async function getDashboardKpis() {
     }),
   ])
 
-  const revenue = sales._sum.total || 0
-  const todayIn = cashFlow.filter((e) => e.type === "ENTRADA").reduce((s, e) => s + e.amount, 0)
-  const todayOut = cashFlow.filter((e) => e.type === "SAIDA").reduce((s, e) => s + Math.abs(e.amount), 0)
+  const revenue = toNumber(sales._sum.total)
+  const todayIn = cashFlow.filter((e) => e.type === "ENTRADA").reduce((s, e) => s + toNumber(e.amount), 0)
+  const todayOut = cashFlow.filter((e) => e.type === "SAIDA").reduce((s, e) => s + Math.abs(toNumber(e.amount)), 0)
 
   let totalCost = 0
   monthSales.forEach((sale) => {
@@ -45,8 +46,8 @@ export async function getDashboardKpis() {
   const profit = revenue - totalCost
   const margin = revenue > 0 ? (profit / revenue) * 100 : 0
 
-  const deliveryRevenue = deliveryOrders.reduce((s, o) => s + o.total - (o.platformFee || 0), 0)
-  const deliveryFees = deliveryOrders.reduce((s, o) => s + (o.platformFee || 0), 0)
+  const deliveryRevenue = deliveryOrders.reduce((s, o) => s + toNumber(o.total) - toNumber(o.platformFee), 0)
+  const deliveryFees = deliveryOrders.reduce((s, o) => s + toNumber(o.platformFee), 0)
 
   return {
     revenue,
@@ -118,7 +119,7 @@ export async function updateProduct(
   if ((typeof data.price === "number" || typeof data.cost === "number") && data.margin === undefined) {
     const existing = await prisma.product.findUnique({ where: { id }, select: { price: true, cost: true } })
     if (existing) {
-      patch.margin = computeMargin(data.price ?? existing.price, data.cost ?? existing.cost)
+      patch.margin = computeMargin(toNumber(data.price ?? existing.price), data.cost ?? existing.cost)
     }
   }
   return prisma.product.update({ where: { id }, data: patch })
@@ -249,8 +250,8 @@ async function createSaleForOrder(
   order: {
     id: string
     channel: string
-    total: number
-    items: { productId: string | null; qty: number; price: number }[]
+    total: Decimal | number
+    items: { productId: string | null; qty: number; price: Decimal | number }[]
   },
 ) {
   const channels = await tx.saleChannel.findMany()

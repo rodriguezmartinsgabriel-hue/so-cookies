@@ -3,6 +3,7 @@ import { z } from "zod"
 import { buildPricingEngine, PricingContext } from "@so-cookies/pricing"
 import { prisma } from "@/lib/prisma"
 import { getCustomerSession } from "@/lib/customer-auth"
+import { toNumber } from "@/lib/utils"
 
 const pricingSchema = z.object({
   items: z
@@ -39,7 +40,7 @@ export async function POST(req: NextRequest) {
       },
       select: { id: true, name: true, price: true },
     })
-    for (const p of products) productMap[p.id] = p
+    for (const p of products) productMap[p.id] = { id: p.id, name: p.name, price: toNumber(p.price) }
 
     const context: PricingContext = {
       customerId: session.id,

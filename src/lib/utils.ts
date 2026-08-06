@@ -1,8 +1,16 @@
 import { type ClassValue, clsx } from "clsx"
+import type { Decimal } from "@prisma/client/runtime/client"
 import { type ProductNutrition, computeProductNutrition } from "./recipe-nutrition"
 
 export function cn(...inputs: ClassValue[]) {
   return clsx(inputs)
+}
+
+/** Normaliza um valor Decimal do Prisma ou number para number (útil em aggregations e KPIs). */
+export function toNumber(value: Decimal | number | null | undefined): number {
+  if (value == null) return 0
+  if (typeof value === "number") return value
+  return value.toNumber()
 }
 
 export function parseCurrencyPtBr(value: string): number {
@@ -71,7 +79,7 @@ export function toCatalogProduct(product: {
   id: string
   name: string
   category: string
-  price: number
+  price: Decimal | number
   unit: string
   image: string | null
   description?: string | null
@@ -81,7 +89,7 @@ export function toCatalogProduct(product: {
     id: product.id,
     name: product.name,
     category: product.category,
-    price: product.price,
+    price: toNumber(product.price),
     unit: product.unit,
     image: product.image ?? product.recipes?.[0]?.image ?? null,
     description: product.description ?? null,

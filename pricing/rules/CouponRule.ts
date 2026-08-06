@@ -68,8 +68,9 @@ export class CouponRule implements PricingRule {
 
     const subtotal = state.items.reduce((sum, item) => sum + item.priceAfterDiscount * item.qty, 0)
 
-    if (coupon.minOrderValue > 0 && subtotal < coupon.minOrderValue) {
-      return this.pushWarning(actions, `Pedido mínimo de R$ ${coupon.minOrderValue.toFixed(2)} para este cupom`)
+    const minOrder = coupon.minOrderValue.toNumber()
+    if (minOrder > 0 && subtotal < minOrder) {
+      return this.pushWarning(actions, `Pedido mínimo de R$ ${minOrder.toFixed(2)} para este cupom`)
     }
 
     const logBase = {
@@ -81,12 +82,13 @@ export class CouponRule implements PricingRule {
 
     switch (coupon.type) {
       case "PERCENTAGE": {
+        const pct = coupon.value.toNumber()
         actions.push({
           id: generateId(),
           type: "ADD_DISCOUNT_PERCENTAGE",
           target: "subtotal",
-          value: coupon.value,
-          percentage: coupon.value,
+          value: pct,
+          percentage: pct,
           appliedTo: "subtotal",
           name: coupon.name,
           sourceRule: this.id,
@@ -96,12 +98,13 @@ export class CouponRule implements PricingRule {
         break
       }
       case "FIXED_AMOUNT": {
-        const maxDiscount = coupon.maxDiscount ?? subtotal
+        const value = coupon.value.toNumber()
+        const maxDiscount = (coupon.maxDiscount == null ? subtotal : coupon.maxDiscount.toNumber())
         actions.push({
           id: generateId(),
           type: "ADD_DISCOUNT_FIXED",
           target: "subtotal",
-          value: Math.min(coupon.value, maxDiscount),
+          value: Math.min(value, maxDiscount),
           appliedTo: "subtotal",
           name: coupon.name,
           sourceRule: this.id,

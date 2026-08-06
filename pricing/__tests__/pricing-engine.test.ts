@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest"
 import type { PrismaClient } from "@/generated/prisma/client"
+import { Decimal } from "@prisma/client/runtime/client"
 
 // Stub dos imports de valor do cliente Prisma gerado (repos são mockados no teste)
 vi.mock("@/generated/prisma/client", () => ({
@@ -63,7 +64,7 @@ describe("PricingEngine v2", () => {
   })
 
   it("aplica cupom percentual sobre o subtotal", async () => {
-    const coupon = couponFactory({ code: "WELCOME10", type: "PERCENTAGE", value: 10 })
+    const coupon = couponFactory({ code: "WELCOME10", type: "PERCENTAGE", value: new Decimal(10) })
     const engine = createEngine({ products: [productFactory()], coupons: [coupon] })
     const result = await engine.calculatePrice(pricingContextFactory({ couponCode: "WELCOME10" }))
 
@@ -73,7 +74,7 @@ describe("PricingEngine v2", () => {
   })
 
   it("aplica cupom fixo sobre o subtotal", async () => {
-    const coupon = couponFactory({ code: "FIX15", type: "FIXED_AMOUNT", value: 15 })
+    const coupon = couponFactory({ code: "FIX15", type: "FIXED_AMOUNT", value: new Decimal(15) })
     const engine = createEngine({ products: [productFactory()], coupons: [coupon] })
     const result = await engine.calculatePrice(pricingContextFactory({ couponCode: "FIX15" }))
 
@@ -91,7 +92,7 @@ describe("PricingEngine v2", () => {
   })
 
   it("cupom com pedido mínimo maior que o subtotal gera warning", async () => {
-    const coupon = couponFactory({ code: "MIN50", type: "PERCENTAGE", value: 10, minOrderValue: 100 })
+    const coupon = couponFactory({ code: "MIN50", type: "PERCENTAGE", value: new Decimal(10), minOrderValue: new Decimal(100) })
     const engine = createEngine({ products: [productFactory()], coupons: [coupon] })
     const result = await engine.calculatePrice(pricingContextFactory({ couponCode: "MIN50" }))
 
@@ -100,11 +101,11 @@ describe("PricingEngine v2", () => {
   })
 
   it("cupom de frete grátis zera o frete na entrega", async () => {
-    const coupon = couponFactory({ code: "FRETEGRATIS", type: "FREE_SHIPPING", value: 0 })
+    const coupon = couponFactory({ code: "FRETEGRATIS", type: "FREE_SHIPPING", value: new Decimal(0) })
     const engine = createEngine({
       products: [productFactory()],
       coupons: [coupon],
-      shippingRates: [shippingRateFactory({ basePrice: 10 })],
+      shippingRates: [shippingRateFactory({ basePrice: new Decimal(10) })],
     })
     const result = await engine.calculatePrice(
       pricingContextFactory({ channel: "delivery", couponCode: "FRETEGRATIS" }),
@@ -118,7 +119,7 @@ describe("PricingEngine v2", () => {
   it("cobra frete na entrega sem cupom de frete grátis", async () => {
     const engine = createEngine({
       products: [productFactory()],
-      shippingRates: [shippingRateFactory({ basePrice: 10 })],
+      shippingRates: [shippingRateFactory({ basePrice: new Decimal(10) })],
     })
     const result = await engine.calculatePrice(pricingContextFactory({ channel: "delivery" }))
 
@@ -164,7 +165,7 @@ describe("PricingEngine v2", () => {
   it("aplica faixa de preço (tier) no item", async () => {
     const engine = createEngine({
       products: [productFactory()],
-      priceTiers: { "prod-1": [priceTierFactory({ minQty: 5, maxQty: null, price: 12 })] },
+      priceTiers: { "prod-1": [priceTierFactory({ minQty: 5, maxQty: null, price: new Decimal(12) })] },
     })
     const result = await engine.calculatePrice(pricingContextFactory())
 
@@ -175,7 +176,7 @@ describe("PricingEngine v2", () => {
   })
 
   it("cupom BUY_X_GET_Y gera warning e não desconta", async () => {
-    const coupon = couponFactory({ code: "BUY2GET1", type: "BUY_X_GET_Y", value: 1 })
+    const coupon = couponFactory({ code: "BUY2GET1", type: "BUY_X_GET_Y", value: new Decimal(1) })
     const engine = createEngine({ products: [productFactory()], coupons: [coupon] })
     const result = await engine.calculatePrice(pricingContextFactory({ couponCode: "BUY2GET1" }))
 
@@ -185,7 +186,7 @@ describe("PricingEngine v2", () => {
   })
 
   it("não aplica cupom quando a flag do canal está desativada", async () => {
-    const coupon = couponFactory({ code: "WELCOME10", type: "PERCENTAGE", value: 10 })
+    const coupon = couponFactory({ code: "WELCOME10", type: "PERCENTAGE", value: new Decimal(10) })
     const engine = createEngine({
       products: [productFactory()],
       coupons: [coupon],
@@ -198,7 +199,7 @@ describe("PricingEngine v2", () => {
   })
 
   it("desconto do cupom reduz o total (regressão do bug de totais)", async () => {
-    const coupon = couponFactory({ code: "VINTE", type: "PERCENTAGE", value: 20 })
+    const coupon = couponFactory({ code: "VINTE", type: "PERCENTAGE", value: new Decimal(20) })
     const engine = createEngine({ products: [productFactory()], coupons: [coupon] })
     const result = await engine.calculatePrice(pricingContextFactory({ couponCode: "VINTE" }))
 

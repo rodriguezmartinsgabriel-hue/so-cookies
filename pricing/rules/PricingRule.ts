@@ -57,14 +57,15 @@ export class BasePriceRule implements PricingRule {
         continue
       }
 
+      const productPrice = product.price.toNumber()
       // Registrar mudança de preço via ação (regras são puras; estado muda só no reducer)
       actions.push({
         id: generateId(),
         type: "CHANGE_ITEM_PRICE",
         target: "product",
-        value: product.price,
+        value: productPrice,
         productId: item.productId,
-        newPrice: product.price,
+        newPrice: productPrice,
         sourceRule: this.id,
         timestamp: new Date(),
       })
@@ -77,7 +78,7 @@ export class BasePriceRule implements PricingRule {
         value: {
           productId: item.productId,
           productName: product.name,
-          newPrice: product.price,
+          newPrice: productPrice,
           oldPrice: item.basePrice,
         },
         sourceRule: this.id,

@@ -1,5 +1,5 @@
 import { prisma } from "./prisma"
-import { toCatalogProduct, type CatalogProduct } from "./utils"
+import { toCatalogProduct, toNumber, type CatalogProduct } from "./utils"
 import { assertSlotAvailable, SlotError } from "./delivery-scheduling"
 import { buildPricingEngine } from "@so-cookies/pricing"
 import { PricingContext } from "@so-cookies/pricing"
@@ -149,7 +149,7 @@ export async function createCustomerOrder(
     return {
       productId: product.id,
       qty,
-      basePrice: product.price,
+      basePrice: toNumber(product.price),
       name: product.name,
     }
   })

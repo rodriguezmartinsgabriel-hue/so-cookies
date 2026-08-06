@@ -67,6 +67,7 @@ export class ShippingRule implements PricingRule {
     )
 
     if (shippingRate) {
+      const basePrice = shippingRate.basePrice.toNumber()
       // Adicionar log
       actions.push({
         id: generateId(),
@@ -75,7 +76,7 @@ export class ShippingRule implements PricingRule {
         value: {
           totalWeight,
           shippingRateName: shippingRate.name,
-          cost: shippingRate.basePrice,
+          cost: basePrice,
         },
         sourceRule: this.id,
         timestamp: new Date(),
@@ -86,7 +87,7 @@ export class ShippingRule implements PricingRule {
         id: generateId(),
         type: "ADD_SHIPPING",
         target: "shipping",
-        value: shippingRate.basePrice,
+        value: basePrice,
         sourceRule: this.id,
         timestamp: new Date(),
       })
@@ -95,7 +96,7 @@ export class ShippingRule implements PricingRule {
       await this.eventBus.emit("ShippingCalculated", {
         channel: context.channel,
         weight: totalWeight,
-        cost: shippingRate.basePrice,
+        cost: basePrice,
         rateName: shippingRate.name,
       })
     } else {
