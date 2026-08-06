@@ -28,6 +28,11 @@ export async function GET(request: Request) {
   await clearOAuthStateCookie()
 
   if (!saved || !stateParam || saved.state !== stateParam) {
+    console.warn("[oauth] invalid_state", {
+      hasCookie: Boolean(saved),
+      hasStateParam: Boolean(stateParam),
+      mismatch: Boolean(saved && stateParam && saved.state !== stateParam),
+    })
     return oauthErrorRedirect(request, "invalid_state")
   }
   if (!code) {

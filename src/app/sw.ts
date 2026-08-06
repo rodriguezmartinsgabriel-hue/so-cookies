@@ -19,7 +19,11 @@ const serwist = new Serwist({
   runtimeCaching: [
     {
       matcher: ({ request, sameOrigin, url }) =>
-        sameOrigin && request.method === "GET" && url.pathname.startsWith("/api/"),
+        sameOrigin &&
+        request.method === "GET" &&
+        url.pathname.startsWith("/api/") &&
+        !url.pathname.startsWith("/api/public/auth/") &&
+        !url.pathname.startsWith("/api/auth"),
       handler: new StaleWhileRevalidate({
         cacheName: "api-get",
         plugins: [

@@ -31,5 +31,9 @@ export async function GET(request: Request) {
   const redirectUri = new URL("/api/public/auth/oauth/google/callback", getRequestOrigin(request)).toString()
   const authorizeUrl = buildGoogleAuthorizeUrl({ clientId, redirectUri, state, nonce })
 
-  return NextResponse.redirect(authorizeUrl)
+  return NextResponse.redirect(authorizeUrl, {
+    headers: {
+      "Cache-Control": "no-store, no-cache, must-revalidate",
+    },
+  })
 }
