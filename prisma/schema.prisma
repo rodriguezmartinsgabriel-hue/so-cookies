@@ -77,7 +77,7 @@ model Product {
   category  String
   price     Decimal   @db.Decimal(12, 2)
   cost      Float
-  margin    Float
+  margin    Float     @default(0)
   unit      String    @default("un")
   active    Boolean   @default(true)
   image     String?

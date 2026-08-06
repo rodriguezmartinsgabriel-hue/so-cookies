@@ -4,6 +4,7 @@ import type { Prisma } from "@/generated/prisma/client"
 import type { Decimal } from "@prisma/client/runtime/client"
 import { pushOrderStatusToPlatform } from "./integrations/push"
 import { computeMargin, toNumber, type ListArgs, type Paginated } from "./utils"
+import { productRepository, orderRepository, saleRepository } from "./repositories"
 
 export function isNotFoundError(e: unknown): boolean {
   return typeof e === "object" && e !== null && "code" in e && e.code === "P2025"
@@ -64,29 +65,19 @@ export async function getDashboardKpis() {
 }
 
 export async function getProducts() {
-  return prisma.product.findMany({ where: { deletedAt: null }, orderBy: { name: "asc" } })
+  return productRepository.listAll()
 }
 
 export async function getProductsPaginated(args: ListArgs = {}): Promise<Paginated<Awaited<ReturnType<typeof getProducts>>[number]>> {
-  const take = args.take ?? 50
-  const rows = await prisma.product.findMany({
-    take: take + 1,
-    ...(args.cursor ? { cursor: { id: args.cursor }, skip: 1 } : {}),
-    orderBy: { name: "asc" },
-    where: { deletedAt: null },
-  })
-  const hasMore = rows.length > take
-  const data = hasMore ? rows.slice(0, take) : rows
-  const nextCursor = hasMore ? (rows[take]?.id ?? null) : null
-  return { data, nextCursor }
+  return productRepository.list(args)
 }
 
 export async function getAllProducts() {
-  return prisma.product.findMany({ orderBy: { name: "asc" } })
+  return productRepository.listIncludingDeleted()
 }
 
 export async function getProduct(id: string) {
-  return prisma.product.findUnique({ where: { id } })
+  return productRepository.findById(id)
 }
 
 export async function createProduct(data: {
@@ -194,40 +185,15 @@ export async function getLowStock() {
 }
 
 export async function getOrders() {
-  return prisma.order.findMany({
-    include: {
-      items: { include: { product: true } },
-      customerRef: { select: { id: true, name: true, email: true, phone: true } },
-    },
-    orderBy: { createdAt: "desc" },
-  })
+  return orderRepository.listAll()
 }
 
 export async function getOrdersPaginated(args: ListArgs = {}): Promise<Paginated<Awaited<ReturnType<typeof getOrders>>[number]>> {
-  const take = args.take ?? 50
-  const rows = await prisma.order.findMany({
-    take: take + 1,
-    ...(args.cursor ? { cursor: { id: args.cursor }, skip: 1 } : {}),
-    orderBy: { createdAt: "desc" },
-    include: {
-      items: { include: { product: true } },
-      customerRef: { select: { id: true, name: true, email: true, phone: true } },
-    },
-  })
-  const hasMore = rows.length > take
-  const data = hasMore ? rows.slice(0, take) : rows
-  const nextCursor = hasMore ? (rows[take]?.id ?? null) : null
-  return { data, nextCursor }
+  return orderRepository.list(args)
 }
 
 export async function getOrder(id: string) {
-  return prisma.order.findUnique({
-    where: { id },
-    include: {
-      items: { include: { product: true } },
-      customerRef: { select: { id: true, name: true, email: true, phone: true } },
-    },
-  })
+  return orderRepository.findById(id)
 }
 
 export async function createOrder(data: {
@@ -510,31 +476,15 @@ export async function updateRecipeIngredients(
 const userSafeSelect = { id: true, name: true, email: true, role: true }
 
 export async function getSales() {
-  return prisma.sale.findMany({
-    include: { channel: true, items: { include: { product: true } }, user: { select: userSafeSelect } },
-    orderBy: { createdAt: "desc" },
-  })
+  return saleRepository.listAll()
 }
 
 export async function getSalesPaginated(args: ListArgs = {}): Promise<Paginated<Awaited<ReturnType<typeof getSales>>[number]>> {
-  const take = args.take ?? 50
-  const rows = await prisma.sale.findMany({
-    take: take + 1,
-    ...(args.cursor ? { cursor: { id: args.cursor }, skip: 1 } : {}),
-    orderBy: { createdAt: "desc" },
-    include: { channel: true, items: { include: { product: true } }, user: { select: userSafeSelect } },
-  })
-  const hasMore = rows.length > take
-  const data = hasMore ? rows.slice(0, take) : rows
-  const nextCursor = hasMore ? (rows[take]?.id ?? null) : null
-  return { data, nextCursor }
+  return saleRepository.list(args)
 }
 
 export async function getSale(id: string) {
-  return prisma.sale.findUnique({
-    where: { id },
-    include: { channel: true, items: { include: { product: true } }, user: { select: userSafeSelect } },
-  })
+  return saleRepository.findById(id)
 }
 
 export async function createSale(data: {
