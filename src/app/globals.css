@@ -16,7 +16,7 @@
   --danger: #c23b2e;
   --warning: #e0a400;
   --info: #2e5eaa;
-  --accent: #c68e5b;
+  --accent: #0078d3;
 
   --radius-sm: 4px;
   --radius-md: 8px;
@@ -43,7 +43,7 @@
 
   --ambient: radial-gradient(
       1200px 600px at 80% -10%,
-      rgba(198, 142, 91, 0.14),
+      rgba(0, 120, 211, 0.14),
       transparent 60%
     ),
     radial-gradient(
@@ -64,6 +64,7 @@
   --danger: #e0605a;
   --warning: #e0b54f;
   --info: #6b97d6;
+  --accent: #4aa3e8;
 
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
   --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
@@ -82,7 +83,7 @@
 
   --ambient: radial-gradient(
       1200px 600px at 80% -10%,
-      rgba(198, 142, 91, 0.1),
+      rgba(0, 120, 211, 0.1),
       transparent 60%
     ),
     radial-gradient(
