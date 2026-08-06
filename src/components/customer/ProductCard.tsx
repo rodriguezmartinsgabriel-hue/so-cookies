@@ -174,7 +174,7 @@ export function ProductCard({
         </div>
 
         <div className="shrink-0 flex items-center gap-2">
-          {qty === 0 ? (
+          {!isExpanded && (qty === 0 ? (
             <Button
               variant="primary"
               size="sm"
@@ -211,7 +211,7 @@ export function ProductCard({
                 <Plus className="w-3 h-3" />
               </Button>
             </div>
-          )}
+          ))}
           <ChevronDown
             className={`w-4 h-4 text-muted transition-transform duration-200 ${
               isExpanded ? "rotate-180" : ""

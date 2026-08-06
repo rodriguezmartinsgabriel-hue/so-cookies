@@ -76,6 +76,19 @@ describe("ProductCard", () => {
     expect(props.onSetQty).toHaveBeenCalledWith(1)
   })
 
+  it("hides the header quantity controls when expanded to avoid duplicates", () => {
+    setup({ qty: 3, isExpanded: true })
+    expect(screen.queryByRole("button", { name: /aumentar cookie de chocolate/i })).not.toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: /diminuir cookie de chocolate/i })).not.toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /aumentar quantidade/i })).toBeInTheDocument()
+  })
+
+  it("hides the header add button when expanded", () => {
+    setup({ qty: 0, isExpanded: true })
+    expect(screen.queryByRole("button", { name: /adicionar cookie de chocolate ao carrinho/i })).not.toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /aumentar quantidade/i })).toBeInTheDocument()
+  })
+
   it("calls onExpand when the header is clicked while collapsed", async () => {
     const user = userEvent.setup()
     const props = setup({ isExpanded: false })

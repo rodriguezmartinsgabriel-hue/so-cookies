@@ -33,7 +33,9 @@ const serwist = new Serwist({
       }),
     },
     {
-      matcher: ({ request }) => request.destination === "document",
+      matcher: ({ request, url }) =>
+        request.destination === "document" &&
+        !url.pathname.startsWith("/api/"),
       handler: new StaleWhileRevalidate({
         cacheName: "pages",
         plugins: [

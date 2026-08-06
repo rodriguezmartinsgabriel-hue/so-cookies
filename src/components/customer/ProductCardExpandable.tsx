@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef } from "react"
 import { motion } from "framer-motion"
-import { Plus, Minus, ShoppingBag, ChevronUp } from "lucide-react"
+import { Plus, Minus, ShoppingBag } from "lucide-react"
 import NextImage from "next/image"
 import type { CatalogProduct } from "@/lib/utils"
 import { formatBRL } from "@/lib/utils"
@@ -183,43 +183,32 @@ export function ProductCardExpandable({
             </div>
           )}
 
-          <div className="flex items-center justify-between gap-3 pt-1 mt-auto">
+          <div className="flex items-center gap-2 pt-1">
             <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleCollapse}
-              aria-label={`Recolher ${product.name}`}
+              variant="secondary"
+              size="icon"
+              className="!h-11 !w-11"
+              onClick={handleQtyDown}
+              aria-label="Diminuir quantidade"
+              disabled={qty <= 0}
             >
-              <ChevronUp className="w-4 h-4 mr-1" />
-              Recolher
+              <Minus className="w-4 h-4" />
             </Button>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="secondary"
-                size="icon"
-                className="!h-11 !w-11"
-                onClick={handleQtyDown}
-                aria-label="Diminuir quantidade"
-                disabled={qty <= 0}
-              >
-                <Minus className="w-4 h-4" />
-              </Button>
-              <span
-                className="w-8 text-center text-lg font-bold text-ink"
-                aria-label={`Quantidade atual ${qty}`}
-              >
-                {qty}
-              </span>
-              <Button
-                variant="primary"
-                size="icon"
-                className="!h-11 !w-11"
-                onClick={handleQtyUp}
-                aria-label="Aumentar quantidade"
-              >
-                <Plus className="w-4 h-4" />
-              </Button>
-            </div>
+            <span
+              className="w-8 text-center text-lg font-bold text-ink"
+              aria-label={`Quantidade atual ${qty}`}
+            >
+              {qty}
+            </span>
+            <Button
+              variant="primary"
+              size="icon"
+              className="!h-11 !w-11"
+              onClick={handleQtyUp}
+              aria-label="Aumentar quantidade"
+            >
+              <Plus className="w-4 h-4" />
+            </Button>
           </div>
         </div>
       </div>
