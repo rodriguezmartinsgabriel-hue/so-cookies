@@ -86,6 +86,16 @@ describe("ProductCard", () => {
     expect(props.onCollapse).not.toHaveBeenCalled()
   })
 
+  it("keeps the expanded panel stepper clickable (no blocking styles)", () => {
+    setup({ qty: 1, isExpanded: true })
+    const plus = screen.getByRole("button", { name: /aumentar quantidade/i })
+    const minus = screen.getByRole("button", { name: /diminuir quantidade/i })
+    expect(plus).toBeEnabled()
+    expect(minus).toBeEnabled()
+    expect(plus).not.toHaveStyle({ pointerEvents: "none" })
+    expect(minus).not.toHaveStyle({ pointerEvents: "none" })
+  })
+
   it("hides the header quantity controls when expanded to avoid duplicates", () => {
     setup({ qty: 3, isExpanded: true })
     expect(screen.queryByRole("button", { name: /aumentar cookie de chocolate/i })).not.toBeInTheDocument()

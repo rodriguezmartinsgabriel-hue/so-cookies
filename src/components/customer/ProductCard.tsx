@@ -1,7 +1,6 @@
 "use client"
 
 import { useCallback } from "react"
-import { AnimatePresence } from "framer-motion"
 import { Plus, Minus, Cookie, ChevronDown } from "lucide-react"
 import NextImage from "next/image"
 import type { CatalogProduct } from "@/lib/utils"
@@ -219,17 +218,14 @@ export function ProductCard({
       </div>
 
       {/* Painel expandido inline (sem overlay, sem modal) */}
-      <AnimatePresence initial={false}>
-        {isExpanded && (
-          <ProductCardExpandable
-            key={product.id}
-            product={product}
-            qty={qty}
-            onSetQty={onSetQty}
-            onCollapse={onCollapse}
-          />
-        )}
-      </AnimatePresence>
+      {isExpanded && (
+        <ProductCardExpandable
+          product={product}
+          qty={qty}
+          onSetQty={onSetQty}
+          onCollapse={onCollapse}
+        />
+      )}
     </Card>
   )
 }
