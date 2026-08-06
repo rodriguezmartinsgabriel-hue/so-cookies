@@ -27,7 +27,7 @@ describe("Card", () => {
 
   it("adds hover transition when interactive=true", () => {
     const { container } = render(<Card interactive>X</Card>);
-    expect((container.firstChild as HTMLElement).className).toContain("hover:-translate-y-0.5");
+    expect((container.firstChild as HTMLElement).className).toContain("hover:shadow-lg");
   });
 
   it("merges custom className", () => {

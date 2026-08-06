@@ -1,13 +1,14 @@
 "use client"
 
-import { useCallback, useEffect, useRef, useState } from "react"
-import { motion, useMotionValue, useTransform } from "framer-motion"
-import { X, Plus, Minus, ShoppingBag } from "lucide-react"
+import { useCallback, useEffect, useRef } from "react"
+import { motion } from "framer-motion"
+import { Plus, Minus, ShoppingBag, ChevronUp } from "lucide-react"
 import NextImage from "next/image"
 import type { CatalogProduct } from "@/lib/utils"
 import { formatBRL } from "@/lib/utils"
 import { Button } from "@/components/ui/Button"
 import { CalorieBadge } from "@/components/ui/CalorieBadge"
+import { NutritionFacts } from "@/components/customer/NutritionFacts"
 import { useHapticFeedback } from "@/hooks/useHapticFeedback"
 import { useReducedMotion } from "@/hooks/useReducedMotion"
 
@@ -15,7 +16,7 @@ type ProductCardExpandableProps = {
   product: CatalogProduct
   qty: number
   onSetQty: (qty: number) => void
-  onClose: () => void
+  onCollapse: () => void
 }
 
 const ALLERGEN_LABELS: Record<string, string> = {
@@ -36,54 +37,42 @@ const TAG_LABELS: Record<string, string> = {
   SEM_LACTOSE: "Sem lactose",
 }
 
+const EASE_EXPRESSIVE = [0.16, 1, 0.3, 1] as const
+
 export function ProductCardExpandable({
   product,
   qty,
   onSetQty,
-  onClose,
+  onCollapse,
 }: ProductCardExpandableProps) {
   const haptic = useHapticFeedback()
-  const overlayRef = useRef<HTMLDivElement>(null)
-  const sheetRef = useRef<HTMLDivElement>(null)
-  const [imageLoaded, setImageLoaded] = useState(false)
   const reducedMotion = useReducedMotion()
-  const dragY = useMotionValue(0)
-  const isDragging = useRef(false)
-  const dragStartY = useRef(0)
+  const panelRef = useRef<HTMLDivElement>(null)
 
-  const backdropOpacity = useTransform(
-    dragY,
-    [0, 120],
-    [1, 0],
-  )
+  const id = `panel-${product.id}`
 
-  const handleDragStart = useCallback((e: React.PointerEvent) => {
-    if (reducedMotion) return
-    isDragging.current = true
-    dragStartY.current = e.clientY
-    dragY.set(0)
-  }, [reducedMotion, dragY])
+  // Foco: marcar o painel como focável para foco move-se nele ao expandir.
+  // (Não usamos focus trap aqui porque é expansão inline, não modal.)
+  useEffect(() => {
+    panelRef.current?.focus({ preventScroll: true })
+  }, [])
 
-  const handleDragMove = useCallback((e: React.PointerEvent) => {
-    if (!isDragging.current) return
-    const delta = e.clientY - dragStartY.current
-    if (delta > 0) {
-      dragY.set(delta)
+  // Escape recolhe o card expandido (mantém a tecla Escape como gesto de saída).
+  const handleCollapse = useCallback(() => {
+    haptic.selection()
+    onCollapse()
+  }, [onCollapse, haptic])
+
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") handleCollapse()
     }
-  }, [dragY])
-
-  const handleDragEnd = useCallback((e: React.PointerEvent) => {
-    if (!isDragging.current) return
-    isDragging.current = false
-    const delta = e.clientY - dragStartY.current
-    if (delta > 80) {
-      onClose()
-    } else {
-      dragY.set(0)
-    }
-  }, [onClose, dragY])
+    document.addEventListener("keydown", onKey)
+    return () => document.removeEventListener("keydown", onKey)
+  }, [handleCollapse])
 
   const handleQtyDown = useCallback(() => {
+    if (qty <= 0) return
     haptic.tap()
     onSetQty(qty - 1)
   }, [qty, onSetQty, haptic])
@@ -93,82 +82,39 @@ export function ProductCardExpandable({
     onSetQty(qty + 1)
   }, [qty, onSetQty, haptic])
 
-  const handleClose = useCallback(() => {
-    haptic.selection()
-    onClose()
-  }, [onClose, haptic])
-
-  useEffect(() => {
-    function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") handleClose()
-    }
-    document.addEventListener("keydown", onKey)
-    return () => document.removeEventListener("keydown", onKey)
-  }, [handleClose])
-
-  useEffect(() => {
-    const prev = document.body.style.overflow
-    document.body.style.overflow = "hidden"
-    return () => {
-      document.body.style.overflow = prev
-    }
-  }, [])
-
   const n = product.nutrition
+
+  const duration = reducedMotion ? 0 : 0.28
 
   return (
     <motion.div
-      ref={overlayRef}
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: reducedMotion ? 0 : 0.25 }}
-      onClick={handleClose}
-      role="dialog"
-      aria-modal="true"
-      aria-label={product.name}
+      ref={panelRef}
+      id={id}
+      role="region"
+      aria-label={`Detalhes de ${product.name}`}
+      tabIndex={-1}
+      initial={{ opacity: 0, height: 0 }}
+      animate={{ opacity: 1, height: "auto" }}
+      exit={{ opacity: 0, height: 0 }}
+      transition={{ duration, ease: EASE_EXPRESSIVE }}
+      className="overflow-hidden focus:outline-none"
     >
-      <motion.div
-        className="absolute inset-0 bg-ink/40 backdrop-blur-md"
-        style={{ opacity: backdropOpacity }}
-      />
-
-      <motion.div
-        ref={sheetRef}
-        className="relative w-full max-w-md mx-auto bg-paper rounded-t-2xl sm:rounded-2xl shadow-2xl max-h-[95dvh] flex flex-col overflow-hidden pb-[env(safe-area-inset-bottom,0px)] sm:pb-0"
-        style={{ y: dragY }}
-        initial={{ y: "100%", opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        exit={{ y: "100%", opacity: 0 }}
-        transition={{ type: "spring", stiffness: reducedMotion ? 1 : 300, damping: reducedMotion ? 1 : 28 }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div
-          className="mx-auto mt-2 mb-1 h-1 w-10 rounded-full bg-ink/20 sm:hidden"
-          aria-hidden="true"
-          onPointerDown={handleDragStart}
-          onPointerMove={handleDragMove}
-          onPointerUp={handleDragEnd}
-        />
-        <div className="relative shrink-0 h-[40vh] sm:h-[45vh] bg-cream overflow-hidden">
+      <div className="grid grid-cols-1 md:grid-cols-[14rem_1fr] gap-4 p-3 pt-0">
+        {/* FOTO LARGA (layout compartilhado via layoutId) */}
+        <motion.div
+          layoutId={`photo-${product.id}`}
+          className="relative w-full aspect-square md:aspect-auto md:h-full min-h-[12rem] rounded-xl overflow-hidden bg-cream"
+        >
           {product.image ? (
-            <>
-              {!imageLoaded && (
-                <div className="absolute inset-0 bg-cream/50 animate-pulse" />
-              )}
-              <NextImage
-                src={product.image}
-                alt={product.name}
-                fill
-                unoptimized
-                priority
-                sizes="(max-width: 448px) 100vw, 448px"
-                className={`w-full h-full object-cover transition-opacity duration-300 ${imageLoaded ? "opacity-100" : "opacity-0"}`}
-                onLoad={() => setImageLoaded(true)}
-                onError={() => setImageLoaded(true)}
-              />
-            </>
+            <NextImage
+              src={product.image}
+              alt={product.name}
+              fill
+              unoptimized
+              priority
+              sizes="(max-width: 768px) 100vw, 224px"
+              className="w-full h-full object-cover"
+            />
           ) : (
             <div className="w-full h-full flex items-center justify-center bg-cream">
               <div className="w-24 h-24 rounded-full bg-ink/5 flex items-center justify-center">
@@ -176,62 +122,108 @@ export function ProductCardExpandable({
               </div>
             </div>
           )}
+        </motion.div>
 
-          <button
-            type="button"
-            onClick={handleClose}
-            aria-label="Fechar"
-            className="absolute top-3 right-3 sm:top-4 sm:right-4 w-11 h-11 rounded-full bg-ink/30 backdrop-blur-sm flex items-center justify-center text-paper hover:bg-ink/50 transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        <div className="flex-1 overflow-y-auto overscroll-contain px-5 py-4 space-y-4">
+        {/* CONTEÚDO à direita */}
+        <div className="min-w-0 flex flex-col gap-3">
           <div>
-            <h2 className="text-xl font-bold text-ink">{product.name}</h2>
-            <p className="text-sm text-muted mt-0.5">{formatBRL(product.price)} / {product.unit}</p>
+            <motion.h2
+              layoutId={`name-${product.id}`}
+              className="text-xl font-bold text-ink"
+            >
+              {product.name}
+            </motion.h2>
+            <p className="text-sm text-muted mt-0.5">
+              {formatBRL(product.price)} / {product.unit}
+            </p>
           </div>
 
-          {n?.tags && n.tags.length > 0 && (
-            <div className="flex flex-wrap gap-1.5">
-              {n.tags.slice(0, 3).map((t) => (
-                <span key={t} className="inline-flex items-center rounded-full bg-accent/10 px-2.5 py-1 text-xs font-medium text-accent">
+          <div className="flex items-center gap-2 flex-wrap">
+            <CalorieBadge calories={n?.caloriesPerUnit ?? null} variant="inline" />
+            {n?.tags && n.tags.length > 0 && (
+              n.tags.slice(0, 3).map((t) => (
+                <span
+                  key={t}
+                  className="inline-flex items-center rounded-full bg-accent/10 px-2.5 py-1 text-xs font-medium text-accent"
+                >
                   {TAG_LABELS[t] ?? t}
                 </span>
-              ))}
-            </div>
-          )}
-
-          {n && n.allergens.length > 0 && (
-            <div className="flex flex-wrap gap-1.5">
-              {n.allergens.map((a) => (
-                <span key={a} className="inline-flex items-center rounded-full bg-danger/10 px-2.5 py-1 text-xs font-medium text-danger">
+              ))
+            )}
+            {n && n.allergens.length > 0 && (
+              n.allergens.map((a) => (
+                <span
+                  key={a}
+                  className="inline-flex items-center rounded-full bg-danger/10 px-2.5 py-1 text-xs font-medium text-danger"
+                >
                   {ALLERGEN_LABELS[a] ?? a}
                 </span>
-              ))}
-            </div>
-          )}
-
-          <div className="flex items-center gap-4 py-2">
-            <CalorieBadge calories={n?.caloriesPerUnit ?? null} variant="inline" />
+              ))
+            )}
           </div>
 
           {product.description && (
             <p className="text-sm text-muted leading-relaxed">{product.description}</p>
           )}
-        </div>
 
-        <div className="shrink-0 flex items-center justify-center gap-3 px-5 py-3 border-t border-line bg-paper">
-          <Button variant="secondary" size="icon" onClick={handleQtyDown} aria-label="Diminuir quantidade">
-            <Minus className="w-4 h-4" />
-          </Button>
-          <span className="w-8 text-center text-lg font-bold text-ink">{qty}</span>
-          <Button variant="primary" size="icon" onClick={handleQtyUp} aria-label="Aumentar quantidade">
-            <Plus className="w-4 h-4" />
-          </Button>
+          <NutritionFacts nutrition={n} />
+
+          {n && n.ingredients.length > 0 && (
+            <div>
+              <p className="text-xs font-medium text-muted uppercase tracking-wide mb-1.5">
+                Ingredientes
+              </p>
+              <ul className="text-sm text-ink leading-relaxed space-y-0.5">
+                {n.ingredients.map((i) => (
+                  <li key={i.name}>
+                    {i.name}
+                    {i.brand ? <span className="text-muted"> · {i.brand}</span> : null}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          <div className="flex items-center justify-between gap-3 pt-1 mt-auto">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleCollapse}
+              aria-label={`Recolher ${product.name}`}
+            >
+              <ChevronUp className="w-4 h-4 mr-1" />
+              Recolher
+            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="secondary"
+                size="icon"
+                className="!h-11 !w-11"
+                onClick={handleQtyDown}
+                aria-label="Diminuir quantidade"
+                disabled={qty <= 0}
+              >
+                <Minus className="w-4 h-4" />
+              </Button>
+              <span
+                className="w-8 text-center text-lg font-bold text-ink"
+                aria-label={`Quantidade atual ${qty}`}
+              >
+                {qty}
+              </span>
+              <Button
+                variant="primary"
+                size="icon"
+                className="!h-11 !w-11"
+                onClick={handleQtyUp}
+                aria-label="Aumentar quantidade"
+              >
+                <Plus className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
         </div>
-      </motion.div>
+      </div>
     </motion.div>
   )
 }

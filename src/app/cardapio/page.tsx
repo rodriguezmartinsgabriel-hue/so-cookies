@@ -20,6 +20,7 @@ export default function CardapioPage() {
    const { items, addItem, setQty, count } = useCart()
    const { result: pricingResult } = usePricing({ channel: "pickup" })
    const [showBackToTop, setShowBackToTop] = useState(false)
+   const [expandedId, setExpandedId] = useState<string | null>(null)
    const scrollRef = useRef<HTMLDivElement>(null)
 
    useEffect(() => {
@@ -164,12 +165,16 @@ export default function CardapioPage() {
                   const staggerIndex = Math.min((categoryStart.get(category) ?? 0) + itemIndex, 10)
                   return (
                     <div key={p.id} style={{ ["--stagger" as string]: staggerIndex }}>
-                      <ProductCard
-                        product={p}
-                        qty={qtyMap.get(p.id) ?? 0}
-                        onAdd={() => addItem(p.id)}
-                        onSetQty={(q) => setQty(p.id, q)}
-                      />
+                       <ProductCard
+                         product={p}
+                         qty={qtyMap.get(p.id) ?? 0}
+                         isExpanded={expandedId === p.id}
+                         onExpand={() =>
+                           setExpandedId((prev) => (prev === p.id ? null : p.id))
+                         }
+                         onAdd={() => addItem(p.id)}
+                         onSetQty={(q) => setQty(p.id, q)}
+                       />
                     </div>
                   )
                 })}
