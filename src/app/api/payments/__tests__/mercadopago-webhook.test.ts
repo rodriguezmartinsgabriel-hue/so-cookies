@@ -37,7 +37,11 @@ describe("Mercado Pago webhook route", () => {
   })
 
   it("rejeita assinatura inválida com 401", async () => {
-    const res = await mpWebhookPost(new Request("https://store.example.com/api/payments/webhook/mercadopago?type=payment&data.id=123", { method: "POST" }))
+    const res = await mpWebhookPost(
+      new Request("https://store.example.com/api/payments/webhook/mercadopago?type=payment&data.id=123", {
+        method: "POST",
+      }),
+    )
     expect(res.status).toBe(401)
     expect(mocks.handlePaymentWebhook).not.toHaveBeenCalled()
   })

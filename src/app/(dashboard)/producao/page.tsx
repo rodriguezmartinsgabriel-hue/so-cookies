@@ -17,14 +17,15 @@ import { repository } from "@/lib/repository"
 import { ChefHat, Clock, CheckCircle, Edit, Trash2 } from "lucide-react"
 import type { Production } from "@/lib/entity-types"
 
-const statusConfig: Record<string, { label: string; variant: "success" | "warning" | "neutral"; icon: typeof Clock }> = {
-  concluido: { label: "Concluído", variant: "success", icon: CheckCircle },
-  em_producao: { label: "Em Produção", variant: "warning", icon: ChefHat },
-  pendente: { label: "Pendente", variant: "neutral", icon: Clock },
-}
+const statusConfig: Record<string, { label: string; variant: "success" | "warning" | "neutral"; icon: typeof Clock }> =
+  {
+    concluido: { label: "Concluído", variant: "success", icon: CheckCircle },
+    em_producao: { label: "Em Produção", variant: "warning", icon: ChefHat },
+    pendente: { label: "Pendente", variant: "neutral", icon: Clock },
+  }
 
 export default function ProducaoPage() {
-  const { canEdit, isAdmin } = useRole();
+  const { canEdit, isAdmin } = useRole()
   const { confirm, dialog } = useConfirm()
   const { data: batches, isLoading: loading, error: batchesError, invalidate } = useQueryData("productions")
   const { data: products, error: productsError } = useQueryData("products")
@@ -100,16 +101,22 @@ export default function ProducaoPage() {
             </p>
           </div>
           {canEdit && (
-            <Button onClick={() => { setFormProduct(""); setFormQty(""); setFormBatchCode(`LOTE-${new Date().toISOString().slice(0,10).replace(/-/g,"")}`); setFormNotes(""); setShowCreateModal(true); }}>
+            <Button
+              onClick={() => {
+                setFormProduct("")
+                setFormQty("")
+                setFormBatchCode(`LOTE-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}`)
+                setFormNotes("")
+                setShowCreateModal(true)
+              }}
+            >
               <ChefHat className="w-4 h-4" />
               Novo Lote
             </Button>
           )}
         </div>
 
-        {error && (
-          <ErrorState message={error} onRetry={invalidate} />
-        )}
+        {error && <ErrorState message={error} onRetry={invalidate} />}
 
         {loading ? (
           <div className="space-y-2">
@@ -144,7 +151,9 @@ export default function ProducaoPage() {
                       </div>
                       <div>
                         <p className="text-sm font-semibold text-ink">{batch.product?.name || batch.batchCode}</p>
-                        <p className="text-xs text-muted">Lote {batch.batchCode} · {batch.qty} unidades</p>
+                        <p className="text-xs text-muted">
+                          Lote {batch.batchCode} · {batch.qty} unidades
+                        </p>
                         {batch.notes && <p className="text-xs text-muted mt-0.5 italic">{batch.notes}</p>}
                       </div>
                     </div>
@@ -153,21 +162,45 @@ export default function ProducaoPage() {
                       <div className="flex gap-1">
                         {canEdit && (
                           <>
-                            <Button variant="ghost" size="icon" onClick={() => openEdit(batch)} aria-label="Editar"><Edit className="w-4 h-4" /></Button>
+                            <Button variant="ghost" size="icon" onClick={() => openEdit(batch)} aria-label="Editar">
+                              <Edit className="w-4 h-4" />
+                            </Button>
                             {isAdmin && (
-                              <Button variant="ghost" size="icon" onClick={() => handleDelete(batch.id)} aria-label="Excluir"><Trash2 className="w-4 h-4 text-danger" /></Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleDelete(batch.id)}
+                                aria-label="Excluir"
+                              >
+                                <Trash2 className="w-4 h-4 text-danger" />
+                              </Button>
                             )}
                             {batch.status === "pendente" && (
-                              <button type="button" onClick={() => handleStatusChange(batch.id, "em_producao")} className="text-xs px-3 py-1.5 bg-warning/10 text-warning rounded-lg font-medium hover:bg-warning/20 transition-colors">Iniciar</button>
+                              <button
+                                type="button"
+                                onClick={() => handleStatusChange(batch.id, "em_producao")}
+                                className="text-xs px-3 py-1.5 bg-warning/10 text-warning rounded-lg font-medium hover:bg-warning/20 transition-colors"
+                              >
+                                Iniciar
+                              </button>
                             )}
                             {batch.status === "em_producao" && (
-                              <button type="button" onClick={() => handleStatusChange(batch.id, "concluido")} className="text-xs px-3 py-1.5 bg-success/10 text-success rounded-lg font-medium hover:bg-success/20 transition-colors">Concluir</button>
+                              <button
+                                type="button"
+                                onClick={() => handleStatusChange(batch.id, "concluido")}
+                                className="text-xs px-3 py-1.5 bg-success/10 text-success rounded-lg font-medium hover:bg-success/20 transition-colors"
+                              >
+                                Concluir
+                              </button>
                             )}
                           </>
                         )}
                         {batch.status === "concluido" && batch.endTime && (
                           <span className="text-xs text-muted">
-                            {new Date(batch.endTime).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+                            {new Date(batch.endTime).toLocaleTimeString("pt-BR", {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
                           </span>
                         )}
                       </div>
@@ -181,22 +214,48 @@ export default function ProducaoPage() {
 
         <Modal
           open={showEditModal && !!editingBatch}
-          onClose={() => { setShowEditModal(false); setEditingBatch(null); }}
+          onClose={() => {
+            setShowEditModal(false)
+            setEditingBatch(null)
+          }}
           title={editingBatch ? `Editar Lote ${editingBatch.batchCode}` : "Editar Lote"}
           size="md"
           footer={
             <div className="flex gap-2">
-              <Button variant="secondary" className="flex-1" onClick={() => { setShowEditModal(false); setEditingBatch(null); }}>Cancelar</Button>
-              <Button className="flex-1" onClick={handleEditSave}>Salvar</Button>
+              <Button
+                variant="secondary"
+                className="flex-1"
+                onClick={() => {
+                  setShowEditModal(false)
+                  setEditingBatch(null)
+                }}
+              >
+                Cancelar
+              </Button>
+              <Button className="flex-1" onClick={handleEditSave}>
+                Salvar
+              </Button>
             </div>
           }
         >
           <div className="p-4 space-y-4">
             <FormField label="Quantidade" htmlFor="edit-qty">
-              <Input id="edit-qty" type="number" min="1" value={editForm.qty} onChange={(e) => setEditForm({ ...editForm, qty: e.target.value })} />
+              <Input
+                id="edit-qty"
+                type="number"
+                min="1"
+                value={editForm.qty}
+                onChange={(e) => setEditForm({ ...editForm, qty: e.target.value })}
+              />
             </FormField>
             <FormField label="Observações" htmlFor="edit-notes">
-              <textarea value={editForm.notes} onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })} rows={3} placeholder="Ex: Temperatura do forno..." className="w-full px-3 py-2 border border-line rounded-lg text-sm text-ink placeholder:text-kraft focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink transition-colors resize-none" />
+              <textarea
+                value={editForm.notes}
+                onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })}
+                rows={3}
+                placeholder="Ex: Temperatura do forno..."
+                className="w-full px-3 py-2 border border-line rounded-lg text-sm text-ink placeholder:text-kraft focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink transition-colors resize-none"
+              />
             </FormField>
           </div>
         </Modal>
@@ -208,33 +267,67 @@ export default function ProducaoPage() {
           size="md"
           footer={
             <div className="flex gap-2">
-              <Button variant="secondary" className="flex-1" onClick={() => setShowCreateModal(false)}>Cancelar</Button>
-              <Button className="flex-1" onClick={handleCreateBatch}>Criar Lote</Button>
+              <Button variant="secondary" className="flex-1" onClick={() => setShowCreateModal(false)}>
+                Cancelar
+              </Button>
+              <Button className="flex-1" onClick={handleCreateBatch}>
+                Criar Lote
+              </Button>
             </div>
           }
         >
           <div className="p-4 space-y-4">
             <FormField label="Produto" required htmlFor="create-product">
-              <select id="create-product" value={formProduct} onChange={(e) => setFormProduct(e.target.value)} className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink bg-paper">
+              <select
+                id="create-product"
+                value={formProduct}
+                onChange={(e) => setFormProduct(e.target.value)}
+                className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink bg-paper"
+              >
                 <option value="">Selecionar produto</option>
-                {products.filter((p) => p.active).map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                {products
+                  .filter((p) => p.active)
+                  .map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name}
+                    </option>
+                  ))}
               </select>
             </FormField>
             <div className="grid grid-cols-2 gap-3">
               <FormField label="Código do Lote" required htmlFor="create-batch-code">
-                <Input id="create-batch-code" type="text" placeholder="LOTE-20260724" value={formBatchCode} onChange={(e) => setFormBatchCode(e.target.value)} />
+                <Input
+                  id="create-batch-code"
+                  type="text"
+                  placeholder="LOTE-20260724"
+                  value={formBatchCode}
+                  onChange={(e) => setFormBatchCode(e.target.value)}
+                />
               </FormField>
               <FormField label="Quantidade" required htmlFor="create-qty">
-                <Input id="create-qty" type="number" min="1" placeholder="20" value={formQty} onChange={(e) => setFormQty(e.target.value)} />
+                <Input
+                  id="create-qty"
+                  type="number"
+                  min="1"
+                  placeholder="20"
+                  value={formQty}
+                  onChange={(e) => setFormQty(e.target.value)}
+                />
               </FormField>
             </div>
             <FormField label="Observações" htmlFor="create-notes">
-              <Input id="create-notes" type="text" placeholder="Ex: Temperatura do forno..." value={formNotes} onChange={(e) => setFormNotes(e.target.value)} />
+              <Input
+                id="create-notes"
+                type="text"
+                placeholder="Ex: Temperatura do forno..."
+                value={formNotes}
+                onChange={(e) => setFormNotes(e.target.value)}
+              />
             </FormField>
           </div>
         </Modal>
       </div>
-        {dialog}
+      {dialog}
     </AppShell>
   )
 }

@@ -85,8 +85,8 @@ export default function OfflinePage() {
         </div>
 
         <p className="text-muted text-sm leading-relaxed">
-          Seus dados salvos continuam disponíveis. Qualquer alteração feita por aqui
-          será sincronizada automaticamente quando a conexão voltar.
+          Seus dados salvos continuam disponíveis. Qualquer alteração feita por aqui será sincronizada automaticamente
+          quando a conexão voltar.
         </p>
 
         <Card className="space-y-2 text-left">
@@ -109,12 +109,7 @@ export default function OfflinePage() {
           </p>
         )}
 
-        <Button
-          onClick={handleRetry}
-          disabled={retrying}
-          size="lg"
-          className="w-full"
-        >
+        <Button onClick={handleRetry} disabled={retrying} size="lg" className="w-full">
           {retrying ? (
             <>
               <RefreshCw className="w-4 h-4 animate-spin" />

@@ -30,7 +30,8 @@ async function reconcileAccount(account: AccountRecord): Promise<void> {
   for (const order of recentOrders) {
     const externalId = order.externalId
     if (!externalId) continue
-    const details = platform === "99FOOD" ? await fetchNineFoodOrder(account, externalId) : await fetchIfoodOrder(account, externalId)
+    const details =
+      platform === "99FOOD" ? await fetchNineFoodOrder(account, externalId) : await fetchIfoodOrder(account, externalId)
     const externalStatus = String(details?.status || "").toUpperCase()
     const internalStatus = externalStatus ? mapExternalToInternal(platform, externalStatus) : order.status
     if (!externalStatus || internalStatus === order.status) continue

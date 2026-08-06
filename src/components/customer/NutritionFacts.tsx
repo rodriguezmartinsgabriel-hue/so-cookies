@@ -15,11 +15,7 @@ function fmt(value: number | null, unit: string): string {
 
 export function NutritionFacts({ nutrition, className = "" }: NutritionFactsProps) {
   if (!nutrition) {
-    return (
-      <p className={`text-xs text-muted ${className}`}>
-        Sem informações nutricionais cadastradas.
-      </p>
-    )
+    return <p className={`text-xs text-muted ${className}`}>Sem informações nutricionais cadastradas.</p>
   }
 
   const macros = [
@@ -35,24 +31,16 @@ export function NutritionFacts({ nutrition, className = "" }: NutritionFactsProp
     nutrition.carbsPerUnit == null &&
     nutrition.fatPerUnit == null
   ) {
-    return (
-      <p className={`text-xs text-muted ${className}`}>
-        Sem informações nutricionais cadastradas.
-      </p>
-    )
+    return <p className={`text-xs text-muted ${className}`}>Sem informações nutricionais cadastradas.</p>
   }
 
   return (
     <div className={className}>
-      <p className="text-xs font-medium text-muted uppercase tracking-wide mb-1.5">
-        Informação nutricional
-      </p>
+      <p className="text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Informação nutricional</p>
       <dl className="grid grid-cols-4 gap-2 bg-cream rounded-md p-3">
         {macros.map((m) => (
           <div key={m.label} className="min-w-0">
-            <dd className="text-sm font-semibold text-ink truncate">
-              {fmt(m.value, m.unit)}
-            </dd>
+            <dd className="text-sm font-semibold text-ink truncate">{fmt(m.value, m.unit)}</dd>
             <dt className="text-[11px] text-muted">{m.label}</dt>
           </div>
         ))}

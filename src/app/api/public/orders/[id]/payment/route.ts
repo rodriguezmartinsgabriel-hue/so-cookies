@@ -5,15 +5,15 @@ import { SlotError } from "@/lib/delivery-scheduling"
 import { PaymentError } from "@/lib/payments/errors"
 import { rateLimit } from "@/lib/rate-limit"
 
-export async function POST(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { error, customer } = await requireCustomer()
   if (error) return error
   const limited = rateLimit(request, 10, 60_000)
   if (!limited.ok) {
-    return NextResponse.json({ error: "Muitas tentativas. Tente novamente em instantes." }, { status: 429, headers: { "Retry-After": String(limited.retryAfterSeconds) } })
+    return NextResponse.json(
+      { error: "Muitas tentativas. Tente novamente em instantes." },
+      { status: 429, headers: { "Retry-After": String(limited.retryAfterSeconds) } },
+    )
   }
   try {
     const { id } = await params

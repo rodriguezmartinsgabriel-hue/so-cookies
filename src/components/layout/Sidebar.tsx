@@ -1,11 +1,11 @@
-"use client";
+"use client"
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useState } from "react";
-import Image from "next/image";
-import { useRole } from "@/hooks/useRole";
-import { APP_VERSION } from "@/lib/version";
+import Link from "next/link"
+import { usePathname } from "next/navigation"
+import { useState } from "react"
+import Image from "next/image"
+import { useRole } from "@/hooks/useRole"
+import { APP_VERSION } from "@/lib/version"
 import {
   Home,
   ShoppingBag,
@@ -23,8 +23,8 @@ import {
   Cookie,
   ChevronLeft,
   ChevronRight,
-} from "lucide-react";
-import { GlassSurface } from "@/components/ui/GlassSurface";
+} from "lucide-react"
+import { GlassSurface } from "@/components/ui/GlassSurface"
 
 const navItems = [
   { href: "/", label: "Painel", icon: Home },
@@ -43,35 +43,24 @@ const navItems = [
   { href: "/documentos", label: "Documentos", icon: BookOpen },
   { href: "/relatorios", label: "Relatórios", icon: BarChart3 },
   { href: "/usuarios", label: "Usuários", icon: Users, adminOnly: true },
-];
+]
 
 export function Sidebar() {
-  const pathname = usePathname();
-  const [collapsed, setCollapsed] = useState(false);
-  const { isAdmin } = useRole();
-  const visibleItems = navItems.filter((item) => !item.adminOnly || isAdmin);
+  const pathname = usePathname()
+  const [collapsed, setCollapsed] = useState(false)
+  const { isAdmin } = useRole()
+  const visibleItems = navItems.filter((item) => !item.adminOnly || isAdmin)
 
   return (
     <GlassSurface
       tone="strong"
-      className={`hidden lg:flex flex-col rounded-none transition-all duration-200 ${
-        collapsed ? "w-[68px]" : "w-56"
-      }`}
+      className={`hidden lg:flex flex-col rounded-none transition-all duration-200 ${collapsed ? "w-[68px]" : "w-56"}`}
     >
       <div className="flex items-center justify-between h-14 px-3 border-b border-line">
         {!collapsed && (
           <div className="flex items-center gap-2">
-            <Image
-              src="/logo.svg"
-              alt="Só Cookies & Café"
-              width={40}
-              height={40}
-              unoptimized
-              className="h-10 w-auto"
-            />
-            <span className="text-sm font-medium text-muted hidden sm:block">
-              Só Cookies
-            </span>
+            <Image src="/logo.svg" alt="Só Cookies & Café" width={40} height={40} unoptimized className="h-10 w-auto" />
+            <span className="text-sm font-medium text-muted hidden sm:block">Só Cookies</span>
           </div>
         )}
         <button
@@ -85,7 +74,7 @@ export function Sidebar() {
 
       <nav className="flex-1 py-2 px-2 space-y-0.5 overflow-y-auto">
         {visibleItems.map((item) => {
-          const isActive = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href));
+          const isActive = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href))
           return (
             <Link
               key={item.href}
@@ -100,7 +89,7 @@ export function Sidebar() {
               <item.icon className="w-5 h-5 shrink-0" strokeWidth={1.5} />
               {!collapsed && <span>{item.label}</span>}
             </Link>
-          );
+          )
         })}
       </nav>
 
@@ -110,5 +99,5 @@ export function Sidebar() {
         </div>
       )}
     </GlassSurface>
-  );
+  )
 }

@@ -15,9 +15,7 @@ const mockProduct: CatalogProduct = {
   nutrition: null,
 }
 
-const mockLines = [
-  { productId: "1", qty: 2, product: mockProduct },
-]
+const mockLines = [{ productId: "1", qty: 2, product: mockProduct }]
 
 describe("OrderConfirmDialog", () => {
   it("renderiza com resumo dos itens", () => {
@@ -33,7 +31,7 @@ describe("OrderConfirmDialog", () => {
         onConfirm={() => {}}
         onCancel={() => {}}
         loading={false}
-      />
+      />,
     )
     expect(screen.getByRole("heading", { name: "Confirmar pedido" })).toBeInTheDocument()
   })
@@ -52,7 +50,7 @@ describe("OrderConfirmDialog", () => {
         onConfirm={onConfirm}
         onCancel={() => {}}
         loading={false}
-      />
+      />,
     )
     const confirmBtn = screen.getByRole("button", { name: /confirmar pedido/i })
     await userEvent.click(confirmBtn)
@@ -72,7 +70,7 @@ describe("OrderConfirmDialog", () => {
         onConfirm={() => {}}
         onCancel={onCancel}
         loading={false}
-      />
+      />,
     )
     await userEvent.click(screen.getByRole("button", { name: /voltar/i }))
   })
@@ -90,7 +88,7 @@ describe("OrderConfirmDialog", () => {
         onConfirm={() => {}}
         onCancel={() => {}}
         loading={true}
-      />
+      />,
     )
     expect(screen.getByText("Finalizando...")).toBeInTheDocument()
   })

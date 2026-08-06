@@ -1,80 +1,74 @@
-"use client";
+"use client"
 
-import { useState, useRef, useEffect, useCallback, useSyncExternalStore } from "react";
-import { Bell, User, LogOut, AlertTriangle, Package, Truck, Check, X, ChevronLeft, Cloud } from "lucide-react";
-import { useNotifications, type Notification } from "@/lib/notifications";
-import { useSync } from "@/hooks/useSync";
-import { useRouter } from "next/navigation";
-import Image from "next/image";
-import { ThemeToggle } from "@/components/ui/ThemeToggle";
-import { GlassSurface } from "@/components/ui/GlassSurface";
+import { useState, useRef, useEffect, useCallback, useSyncExternalStore } from "react"
+import { Bell, User, LogOut, AlertTriangle, Package, Truck, Check, X, ChevronLeft, Cloud } from "lucide-react"
+import { useNotifications, type Notification } from "@/lib/notifications"
+import { useSync } from "@/hooks/useSync"
+import { useRouter } from "next/navigation"
+import Image from "next/image"
+import { ThemeToggle } from "@/components/ui/ThemeToggle"
+import { GlassSurface } from "@/components/ui/GlassSurface"
 
 type User = {
-  name?: string | null;
-  email?: string | null;
-  role?: string;
-};
+  name?: string | null
+  email?: string | null
+  role?: string
+}
 
 function NotifIcon({ type }: { type: Notification["type"] }) {
   switch (type) {
     case "low_stock":
-      return <AlertTriangle className="w-4 h-4 text-warning" />;
+      return <AlertTriangle className="w-4 h-4 text-warning" />
     case "pending_order":
-      return <Package className="w-4 h-4 text-info" />;
+      return <Package className="w-4 h-4 text-info" />
     case "ready_order":
-      return <Truck className="w-4 h-4 text-success" />;
+      return <Truck className="w-4 h-4 text-success" />
     default:
-      return <Check className="w-4 h-4 text-muted" />;
+      return <Check className="w-4 h-4 text-muted" />
   }
 }
 
 function formatSyncTime(iso: string) {
-  const d = new Date(iso);
-  if (isNaN(d.getTime())) return "";
-  const now = new Date();
-  const time = d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
-  if (d.toDateString() === now.toDateString()) return time;
-  return `${d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })} ${time}`;
+  const d = new Date(iso)
+  if (isNaN(d.getTime())) return ""
+  const now = new Date()
+  const time = d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
+  if (d.toDateString() === now.toDateString()) return time
+  return `${d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })} ${time}`
 }
 
-export function Header({
-  user,
-  onLogout,
-}: {
-  user?: User;
-  onLogout: () => void;
-}) {
-  const [open, setOpen] = useState(false);
-  const { notifications, unreadCount, markAsRead, markAllRead } = useNotifications();
-  const { isOnline, isSyncing, pendingCount, errors, lastSync } = useSync();
-  const ref = useRef<HTMLDivElement>(null);
-  const router = useRouter();
+export function Header({ user, onLogout }: { user?: User; onLogout: () => void }) {
+  const [open, setOpen] = useState(false)
+  const { notifications, unreadCount, markAsRead, markAllRead } = useNotifications()
+  const { isOnline, isSyncing, pendingCount, errors, lastSync } = useSync()
+  const ref = useRef<HTMLDivElement>(null)
+  const router = useRouter()
 
-  const showLastSync = isOnline && !isSyncing && pendingCount === 0 && errors.length === 0 && lastSync;
+  const showLastSync = isOnline && !isSyncing && pendingCount === 0 && errors.length === 0 && lastSync
 
   const subscribeHistory = useCallback((cb: () => void) => {
-    window.addEventListener("popstate", cb);
-    return () => window.removeEventListener("popstate", cb);
-  }, []);
+    window.addEventListener("popstate", cb)
+    return () => window.removeEventListener("popstate", cb)
+  }, [])
 
   const canGoBack = useSyncExternalStore(
     subscribeHistory,
     () => (window.history.state?.idx ?? 0) > 0,
-    () => false
-  );
+    () => false,
+  )
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
     }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+    document.addEventListener("mousedown", handleClickOutside)
+    return () => document.removeEventListener("mousedown", handleClickOutside)
+  }, [])
 
   function handleNotifClick(n: Notification) {
-    markAsRead(n.id);
-    setOpen(false);
-    if (n.href) router.push(n.href);
+    markAsRead(n.id)
+    setOpen(false)
+    if (n.href) router.push(n.href)
   }
 
   return (
@@ -93,14 +87,7 @@ export function Header({
             <ChevronLeft className="w-6 h-6" strokeWidth={1.5} />
           </button>
         )}
-        <Image
-          src="/logo.svg"
-          alt="Só Cookies & Café"
-          width={32}
-          height={32}
-          unoptimized
-          className="h-8 w-auto"
-        />
+        <Image src="/logo.svg" alt="Só Cookies & Café" width={32} height={32} unoptimized className="h-8 w-auto" />
       </div>
 
       <div className="hidden lg:block" />
@@ -142,11 +129,17 @@ export function Header({
                 <h3 className="text-sm font-bold text-ink">Notificações</h3>
                 <div className="flex items-center gap-2">
                   {unreadCount > 0 && (
-                    <button onClick={markAllRead} className="px-2 py-2 text-[11px] text-info hover:text-info/80 transition-colors">
+                    <button
+                      onClick={markAllRead}
+                      className="px-2 py-2 text-[11px] text-info hover:text-info/80 transition-colors"
+                    >
                       Marcar tudo lido
                     </button>
                   )}
-                  <button onClick={() => setOpen(false)} className="flex items-center justify-center min-w-[44px] min-h-[44px] rounded hover:bg-cream text-muted">
+                  <button
+                    onClick={() => setOpen(false)}
+                    className="flex items-center justify-center min-w-[44px] min-h-[44px] rounded hover:bg-cream text-muted"
+                  >
                     <X className="w-4 h-4" />
                   </button>
                 </div>
@@ -170,14 +163,10 @@ export function Header({
                         <NotifIcon type={n.type} />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className={`text-xs ${!n.read ? "font-semibold text-ink" : "text-muted"}`}>
-                          {n.title}
-                        </p>
+                        <p className={`text-xs ${!n.read ? "font-semibold text-ink" : "text-muted"}`}>{n.title}</p>
                         <p className="text-[11px] text-muted truncate">{n.message}</p>
                       </div>
-                      {!n.read && (
-                        <span className="w-2 h-2 bg-info rounded-full mt-1 shrink-0" />
-                      )}
+                      {!n.read && <span className="w-2 h-2 bg-info rounded-full mt-1 shrink-0" />}
                     </button>
                   ))
                 )}
@@ -192,9 +181,7 @@ export function Header({
           <div className="hidden sm:flex w-8 h-8 rounded-full bg-ink items-center justify-center">
             <User className="w-4 h-4 text-paper" strokeWidth={1.5} />
           </div>
-          <span className="hidden sm:block text-sm font-medium text-ink">
-            {user?.name || "Usuário"}
-          </span>
+          <span className="hidden sm:block text-sm font-medium text-ink">{user?.name || "Usuário"}</span>
           <button
             onClick={onLogout}
             className="flex items-center justify-center min-w-[44px] min-h-[44px] rounded-md hover:bg-cream text-muted transition-colors"
@@ -206,5 +193,5 @@ export function Header({
         </div>
       </div>
     </GlassSurface>
-  );
+  )
 }

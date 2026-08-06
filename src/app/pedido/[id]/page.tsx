@@ -3,7 +3,20 @@
 import { useCallback, useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { Package, Clock, Store, Truck, MapPin, X, RotateCcw, XCircle, AlertTriangle, Share2, Check, QrCode } from "lucide-react"
+import {
+  Package,
+  Clock,
+  Store,
+  Truck,
+  MapPin,
+  X,
+  RotateCcw,
+  XCircle,
+  AlertTriangle,
+  Share2,
+  Check,
+  QrCode,
+} from "lucide-react"
 import { CustomerShell } from "@/components/customer/CustomerShell"
 import { OrderStatusTimeline, statusLabel, statusOrder } from "@/components/customer/OrderStatusTimeline"
 import { Card } from "@/components/ui/Card"
@@ -78,63 +91,77 @@ type AddressState = {
   state: string
 }
 
-const formatBRL = (v: number) =>
-  v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
+const formatBRL = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
 
 const WEEKDAY_SHORT = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"]
 
 function dateLabel(dateStr: string): string {
-   const [y, m, d] = dateStr.split("-").map(Number)
-   const wd = new Date(Date.UTC(y, m - 1, d)).getUTCDay()
-   return `${WEEKDAY_SHORT[wd]}, ${String(d).padStart(2, "0")}/${String(m).padStart(2, "0")}`
+  const [y, m, d] = dateStr.split("-").map(Number)
+  const wd = new Date(Date.UTC(y, m - 1, d)).getUTCDay()
+  return `${WEEKDAY_SHORT[wd]}, ${String(d).padStart(2, "0")}/${String(m).padStart(2, "0")}`
 }
 
 function getEtaMinutes(status: string): number | null {
-   switch (status) {
-      case "PENDENTE": return 15
-      case "CONFIRMADO": return 20
-      case "PRODUCAO": return 25
-      case "PRONTO": return 10
-      case "ENTREGA": return 30
-      case "CONCLUIDO": return 0
-      default: return null
-   }
+  switch (status) {
+    case "PENDENTE":
+      return 15
+    case "CONFIRMADO":
+      return 20
+    case "PRODUCAO":
+      return 25
+    case "PRONTO":
+      return 10
+    case "ENTREGA":
+      return 30
+    case "CONCLUIDO":
+      return 0
+    default:
+      return null
+  }
 }
 
 async function handleShareOrder(orderId: string) {
-   const url = `${window.location.origin}/pedido/${orderId}`
-   if (navigator.share) {
-      try {
-         await navigator.share({ title: "Meu pedido", text: "Acompanhe meu pedido", url })
-      } catch {
-         await navigator.clipboard.writeText(url)
-      }
-   } else {
+  const url = `${window.location.origin}/pedido/${orderId}`
+  if (navigator.share) {
+    try {
+      await navigator.share({ title: "Meu pedido", text: "Acompanhe meu pedido", url })
+    } catch {
       await navigator.clipboard.writeText(url)
-   }
- }
+    }
+  } else {
+    await navigator.clipboard.writeText(url)
+  }
+}
 
 export default function PedidoPage({ params }: { params: Promise<{ id: string }> }) {
-    const [order, setOrder] = useState<PublicOrder | null>(null)
-    const [notFound, setNotFound] = useState(false)
-    const [loading, setLoading] = useState(true)
-     const { count } = useCart()
-     const haptic = useHapticFeedback()
-     const router = useRouter()
-     const { toast } = useToast()
+  const [order, setOrder] = useState<PublicOrder | null>(null)
+  const [notFound, setNotFound] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const { count } = useCart()
+  const haptic = useHapticFeedback()
+  const router = useRouter()
+  const { toast } = useToast()
 
-   const [showDeliveryModal, setShowDeliveryModal] = useState(false)
-   const [showCancelConfirm, setShowCancelConfirm] = useState(false)
-   const [actionLoading, setActionLoading] = useState(false)
-   const [slots, setSlots] = useState<DeliverySlot[]>([])
-   const [slotsLoading, setSlotsLoading] = useState(false)
-   const [selectedSlot, setSelectedSlot] = useState<DeliverySlot | null>(null)
-   const [address, setAddress] = useState<AddressState>({ cep: "", street: "", number: "", complement: "", neighborhood: "", city: "", state: "" })
-   const [saving, setSaving] = useState(false)
-   const deliveryModalRef = useFocusTrap(showDeliveryModal)
-   const [deliveryError, setDeliveryError] = useState("")
+  const [showDeliveryModal, setShowDeliveryModal] = useState(false)
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false)
+  const [actionLoading, setActionLoading] = useState(false)
+  const [slots, setSlots] = useState<DeliverySlot[]>([])
+  const [slotsLoading, setSlotsLoading] = useState(false)
+  const [selectedSlot, setSelectedSlot] = useState<DeliverySlot | null>(null)
+  const [address, setAddress] = useState<AddressState>({
+    cep: "",
+    street: "",
+    number: "",
+    complement: "",
+    neighborhood: "",
+    city: "",
+    state: "",
+  })
+  const [saving, setSaving] = useState(false)
+  const deliveryModalRef = useFocusTrap(showDeliveryModal)
+  const [deliveryError, setDeliveryError] = useState("")
 
-   const etaMinutes = order ? getEtaMinutes(order.status) : null
+  const etaMinutes = order ? getEtaMinutes(order.status) : null
 
   const load = useCallback(async (id: string) => {
     try {
@@ -190,7 +217,9 @@ export default function PedidoPage({ params }: { params: Promise<{ id: string }>
         setSelectedSlot((prev) =>
           prev && next.some((s) => s.routeId === prev.routeId && s.date === prev.date)
             ? prev
-            : next.find((s) => s.routeId === order?.deliveryRouteId && s.date === order?.deliveryDate) ?? next[0] ?? null,
+            : (next.find((s) => s.routeId === order?.deliveryRouteId && s.date === order?.deliveryDate) ??
+              next[0] ??
+              null),
         )
       })
       .catch(() => setDeliveryError("Não foi possível carregar as datas de entrega"))
@@ -299,31 +328,29 @@ export default function PedidoPage({ params }: { params: Promise<{ id: string }>
     <CustomerShell cartCount={count}>
       <div className="space-y-4">
         <div>
-           <div className="flex items-center justify-between">
-             <h1 className="text-2xl font-bold text-ink">Pedido</h1>
-             {order && (
-               <button
-                 type="button"
-                 onClick={() => handleShareOrder(order.id)}
-                 className="p-2 rounded-lg hover:bg-cream transition-colors text-muted"
-                 aria-label="Compartilhar pedido"
-               >
-                 <Share2 className="w-5 h-5" />
-               </button>
-             )}
-           </div>
-           {order && (
-             <p className="text-sm text-muted">
-               #{order.id.slice(0, 6)} · {new Date(order.createdAt).toLocaleString("pt-BR")}
-             </p>
-           )}
-         </div>
+          <div className="flex items-center justify-between">
+            <h1 className="text-2xl font-bold text-ink">Pedido</h1>
+            {order && (
+              <button
+                type="button"
+                onClick={() => handleShareOrder(order.id)}
+                className="p-2 rounded-lg hover:bg-cream transition-colors text-muted"
+                aria-label="Compartilhar pedido"
+              >
+                <Share2 className="w-5 h-5" />
+              </button>
+            )}
+          </div>
+          {order && (
+            <p className="text-sm text-muted">
+              #{order.id.slice(0, 6)} · {new Date(order.createdAt).toLocaleString("pt-BR")}
+            </p>
+          )}
+        </div>
 
         {loading && <div className="text-center py-12 text-muted">Carregando pedido...</div>}
 
-        {!loading && notFound && (
-          <div className="text-center py-12 text-muted">Pedido não encontrado</div>
-        )}
+        {!loading && notFound && <div className="text-center py-12 text-muted">Pedido não encontrado</div>}
 
         {!loading && order && (
           <>
@@ -338,7 +365,9 @@ export default function PedidoPage({ params }: { params: Promise<{ id: string }>
                   {isDelivery ? (
                     <>
                       <p className="text-xs text-muted uppercase tracking-wide mb-1">Entrega agendada</p>
-                      <p className="text-2xl font-bold text-ink">{order.deliveryDate ? dateLabel(order.deliveryDate) : "—"}</p>
+                      <p className="text-2xl font-bold text-ink">
+                        {order.deliveryDate ? dateLabel(order.deliveryDate) : "—"}
+                      </p>
                       <p className="text-xs text-muted mt-1 flex items-center justify-center gap-1">
                         <Truck className="w-3 h-3" /> {order.deliveryRoute?.name ?? "Entrega"}
                       </p>
@@ -351,7 +380,8 @@ export default function PedidoPage({ params }: { params: Promise<{ id: string }>
                         <p className="text-xs text-muted mt-2 flex items-start justify-center gap-1 text-left">
                           <MapPin className="w-3 h-3 shrink-0 mt-0.5" />
                           <span>
-                            {order.deliveryStreet}{order.deliveryNumber ? `, ${order.deliveryNumber}` : ""}
+                            {order.deliveryStreet}
+                            {order.deliveryNumber ? `, ${order.deliveryNumber}` : ""}
                             {order.deliveryComplement ? ` - ${order.deliveryComplement}` : ""}
                             {order.deliveryNeighborhood ? ` · ${order.deliveryNeighborhood}` : ""}
                             {order.deliveryCity ? ` · ${order.deliveryCity}` : ""}
@@ -409,14 +439,28 @@ export default function PedidoPage({ params }: { params: Promise<{ id: string }>
                 )}
 
                 {canChange && !cancelled && (
-                  <Button variant="secondary" size="md" className="w-full" onClick={() => { haptic.selection(); openDeliveryModal() }}>
+                  <Button
+                    variant="secondary"
+                    size="md"
+                    className="w-full"
+                    onClick={() => {
+                      haptic.selection()
+                      openDeliveryModal()
+                    }}
+                  >
                     <Truck className="w-4 h-4" />
                     {isDelivery ? "Alterar data / endereço de entrega" : "Agendar entrega"}
                   </Button>
                 )}
 
                 {order.status === "PENDENTE" && !cancelled && (
-                  <Button variant="danger" size="md" className="w-full" onClick={() => setShowCancelConfirm(true)} disabled={actionLoading}>
+                  <Button
+                    variant="danger"
+                    size="md"
+                    className="w-full"
+                    onClick={() => setShowCancelConfirm(true)}
+                    disabled={actionLoading}
+                  >
                     <XCircle className="w-4 h-4" />
                     Cancelar pedido
                   </Button>
@@ -433,8 +477,15 @@ export default function PedidoPage({ params }: { params: Promise<{ id: string }>
                   <div className="flex items-center gap-2 p-3 rounded-lg border border-danger/30 bg-danger/5">
                     <AlertTriangle className="w-4 h-4 text-danger shrink-0" />
                     <p className="text-sm text-ink flex-1">Tem certeza? Esta ação não pode ser desfeita.</p>
-                    <Button variant="secondary" size="sm" onClick={() => setShowCancelConfirm(false)}>Voltar</Button>
-                    <Button size="sm" className="bg-danger text-paper hover:bg-danger/90" onClick={handleCancelOrder} disabled={actionLoading}>
+                    <Button variant="secondary" size="sm" onClick={() => setShowCancelConfirm(false)}>
+                      Voltar
+                    </Button>
+                    <Button
+                      size="sm"
+                      className="bg-danger text-paper hover:bg-danger/90"
+                      onClick={handleCancelOrder}
+                      disabled={actionLoading}
+                    >
                       {actionLoading ? "Cancelando..." : "Cancelar"}
                     </Button>
                   </div>
@@ -473,100 +524,158 @@ export default function PedidoPage({ params }: { params: Promise<{ id: string }>
       </div>
 
       {showDeliveryModal && order && (
-        <div className="fixed inset-0 z-50 bg-ink/30 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="delivery-modal-title">
+        <div
+          className="fixed inset-0 z-50 bg-ink/30 flex items-center justify-center p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="delivery-modal-title"
+        >
           <div ref={deliveryModalRef} className="w-full max-w-md max-h-[80vh]">
             <GlassSurface tone="strong" className="rounded-xl w-full max-h-[80vh] overflow-y-auto">
               <div className="flex items-center justify-between p-4 border-b border-line">
                 <div>
-                  <h3 id="delivery-modal-title" className="text-lg font-bold text-ink">Entrega agendada</h3>
+                  <h3 id="delivery-modal-title" className="text-lg font-bold text-ink">
+                    Entrega agendada
+                  </h3>
                   <p className="text-xs text-muted">Escolha uma rota disponível</p>
                 </div>
-                <button type="button" data-close-modal onClick={() => { haptic.tap(); setShowDeliveryModal(false) }} aria-label="Fechar" className="p-1.5 rounded-md hover:bg-cream text-muted">
+                <button
+                  type="button"
+                  data-close-modal
+                  onClick={() => {
+                    haptic.tap()
+                    setShowDeliveryModal(false)
+                  }}
+                  aria-label="Fechar"
+                  className="p-1.5 rounded-md hover:bg-cream text-muted"
+                >
                   <X className="w-5 h-5" />
                 </button>
               </div>
-            <div className="p-4 space-y-4">
-              {slotsLoading && <p className="text-sm text-muted text-center py-4">Carregando datas...</p>}
-              {!slotsLoading && slots.length === 0 && (
-                <p className="text-sm text-muted text-center py-4">Não há rotas abertas no momento.</p>
-              )}
-              {!slotsLoading && slots.length > 0 && (
-                <div className="space-y-2">
-                  {slots.map((slot) => {
-                    const active = selectedSlot?.routeId === slot.routeId && selectedSlot?.date === slot.date
-                    const full =
-                      slot.capacity.enabled &&
-                      ((slot.capacity.maxOrders != null && slot.capacity.usedOrders >= slot.capacity.maxOrders) ||
-                        (slot.capacity.maxItems != null && slot.capacity.usedItems >= slot.capacity.maxItems))
-                    return (
-                      <button
-                        key={`${slot.routeId}-${slot.date}`}
-                        type="button"
-                        disabled={full}
-                        onClick={() => setSelectedSlot(slot)}
-                        className={`w-full text-left p-3 rounded-lg border transition-colors ${full ? "opacity-50 cursor-not-allowed border-line bg-cream/30" : active ? "border-ink bg-ink text-paper" : "border-line bg-paper hover:bg-cream/50"}`}
-                      >
-                        <div className="flex items-center justify-between gap-2">
-                          <span className={`text-sm font-semibold ${active ? "text-paper" : "text-ink"}`}>{slot.dateLabel}</span>
-                          <span className={`text-xs font-medium ${active ? "text-paper/80" : "text-muted"}`}>{slot.zoneName}</span>
-                        </div>
-                        <p className={`text-xs mt-1 flex items-center gap-1 ${active ? "text-paper/80" : "text-muted"}`}>
-                          <Clock className="w-3 h-3" /> Peça até {slot.cutoffLabel}
-                        </p>
-                        <p className={`text-xs mt-0.5 flex items-center gap-1 ${active ? "text-paper/80" : "text-muted"}`}>
-                          <Truck className="w-3 h-3" /> {slot.windowLabel}
-                        </p>
-                        {full && <p className="text-xs mt-1 font-medium text-danger">Rota lotada</p>}
-                      </button>
-                    )
-                  })}
-                </div>
-              )}
+              <div className="p-4 space-y-4">
+                {slotsLoading && <p className="text-sm text-muted text-center py-4">Carregando datas...</p>}
+                {!slotsLoading && slots.length === 0 && (
+                  <p className="text-sm text-muted text-center py-4">Não há rotas abertas no momento.</p>
+                )}
+                {!slotsLoading && slots.length > 0 && (
+                  <div className="space-y-2">
+                    {slots.map((slot) => {
+                      const active = selectedSlot?.routeId === slot.routeId && selectedSlot?.date === slot.date
+                      const full =
+                        slot.capacity.enabled &&
+                        ((slot.capacity.maxOrders != null && slot.capacity.usedOrders >= slot.capacity.maxOrders) ||
+                          (slot.capacity.maxItems != null && slot.capacity.usedItems >= slot.capacity.maxItems))
+                      return (
+                        <button
+                          key={`${slot.routeId}-${slot.date}`}
+                          type="button"
+                          disabled={full}
+                          onClick={() => setSelectedSlot(slot)}
+                          className={`w-full text-left p-3 rounded-lg border transition-colors ${full ? "opacity-50 cursor-not-allowed border-line bg-cream/30" : active ? "border-ink bg-ink text-paper" : "border-line bg-paper hover:bg-cream/50"}`}
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <span className={`text-sm font-semibold ${active ? "text-paper" : "text-ink"}`}>
+                              {slot.dateLabel}
+                            </span>
+                            <span className={`text-xs font-medium ${active ? "text-paper/80" : "text-muted"}`}>
+                              {slot.zoneName}
+                            </span>
+                          </div>
+                          <p
+                            className={`text-xs mt-1 flex items-center gap-1 ${active ? "text-paper/80" : "text-muted"}`}
+                          >
+                            <Clock className="w-3 h-3" /> Peça até {slot.cutoffLabel}
+                          </p>
+                          <p
+                            className={`text-xs mt-0.5 flex items-center gap-1 ${active ? "text-paper/80" : "text-muted"}`}
+                          >
+                            <Truck className="w-3 h-3" /> {slot.windowLabel}
+                          </p>
+                          {full && <p className="text-xs mt-1 font-medium text-danger">Rota lotada</p>}
+                        </button>
+                      )
+                    })}
+                  </div>
+                )}
 
-              <div className="space-y-3">
-                <p className="text-sm font-semibold text-ink">Endereço de entrega</p>
-                <div className="grid grid-cols-3 gap-2">
-                  <FormField label="CEP">
-                    <Input type="text" inputMode="numeric" value={address.cep} onChange={(e) => setAddress({ ...address, cep: e.target.value })} placeholder="00000-000" />
+                <div className="space-y-3">
+                  <p className="text-sm font-semibold text-ink">Endereço de entrega</p>
+                  <div className="grid grid-cols-3 gap-2">
+                    <FormField label="CEP">
+                      <Input
+                        type="text"
+                        inputMode="numeric"
+                        value={address.cep}
+                        onChange={(e) => setAddress({ ...address, cep: e.target.value })}
+                        placeholder="00000-000"
+                      />
+                    </FormField>
+                    <div className="col-span-2">
+                      <FormField label="Cidade">
+                        <Input
+                          type="text"
+                          value={address.city}
+                          onChange={(e) => setAddress({ ...address, city: e.target.value })}
+                        />
+                      </FormField>
+                    </div>
+                  </div>
+                  <FormField label="Rua *">
+                    <Input
+                      type="text"
+                      value={address.street}
+                      onChange={(e) => setAddress({ ...address, street: e.target.value })}
+                    />
                   </FormField>
-                  <div className="col-span-2">
-                    <FormField label="Cidade">
-                      <Input type="text" value={address.city} onChange={(e) => setAddress({ ...address, city: e.target.value })} />
+                  <div className="grid grid-cols-2 gap-2">
+                    <FormField label="Número *">
+                      <Input
+                        type="text"
+                        value={address.number}
+                        onChange={(e) => setAddress({ ...address, number: e.target.value })}
+                      />
+                    </FormField>
+                    <FormField label="Complemento">
+                      <Input
+                        type="text"
+                        value={address.complement}
+                        onChange={(e) => setAddress({ ...address, complement: e.target.value })}
+                      />
+                    </FormField>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="col-span-2">
+                      <FormField label="Bairro">
+                        <Input
+                          type="text"
+                          value={address.neighborhood}
+                          onChange={(e) => setAddress({ ...address, neighborhood: e.target.value })}
+                        />
+                      </FormField>
+                    </div>
+                    <FormField label="UF *">
+                      <Input
+                        type="text"
+                        maxLength={2}
+                        placeholder="SP"
+                        value={address.state}
+                        onChange={(e) => setAddress({ ...address, state: e.target.value.toUpperCase() })}
+                      />
                     </FormField>
                   </div>
                 </div>
-                <FormField label="Rua *">
-                  <Input type="text" value={address.street} onChange={(e) => setAddress({ ...address, street: e.target.value })} />
-                </FormField>
-                <div className="grid grid-cols-2 gap-2">
-                  <FormField label="Número *">
-                    <Input type="text" value={address.number} onChange={(e) => setAddress({ ...address, number: e.target.value })} />
-                  </FormField>
-                  <FormField label="Complemento">
-                    <Input type="text" value={address.complement} onChange={(e) => setAddress({ ...address, complement: e.target.value })} />
-                  </FormField>
-                </div>
-                <div className="grid grid-cols-3 gap-2">
-                  <div className="col-span-2">
-                    <FormField label="Bairro">
-                      <Input type="text" value={address.neighborhood} onChange={(e) => setAddress({ ...address, neighborhood: e.target.value })} />
-                    </FormField>
-                  </div>
-                  <FormField label="UF *">
-                    <Input type="text" maxLength={2} placeholder="SP" value={address.state} onChange={(e) => setAddress({ ...address, state: e.target.value.toUpperCase() })} />
-                  </FormField>
-                </div>
+
+                {deliveryError && <p className="text-sm text-danger">{deliveryError}</p>}
               </div>
-
-              {deliveryError && <p className="text-sm text-danger">{deliveryError}</p>}
-            </div>
-            <div className="p-4 border-t border-line flex gap-2">
-              <Button variant="secondary" className="flex-1" onClick={() => setShowDeliveryModal(false)}>Cancelar</Button>
-              <Button className="flex-1" onClick={handleSaveDelivery} disabled={saving || slotsLoading}>
-                {saving ? "Salvando..." : "Salvar entrega"}
-              </Button>
-            </div>
-          </GlassSurface>
+              <div className="p-4 border-t border-line flex gap-2">
+                <Button variant="secondary" className="flex-1" onClick={() => setShowDeliveryModal(false)}>
+                  Cancelar
+                </Button>
+                <Button className="flex-1" onClick={handleSaveDelivery} disabled={saving || slotsLoading}>
+                  {saving ? "Salvando..." : "Salvar entrega"}
+                </Button>
+              </div>
+            </GlassSurface>
           </div>
         </div>
       )}

@@ -228,7 +228,10 @@ function buildMonthBuckets(days: number): TimeBucket[] {
   while (year < curYear || (year === curYear && month <= curMonth)) {
     const start = new Date(year, month, 1, 0, 0, 0, 0).getTime()
     const end = new Date(year, month + 1, 1, 0, 0, 0, 0).getTime()
-    const label = days >= 365 ? `${String(month + 1).padStart(2, "0")}/${year}` : `${String(month + 1).padStart(2, "0")}/${String(year).slice(2)}`
+    const label =
+      days >= 365
+        ? `${String(month + 1).padStart(2, "0")}/${year}`
+        : `${String(month + 1).padStart(2, "0")}/${String(year).slice(2)}`
     buckets.push({ name: label, total: 0, start, end })
     month++
     if (month > 11) {

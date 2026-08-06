@@ -1,12 +1,5 @@
 import { describe, it, expect } from "vitest"
-import {
-  csvEscape,
-  csvRow,
-  csvFromSections,
-  buildReportCsv,
-  fileStamp,
-  type CsvSection,
-} from "@/lib/csv"
+import { csvEscape, csvRow, csvFromSections, buildReportCsv, fileStamp, type CsvSection } from "@/lib/csv"
 import type { ReportSummary } from "@/lib/reports"
 
 function summary(overrides: Partial<ReportSummary> = {}): ReportSummary {
@@ -58,9 +51,7 @@ describe("csvRow / csvFromSections", () => {
   })
 
   it("monta blocos com título, cabeçalho e linhas em CRLF", () => {
-    const sections: CsvSection[] = [
-      { title: "Resumo", headers: ["Métrica", "Valor"], rows: [["Receita", "1.234,50"]] },
-    ]
+    const sections: CsvSection[] = [{ title: "Resumo", headers: ["Métrica", "Valor"], rows: [["Receita", "1.234,50"]] }]
     expect(csvFromSections(sections)).toBe("Resumo\r\nMétrica;Valor\r\nReceita;1.234,50\r\n")
   })
 })

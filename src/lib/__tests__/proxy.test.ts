@@ -63,7 +63,16 @@ describe("proxy host isolation (loja vs manager)", () => {
   })
 
   it("returns 404 for customer routes/APIs on the staff host", () => {
-    for (const p of ["/entrar", "/cadastro", "/cardapio", "/perfil", "/pagamento/abc", "/api/public/catalog", "/api/public/auth/oauth/google", "/api/public/auth/oauth/google/callback"]) {
+    for (const p of [
+      "/entrar",
+      "/cadastro",
+      "/cardapio",
+      "/perfil",
+      "/pagamento/abc",
+      "/api/public/catalog",
+      "/api/public/auth/oauth/google",
+      "/api/public/auth/oauth/google/callback",
+    ]) {
       expect(proxy(req(`http://app.example.com${p}`)).status, p).toBe(404)
     }
   })

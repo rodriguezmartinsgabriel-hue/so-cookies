@@ -17,7 +17,10 @@ import { repository } from "@/lib/repository"
 import type { Order } from "@/lib/entity-types"
 import { isSoundEnabled, setSoundEnabled, playNotificationSound } from "@/lib/sound"
 
-const statusConfig: Record<string, { label: string; variant: "neutral" | "success" | "warning" | "danger" | "info" | "accent" }> = {
+const statusConfig: Record<
+  string,
+  { label: string; variant: "neutral" | "success" | "warning" | "danger" | "info" | "accent" }
+> = {
   PENDENTE: { label: "Pendente", variant: "warning" },
   CONFIRMADO: { label: "Confirmado", variant: "info" },
   PRODUCAO: { label: "Em Produção", variant: "info" },
@@ -43,7 +46,7 @@ function isSlaUrgent(confirmBy: string | null | undefined): boolean {
 }
 
 export default function DeliveryPage() {
-  const { canEdit } = useRole();
+  const { canEdit } = useRole()
   const { data: orders, isLoading: loading, error: ordersError, invalidate } = useQueryData("orders")
   const error = ordersError ? "Erro ao carregar entregas" : null
   const [activeFilter, setActiveFilter] = useState("Todos")
@@ -57,7 +60,9 @@ export default function DeliveryPage() {
   const seenNew = useRef<Set<string> | null>(null)
 
   useEffect(() => {
-    const interval = setInterval(() => { invalidate() }, 30_000)
+    const interval = setInterval(() => {
+      invalidate()
+    }, 30_000)
     return () => clearInterval(interval)
   }, [invalidate])
 
@@ -141,9 +146,7 @@ export default function DeliveryPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-ink">Delivery</h1>
-            <p className="text-sm text-muted">
-              {deliveryOrders.length} pedidos de delivery
-            </p>
+            <p className="text-sm text-muted">{deliveryOrders.length} pedidos de delivery</p>
           </div>
           <Button
             onClick={toggleSound}
@@ -163,32 +166,28 @@ export default function DeliveryPage() {
               key={ch}
               onClick={() => setActiveFilter(ch)}
               className={`h-8 px-3 border rounded-full text-xs font-medium transition-colors shrink-0 ${
-                activeFilter === ch
-                  ? "border-ink bg-ink text-paper"
-                  : "border-line text-ink hover:bg-cream"
+                activeFilter === ch ? "border-ink bg-ink text-paper" : "border-line text-ink hover:bg-cream"
               }`}
             >
               {ch}
             </button>
           ))}
-          {routes.filter((r) => r.active).map((r) => (
-            <button
-              key={r.id}
-              onClick={() => setRouteFilter(routeFilter === r.id ? "all" : r.id)}
-              className={`h-8 px-3 border rounded-full text-xs font-medium transition-colors shrink-0 ${
-                routeFilter === r.id
-                  ? "border-ink bg-ink text-paper"
-                  : "border-line text-ink hover:bg-cream"
-              }`}
-            >
-              {r.name}
-            </button>
-          ))}
+          {routes
+            .filter((r) => r.active)
+            .map((r) => (
+              <button
+                key={r.id}
+                onClick={() => setRouteFilter(routeFilter === r.id ? "all" : r.id)}
+                className={`h-8 px-3 border rounded-full text-xs font-medium transition-colors shrink-0 ${
+                  routeFilter === r.id ? "border-ink bg-ink text-paper" : "border-line text-ink hover:bg-cream"
+                }`}
+              >
+                {r.name}
+              </button>
+            ))}
         </div>
 
-        {error && (
-          <ErrorState message={error} onRetry={invalidate} />
-        )}
+        {error && <ErrorState message={error} onRetry={invalidate} />}
 
         {loading ? (
           <div className="space-y-2">
@@ -225,9 +224,7 @@ export default function DeliveryPage() {
                         <p className="text-sm font-semibold text-ink">
                           #{order.id.slice(0, 6)} — {order.customer}
                         </p>
-                        <Badge variant={cfg.variant}>
-                          {cfg.label}
-                        </Badge>
+                        <Badge variant={cfg.variant}>{cfg.label}</Badge>
                         {isExternal && (
                           <Badge variant="neutral">
                             <Store className="w-3 h-3" />
@@ -245,7 +242,13 @@ export default function DeliveryPage() {
                         <p className="text-xs font-medium text-info mt-1">{routeName(order.deliveryRouteId)}</p>
                       )}
                       <p className="text-xs text-muted mt-1">
-                        {(order.items || []).length} itens · {order.createdAt ? new Date(order.createdAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : ""}
+                        {(order.items || []).length} itens ·{" "}
+                        {order.createdAt
+                          ? new Date(order.createdAt).toLocaleTimeString("pt-BR", {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })
+                          : ""}
                       </p>
                       {order.pickupCode && (
                         <p className="mt-1 text-xs font-bold text-ink tracking-wider">
@@ -253,7 +256,9 @@ export default function DeliveryPage() {
                         </p>
                       )}
                       {pending && isExternal && (
-                        <p className={`mt-1 flex items-center gap-1 text-xs font-semibold ${isSlaUrgent(order.confirmBy) ? "text-danger" : "text-muted"}`}>
+                        <p
+                          className={`mt-1 flex items-center gap-1 text-xs font-semibold ${isSlaUrgent(order.confirmBy) ? "text-danger" : "text-muted"}`}
+                        >
                           <Clock className="w-3 h-3" />
                           SLA: {formatSla(order.confirmBy)}
                         </p>

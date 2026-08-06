@@ -10,9 +10,7 @@ export async function GET(request: Request) {
   try {
     const origin = new URL(request.url).origin
     const accounts = await listAccountsForAdmin()
-    return NextResponse.json(
-      accounts.map((a) => ({ ...a, webhookUrl: webhookUrlFor(a.platform, origin) })),
-    )
+    return NextResponse.json(accounts.map((a) => ({ ...a, webhookUrl: webhookUrlFor(a.platform, origin) })))
   } catch (e) {
     const message = e && typeof e === "object" && "message" in e ? e.message : "Erro ao listar contas"
     return NextResponse.json({ error: String(message) }, { status: 500 })

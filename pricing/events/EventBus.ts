@@ -1,39 +1,39 @@
-import { createId } from '../ids';
+import { createId } from "../ids"
 export type PricingEventType =
-  | 'CouponApplied'
-  | 'CampaignApplied'
-  | 'B2BDiscountApplied'
-  | 'CashbackGranted'
-  | 'CheckoutBlocked'
-  | 'OrderCalculated'
-  | 'PriceChanged'
-  | 'DiscountApplied'
-  | 'ShippingCalculated';
+  | "CouponApplied"
+  | "CampaignApplied"
+  | "B2BDiscountApplied"
+  | "CashbackGranted"
+  | "CheckoutBlocked"
+  | "OrderCalculated"
+  | "PriceChanged"
+  | "DiscountApplied"
+  | "ShippingCalculated"
 
 export interface PricingEvent {
-  id: string;
-  type: PricingEventType;
-  timestamp: Date;
-  data: unknown;
-  metadata?: Record<string, unknown>;
+  id: string
+  type: PricingEventType
+  timestamp: Date
+  data: unknown
+  metadata?: Record<string, unknown>
 }
 
 export class EventBus {
-  private listeners = new Map<PricingEventType, Array<(event: PricingEvent) => void>>();
+  private listeners = new Map<PricingEventType, Array<(event: PricingEvent) => void>>()
 
   on(eventType: PricingEventType, listener: (event: PricingEvent) => void): void {
     if (!this.listeners.has(eventType)) {
-      this.listeners.set(eventType, []);
+      this.listeners.set(eventType, [])
     }
-    this.listeners.get(eventType)!.push(listener);
+    this.listeners.get(eventType)!.push(listener)
   }
 
   off(eventType: PricingEventType, listener: (event: PricingEvent) => void): void {
-    const listeners = this.listeners.get(eventType);
+    const listeners = this.listeners.get(eventType)
     if (listeners) {
-      const index = listeners.indexOf(listener);
+      const index = listeners.indexOf(listener)
       if (index !== -1) {
-        listeners.splice(index, 1);
+        listeners.splice(index, 1)
       }
     }
   }
@@ -44,30 +44,24 @@ export class EventBus {
       type: eventType,
       timestamp: new Date(),
       data,
-      metadata
-    };
+      metadata,
+    }
 
-    const listeners = this.listeners.get(eventType);
+    const listeners = this.listeners.get(eventType)
     if (listeners) {
-      await Promise.all(listeners.map(listener => listener(event)));
+      await Promise.all(listeners.map((listener) => listener(event)))
     }
   }
 
   clear(): void {
-    this.listeners.clear();
+    this.listeners.clear()
   }
 
   getListenerCount(eventType: PricingEventType): number {
-    return this.listeners.get(eventType)?.length || 0;
+    return this.listeners.get(eventType)?.length || 0
   }
 }
 
 function generateId(): string {
-  return createId();
+  return createId()
 }
-
-
-
-
-
-

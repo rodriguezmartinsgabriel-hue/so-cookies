@@ -68,7 +68,12 @@ describe("salesOverTime", () => {
   })
 
   it("soma dos buckets diários equivale à receita filtrada", () => {
-    const rows = [sale({ total: 10, createdAt: iso(0) }), sale({ total: 20, createdAt: iso(5) }), sale({ total: 30, createdAt: iso(20) }), sale({ total: 999, createdAt: iso(31) })]
+    const rows = [
+      sale({ total: 10, createdAt: iso(0) }),
+      sale({ total: 20, createdAt: iso(5) }),
+      sale({ total: 30, createdAt: iso(20) }),
+      sale({ total: 999, createdAt: iso(31) }),
+    ]
     const series = salesOverTime(rows, 30)
     expect(series).toHaveLength(30)
     expect(series.reduce((s, b) => s + b.total, 0)).toBe(60)
@@ -87,7 +92,11 @@ describe("salesOverTime", () => {
   })
 
   it("período trimestral gera buckets semanais e soma corretamente", () => {
-    const rows = [sale({ total: 10, createdAt: iso(0) }), sale({ total: 20, createdAt: iso(60) }), sale({ total: 999, createdAt: iso(100) })]
+    const rows = [
+      sale({ total: 10, createdAt: iso(0) }),
+      sale({ total: 20, createdAt: iso(60) }),
+      sale({ total: 999, createdAt: iso(100) }),
+    ]
     const series = salesOverTime(rows, 90)
     expect(series).toHaveLength(13)
     expect(series.reduce((s, b) => s + b.total, 0)).toBe(30)
@@ -227,8 +236,14 @@ describe("deliverySummary", () => {
 
 describe("buildReportSummary", () => {
   it("monta o resumo completo usado pela tela e pelo PDF", () => {
-    const sales = [sale({ id: "a", total: 100, channel: { name: "WhatsApp" }, createdAt: iso(0) }), sale({ id: "b", total: 50, channelName: "iFood", createdAt: iso(200) })]
-    const orders = [order({ id: "a", status: "CONCLUIDO", createdAt: iso(0) }), order({ id: "b", status: "CANCELADO", createdAt: iso(0) })]
+    const sales = [
+      sale({ id: "a", total: 100, channel: { name: "WhatsApp" }, createdAt: iso(0) }),
+      sale({ id: "b", total: 50, channelName: "iFood", createdAt: iso(200) }),
+    ]
+    const orders = [
+      order({ id: "a", status: "CONCLUIDO", createdAt: iso(0) }),
+      order({ id: "b", status: "CANCELADO", createdAt: iso(0) }),
+    ]
     const costs: ReportDeliveryCost[] = [{ id: "c1", date: iso(0), amount: 7 }]
     const channels: ReportChannel[] = []
     const summary = buildReportSummary(sales, orders, costs, channels, periods.semanal)

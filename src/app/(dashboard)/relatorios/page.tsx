@@ -139,7 +139,9 @@ export default function RelatoriosPage() {
                   <DollarSign className="w-4 h-4 text-muted" />
                   <span className="text-xs text-muted uppercase">Receita</span>
                 </div>
-                <p className="text-2xl font-bold text-ink">{summary.revenue.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</p>
+                <p className="text-2xl font-bold text-ink">
+                  {summary.revenue.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                </p>
               </Card>
               <Card className="p-4">
                 <div className="flex items-center gap-2 mb-2">
@@ -172,7 +174,9 @@ export default function RelatoriosPage() {
                 </div>
                 <div className="flex flex-wrap items-center gap-6">
                   <div>
-                    <p className="text-lg font-bold text-ink">R$ {summary.delivery.net.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</p>
+                    <p className="text-lg font-bold text-ink">
+                      R$ {summary.delivery.net.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                    </p>
                     <p className="text-xs text-muted">resultado líquido</p>
                   </div>
                   <div>
@@ -180,11 +184,15 @@ export default function RelatoriosPage() {
                     <p className="text-xs text-muted">pedidos concluídos</p>
                   </div>
                   <div>
-                    <p className="text-lg font-bold text-danger">R$ {summary.delivery.fees.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</p>
+                    <p className="text-lg font-bold text-danger">
+                      R$ {summary.delivery.fees.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                    </p>
                     <p className="text-xs text-muted">taxas</p>
                   </div>
                   <div>
-                    <p className="text-lg font-bold text-danger">R$ {summary.delivery.costs.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</p>
+                    <p className="text-lg font-bold text-danger">
+                      R$ {summary.delivery.costs.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                    </p>
                     <p className="text-xs text-muted">custos de entrega</p>
                   </div>
                 </div>
@@ -194,9 +202,7 @@ export default function RelatoriosPage() {
             <ReportCharts salesPerDay={summary.overTime} channelData={channelData} statusData={summary.statuses} />
 
             <Card className="p-4">
-              <h2 className="text-sm font-semibold text-ink uppercase tracking-wide mb-4">
-                Top Produtos
-              </h2>
+              <h2 className="text-sm font-semibold text-ink uppercase tracking-wide mb-4">Top Produtos</h2>
               <div className="space-y-2">
                 {summary.topProducts.length > 0 ? (
                   summary.topProducts.map((product, i) => (
@@ -206,9 +212,7 @@ export default function RelatoriosPage() {
                         <span className="text-sm text-ink">{product.name}</span>
                       </div>
                       <div className="flex items-center gap-3">
-                        <span className="text-xs text-muted">
-                          {product.sold} un
-                        </span>
+                        <span className="text-xs text-muted">{product.sold} un</span>
                         <span className="text-sm font-semibold text-ink">
                           R$ {product.revenue.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                         </span>

@@ -64,47 +64,59 @@ describe("mercadopago.createPixPayment", () => {
   })
 
   it("lança PaymentError quando o MP retorna erro", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
-      ok: false,
-      status: 400,
-      json: async () => ({ message: "invalid" }),
-    }))
-    await expect(createPixPayment({
-      transactionAmount: 10,
-      description: "Pedido",
-      payerEmail: "a@b.com",
-      externalReference: "order:x",
-      notificationUrl: null,
-      expiresAt: new Date(),
-    })).rejects.toBeInstanceOf(PaymentError)
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 400,
+        json: async () => ({ message: "invalid" }),
+      }),
+    )
+    await expect(
+      createPixPayment({
+        transactionAmount: 10,
+        description: "Pedido",
+        payerEmail: "a@b.com",
+        externalReference: "order:x",
+        notificationUrl: null,
+        expiresAt: new Date(),
+      }),
+    ).rejects.toBeInstanceOf(PaymentError)
   })
 
   it("lança PaymentError quando o QR não vem na resposta", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
-      ok: true,
-      status: 201,
-      json: async () => ({ id: 1, status: "pending", point_of_interaction: {} }),
-    }))
-    await expect(createPixPayment({
-      transactionAmount: 10,
-      description: "Pedido",
-      payerEmail: "a@b.com",
-      externalReference: "order:x",
-      notificationUrl: null,
-      expiresAt: new Date(),
-    })).rejects.toThrow("não retornou os dados do PIX")
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 201,
+        json: async () => ({ id: 1, status: "pending", point_of_interaction: {} }),
+      }),
+    )
+    await expect(
+      createPixPayment({
+        transactionAmount: 10,
+        description: "Pedido",
+        payerEmail: "a@b.com",
+        externalReference: "order:x",
+        notificationUrl: null,
+        expiresAt: new Date(),
+      }),
+    ).rejects.toThrow("não retornou os dados do PIX")
   })
 
   it("lança erro se o token não está configurado", async () => {
     delete process.env.MERCADO_PAGO_ACCESS_TOKEN
-    await expect(createPixPayment({
-      transactionAmount: 10,
-      description: "Pedido",
-      payerEmail: "a@b.com",
-      externalReference: "order:x",
-      notificationUrl: null,
-      expiresAt: new Date(),
-    })).rejects.toThrow(/MERCADO_PAGO_ACCESS_TOKEN/)
+    await expect(
+      createPixPayment({
+        transactionAmount: 10,
+        description: "Pedido",
+        payerEmail: "a@b.com",
+        externalReference: "order:x",
+        notificationUrl: null,
+        expiresAt: new Date(),
+      }),
+    ).rejects.toThrow(/MERCADO_PAGO_ACCESS_TOKEN/)
   })
 })
 
@@ -124,28 +136,37 @@ describe("mercadopago.getPixPayment", () => {
     vi.stubGlobal("fetch", fetchMock)
     const result = await getPixPayment("123")
     expect(result.status).toBe("approved")
-    expect(fetchMock).toHaveBeenCalledWith("https://api.mercadopago.com/v1/payments/123", expect.objectContaining({
-      headers: { Authorization: "Bearer APP_USR-teste" },
-    }))
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://api.mercadopago.com/v1/payments/123",
+      expect.objectContaining({
+        headers: { Authorization: "Bearer APP_USR-teste" },
+      }),
+    )
   })
 
   it("lança PAYMENT_NOT_FOUND em resposta 404", async () => {
     process.env.MERCADO_PAGO_ACCESS_TOKEN = "APP_USR-teste"
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
-      ok: false,
-      status: 404,
-      json: async () => ({}),
-    }))
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 404,
+        json: async () => ({}),
+      }),
+    )
     await expect(getPixPayment("123")).rejects.toMatchObject({ code: "PAYMENT_NOT_FOUND" })
   })
 
   it("lança PROVIDER_ERROR em resposta 500", async () => {
     process.env.MERCADO_PAGO_ACCESS_TOKEN = "APP_USR-teste"
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
-      ok: false,
-      status: 500,
-      json: async () => ({}),
-    }))
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 500,
+        json: async () => ({}),
+      }),
+    )
     await expect(getPixPayment("123")).rejects.toMatchObject({ code: "PROVIDER_ERROR" })
   })
 })

@@ -11,7 +11,9 @@ type ConfirmOptions = {
 }
 
 export function useConfirm() {
-  const [options, setOptions] = useState<(ConfirmOptions & { title: string; resolve: (ok: boolean) => void }) | null>(null)
+  const [options, setOptions] = useState<(ConfirmOptions & { title: string; resolve: (ok: boolean) => void }) | null>(
+    null,
+  )
 
   const confirm = useCallback((title: string, message?: string, opts?: ConfirmOptions) => {
     return new Promise<boolean>((resolve) => {

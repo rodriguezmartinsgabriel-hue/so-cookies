@@ -106,9 +106,7 @@ describe("webhook routes", () => {
 
     it("rejects oversized body", async () => {
       mocks.findIfoodAccountBySignature.mockResolvedValue(ifoodAccount)
-      const res = await ifoodPost(
-        post(IFOOD_URL, "{}", { "content-length": String(MAX_WEBHOOK_BODY_BYTES + 1) }),
-      )
+      const res = await ifoodPost(post(IFOOD_URL, "{}", { "content-length": String(MAX_WEBHOOK_BODY_BYTES + 1) }))
       expect(res.status).toBe(413)
     })
   })
@@ -122,11 +120,11 @@ describe("webhook routes", () => {
 
     it("processes a signed event", async () => {
       const res = await ninentyNinePost(
-        post(
-          NINENTYNINE_URL,
-          JSON.stringify({ eventId: "evt-1", eventType: "ORDER_CREATED", orderId: "ord-1" }),
-          { "x-app-id": "a", "x-app-shopp-id": "shop", "x-app-signature": "sig" },
-        ),
+        post(NINENTYNINE_URL, JSON.stringify({ eventId: "evt-1", eventType: "ORDER_CREATED", orderId: "ord-1" }), {
+          "x-app-id": "a",
+          "x-app-shopp-id": "shop",
+          "x-app-signature": "sig",
+        }),
       )
       expect(res.status).toBe(200)
       expect(mocks.processInboundOrderEvent).toHaveBeenCalledWith(
@@ -139,22 +137,23 @@ describe("webhook routes", () => {
 
     it("rejects payload missing orderId", async () => {
       const res = await ninentyNinePost(
-        post(
-          NINENTYNINE_URL,
-          JSON.stringify({ eventId: "evt-1", eventType: "ORDER_CREATED" }),
-          { "x-app-id": "a", "x-app-shopp-id": "shop", "x-app-signature": "sig" },
-        ),
+        post(NINENTYNINE_URL, JSON.stringify({ eventId: "evt-1", eventType: "ORDER_CREATED" }), {
+          "x-app-id": "a",
+          "x-app-shopp-id": "shop",
+          "x-app-signature": "sig",
+        }),
       )
       expect(res.status).toBe(400)
     })
 
     it("rejects oversized body", async () => {
       const res = await ninentyNinePost(
-        post(
-          NINENTYNINE_URL,
-          "{}",
-          { "x-app-id": "a", "x-app-shopp-id": "shop", "x-app-signature": "sig", "content-length": String(MAX_WEBHOOK_BODY_BYTES + 1) },
-        ),
+        post(NINENTYNINE_URL, "{}", {
+          "x-app-id": "a",
+          "x-app-shopp-id": "shop",
+          "x-app-signature": "sig",
+          "content-length": String(MAX_WEBHOOK_BODY_BYTES + 1),
+        }),
       )
       expect(res.status).toBe(413)
     })
@@ -176,8 +175,12 @@ describe("webhook schemas", () => {
 
   it("99food: accepts full event", () => {
     expect(
-      ninentyNineFoodWebhookSchema.safeParse({ eventId: "1", eventType: "ORDER_CREATED", orderId: "o1", orderURL: "https://x" })
-        .success,
+      ninentyNineFoodWebhookSchema.safeParse({
+        eventId: "1",
+        eventType: "ORDER_CREATED",
+        orderId: "o1",
+        orderURL: "https://x",
+      }).success,
     ).toBe(true)
   })
 })

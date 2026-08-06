@@ -4,10 +4,7 @@ import { requireAuth } from "@/lib/api-auth"
 import { updateProductSchema, getZodIssues } from "@/lib/validation"
 import { recordSyncDelete } from "@/lib/sync-deletes"
 
-export async function GET(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { error } = await requireAuth(request)
   if (error) return error
   try {
@@ -20,10 +17,7 @@ export async function GET(
   }
 }
 
-export async function PUT(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { error } = await requireAuth(request, "OPERACIONAL")
   if (error) return error
   try {
@@ -40,10 +34,7 @@ export async function PUT(
   }
 }
 
-export async function DELETE(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { error } = await requireAuth(request, "OPERACIONAL")
   if (error) return error
   try {

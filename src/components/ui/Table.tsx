@@ -1,5 +1,5 @@
-import type { HTMLAttributes, TdHTMLAttributes, ThHTMLAttributes } from "react";
-import { cn } from "@/lib/utils";
+import type { HTMLAttributes, TdHTMLAttributes, ThHTMLAttributes } from "react"
+import { cn } from "@/lib/utils"
 
 export function Table({ className, children, ...props }: HTMLAttributes<HTMLTableElement>) {
   return (
@@ -8,34 +8,23 @@ export function Table({ className, children, ...props }: HTMLAttributes<HTMLTabl
         {children}
       </table>
     </div>
-  );
+  )
 }
 
-export function THead({
-  className,
-  children,
-  ...props
-}: HTMLAttributes<HTMLTableSectionElement>) {
+export function THead({ className, children, ...props }: HTMLAttributes<HTMLTableSectionElement>) {
   return (
-    <thead
-      className={cn("bg-cream/60 text-left text-xs uppercase tracking-wide text-muted", className)}
-      {...props}
-    >
+    <thead className={cn("bg-cream/60 text-left text-xs uppercase tracking-wide text-muted", className)} {...props}>
       {children}
     </thead>
-  );
+  )
 }
 
-export function TBody({
-  className,
-  children,
-  ...props
-}: HTMLAttributes<HTMLTableSectionElement>) {
+export function TBody({ className, children, ...props }: HTMLAttributes<HTMLTableSectionElement>) {
   return (
     <tbody className={cn("divide-y divide-line", className)} {...props}>
       {children}
     </tbody>
-  );
+  )
 }
 
 export function Tr({ className, children, ...props }: HTMLAttributes<HTMLTableRowElement>) {
@@ -43,7 +32,7 @@ export function Tr({ className, children, ...props }: HTMLAttributes<HTMLTableRo
     <tr className={cn("transition-colors hover:bg-cream/40", className)} {...props}>
       {children}
     </tr>
-  );
+  )
 }
 
 export function Th({ className, children, ...props }: ThHTMLAttributes<HTMLTableCellElement>) {
@@ -51,7 +40,7 @@ export function Th({ className, children, ...props }: ThHTMLAttributes<HTMLTable
     <th scope="col" className={cn("px-4 py-3 font-medium", className)} {...props}>
       {children}
     </th>
-  );
+  )
 }
 
 export function Td({ className, children, ...props }: TdHTMLAttributes<HTMLTableCellElement>) {
@@ -59,5 +48,5 @@ export function Td({ className, children, ...props }: TdHTMLAttributes<HTMLTable
     <td className={cn("px-4 py-3", className)} {...props}>
       {children}
     </td>
-  );
+  )
 }

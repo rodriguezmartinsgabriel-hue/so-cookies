@@ -131,7 +131,10 @@ export function generateReportPdf(summary: ReportSummary): jsPDF {
       ["Receita líquida de taxas", brl(summary.delivery.revenue)],
       ["Taxas das plataformas", brl(summary.delivery.fees)],
       ["Custos de entrega (seção Delivery)", brl(summary.delivery.costs)],
-      [{ content: "Resultado líquido do delivery", styles: { fontStyle: "bold" } }, { content: brl(summary.delivery.net), styles: { fontStyle: "bold" } }],
+      [
+        { content: "Resultado líquido do delivery", styles: { fontStyle: "bold" } },
+        { content: brl(summary.delivery.net), styles: { fontStyle: "bold" } },
+      ],
     ],
     theme: "grid",
     headStyles: { fillColor: INK, textColor: 255, fontSize: 9, fontStyle: "bold" },

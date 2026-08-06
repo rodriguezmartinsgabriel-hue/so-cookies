@@ -5,10 +5,7 @@ import { isNotFoundError } from "@/lib/db"
 import { recordSyncDelete } from "@/lib/sync-deletes"
 import { updateDeliveryCostSchema, getZodIssues } from "@/lib/validation"
 
-export async function PUT(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { error } = await requireAuth(request, "OPERACIONAL")
   if (error) return error
   try {
@@ -24,10 +21,7 @@ export async function PUT(
   }
 }
 
-export async function DELETE(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { error } = await requireAuth(request, "OPERACIONAL")
   if (error) return error
   try {

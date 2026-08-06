@@ -1,73 +1,71 @@
-import { createId } from '../ids';
-import type { PricingRule } from './PricingRule';
-import type { PricingContext, PricingState, PricingData, Logger } from '../types';
-import type { PricingAction } from '../actions/PricingAction';
-import { PricingPhase } from '../pipeline/PricingPhase';
+import { createId } from "../ids"
+import type { PricingRule } from "./PricingRule"
+import type { PricingContext, PricingState, PricingData, Logger } from "../types"
+import type { PricingAction } from "../actions/PricingAction"
+import { PricingPhase } from "../pipeline/PricingPhase"
 
 export class B2BRule implements PricingRule {
-  id = 'b2b';
-  name = 'Desconto B2B';
-  phase = PricingPhase.CUSTOMER;
-  weight = 3;
-  priority = 3;
-  enabled = true;
+  id = "b2b"
+  name = "Desconto B2B"
+  phase = PricingPhase.CUSTOMER
+  weight = 3
+  priority = 3
+  enabled = true
 
-  constructor(
-    private logger: Logger
-  ) {}
+  constructor(private logger: Logger) {}
 
   canApplySync(context: PricingContext, _state: PricingState, data: PricingData): boolean {
-    return context.customerType === 'B2B' && data.settings.activateB2B;
+    return context.customerType === "B2B" && data.settings.activateB2B
   }
 
   async canApply(context: PricingContext, _state: PricingState, data: PricingData): Promise<boolean> {
-    return this.canApplySync(context, _state, data);
+    return this.canApplySync(context, _state, data)
   }
 
   async apply(_context: PricingContext, _state: PricingState, data: PricingData): Promise<PricingAction[]> {
-    const actions: PricingAction[] = [];
-    const percentage = data.settings.b2bDiscountPercent;
+    const actions: PricingAction[] = []
+    const percentage = data.settings.b2bDiscountPercent
 
     if (!percentage || percentage <= 0) {
-      return actions;
+      return actions
     }
 
     actions.push({
       id: generateId(),
-      type: 'ADD_DISCOUNT_PERCENTAGE',
-      target: 'subtotal',
+      type: "ADD_DISCOUNT_PERCENTAGE",
+      target: "subtotal",
       value: percentage,
       percentage,
-      appliedTo: 'subtotal',
-      name: 'Desconto B2B',
+      appliedTo: "subtotal",
+      name: "Desconto B2B",
       sourceRule: this.id,
-      timestamp: new Date()
-    });
+      timestamp: new Date(),
+    })
 
     actions.push({
       id: generateId(),
-      type: 'ADD_LOG',
-      target: 'customer',
+      type: "ADD_LOG",
+      target: "customer",
       value: {
-        customerType: 'B2B',
-        discountPercent: percentage
+        customerType: "B2B",
+        discountPercent: percentage,
       },
       sourceRule: this.id,
-      timestamp: new Date()
-    });
+      timestamp: new Date(),
+    })
 
-    return actions;
+    return actions
   }
 
   getRuleName(): string {
-    return this.name;
+    return this.name
   }
 
   getPhase(): PricingPhase {
-    return this.phase;
+    return this.phase
   }
 }
 
 function generateId(): string {
-  return createId();
+  return createId()
 }

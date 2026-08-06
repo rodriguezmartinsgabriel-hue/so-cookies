@@ -20,7 +20,10 @@ export async function GET() {
 export async function POST(request: Request) {
   const limited = rateLimit(request, 20, 60_000)
   if (!limited.ok) {
-    return NextResponse.json({ error: "Muitas tentativas. Tente novamente em instantes." }, { status: 429, headers: { "Retry-After": String(limited.retryAfterSeconds) } })
+    return NextResponse.json(
+      { error: "Muitas tentativas. Tente novamente em instantes." },
+      { status: 429, headers: { "Retry-After": String(limited.retryAfterSeconds) } },
+    )
   }
   const { error, customer } = await requireCustomer()
   if (error) return error

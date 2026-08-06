@@ -9,7 +9,12 @@ const map = new Map([
 describe("resolveRefs", () => {
   it("resolve id, orderId, contactId e ingredientId", () => {
     const data = { id: "offline_1", orderId: "offline_1", contactId: "offline_2", ingredientId: "offline_2" }
-    expect(resolveRefs(data, map)).toEqual({ id: "real-1", orderId: "real-1", contactId: "real-2", ingredientId: "real-2" })
+    expect(resolveRefs(data, map)).toEqual({
+      id: "real-1",
+      orderId: "real-1",
+      contactId: "real-2",
+      ingredientId: "real-2",
+    })
   })
 
   it("resolve channelId e productId", () => {
@@ -50,10 +55,18 @@ describe("resolveRefs", () => {
 
 describe("runDelete", () => {
   it("engole P2025 (registro já inexistente)", async () => {
-    await expect(runDelete(async () => { throw { code: "P2025" } })).resolves.toBeNull()
+    await expect(
+      runDelete(async () => {
+        throw { code: "P2025" }
+      }),
+    ).resolves.toBeNull()
   })
 
   it("repassa outros erros", async () => {
-    await expect(runDelete(async () => { throw new Error("boom") })).rejects.toThrow("boom")
+    await expect(
+      runDelete(async () => {
+        throw new Error("boom")
+      }),
+    ).rejects.toThrow("boom")
   })
 })

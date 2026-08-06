@@ -1,22 +1,43 @@
-"use client";
+"use client"
 
-import { useState } from "react";
-import { useConfirm } from "@/hooks/useConfirm";
-import { useRole } from "@/hooks/useRole";
-import { useQueryData } from "@/hooks/useQueryData";
-import { AppShell } from "@/components/layout/AppShell";
-import { Skeleton } from "@/components/ui/Skeleton";
-import { ErrorState } from "@/components/ui/ErrorState";
-import { Card } from "@/components/ui/Card";
-import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
-import { FormField } from "@/components/ui/FormField";
-import { Modal } from "@/components/ui/Modal";
-import { Plus, Edit, Trash2, FileText, Search, ChevronDown, ChevronUp, Eye, ImagePlus, Paperclip, Download, ExternalLink } from "lucide-react";
-import NextImage from "next/image";
-import { repository } from "@/lib/repository";
-import { processAttachment, isImageDataUrl, isPdfDataUrl, fileTypeLabel, formatBytes, dataUrlSize, fileNameFromDataUrl } from "@/lib/files";
-import type { Document } from "@/lib/entity-types";
+import { useState } from "react"
+import { useConfirm } from "@/hooks/useConfirm"
+import { useRole } from "@/hooks/useRole"
+import { useQueryData } from "@/hooks/useQueryData"
+import { AppShell } from "@/components/layout/AppShell"
+import { Skeleton } from "@/components/ui/Skeleton"
+import { ErrorState } from "@/components/ui/ErrorState"
+import { Card } from "@/components/ui/Card"
+import { Button } from "@/components/ui/Button"
+import { Input } from "@/components/ui/Input"
+import { FormField } from "@/components/ui/FormField"
+import { Modal } from "@/components/ui/Modal"
+import {
+  Plus,
+  Edit,
+  Trash2,
+  FileText,
+  Search,
+  ChevronDown,
+  ChevronUp,
+  Eye,
+  ImagePlus,
+  Paperclip,
+  Download,
+  ExternalLink,
+} from "lucide-react"
+import NextImage from "next/image"
+import { repository } from "@/lib/repository"
+import {
+  processAttachment,
+  isImageDataUrl,
+  isPdfDataUrl,
+  fileTypeLabel,
+  formatBytes,
+  dataUrlSize,
+  fileNameFromDataUrl,
+} from "@/lib/files"
+import type { Document } from "@/lib/entity-types"
 
 const CATEGORIES = [
   { value: "FICHA_TECNICA", label: "Fichas Técnicas", color: "bg-ink" },
@@ -25,23 +46,23 @@ const CATEGORIES = [
   { value: "MANIPULACAO", label: "Manipulação", color: "bg-warning" },
   { value: "TREINAMENTO", label: "Treinamento", color: "bg-purple-500" },
   { value: "OUTROS", label: "Outros", color: "bg-muted" },
-] as const;
+] as const
 
-const CATEGORY_MAP: Record<string, typeof CATEGORIES[number]> = Object.fromEntries(
-  CATEGORIES.map((c) => [c.value, c])
-);
+const CATEGORY_MAP: Record<string, (typeof CATEGORIES)[number]> = Object.fromEntries(
+  CATEGORIES.map((c) => [c.value, c]),
+)
 
 export default function DocumentosPage() {
-  const { canEdit } = useRole();
-  const { confirm, dialog } = useConfirm();
-  const { data: documents, isLoading: loading, error: documentsError, invalidate } = useQueryData("documents");
-  const error = documentsError ? "Erro ao carregar documentos" : null;
-  const [filter, setFilter] = useState("ALL");
-  const [search, setSearch] = useState("");
-  const [expanded, setExpanded] = useState<string | null>(null);
-  const [showModal, setShowModal] = useState(false);
-  const [editingDoc, setEditingDoc] = useState<Document | null>(null);
-  const [viewingDoc, setViewingDoc] = useState<Document | null>(null);
+  const { canEdit } = useRole()
+  const { confirm, dialog } = useConfirm()
+  const { data: documents, isLoading: loading, error: documentsError, invalidate } = useQueryData("documents")
+  const error = documentsError ? "Erro ao carregar documentos" : null
+  const [filter, setFilter] = useState("ALL")
+  const [search, setSearch] = useState("")
+  const [expanded, setExpanded] = useState<string | null>(null)
+  const [showModal, setShowModal] = useState(false)
+  const [editingDoc, setEditingDoc] = useState<Document | null>(null)
+  const [viewingDoc, setViewingDoc] = useState<Document | null>(null)
 
   const [form, setForm] = useState({
     title: "",
@@ -52,25 +73,34 @@ export default function DocumentosPage() {
     fileUrl: "",
     fileName: "",
     fileSize: 0,
-  });
-  const [fileLoading, setFileLoading] = useState(false);
-  const [fileError, setFileError] = useState<string | null>(null);
-  const [saveError, setSaveError] = useState<string | null>(null);
+  })
+  const [fileLoading, setFileLoading] = useState(false)
+  const [fileError, setFileError] = useState<string | null>(null)
+  const [saveError, setSaveError] = useState<string | null>(null)
 
   function resetForm() {
-    setForm({ title: "", description: "", category: "FICHA_TECNICA", content: "", tags: "", fileUrl: "", fileName: "", fileSize: 0 });
-    setFileError(null);
-    setSaveError(null);
-    setEditingDoc(null);
+    setForm({
+      title: "",
+      description: "",
+      category: "FICHA_TECNICA",
+      content: "",
+      tags: "",
+      fileUrl: "",
+      fileName: "",
+      fileSize: 0,
+    })
+    setFileError(null)
+    setSaveError(null)
+    setEditingDoc(null)
   }
 
   function openNew() {
-    resetForm();
-    setShowModal(true);
+    resetForm()
+    setShowModal(true)
   }
 
   function openEdit(doc: Document) {
-    setEditingDoc(doc);
+    setEditingDoc(doc)
     setForm({
       title: doc.title || "",
       description: doc.description || "",
@@ -80,82 +110,89 @@ export default function DocumentosPage() {
       fileUrl: doc.fileUrl || "",
       fileName: doc.fileUrl ? fileNameFromDataUrl(doc.fileUrl) : "",
       fileSize: doc.fileUrl ? dataUrlSize(doc.fileUrl) : 0,
-    });
-    setFileError(null);
-    setShowModal(true);
+    })
+    setFileError(null)
+    setShowModal(true)
   }
 
   function openView(doc: Document) {
-    setViewingDoc(doc);
+    setViewingDoc(doc)
   }
 
   async function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    e.target.value = "";
-    if (!file) return;
-    setFileLoading(true);
-    setFileError(null);
+    const file = e.target.files?.[0]
+    e.target.value = ""
+    if (!file) return
+    setFileLoading(true)
+    setFileError(null)
     try {
-      const result = await processAttachment(file);
-      setForm({ ...form, fileUrl: result.url, fileName: file.name, fileSize: file.size });
+      const result = await processAttachment(file)
+      setForm({ ...form, fileUrl: result.url, fileName: file.name, fileSize: file.size })
     } catch (err) {
-      setFileError(err instanceof Error ? err.message : "Não foi possível processar o arquivo.");
+      setFileError(err instanceof Error ? err.message : "Não foi possível processar o arquivo.")
     } finally {
-      setFileLoading(false);
+      setFileLoading(false)
     }
   }
 
   function removeFile() {
-    setForm({ ...form, fileUrl: "", fileName: "", fileSize: 0 });
-    setFileError(null);
+    setForm({ ...form, fileUrl: "", fileName: "", fileSize: 0 })
+    setFileError(null)
   }
 
   async function handleSave() {
-    if (!form.title) return;
-    setSaveError(null);
+    if (!form.title) return
+    setSaveError(null)
     try {
-      const payload: { title: string; description?: string; category: string; content?: string; fileUrl?: string | null; tags?: string } = {
+      const payload: {
+        title: string
+        description?: string
+        category: string
+        content?: string
+        fileUrl?: string | null
+        tags?: string
+      } = {
         title: form.title,
         description: form.description,
         category: form.category,
         content: form.content,
         tags: form.tags,
-      };
+      }
       if (form.fileUrl) {
-        payload.fileUrl = form.fileUrl;
+        payload.fileUrl = form.fileUrl
       } else if (editingDoc && editingDoc.fileUrl) {
-        payload.fileUrl = null;
+        payload.fileUrl = null
       }
 
       if (editingDoc) {
-        await repository.documents.update(editingDoc.id, payload);
+        await repository.documents.update(editingDoc.id, payload)
       } else {
-        await repository.documents.create(payload);
+        await repository.documents.create(payload)
       }
-      setShowModal(false);
-      resetForm();
-      await invalidate();
+      setShowModal(false)
+      resetForm()
+      await invalidate()
     } catch (err) {
-      setSaveError(err instanceof Error ? err.message : "Não foi possível salvar o documento. Tente novamente.");
+      setSaveError(err instanceof Error ? err.message : "Não foi possível salvar o documento. Tente novamente.")
     }
   }
 
   async function handleDelete(id: string) {
-    if (!(await confirm("Excluir este documento?"))) return;
-    await repository.documents.delete(id);
-    await invalidate();
+    if (!(await confirm("Excluir este documento?"))) return
+    await repository.documents.delete(id)
+    await invalidate()
   }
 
   const filtered = documents.filter((doc) => {
-    if (filter !== "ALL" && doc.category !== filter) return false;
-    if (!search) return true;
-    const q = search.toLowerCase();
+    if (filter !== "ALL" && doc.category !== filter) return false
+    if (!search) return true
+    const q = search.toLowerCase()
     return (
       doc.title?.toLowerCase().includes(q) ||
       doc.description?.toLowerCase().includes(q) ||
       doc.tags?.toLowerCase().includes(q)
-    );
-  });
+    )
+  })
 
   const stats = {
     total: documents.length,
@@ -163,7 +200,7 @@ export default function DocumentosPage() {
       ...c,
       count: documents.filter((d) => d.category === c.value).length,
     })),
-  };
+  }
 
   return (
     <AppShell>
@@ -171,9 +208,7 @@ export default function DocumentosPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-ink">Documentos</h1>
-            <p className="text-sm text-muted">
-              Fichas técnicas, higiene, treinamentos · {stats.total} documentos
-            </p>
+            <p className="text-sm text-muted">Fichas técnicas, higiene, treinamentos · {stats.total} documentos</p>
           </div>
           {canEdit && (
             <Button onClick={openNew}>
@@ -216,9 +251,7 @@ export default function DocumentosPage() {
           />
         </div>
 
-        {error && (
-          <ErrorState message={error} onRetry={invalidate} />
-        )}
+        {error && <ErrorState message={error} onRetry={invalidate} />}
 
         {loading ? (
           <div className="space-y-2">
@@ -242,7 +275,7 @@ export default function DocumentosPage() {
         ) : (
           <div className="space-y-2">
             {filtered.map((doc) => {
-              const cat = CATEGORY_MAP[doc.category] || CATEGORIES[5];
+              const cat = CATEGORY_MAP[doc.category] || CATEGORIES[5]
               return (
                 <Card key={doc.id} padded={false} className="overflow-hidden">
                   <div className="flex items-center gap-2 p-4">
@@ -251,9 +284,18 @@ export default function DocumentosPage() {
                       className="flex-1 text-left flex items-center justify-between hover:bg-cream/50 transition-colors -m-1 p-1 rounded-lg"
                     >
                       <div className="flex items-center gap-3">
-                        <div className={`w-8 h-8 rounded-lg ${cat.color} text-paper flex items-center justify-center shrink-0 overflow-hidden`}>
+                        <div
+                          className={`w-8 h-8 rounded-lg ${cat.color} text-paper flex items-center justify-center shrink-0 overflow-hidden`}
+                        >
                           {doc.fileUrl && isImageDataUrl(doc.fileUrl) ? (
-                            <NextImage src={doc.fileUrl} alt={doc.title} width={32} height={32} unoptimized className="w-full h-full object-cover" />
+                            <NextImage
+                              src={doc.fileUrl}
+                              alt={doc.title}
+                              width={32}
+                              height={32}
+                              unoptimized
+                              className="w-full h-full object-cover"
+                            />
                           ) : (
                             <FileText className="w-4 h-4" />
                           )}
@@ -307,11 +349,26 @@ export default function DocumentosPage() {
                         <div>
                           <p className="text-xs font-semibold text-muted uppercase tracking-wide mb-1">Anexo</p>
                           {isImageDataUrl(doc.fileUrl) ? (
-                            <button type="button" onClick={() => openView(doc)} className="rounded-lg overflow-hidden border border-line bg-paper w-full block hover:opacity-90 transition-opacity">
-                              <NextImage src={doc.fileUrl} alt={doc.title} width={600} height={400} unoptimized className="w-full max-h-72 object-cover" />
+                            <button
+                              type="button"
+                              onClick={() => openView(doc)}
+                              className="rounded-lg overflow-hidden border border-line bg-paper w-full block hover:opacity-90 transition-opacity"
+                            >
+                              <NextImage
+                                src={doc.fileUrl}
+                                alt={doc.title}
+                                width={600}
+                                height={400}
+                                unoptimized
+                                className="w-full max-h-72 object-cover"
+                              />
                             </button>
                           ) : (
-                            <button type="button" onClick={() => openView(doc)} className="w-full flex items-center gap-3 bg-paper rounded-lg p-3 border border-line hover:bg-cream transition-colors">
+                            <button
+                              type="button"
+                              onClick={() => openView(doc)}
+                              className="w-full flex items-center gap-3 bg-paper rounded-lg p-3 border border-line hover:bg-cream transition-colors"
+                            >
                               <div className="w-10 h-10 rounded-lg bg-danger/10 text-danger flex items-center justify-center shrink-0">
                                 <FileText className="w-5 h-5" />
                               </div>
@@ -344,11 +401,13 @@ export default function DocumentosPage() {
                     </div>
                   )}
                 </Card>
-              );
+              )
             })}
             {filtered.length === 0 && (
               <div className="text-center py-8 text-muted border border-dashed border-line rounded-lg">
-                {search ? "Nenhum documento encontrado para esta busca." : "Nenhum documento cadastrado. Clique em \"Novo Documento\" para começar."}
+                {search
+                  ? "Nenhum documento encontrado para esta busca."
+                  : 'Nenhum documento cadastrado. Clique em "Novo Documento" para começar.'}
               </div>
             )}
           </div>
@@ -356,15 +415,25 @@ export default function DocumentosPage() {
 
         <Modal
           open={showModal}
-          onClose={() => { setShowModal(false); resetForm(); }}
+          onClose={() => {
+            setShowModal(false)
+            resetForm()
+          }}
           title={editingDoc ? "Editar Documento" : "Novo Documento"}
           size="md"
           footer={
             <div className="flex flex-wrap gap-2">
-              {saveError && (
-                <p className="text-xs text-danger w-full">{saveError}</p>
-              )}
-              <Button variant="secondary" className="flex-1" onClick={() => { setShowModal(false); resetForm(); }}>Cancelar</Button>
+              {saveError && <p className="text-xs text-danger w-full">{saveError}</p>}
+              <Button
+                variant="secondary"
+                className="flex-1"
+                onClick={() => {
+                  setShowModal(false)
+                  resetForm()
+                }}
+              >
+                Cancelar
+              </Button>
               <Button className="flex-1" onClick={handleSave}>
                 {editingDoc ? "Atualizar" : "Salvar"}
               </Button>
@@ -373,12 +442,25 @@ export default function DocumentosPage() {
         >
           <div className="p-4 space-y-4">
             <FormField label="Título" required htmlFor="documento-title-input">
-              <Input id="documento-title-input" type="text" placeholder="Ex: Higiene das mãos" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
+              <Input
+                id="documento-title-input"
+                type="text"
+                placeholder="Ex: Higiene das mãos"
+                value={form.title}
+                onChange={(e) => setForm({ ...form, title: e.target.value })}
+              />
             </FormField>
             <FormField label="Categoria" required htmlFor="documento-categoria">
-              <select id="documento-categoria" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink transition-colors bg-paper">
+              <select
+                id="documento-categoria"
+                value={form.category}
+                onChange={(e) => setForm({ ...form, category: e.target.value })}
+                className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink transition-colors bg-paper"
+              >
                 {CATEGORIES.map((cat) => (
-                  <option key={cat.value} value={cat.value}>{cat.label}</option>
+                  <option key={cat.value} value={cat.value}>
+                    {cat.label}
+                  </option>
                 ))}
               </select>
             </FormField>
@@ -387,7 +469,14 @@ export default function DocumentosPage() {
                 <div className="w-16 h-16 rounded-lg overflow-hidden bg-cream border border-line flex items-center justify-center shrink-0">
                   {form.fileUrl ? (
                     isImageDataUrl(form.fileUrl) ? (
-                      <NextImage src={form.fileUrl} alt="Prévia do arquivo" width={64} height={64} unoptimized className="w-full h-full object-cover" />
+                      <NextImage
+                        src={form.fileUrl}
+                        alt="Prévia do arquivo"
+                        width={64}
+                        height={64}
+                        unoptimized
+                        className="w-full h-full object-cover"
+                      />
                     ) : (
                       <div className="w-full h-full flex flex-col items-center justify-center text-danger">
                         <FileText className="w-6 h-6" />
@@ -401,15 +490,27 @@ export default function DocumentosPage() {
                 <div className="flex flex-col gap-1.5 flex-1 min-w-0">
                   {form.fileUrl ? (
                     <>
-                      <p className="text-xs font-medium text-ink truncate">{form.fileName || fileNameFromDataUrl(form.fileUrl)}</p>
+                      <p className="text-xs font-medium text-ink truncate">
+                        {form.fileName || fileNameFromDataUrl(form.fileUrl)}
+                      </p>
                       <p className="text-xs text-muted">{formatBytes(form.fileSize || dataUrlSize(form.fileUrl))}</p>
                       <div className="flex gap-2">
                         <label className="flex items-center gap-1.5 h-8 px-3 rounded-lg border border-line text-xs font-medium text-ink hover:bg-cream transition-colors cursor-pointer">
                           <ImagePlus className="w-4 h-4" />
                           {fileLoading ? "Processando..." : "Trocar"}
-                          <input type="file" accept="image/*,application/pdf" onChange={handleFileSelect} className="hidden" disabled={fileLoading} />
+                          <input
+                            type="file"
+                            accept="image/*,application/pdf"
+                            onChange={handleFileSelect}
+                            className="hidden"
+                            disabled={fileLoading}
+                          />
                         </label>
-                        <button type="button" onClick={removeFile} className="flex items-center gap-1 text-xs font-medium text-danger hover:underline">
+                        <button
+                          type="button"
+                          onClick={removeFile}
+                          className="flex items-center gap-1 text-xs font-medium text-danger hover:underline"
+                        >
                           <Trash2 className="w-3.5 h-3.5" /> Remover
                         </button>
                       </div>
@@ -418,7 +519,13 @@ export default function DocumentosPage() {
                     <label className="flex items-center gap-2 h-10 px-3 rounded-lg border border-line text-xs font-medium text-ink hover:bg-cream transition-colors cursor-pointer">
                       <ImagePlus className="w-4 h-4" />
                       {fileLoading ? "Processando..." : "Enviar foto ou PDF"}
-                      <input type="file" accept="image/*,application/pdf" onChange={handleFileSelect} className="hidden" disabled={fileLoading} />
+                      <input
+                        type="file"
+                        accept="image/*,application/pdf"
+                        onChange={handleFileSelect}
+                        className="hidden"
+                        disabled={fileLoading}
+                      />
                     </label>
                   )}
                 </div>
@@ -426,13 +533,32 @@ export default function DocumentosPage() {
               {fileError && <p className="text-xs text-danger mt-2">{fileError}</p>}
             </FormField>
             <FormField label="Descrição" htmlFor="documento-descricao">
-              <Input id="documento-descricao" type="text" placeholder="Resumo do documento" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
+              <Input
+                id="documento-descricao"
+                type="text"
+                placeholder="Resumo do documento"
+                value={form.description}
+                onChange={(e) => setForm({ ...form, description: e.target.value })}
+              />
             </FormField>
             <FormField label="Conteúdo" htmlFor="documento-conteudo">
-              <textarea id="documento-conteudo" placeholder="Conteúdo do documento (fichas técnicas, procedimentos, etc.)" value={form.content} onChange={(e) => setForm({ ...form, content: e.target.value })} rows={8} className="w-full px-3 py-2 border border-line rounded-lg text-sm text-ink placeholder:text-kraft focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink transition-colors resize-none" />
+              <textarea
+                id="documento-conteudo"
+                placeholder="Conteúdo do documento (fichas técnicas, procedimentos, etc.)"
+                value={form.content}
+                onChange={(e) => setForm({ ...form, content: e.target.value })}
+                rows={8}
+                className="w-full px-3 py-2 border border-line rounded-lg text-sm text-ink placeholder:text-kraft focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink transition-colors resize-none"
+              />
             </FormField>
             <FormField label="Tags" htmlFor="documento-tags">
-              <Input id="documento-tags" type="text" placeholder="Separar por vírgulas: cookie, higiene, EPI" value={form.tags} onChange={(e) => setForm({ ...form, tags: e.target.value })} />
+              <Input
+                id="documento-tags"
+                type="text"
+                placeholder="Separar por vírgulas: cookie, higiene, EPI"
+                value={form.tags}
+                onChange={(e) => setForm({ ...form, tags: e.target.value })}
+              />
             </FormField>
           </div>
         </Modal>
@@ -446,7 +572,14 @@ export default function DocumentosPage() {
             footer={
               <div className="flex gap-2">
                 {canEdit && (
-                  <Button variant="secondary" className="flex-1" onClick={() => { setViewingDoc(null); openEdit(viewingDoc); }}>
+                  <Button
+                    variant="secondary"
+                    className="flex-1"
+                    onClick={() => {
+                      setViewingDoc(null)
+                      openEdit(viewingDoc)
+                    }}
+                  >
                     <Edit className="w-4 h-4" /> Editar
                   </Button>
                 )}
@@ -458,9 +591,18 @@ export default function DocumentosPage() {
           >
             <div className="p-4 space-y-4">
               <div className="flex items-center gap-2">
-                <div className={`w-8 h-8 rounded-lg ${(CATEGORY_MAP[viewingDoc.category] || CATEGORIES[5]).color} text-paper flex items-center justify-center overflow-hidden shrink-0`}>
+                <div
+                  className={`w-8 h-8 rounded-lg ${(CATEGORY_MAP[viewingDoc.category] || CATEGORIES[5]).color} text-paper flex items-center justify-center overflow-hidden shrink-0`}
+                >
                   {viewingDoc.fileUrl && isImageDataUrl(viewingDoc.fileUrl) ? (
-                    <NextImage src={viewingDoc.fileUrl} alt={viewingDoc.title} width={32} height={32} unoptimized className="w-full h-full object-cover" />
+                    <NextImage
+                      src={viewingDoc.fileUrl}
+                      alt={viewingDoc.title}
+                      width={32}
+                      height={32}
+                      unoptimized
+                      className="w-full h-full object-cover"
+                    />
                   ) : (
                     <FileText className="w-4 h-4" />
                   )}
@@ -472,7 +614,9 @@ export default function DocumentosPage() {
               {viewingDoc.fileUrl && (
                 <div>
                   <div className="flex items-center justify-between mb-1">
-                    <p className="text-xs font-semibold text-muted uppercase tracking-wide">Anexo · {fileTypeLabel(viewingDoc.fileUrl)}</p>
+                    <p className="text-xs font-semibold text-muted uppercase tracking-wide">
+                      Anexo · {fileTypeLabel(viewingDoc.fileUrl)}
+                    </p>
                     <div className="flex items-center gap-3">
                       <a
                         href={viewingDoc.fileUrl}
@@ -499,7 +643,14 @@ export default function DocumentosPage() {
                     />
                   ) : (
                     <div className="rounded-lg overflow-hidden border border-line bg-paper">
-                      <NextImage src={viewingDoc.fileUrl} alt={viewingDoc.title} width={800} height={600} unoptimized className="w-full max-h-[70vh] object-contain" />
+                      <NextImage
+                        src={viewingDoc.fileUrl}
+                        alt={viewingDoc.title}
+                        width={800}
+                        height={600}
+                        unoptimized
+                        className="w-full max-h-[70vh] object-contain"
+                      />
                     </div>
                   )}
                 </div>
@@ -523,19 +674,22 @@ export default function DocumentosPage() {
                   <p className="text-xs font-semibold text-muted uppercase tracking-wide mb-1">Tags</p>
                   <div className="flex flex-wrap gap-1">
                     {viewingDoc.tags.split(",").map((tag: string, i: number) => (
-                      <span key={i} className="text-xs px-2 py-1 rounded-full bg-cream text-muted">{tag.trim()}</span>
+                      <span key={i} className="text-xs px-2 py-1 rounded-full bg-cream text-muted">
+                        {tag.trim()}
+                      </span>
                     ))}
                   </div>
                 </div>
               )}
               <div className="text-xs text-muted border-t border-line pt-3">
-                Criado em {new Date(viewingDoc.createdAt).toLocaleDateString("pt-BR")} às {new Date(viewingDoc.createdAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+                Criado em {new Date(viewingDoc.createdAt).toLocaleDateString("pt-BR")} às{" "}
+                {new Date(viewingDoc.createdAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
               </div>
             </div>
           </Modal>
         )}
       </div>
-        {dialog}
+      {dialog}
     </AppShell>
-  );
+  )
 }

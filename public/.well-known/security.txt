@@ -1,0 +1,4 @@
+Contact: mailto:contato@cookiesecafes.com
+Expires: 2026-12-31T23:59:59.000Z
+Preferred-Languages: pt-BR, en
+Canonical: https://cookiesecafes.com/.well-known/security.txt

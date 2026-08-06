@@ -46,7 +46,9 @@ function minRoleFor(entity: string, action: string): "ADMIN" | "OPERACIONAL" {
 }
 
 const idSchema = z.object({ id: z.string().min(1) })
-const saleItemSchema = z.array(z.object({ productId: z.string().min(1), qty: z.number().int().min(1), price: z.number().min(0) }))
+const saleItemSchema = z.array(
+  z.object({ productId: z.string().min(1), qty: z.number().int().min(1), price: z.number().min(0) }),
+)
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const syncSchemas: Record<string, z.ZodType<any, any>> = {
@@ -54,7 +56,14 @@ const syncSchemas: Record<string, z.ZodType<any, any>> = {
   "order:update": updateOrderSchema.extend({ id: z.string().min(1) }),
   "order:delete": idSchema,
   "sale:create": createSaleSchema,
-  "sale:update": z.object({ id: z.string().min(1), channelId: z.string().optional(), total: z.number().min(0).optional(), userId: z.string().optional(), date: z.string().optional(), items: saleItemSchema.optional() }),
+  "sale:update": z.object({
+    id: z.string().min(1),
+    channelId: z.string().optional(),
+    total: z.number().min(0).optional(),
+    userId: z.string().optional(),
+    date: z.string().optional(),
+    items: saleItemSchema.optional(),
+  }),
   "sale:delete": idSchema,
   "cashFlow:create": createCashFlowSchema,
   "cashFlow:update": updateCashFlowSchema.extend({ id: z.string().min(1) }),
@@ -104,7 +113,7 @@ interface ProcessedEntry {
 async function applyCreate(
   entity: string,
   tempId: string | undefined,
-  create: (tx: Tx) => Promise<{ id: string }>
+  create: (tx: Tx) => Promise<{ id: string }>,
 ): Promise<string> {
   if (!tempId) {
     const created = await create(prisma)
@@ -195,9 +204,17 @@ export async function POST(request: Request) {
                 total: orderData.total,
                 status: orderData.status || "PENDENTE",
                 notes: orderData.notes,
-                items: items ? { create: items.map((i: { productId: string; qty: number; price: number }) => ({ productId: i.productId, qty: i.qty, price: i.price })) } : undefined,
+                items: items
+                  ? {
+                      create: items.map((i: { productId: string; qty: number; price: number }) => ({
+                        productId: i.productId,
+                        qty: i.qty,
+                        price: i.price,
+                      })),
+                    }
+                  : undefined,
               },
-            })
+            }),
           )
           entry.ok = true
           entry.tempId = tempId
@@ -225,9 +242,17 @@ export async function POST(request: Request) {
                 channelId: saleData.channelId,
                 total: saleData.total,
                 userId: saleData.userId,
-                items: items ? { create: items.map((i: { productId: string; qty: number; price: number }) => ({ productId: i.productId, qty: i.qty, price: i.price })) } : undefined,
+                items: items
+                  ? {
+                      create: items.map((i: { productId: string; qty: number; price: number }) => ({
+                        productId: i.productId,
+                        qty: i.qty,
+                        price: i.price,
+                      })),
+                    }
+                  : undefined,
               },
-            })
+            }),
           )
           entry.ok = true
           entry.tempId = tempId
@@ -243,7 +268,9 @@ export async function POST(request: Request) {
             })
             if (items) {
               await tx.saleItem.deleteMany({ where: { saleId: id } })
-              await tx.saleItem.createMany({ data: items.map((i: { productId: string; qty: number; price: number }) => ({ saleId: id, ...i })) })
+              await tx.saleItem.createMany({
+                data: items.map((i: { productId: string; qty: number; price: number }) => ({ saleId: id, ...i })),
+              })
             }
             return row
           })
@@ -257,7 +284,10 @@ export async function POST(request: Request) {
           await runDelete(() => prisma.sale.delete({ where: { id: data.id } }))
           await recordSyncDelete("sale", data.id)
           if (sale?.orderId) {
-            await prisma.order.update({ where: { id: sale.orderId }, data: { status: "PRONTO", updatedAt: new Date() } })
+            await prisma.order.update({
+              where: { id: sale.orderId },
+              data: { status: "PRONTO", updatedAt: new Date() },
+            })
           }
           entry.ok = true
           break
@@ -274,7 +304,7 @@ export async function POST(request: Request) {
                 userId: data.userId,
                 date: data.date ? new Date(data.date) : new Date(),
               },
-            })
+            }),
           )
           entry.ok = true
           entry.tempId = tempId
@@ -285,7 +315,8 @@ export async function POST(request: Request) {
           const { id, ...cashData } = data
           const patch: Record<string, unknown> = { ...cashData }
           if (cashData.date) patch.date = new Date(cashData.date)
-          if (cashData.description !== undefined) patch.description = (cashData.description as string).trim() || "Sem descrição"
+          if (cashData.description !== undefined)
+            patch.description = (cashData.description as string).trim() || "Sem descrição"
           if (cashData.amount !== undefined && typeof cashData.type === "string") {
             patch.amount = cashData.type === "SAIDA" ? -Math.abs(cashData.amount) : Math.abs(cashData.amount)
           }
@@ -309,7 +340,7 @@ export async function POST(request: Request) {
                 status: (data.status || "pendente").toLowerCase(),
                 notes: data.notes,
               },
-            })
+            }),
           )
           entry.ok = true
           entry.tempId = tempId
@@ -347,7 +378,7 @@ export async function POST(request: Request) {
                 active: data.active ?? true,
                 image: data.image ?? null,
               },
-            })
+            }),
           )
           entry.ok = true
           entry.tempId = tempId
@@ -357,7 +388,10 @@ export async function POST(request: Request) {
         case "product:update": {
           const { id, ...updateData } = data
           const patch: Record<string, unknown> = { ...updateData }
-          if ((typeof updateData.price === "number" || typeof updateData.cost === "number") && updateData.margin === undefined) {
+          if (
+            (typeof updateData.price === "number" || typeof updateData.cost === "number") &&
+            updateData.margin === undefined
+          ) {
             const existing = await prisma.product.findUnique({ where: { id }, select: { price: true, cost: true } })
             if (existing) {
               patch.margin = computeMargin(updateData.price ?? existing.price, updateData.cost ?? existing.cost)
@@ -369,7 +403,12 @@ export async function POST(request: Request) {
           break
         }
         case "product:delete": {
-          await runDelete(() => prisma.product.update({ where: { id: data.id }, data: { active: false, deletedAt: new Date(), updatedAt: new Date() } }))
+          await runDelete(() =>
+            prisma.product.update({
+              where: { id: data.id },
+              data: { active: false, deletedAt: new Date(), updatedAt: new Date() },
+            }),
+          )
           await recordSyncDelete("product", data.id)
           entry.ok = true
           break
@@ -389,7 +428,7 @@ export async function POST(request: Request) {
                 carbsPer100g: data.carbsPer100g,
                 fatPer100g: data.fatPer100g,
               },
-            })
+            }),
           )
           entry.ok = true
           entry.tempId = tempId
@@ -424,10 +463,16 @@ export async function POST(request: Request) {
                 preparation: recipeData.preparation,
                 image: recipeData.image,
                 ingredients: ingredients?.length
-                  ? { create: ingredients.map((i: { ingredientId: string; qty: number; unit: string }) => ({ ingredientId: i.ingredientId, qty: i.qty, unit: i.unit })) }
+                  ? {
+                      create: ingredients.map((i: { ingredientId: string; qty: number; unit: string }) => ({
+                        ingredientId: i.ingredientId,
+                        qty: i.qty,
+                        unit: i.unit,
+                      })),
+                    }
                   : undefined,
               },
-            })
+            }),
           )
           entry.ok = true
           entry.tempId = tempId
@@ -441,7 +486,12 @@ export async function POST(request: Request) {
             if (ingredients && Array.isArray(ingredients)) {
               await tx.recipeItem.deleteMany({ where: { recipeId: id } })
               await tx.recipeItem.createMany({
-                data: ingredients.map((i: { ingredientId: string; qty: number; unit: string }) => ({ recipeId: id, ingredientId: i.ingredientId, qty: i.qty, unit: i.unit })),
+                data: ingredients.map((i: { ingredientId: string; qty: number; unit: string }) => ({
+                  recipeId: id,
+                  ingredientId: i.ingredientId,
+                  qty: i.qty,
+                  unit: i.unit,
+                })),
               })
             }
           })
@@ -466,7 +516,7 @@ export async function POST(request: Request) {
                 tags: data.tags,
                 userId: data.userId,
               },
-            })
+            }),
           )
           entry.ok = true
           entry.tempId = tempId
@@ -486,7 +536,9 @@ export async function POST(request: Request) {
           break
         }
         case "channel:create": {
-          const realId = await applyCreate("channel", tempId, (tx) => tx.saleChannel.create({ data: { name: data.name, commission: data.commission ?? 0 } }))
+          const realId = await applyCreate("channel", tempId, (tx) =>
+            tx.saleChannel.create({ data: { name: data.name, commission: data.commission ?? 0 } }),
+          )
           entry.ok = true
           entry.tempId = tempId
           entry.realId = realId
@@ -507,8 +559,14 @@ export async function POST(request: Request) {
         case "priceTier:create": {
           const realId = await applyCreate("priceTier", tempId, (tx) =>
             tx.priceTier.create({
-              data: { productId: data.productId, name: data.name, minQty: data.minQty, maxQty: data.maxQty, price: data.price },
-            })
+              data: {
+                productId: data.productId,
+                name: data.name,
+                minQty: data.minQty,
+                maxQty: data.maxQty,
+                price: data.price,
+              },
+            }),
           )
           entry.ok = true
           entry.tempId = tempId
@@ -537,7 +595,7 @@ export async function POST(request: Request) {
                 notes: data.notes,
                 date: data.date ? new Date(data.date) : new Date(),
               },
-            })
+            }),
           )
           entry.ok = true
           entry.tempId = tempId
@@ -567,7 +625,7 @@ export async function POST(request: Request) {
               type: data.type,
               company: data.company,
               notes: data.notes,
-            }).then(({ contact }) => contact)
+            }).then(({ contact }) => contact),
           )
           entry.ok = true
           entry.tempId = tempId
@@ -597,7 +655,7 @@ export async function POST(request: Request) {
           const realId = await applyCreate("contactInteraction", tempId, (tx) =>
             tx.contactInteraction.create({
               data: { contactId, type: interactionData.type || "NOTA", note: interactionData.note },
-            })
+            }),
           )
           entry.ok = true
           entry.tempId = tempId

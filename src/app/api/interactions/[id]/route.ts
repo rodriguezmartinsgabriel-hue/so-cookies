@@ -3,10 +3,7 @@ import { requireAuth } from "@/lib/api-auth"
 import { deleteContactInteraction, isNotFoundError } from "@/lib/db"
 import { recordSyncDelete } from "@/lib/sync-deletes"
 
-export async function DELETE(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { error } = await requireAuth(request, "OPERACIONAL")
   if (error) return error
   try {

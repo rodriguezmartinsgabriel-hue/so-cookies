@@ -62,12 +62,14 @@ describe("createOrderPayment", () => {
 
     await createOrderPayment("ord-1")
 
-    expect(mocks.createPixPayment).toHaveBeenCalledWith(expect.objectContaining({
-      transactionAmount: 42.5,
-      payerEmail: "cliente@email.com",
-      externalReference: "order:ord-1",
-      notificationUrl: "https://loja.com/api/payments/webhook/mercadopago",
-    }))
+    expect(mocks.createPixPayment).toHaveBeenCalledWith(
+      expect.objectContaining({
+        transactionAmount: 42.5,
+        payerEmail: "cliente@email.com",
+        externalReference: "order:ord-1",
+        notificationUrl: "https://loja.com/api/payments/webhook/mercadopago",
+      }),
+    )
     expect(mocks.orderUpdate).toHaveBeenCalledWith({
       where: { id: "ord-1" },
       data: expect.objectContaining({
@@ -79,24 +81,41 @@ describe("createOrderPayment", () => {
         paymentQrCodeBase64: "iVBOR...",
       }),
     })
-    expect(mocks.paymentEventCreate).toHaveBeenCalledWith(expect.objectContaining({
-      data: expect.objectContaining({ action: "payment.created", status: "VERIFIED" }),
-    }))
+    expect(mocks.paymentEventCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ action: "payment.created", status: "VERIFIED" }),
+      }),
+    )
   })
 
   it("lança ALREADY_PAID se o pedido já foi pago", async () => {
-    mocks.orderFindUnique.mockResolvedValue({ id: "ord-1", total: 10, paymentStatus: "PAGO", customerRef: { email: "a@b.com" } })
+    mocks.orderFindUnique.mockResolvedValue({
+      id: "ord-1",
+      total: 10,
+      paymentStatus: "PAGO",
+      customerRef: { email: "a@b.com" },
+    })
     await expect(createOrderPayment("ord-1")).rejects.toMatchObject({ code: "ALREADY_PAID" })
   })
 
   it("lança NO_PAYER_EMAIL se o cliente não tem e-mail", async () => {
-    mocks.orderFindUnique.mockResolvedValue({ id: "ord-1", total: 10, paymentStatus: null, customerRef: { email: null } })
+    mocks.orderFindUnique.mockResolvedValue({
+      id: "ord-1",
+      total: 10,
+      paymentStatus: null,
+      customerRef: { email: null },
+    })
     await expect(createOrderPayment("ord-1")).rejects.toMatchObject({ code: "NO_PAYER_EMAIL" })
   })
 
   it("lança PAYMENTS_DISABLED quando não configurado", async () => {
     delete process.env.MERCADO_PAGO_ACCESS_TOKEN
-    mocks.orderFindUnique.mockResolvedValue({ id: "ord-1", total: 10, paymentStatus: null, customerRef: { email: "a@b.com" } })
+    mocks.orderFindUnique.mockResolvedValue({
+      id: "ord-1",
+      total: 10,
+      paymentStatus: null,
+      customerRef: { email: "a@b.com" },
+    })
     await expect(createOrderPayment("ord-1")).rejects.toMatchObject({ code: "PAYMENTS_DISABLED" })
   })
 
@@ -125,7 +144,12 @@ describe("handlePaymentWebhook", () => {
       external_reference: "order:ord-1",
       payer: { email: "a@b.com" },
     })
-    mocks.orderFindUnique.mockResolvedValue({ id: "ord-1", total: 42.5, status: "PENDENTE", paymentStatus: "AGUARDANDO_PAGAMENTO" })
+    mocks.orderFindUnique.mockResolvedValue({
+      id: "ord-1",
+      total: 42.5,
+      status: "PENDENTE",
+      paymentStatus: "AGUARDANDO_PAGAMENTO",
+    })
 
     const result = await handlePaymentWebhook({ paymentId: "123" })
 
@@ -161,14 +185,21 @@ describe("handlePaymentWebhook", () => {
       external_reference: "order:ord-1",
       payer: { email: "a@b.com" },
     })
-    mocks.orderFindUnique.mockResolvedValue({ id: "ord-1", total: 42.5, status: "PENDENTE", paymentStatus: "AGUARDANDO_PAGAMENTO" })
+    mocks.orderFindUnique.mockResolvedValue({
+      id: "ord-1",
+      total: 42.5,
+      status: "PENDENTE",
+      paymentStatus: "AGUARDANDO_PAGAMENTO",
+    })
 
     const result = await handlePaymentWebhook({ paymentId: "123" })
     expect(result.action).toBe("amount_mismatch")
     expect(mocks.orderUpdate).not.toHaveBeenCalled()
-    expect(mocks.paymentEventCreate).toHaveBeenCalledWith(expect.objectContaining({
-      data: expect.objectContaining({ action: "amount.mismatch", status: "IGNORED" }),
-    }))
+    expect(mocks.paymentEventCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ action: "amount.mismatch", status: "IGNORED" }),
+      }),
+    )
   })
 
   it("pagamento não aprovado não altera o pedido", async () => {
@@ -180,7 +211,12 @@ describe("handlePaymentWebhook", () => {
       external_reference: "order:ord-1",
       payer: { email: "a@b.com" },
     })
-    mocks.orderFindUnique.mockResolvedValue({ id: "ord-1", total: 42.5, status: "PENDENTE", paymentStatus: "AGUARDANDO_PAGAMENTO" })
+    mocks.orderFindUnique.mockResolvedValue({
+      id: "ord-1",
+      total: 42.5,
+      status: "PENDENTE",
+      paymentStatus: "AGUARDANDO_PAGAMENTO",
+    })
 
     const result = await handlePaymentWebhook({ paymentId: "123" })
     expect(result.action).toBe("not_approved")
@@ -188,16 +224,20 @@ describe("handlePaymentWebhook", () => {
   })
 
   it("pagamento não encontrado no MP é ignorado com 200", async () => {
-    mocks.getPixPayment.mockRejectedValue(new PaymentError("PAYMENT_NOT_FOUND", "Pagamento não encontrado no Mercado Pago"))
+    mocks.getPixPayment.mockRejectedValue(
+      new PaymentError("PAYMENT_NOT_FOUND", "Pagamento não encontrado no Mercado Pago"),
+    )
     mocks.orderFindUnique.mockResolvedValue(null)
 
     const result = await handlePaymentWebhook({ paymentId: "999" })
 
     expect(result).toEqual({ ok: true, action: "payment_not_found" })
     expect(mocks.orderUpdate).not.toHaveBeenCalled()
-    expect(mocks.paymentEventCreate).toHaveBeenCalledWith(expect.objectContaining({
-      data: expect.objectContaining({ action: "payment.updated", status: "IGNORED" }),
-    }))
+    expect(mocks.paymentEventCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ action: "payment.updated", status: "IGNORED" }),
+      }),
+    )
   })
 
   it("erro do provedor (não 404) propaga", async () => {
@@ -237,12 +277,14 @@ describe("expireUnpaidOrders", () => {
     const count = await expireUnpaidOrders()
 
     expect(count).toBe(2)
-    expect(mocks.orderFindMany).toHaveBeenCalledWith(expect.objectContaining({
-      where: expect.objectContaining({
-        paymentStatus: "AGUARDANDO_PAGAMENTO",
-        status: "PENDENTE",
+    expect(mocks.orderFindMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          paymentStatus: "AGUARDANDO_PAGAMENTO",
+          status: "PENDENTE",
+        }),
       }),
-    }))
+    )
     expect(mocks.orderUpdateMany).toHaveBeenCalledWith({
       where: { id: { in: ["ord-1", "ord-2"] } },
       data: expect.objectContaining({ paymentStatus: "EXPIRADO", status: "CANCELADO" }),

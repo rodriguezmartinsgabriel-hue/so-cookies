@@ -20,7 +20,11 @@ describe("NutritionFacts", () => {
   })
 
   it("shows a placeholder message when all macros are null", () => {
-    render(<NutritionFacts nutrition={{ ...base, caloriesPerUnit: null, proteinPerUnit: null, carbsPerUnit: null, fatPerUnit: null }} />)
+    render(
+      <NutritionFacts
+        nutrition={{ ...base, caloriesPerUnit: null, proteinPerUnit: null, carbsPerUnit: null, fatPerUnit: null }}
+      />,
+    )
     expect(screen.getByText("Sem informações nutricionais cadastradas.")).toBeInTheDocument()
   })
 

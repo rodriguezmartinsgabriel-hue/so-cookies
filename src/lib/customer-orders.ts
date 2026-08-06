@@ -150,16 +150,16 @@ export async function createCustomerOrder(
       productId: product.id,
       qty,
       basePrice: product.price,
-      name: product.name
+      name: product.name,
     }
   })
 
   // Calcular preço com Pricing Engine v2
   const pricingContext: PricingContext = {
     items: pricingItems,
-    channel: isDelivery ? 'delivery' : 'pickup',
-    customerType: 'CLIENTE',
-    couponCode: input.couponCode ?? undefined
+    channel: isDelivery ? "delivery" : "pickup",
+    customerType: "CLIENTE",
+    couponCode: input.couponCode ?? undefined,
   }
 
   const pricingResult = await engine.calculatePrice(pricingContext)
@@ -168,7 +168,7 @@ export async function createCustomerOrder(
   const items = pricingResult.state.items.map((pricingItem) => ({
     productId: pricingItem.productId,
     qty: pricingItem.qty,
-    price: pricingItem.calculatedPrice
+    price: pricingItem.calculatedPrice,
   }))
 
   const total = pricingResult.total
@@ -205,16 +205,18 @@ export async function createCustomerOrder(
       const message = e instanceof Error ? e.message : String(e)
       console.error("[orders] Falha ao criar pagamento PIX para pedido %s: %s", order.id, message)
       if (e instanceof PaymentError) {
-        await prisma.order.update({
-          where: { id: order.id },
-          data: {
-            paymentStatus: "EXPIRADO",
-            paymentProvider: "MERCADO_PAGO",
-            paymentExpiresAt: new Date(),
-            status: "CANCELADO",
-            updatedAt: new Date(),
-          },
-        }).catch(() => {})
+        await prisma.order
+          .update({
+            where: { id: order.id },
+            data: {
+              paymentStatus: "EXPIRADO",
+              paymentProvider: "MERCADO_PAGO",
+              paymentExpiresAt: new Date(),
+              status: "CANCELADO",
+              updatedAt: new Date(),
+            },
+          })
+          .catch(() => {})
         const failed = await prisma.order.findUnique({
           where: { id: order.id },
           include: { items: { include: { product: true } }, deliveryRoute: true, deliveryZone: true },
@@ -257,7 +259,10 @@ export async function updateCustomerOrder(
 
   if (input.status !== undefined) {
     const cancellableStatuses = ["PENDENTE", "CONFIRMADO"] as const
-    if (input.status === "CANCELADO" && !cancellableStatuses.includes(existing.status as typeof cancellableStatuses[number])) {
+    if (
+      input.status === "CANCELADO" &&
+      !cancellableStatuses.includes(existing.status as (typeof cancellableStatuses)[number])
+    ) {
       throw new SlotError("ORDER_LOCKED", "Este pedido não pode mais ser cancelado")
     }
     if (input.status !== "CANCELADO" && existing.status === "CANCELADO") {
@@ -353,9 +358,7 @@ export async function updateCustomerOrder(
   }
 
   if (input.status === "CANCELADO") {
-    const pendingPayment = existing.paymentEvents.find(
-      (e) => e.type === "PAYMENT" && e.status === "RECEIVED"
-    )
+    const pendingPayment = existing.paymentEvents.find((e) => e.type === "PAYMENT" && e.status === "RECEIVED")
     if (pendingPayment) {
       await prisma.paymentEvent.update({
         where: { id: pendingPayment.id },

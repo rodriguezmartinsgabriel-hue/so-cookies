@@ -18,8 +18,7 @@ export function UpdateWatcher() {
     }
 
     navigator.serviceWorker.addEventListener("controllerchange", handleControllerChange)
-    return () =>
-      navigator.serviceWorker.removeEventListener("controllerchange", handleControllerChange)
+    return () => navigator.serviceWorker.removeEventListener("controllerchange", handleControllerChange)
   }, [pathname])
 
   return null

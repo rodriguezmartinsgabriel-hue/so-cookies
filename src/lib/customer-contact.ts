@@ -23,10 +23,7 @@ export async function syncCustomerToContact(customer: {
   try {
     const existing = await prisma.contact.findFirst({
       where: {
-        OR: [
-          { customerId: customer.id },
-          { email: { equals: customer.email, mode: "insensitive" }, type: "CLIENTE" },
-        ],
+        OR: [{ customerId: customer.id }, { email: { equals: customer.email, mode: "insensitive" }, type: "CLIENTE" }],
       },
     })
 

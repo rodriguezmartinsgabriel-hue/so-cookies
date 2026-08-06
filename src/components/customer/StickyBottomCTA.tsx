@@ -31,7 +31,7 @@ export function StickyBottomCTA({
       animate={{ y: 0, opacity: 1 }}
       exit={{ y: 100, opacity: 0 }}
       transition={{ type: "spring", damping: reducedMotion ? 1 : 25, stiffness: reducedMotion ? 1 : 300 }}
-        className="fixed bottom-[calc(4rem+env(safe-area-inset-bottom))] left-0 right-0 z-50 px-4 pb-[calc(env(safe-area-inset-bottom)+12px)] pointer-events-none"
+      className="fixed bottom-[calc(4rem+env(safe-area-inset-bottom))] left-0 right-0 z-50 px-4 pb-[calc(env(safe-area-inset-bottom)+12px)] pointer-events-none"
     >
       <div className="relative max-w-md mx-auto pointer-events-auto">
         <motion.div
@@ -66,13 +66,7 @@ export function StickyBottomCTA({
               </motion.p>
             </div>
           </div>
-          <Button
-            size="lg"
-            variant="primary"
-            className="w-full"
-            disabled={disabled || loading}
-            onClick={onPress}
-          >
+          <Button size="lg" variant="primary" className="w-full" disabled={disabled || loading} onClick={onPress}>
             {loading ? "Finalizando..." : label}
             <ArrowRight className="w-4 h-4" />
           </Button>

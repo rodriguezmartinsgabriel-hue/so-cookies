@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { LogOut, User, MapPin, Phone, Mail, Lock, Package, Pencil, ChevronRight, AlertTriangle, RotateCcw, XCircle } from "lucide-react"
+import { LogOut, User, MapPin, Phone, Mail, Lock, Package, Pencil, ChevronRight, AlertTriangle } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { CustomerShell } from "@/components/customer/CustomerShell"
 import { ProfileHeader } from "@/components/customer/ProfileHeader"
@@ -141,23 +141,88 @@ export default function PerfilPage() {
     }
   }
 
-const addressValue = [
-    profile?.addressStreet && profile?.addressNumber ? `${profile.addressStreet}, ${profile.addressNumber}` : profile?.addressStreet,
+  const addressValue = [
+    profile?.addressStreet && profile?.addressNumber
+      ? `${profile.addressStreet}, ${profile.addressNumber}`
+      : profile?.addressStreet,
     profile?.addressComplement,
     profile?.addressNeighborhood,
-    profile?.addressCity && profile?.addressState ? `${profile.addressCity} - ${profile.addressState}` : profile?.addressCity,
+    profile?.addressCity && profile?.addressState
+      ? `${profile.addressCity} - ${profile.addressState}`
+      : profile?.addressCity,
   ].filter(Boolean)
 
   const editFields = [
-    { label: "Nome", name: "name", value: editName, onChange: setEditName, placeholder: "Seu nome", autoComplete: "name" },
-    { label: "Telefone", name: "phone", value: editPhone, onChange: setEditPhone, placeholder: "(11) 99999-9999", autoComplete: "tel", type: "tel" },
-    { label: "CEP", name: "cep", value: editAddress.cep, onChange: (v: string) => setEditAddress({ ...editAddress, cep: v }), placeholder: "00000-000", autoComplete: "postal-code", type: "tel", inputMode: "numeric" as const },
-    { label: "Cidade", name: "city", value: editAddress.city, onChange: (v: string) => setEditAddress({ ...editAddress, city: v }), autoComplete: "address-level2" },
-    { label: "Rua", name: "street", value: editAddress.street, onChange: (v: string) => setEditAddress({ ...editAddress, street: v }), autoComplete: "address-line1" },
-    { label: "Número", name: "number", value: editAddress.number, onChange: (v: string) => setEditAddress({ ...editAddress, number: v }), autoComplete: "address-line2" },
-    { label: "Complemento", name: "complement", value: editAddress.complement, onChange: (v: string) => setEditAddress({ ...editAddress, complement: v }), autoComplete: "address-line2" },
-    { label: "Bairro", name: "neighborhood", value: editAddress.neighborhood, onChange: (v: string) => setEditAddress({ ...editAddress, neighborhood: v }), autoComplete: "off" },
-    { label: "UF", name: "state", value: editAddress.state, onChange: (v: string) => setEditAddress({ ...editAddress, state: v.toUpperCase() }), maxLength: 2, autoComplete: "address-level1" },
+    {
+      label: "Nome",
+      name: "name",
+      value: editName,
+      onChange: setEditName,
+      placeholder: "Seu nome",
+      autoComplete: "name",
+    },
+    {
+      label: "Telefone",
+      name: "phone",
+      value: editPhone,
+      onChange: setEditPhone,
+      placeholder: "(11) 99999-9999",
+      autoComplete: "tel",
+      type: "tel",
+    },
+    {
+      label: "CEP",
+      name: "cep",
+      value: editAddress.cep,
+      onChange: (v: string) => setEditAddress({ ...editAddress, cep: v }),
+      placeholder: "00000-000",
+      autoComplete: "postal-code",
+      type: "tel",
+      inputMode: "numeric" as const,
+    },
+    {
+      label: "Cidade",
+      name: "city",
+      value: editAddress.city,
+      onChange: (v: string) => setEditAddress({ ...editAddress, city: v }),
+      autoComplete: "address-level2",
+    },
+    {
+      label: "Rua",
+      name: "street",
+      value: editAddress.street,
+      onChange: (v: string) => setEditAddress({ ...editAddress, street: v }),
+      autoComplete: "address-line1",
+    },
+    {
+      label: "Número",
+      name: "number",
+      value: editAddress.number,
+      onChange: (v: string) => setEditAddress({ ...editAddress, number: v }),
+      autoComplete: "address-line2",
+    },
+    {
+      label: "Complemento",
+      name: "complement",
+      value: editAddress.complement,
+      onChange: (v: string) => setEditAddress({ ...editAddress, complement: v }),
+      autoComplete: "address-line2",
+    },
+    {
+      label: "Bairro",
+      name: "neighborhood",
+      value: editAddress.neighborhood,
+      onChange: (v: string) => setEditAddress({ ...editAddress, neighborhood: v }),
+      autoComplete: "off",
+    },
+    {
+      label: "UF",
+      name: "state",
+      value: editAddress.state,
+      onChange: (v: string) => setEditAddress({ ...editAddress, state: v.toUpperCase() }),
+      maxLength: 2,
+      autoComplete: "address-level1",
+    },
   ]
 
   const quickFillAddress = () => {
@@ -177,12 +242,7 @@ const addressValue = [
 
   return (
     <CustomerShell cartCount={count}>
-      <motion.div
-        variants={containerVariants}
-        initial="hidden"
-        animate="visible"
-        className="space-y-3"
-      >
+      <motion.div variants={containerVariants} initial="hidden" animate="visible" className="space-y-3">
         <motion.div variants={itemVariants}>
           <ProfileHeader
             name={editing ? editName : profile?.name || ""}
@@ -222,7 +282,12 @@ const addressValue = [
               <motion.div variants={itemVariants}>
                 <ProfileSection icon={<Phone className="w-4 h-4" />} title="Dados Pessoais">
                   {editing ? (
-                    <ProfileEditList fields={editFields} onCancel={() => setEditing(false)} onSave={handleSaveProfile} saving={saving} />
+                    <ProfileEditList
+                      fields={editFields}
+                      onCancel={() => setEditing(false)}
+                      onSave={handleSaveProfile}
+                      saving={saving}
+                    />
                   ) : (
                     <>
                       <ProfileRow icon={<Phone className="w-4 h-4" />} label="Telefone" value={profile.phone || "—"} />
@@ -237,11 +302,7 @@ const addressValue = [
                 <ProfileSection icon={<MapPin className="w-4 h-4" />} title="Endereço de Entrega">
                   {editing ? (
                     <>
-                      <AddressForm
-                        address={editAddress}
-                        onChange={setEditAddress}
-                        showOptionalFields={false}
-                      />
+                      <AddressForm address={editAddress} onChange={setEditAddress} showOptionalFields={false} />
                       <div className="px-4 mt-3">
                         <Button
                           variant="secondary"
@@ -273,16 +334,34 @@ const addressValue = [
                     <div className="divide-y divide-line/50">
                       <div className="px-4 py-3">
                         <FormField label="Senha atual">
-                          <Input type="password" autoComplete="current-password" placeholder="Senha atual" value={pwCurrent} onChange={(e) => setPwCurrent(e.target.value)} />
+                          <Input
+                            type="password"
+                            autoComplete="current-password"
+                            placeholder="Senha atual"
+                            value={pwCurrent}
+                            onChange={(e) => setPwCurrent(e.target.value)}
+                          />
                         </FormField>
                       </div>
                       <div className="px-4 py-3">
                         <FormField label="Nova senha">
-                          <Input type="password" autoComplete="new-password" placeholder="Mínimo 6 caracteres" value={pwNew} onChange={(e) => setPwNew(e.target.value)} />
+                          <Input
+                            type="password"
+                            autoComplete="new-password"
+                            placeholder="Mínimo 6 caracteres"
+                            value={pwNew}
+                            onChange={(e) => setPwNew(e.target.value)}
+                          />
                         </FormField>
                       </div>
                       <div className="px-4 py-3">
-                        <Button variant="primary" size="md" className="w-full" onClick={handleChangePassword} disabled={saving || !pwCurrent || !pwNew}>
+                        <Button
+                          variant="primary"
+                          size="md"
+                          className="w-full"
+                          onClick={handleChangePassword}
+                          disabled={saving || !pwCurrent || !pwNew}
+                        >
                           Alterar senha
                         </Button>
                       </div>
@@ -300,12 +379,15 @@ const addressValue = [
                   ) : (
                     <div className="space-y-1">
                       {orders.map((o) => (
-                          <button
-                            key={o.id}
-                            type="button"
-                            className="w-full flex items-center justify-between px-4 py-3 hover:bg-line/30 transition-colors cursor-pointer"
-                            onClick={() => { haptic.tap(); router.push(`/pedido/${o.id}`) }}
-                          >
+                        <button
+                          key={o.id}
+                          type="button"
+                          className="w-full flex items-center justify-between px-4 py-3 hover:bg-line/30 transition-colors cursor-pointer"
+                          onClick={() => {
+                            haptic.tap()
+                            router.push(`/pedido/${o.id}`)
+                          }}
+                        >
                           <div>
                             <p className="text-sm font-semibold text-ink">
                               #{o.id.slice(0, 6)} · {new Date(o.createdAt).toLocaleDateString("pt-BR")}
@@ -328,14 +410,27 @@ const addressValue = [
               <motion.div variants={itemVariants} className="pt-2 pb-4">
                 {!showLogoutConfirm ? (
                   <Button variant="secondary" size="md" className="w-full" onClick={() => setShowLogoutConfirm(true)}>
-                    <span className="text-danger"><LogOut className="w-4 h-4" /> Sair</span>
+                    <span className="text-danger">
+                      <LogOut className="w-4 h-4" /> Sair
+                    </span>
                   </Button>
                 ) : (
                   <div className="flex items-center gap-2 p-3 rounded-lg border border-danger/30 bg-danger/5">
                     <AlertTriangle className="w-4 h-4 text-danger shrink-0" />
-                    <p className="text-sm text-ink flex-1">Tem certeza que deseja sair? Esta ação não pode ser desfeita.</p>
-                    <Button variant="secondary" size="sm" onClick={() => setShowLogoutConfirm(false)}>Voltar</Button>
-                    <Button size="sm" className="bg-danger text-paper hover:bg-danger/90" onClick={handleLogout} disabled={saving}>Sair</Button>
+                    <p className="text-sm text-ink flex-1">
+                      Tem certeza que deseja sair? Esta ação não pode ser desfeita.
+                    </p>
+                    <Button variant="secondary" size="sm" onClick={() => setShowLogoutConfirm(false)}>
+                      Voltar
+                    </Button>
+                    <Button
+                      size="sm"
+                      className="bg-danger text-paper hover:bg-danger/90"
+                      onClick={handleLogout}
+                      disabled={saving}
+                    >
+                      Sair
+                    </Button>
                   </div>
                 )}
               </motion.div>

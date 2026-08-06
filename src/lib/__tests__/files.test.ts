@@ -33,7 +33,11 @@ describe("isAcceptedFile", () => {
   })
 
   it("rejeita outros tipos", () => {
-    expect(isAcceptedFile(makeFile("planilha.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", 10))).toBe(false)
+    expect(
+      isAcceptedFile(
+        makeFile("planilha.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", 10),
+      ),
+    ).toBe(false)
     expect(isAcceptedFile(makeFile("texto.txt", "text/plain", 10))).toBe(false)
   })
 })
@@ -102,11 +106,15 @@ describe("processAttachment", () => {
   })
 
   it("rejeita PDF acima do limite de upload", async () => {
-    await expect(processAttachment(makeFile("doc.pdf", "application/pdf", MAX_PDF_UPLOAD + 1))).rejects.toThrow("muito grande")
+    await expect(processAttachment(makeFile("doc.pdf", "application/pdf", MAX_PDF_UPLOAD + 1))).rejects.toThrow(
+      "muito grande",
+    )
   })
 
   it("rejeita imagem acima do limite de upload", async () => {
-    await expect(processAttachment(makeFile("foto.jpg", "image/jpeg", MAX_IMAGE_UPLOAD + 1))).rejects.toThrow("muito grande")
+    await expect(processAttachment(makeFile("foto.jpg", "image/jpeg", MAX_IMAGE_UPLOAD + 1))).rejects.toThrow(
+      "muito grande",
+    )
   })
 
   it("aceita PDF pequeno e retorna data url", async () => {

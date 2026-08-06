@@ -267,6 +267,7 @@ model Order {
 
   @@unique([platform, externalId])
   @@index([status])
+  @@index([paymentStatus])
   @@index([createdAt])
   @@index([updatedAt])
   @@index([channel])
@@ -308,6 +309,7 @@ model PaymentEvent {
 
   @@index([orderId])
   @@index([paymentId])
+  @@index([status])
   @@index([receivedAt])
 }
 

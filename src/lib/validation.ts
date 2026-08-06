@@ -8,13 +8,9 @@ export function getZodIssues(e: unknown): z.ZodIssue[] | null {
   return null
 }
 
-export const dateKeySchema = z
-  .string()
-  .regex(/^\d{4}-\d{2}-\d{2}$/, "Data deve estar no formato YYYY-MM-DD")
+export const dateKeySchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Data deve estar no formato YYYY-MM-DD")
 
-export const timeSchema = z
-  .string()
-  .regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Horário deve estar no formato HH:mm")
+export const timeSchema = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Horário deve estar no formato HH:mm")
 
 export const addressFields = {
   addressCep: z.string().trim().max(9, "CEP inválido").optional().nullable(),
@@ -41,17 +37,29 @@ export const createOrderSchema = z.object({
   customer: z.string().min(1, "Cliente é obrigatório"),
   total: z.number().min(0, "Total deve ser positivo"),
   notes: z.string().optional(),
-  items: z.array(z.object({
-    productId: z.string().min(1),
-    qty: z.number().int().min(1),
-    price: z.number().min(0),
-  })).min(1, "Pelo menos 1 item"),
+  items: z
+    .array(
+      z.object({
+        productId: z.string().min(1),
+        qty: z.number().int().min(1),
+        price: z.number().min(0),
+      }),
+    )
+    .min(1, "Pelo menos 1 item"),
   deliveryDate: dateKeySchema.optional().nullable(),
   deliveryRouteId: z.string().min(1).optional().nullable(),
   ...deliveryAddressFields,
 })
 
-export const ORDER_STATUSES = ["PENDENTE", "CONFIRMADO", "PRODUCAO", "PRONTO", "ENTREGA", "CONCLUIDO", "CANCELADO"] as const
+export const ORDER_STATUSES = [
+  "PENDENTE",
+  "CONFIRMADO",
+  "PRODUCAO",
+  "PRONTO",
+  "ENTREGA",
+  "CONCLUIDO",
+  "CANCELADO",
+] as const
 
 export const updateOrderSchema = z.object({
   channel: z.string().min(1).optional(),
@@ -67,11 +75,15 @@ export const createSaleSchema = z.object({
   channelId: z.string().min(1, "Canal é obrigatório"),
   total: z.number().min(0),
   userId: z.string().optional(),
-  items: z.array(z.object({
-    productId: z.string().min(1),
-    qty: z.number().int().min(1),
-    price: z.number().min(0),
-  })).min(1, "Pelo menos 1 item"),
+  items: z
+    .array(
+      z.object({
+        productId: z.string().min(1),
+        qty: z.number().int().min(1),
+        price: z.number().min(0),
+      }),
+    )
+    .min(1, "Pelo menos 1 item"),
 })
 
 export const createIngredientSchema = z.object({
@@ -124,11 +136,15 @@ export const createRecipeSchema = z.object({
   totalCost: z.number().min(0),
   preparation: z.string().optional(),
   image: z.string().optional(),
-  ingredients: z.array(z.object({
-    ingredientId: z.string().min(1),
-    qty: z.number().min(0),
-    unit: z.string(),
-  })).optional(),
+  ingredients: z
+    .array(
+      z.object({
+        ingredientId: z.string().min(1),
+        qty: z.number().min(0),
+        unit: z.string(),
+      }),
+    )
+    .optional(),
 })
 
 export const createCashFlowSchema = z.object({
@@ -219,11 +235,15 @@ export const updateRecipeSchema = z.object({
   totalCost: z.number().min(0).optional(),
   preparation: z.string().optional(),
   image: z.string().optional(),
-  ingredients: z.array(z.object({
-    ingredientId: z.string().min(1),
-    qty: z.number().min(0),
-    unit: z.string(),
-  })).optional(),
+  ingredients: z
+    .array(
+      z.object({
+        ingredientId: z.string().min(1),
+        qty: z.number().min(0),
+        unit: z.string(),
+      }),
+    )
+    .optional(),
 })
 
 export const updateDocumentSchema = z.object({
@@ -308,10 +328,15 @@ export const loginCustomerSchema = z.object({
 
 export const createCustomerOrderSchema = z
   .object({
-    items: z.array(z.object({
-      productId: z.string().min(1),
-      qty: z.number().int().min(1).max(100, "Quantidade máxima por item é 100"),
-    })).min(1, "Adicione ao menos 1 item").max(50, "Máximo de 50 itens por pedido"),
+    items: z
+      .array(
+        z.object({
+          productId: z.string().min(1),
+          qty: z.number().int().min(1).max(100, "Quantidade máxima por item é 100"),
+        }),
+      )
+      .min(1, "Adicione ao menos 1 item")
+      .max(50, "Máximo de 50 itens por pedido"),
     couponCode: z.string().trim().max(50).optional().nullable(),
     paymentMethod: z.enum(["PIX"]).optional().nullable(),
     deliveryDate: dateKeySchema.optional().nullable(),
@@ -391,7 +416,11 @@ export const deliveryRouteSchema = z
       ctx.addIssue({ code: "custom", path: ["date"], message: "Rota extraordinária precisa de uma data" })
     }
     if (data.capacityEnabled && !data.maxOrders && !data.maxItems) {
-      ctx.addIssue({ code: "custom", path: ["maxOrders"], message: "Com capacidade ativa, defina limite de pedidos ou itens" })
+      ctx.addIssue({
+        code: "custom",
+        path: ["maxOrders"],
+        message: "Com capacidade ativa, defina limite de pedidos ou itens",
+      })
     }
   })
 
@@ -427,9 +456,22 @@ export const updateCustomerProfileSchema = z
     newPassword: z.string().min(6, "Senha deve ter no mínimo 6 caracteres").optional(),
     ...addressFields,
   })
-  .refine((d) => (!!d.currentPassword) === (!!d.newPassword), {
+  .refine((d) => !!d.currentPassword === !!d.newPassword, {
     message: "Para alterar a senha, informe a senha atual e a nova senha",
   })
-  .refine((d) => d.name !== undefined || d.phone !== undefined || d.newPassword !== undefined || d.addressStreet !== undefined || d.addressNumber !== undefined || d.addressCep !== undefined || d.addressComplement !== undefined || d.addressNeighborhood !== undefined || d.addressCity !== undefined || d.addressState !== undefined, {
-    message: "Nada para atualizar",
-  })
+  .refine(
+    (d) =>
+      d.name !== undefined ||
+      d.phone !== undefined ||
+      d.newPassword !== undefined ||
+      d.addressStreet !== undefined ||
+      d.addressNumber !== undefined ||
+      d.addressCep !== undefined ||
+      d.addressComplement !== undefined ||
+      d.addressNeighborhood !== undefined ||
+      d.addressCity !== undefined ||
+      d.addressState !== undefined,
+    {
+      message: "Nada para atualizar",
+    },
+  )

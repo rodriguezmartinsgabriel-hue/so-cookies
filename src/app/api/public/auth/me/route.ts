@@ -22,7 +22,10 @@ export async function PATCH(request: Request) {
   if (error) return error
   const limited = rateLimit(request, 10, 60_000)
   if (!limited.ok) {
-    return NextResponse.json({ error: "Muitas tentativas. Tente novamente em instantes." }, { status: 429, headers: { "Retry-After": String(limited.retryAfterSeconds) } })
+    return NextResponse.json(
+      { error: "Muitas tentativas. Tente novamente em instantes." },
+      { status: 429, headers: { "Retry-After": String(limited.retryAfterSeconds) } },
+    )
   }
   try {
     const json = await request.json()
@@ -31,7 +34,15 @@ export async function PATCH(request: Request) {
     const data: Record<string, unknown> = {}
     if (parsed.name !== undefined) data.name = parsed.name
     if (parsed.phone !== undefined) data.phone = parsed.phone || null
-    for (const field of ["addressCep", "addressStreet", "addressNumber", "addressComplement", "addressNeighborhood", "addressCity", "addressState"] as const) {
+    for (const field of [
+      "addressCep",
+      "addressStreet",
+      "addressNumber",
+      "addressComplement",
+      "addressNeighborhood",
+      "addressCity",
+      "addressState",
+    ] as const) {
       if (parsed[field] !== undefined) data[field] = parsed[field] || null
     }
 
@@ -41,7 +52,10 @@ export async function PATCH(request: Request) {
         select: { password: true },
       })
       if (!full?.password) {
-        return NextResponse.json({ error: "Esta conta usa login com Google. Não é possível alterar a senha." }, { status: 400 })
+        return NextResponse.json(
+          { error: "Esta conta usa login com Google. Não é possível alterar a senha." },
+          { status: 400 },
+        )
       }
       const valid = await compare(parsed.currentPassword!, full.password)
       if (!valid) {

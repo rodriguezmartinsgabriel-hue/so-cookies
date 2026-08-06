@@ -22,10 +22,20 @@ import type { Product, Recipe } from "@/lib/entity-types"
 import { Plus, Edit, Trash2, Search, Cookie, ImagePlus } from "lucide-react"
 import NextImage from "next/image"
 
-const emptyForm = { name: "", sku: "", category: "", price: "", cost: "", unit: "un", image: "", recipeId: "", active: true }
+const emptyForm = {
+  name: "",
+  sku: "",
+  category: "",
+  price: "",
+  cost: "",
+  unit: "un",
+  image: "",
+  recipeId: "",
+  active: true,
+}
 
 export default function ProdutosPage() {
-  const { canEdit } = useRole();
+  const { canEdit } = useRole()
   const { confirm, dialog } = useConfirm()
   const queryClient = useQueryClient()
   const { data: products, isLoading: loading, error: productsError, invalidate } = useQueryData("products")
@@ -140,7 +150,13 @@ export default function ProdutosPage() {
   }
 
   async function handleDelete(id: string) {
-    if (!(await confirm("Excluir este produto?", "O produto sairá do catálogo em todos os dispositivos (vendas históricas são preservadas)."))) return
+    if (
+      !(await confirm(
+        "Excluir este produto?",
+        "O produto sairá do catálogo em todos os dispositivos (vendas históricas são preservadas).",
+      ))
+    )
+      return
     await repository.products.delete(id)
     await invalidate()
   }
@@ -153,7 +169,13 @@ export default function ProdutosPage() {
   const query = search.trim().toLowerCase()
   const filtered = products
     .filter((p: Product) => (filter === "TODOS" ? true : filter === "ATIVOS" ? p.active : !p.active))
-    .filter((p: Product) => (query ? p.name.toLowerCase().includes(query) || p.sku.toLowerCase().includes(query) || p.category.toLowerCase().includes(query) : true))
+    .filter((p: Product) =>
+      query
+        ? p.name.toLowerCase().includes(query) ||
+          p.sku.toLowerCase().includes(query) ||
+          p.category.toLowerCase().includes(query)
+        : true,
+    )
 
   const priceNum = Number.isFinite(parseCurrencyPtBr(form.price)) ? parseCurrencyPtBr(form.price) : NaN
   const costNum = Number.isFinite(parseCurrencyPtBr(form.cost)) ? parseCurrencyPtBr(form.cost) : NaN
@@ -167,10 +189,17 @@ export default function ProdutosPage() {
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <div>
             <h1 className="text-2xl font-bold text-ink">Catálogo de Produtos</h1>
-            <p className="text-sm text-muted">{activeCount} ativo(s) · {products.length - activeCount} inativo(s)</p>
+            <p className="text-sm text-muted">
+              {activeCount} ativo(s) · {products.length - activeCount} inativo(s)
+            </p>
           </div>
           {canEdit && (
-            <Button onClick={() => { resetForm(); setShowModal(true); }}>
+            <Button
+              onClick={() => {
+                resetForm()
+                setShowModal(true)
+              }}
+            >
               <Plus className="w-4 h-4" />
               Novo Produto
             </Button>
@@ -201,9 +230,7 @@ export default function ProdutosPage() {
           </div>
         </div>
 
-        {error && (
-          <ErrorState message={error} onRetry={invalidate} />
-        )}
+        {error && <ErrorState message={error} onRetry={invalidate} />}
 
         {loading ? (
           <Card padded={false} className="overflow-hidden">
@@ -211,19 +238,39 @@ export default function ProdutosPage() {
               <THead className="border-b border-line">
                 <Tr>
                   {Array.from({ length: 6 }).map((_, i) => (
-                    <Th key={i}><Skeleton className="h-3 w-16" /></Th>
+                    <Th key={i}>
+                      <Skeleton className="h-3 w-16" />
+                    </Th>
                   ))}
                 </Tr>
               </THead>
               <TBody>
                 {Array.from({ length: 4 }).map((_, i) => (
                   <Tr key={i}>
-                    <Td><div className="flex items-center gap-3"><Skeleton className="h-8 w-8 rounded-lg" /><Skeleton className="h-4 w-28" /></div></Td>
-                    <Td><Skeleton className="h-4 w-14" /></Td>
-                    <Td><Skeleton className="h-4 w-14" /></Td>
-                    <Td><Skeleton className="h-4 w-14" /></Td>
-                    <Td><Skeleton className="h-4 w-16 mx-auto" /></Td>
-                    <Td><div className="flex justify-center gap-1"><Skeleton className="h-7 w-7" /><Skeleton className="h-7 w-7" /></div></Td>
+                    <Td>
+                      <div className="flex items-center gap-3">
+                        <Skeleton className="h-8 w-8 rounded-lg" />
+                        <Skeleton className="h-4 w-28" />
+                      </div>
+                    </Td>
+                    <Td>
+                      <Skeleton className="h-4 w-14" />
+                    </Td>
+                    <Td>
+                      <Skeleton className="h-4 w-14" />
+                    </Td>
+                    <Td>
+                      <Skeleton className="h-4 w-14" />
+                    </Td>
+                    <Td>
+                      <Skeleton className="h-4 w-16 mx-auto" />
+                    </Td>
+                    <Td>
+                      <div className="flex justify-center gap-1">
+                        <Skeleton className="h-7 w-7" />
+                        <Skeleton className="h-7 w-7" />
+                      </div>
+                    </Td>
                   </Tr>
                 ))}
               </TBody>
@@ -231,7 +278,9 @@ export default function ProdutosPage() {
           </Card>
         ) : filtered.length === 0 ? (
           <div className="text-center py-8 text-muted border border-dashed border-line rounded-lg">
-            {products.length === 0 ? "Nenhum produto cadastrado. Clique em \"Novo Produto\" para começar." : "Nenhum produto encontrado com os filtros atuais."}
+            {products.length === 0
+              ? 'Nenhum produto cadastrado. Clique em "Novo Produto" para começar.'
+              : "Nenhum produto encontrado com os filtros atuais."}
           </div>
         ) : (
           <Card padded={false} className="overflow-hidden">
@@ -254,7 +303,14 @@ export default function ProdutosPage() {
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-lg bg-cream flex items-center justify-center shrink-0">
                           {resolveProductImage(p, recipeByProduct[p.id]) ? (
-                            <NextImage src={resolveProductImage(p, recipeByProduct[p.id])!} alt={p.name} width={32} height={32} unoptimized className="w-8 h-8 rounded-lg object-cover" />
+                            <NextImage
+                              src={resolveProductImage(p, recipeByProduct[p.id])!}
+                              alt={p.name}
+                              width={32}
+                              height={32}
+                              unoptimized
+                              className="w-8 h-8 rounded-lg object-cover"
+                            />
                           ) : (
                             <Cookie className="w-4 h-4 text-muted" strokeWidth={1.5} />
                           )}
@@ -268,7 +324,9 @@ export default function ProdutosPage() {
                     <Td className="text-sm text-muted">{p.category}</Td>
                     <Td className="text-sm font-semibold text-ink text-right">{formatBRL(p.price)}</Td>
                     <Td className="text-sm text-ink text-right">{formatBRL(p.cost)}</Td>
-                    <Td className="text-sm text-ink text-right">{Number.isFinite(p.margin) ? `${p.margin.toFixed(1)}%` : "—"}</Td>
+                    <Td className="text-sm text-ink text-right">
+                      {Number.isFinite(p.margin) ? `${p.margin.toFixed(1)}%` : "—"}
+                    </Td>
                     <Td className="text-center">
                       {canEdit ? (
                         <button
@@ -278,17 +336,29 @@ export default function ProdutosPage() {
                           {p.active ? "Ativo" : "Inativo"}
                         </button>
                       ) : (
-                        <Badge variant={p.active ? "success" : "neutral"}>
-                          {p.active ? "Ativo" : "Inativo"}
-                        </Badge>
+                        <Badge variant={p.active ? "success" : "neutral"}>{p.active ? "Ativo" : "Inativo"}</Badge>
                       )}
                     </Td>
                     <Td className="text-center">
                       <div className="flex items-center justify-center gap-1">
                         {canEdit && (
                           <>
-                            <button type="button" onClick={() => openEdit(p)} aria-label="Editar" className="p-1.5 rounded-md hover:bg-cream text-muted"><Edit className="w-4 h-4" /></button>
-                            <button type="button" onClick={() => handleDelete(p.id)} aria-label="Excluir" className="p-1.5 rounded-md hover:bg-cream text-danger"><Trash2 className="w-4 h-4" /></button>
+                            <button
+                              type="button"
+                              onClick={() => openEdit(p)}
+                              aria-label="Editar"
+                              className="p-1.5 rounded-md hover:bg-cream text-muted"
+                            >
+                              <Edit className="w-4 h-4" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDelete(p.id)}
+                              aria-label="Excluir"
+                              className="p-1.5 rounded-md hover:bg-cream text-danger"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
                           </>
                         )}
                       </div>
@@ -303,30 +373,64 @@ export default function ProdutosPage() {
         {showModal && (
           <Modal
             open={showModal}
-            onClose={() => { setShowModal(false); resetForm(); }}
+            onClose={() => {
+              setShowModal(false)
+              resetForm()
+            }}
             title={editingItem ? "Editar Produto" : "Novo Produto"}
             size="md"
             footer={
               <div className="flex gap-2">
-                <Button variant="secondary" className="flex-1" onClick={() => { setShowModal(false); resetForm(); }}>Cancelar</Button>
-                <Button className="flex-1" onClick={handleSave}>Salvar</Button>
+                <Button
+                  variant="secondary"
+                  className="flex-1"
+                  onClick={() => {
+                    setShowModal(false)
+                    resetForm()
+                  }}
+                >
+                  Cancelar
+                </Button>
+                <Button className="flex-1" onClick={handleSave}>
+                  Salvar
+                </Button>
               </div>
             }
           >
             <div className="p-4 space-y-4">
               <FormField label="Nome" required>
-                <Input type="text" placeholder="Ex: Cookie Clássico" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+                <Input
+                  type="text"
+                  placeholder="Ex: Cookie Clássico"
+                  value={form.name}
+                  onChange={(e) => setForm({ ...form, name: e.target.value })}
+                />
               </FormField>
               <div className="grid grid-cols-2 gap-3">
                 <FormField label="SKU" required>
-                  <Input type="text" placeholder="Ex: ck-classico" value={form.sku} onChange={(e) => setForm({ ...form, sku: e.target.value })} />
+                  <Input
+                    type="text"
+                    placeholder="Ex: ck-classico"
+                    value={form.sku}
+                    onChange={(e) => setForm({ ...form, sku: e.target.value })}
+                  />
                 </FormField>
                 <FormField label="Unidade">
-                  <Input type="text" placeholder="Ex: un, cx, kg" value={form.unit} onChange={(e) => setForm({ ...form, unit: e.target.value })} />
+                  <Input
+                    type="text"
+                    placeholder="Ex: un, cx, kg"
+                    value={form.unit}
+                    onChange={(e) => setForm({ ...form, unit: e.target.value })}
+                  />
                 </FormField>
               </div>
               <FormField label="Categoria" required>
-                <select id="sel-nome-label-input-type-text-placeholder-e" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink bg-paper focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink transition-colors">
+                <select
+                  id="sel-nome-label-input-type-text-placeholder-e"
+                  value={form.category}
+                  onChange={(e) => setForm({ ...form, category: e.target.value })}
+                  className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink bg-paper focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink transition-colors"
+                >
                   <option value="">Selecione uma categoria</option>
                   <option value="Assados">Assados</option>
                   <option value="Congelados">Congelados</option>
@@ -334,18 +438,42 @@ export default function ProdutosPage() {
               </FormField>
               <div className="grid grid-cols-2 gap-3">
                 <FormField label="Preço (R$)" required>
-                  <Input type="text" inputMode="decimal" placeholder="0,00" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} />
+                  <Input
+                    type="text"
+                    inputMode="decimal"
+                    placeholder="0,00"
+                    value={form.price}
+                    onChange={(e) => setForm({ ...form, price: e.target.value })}
+                  />
                 </FormField>
                 <FormField label="Custo (R$)" required>
-                  <Input type="text" inputMode="decimal" placeholder="0,00" value={form.cost} onChange={(e) => setForm({ ...form, cost: e.target.value })} />
+                  <Input
+                    type="text"
+                    inputMode="decimal"
+                    placeholder="0,00"
+                    value={form.cost}
+                    onChange={(e) => setForm({ ...form, cost: e.target.value })}
+                  />
                 </FormField>
               </div>
               <div>
-                <label htmlFor="sel-receita-vinculada-opcional" className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Receita vinculada (opcional)</label>
-                <select id="sel-receita-vinculada-opcional" value={form.recipeId} onChange={(e) => setForm({ ...form, recipeId: e.target.value })} className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink transition-colors bg-paper">
+                <label
+                  htmlFor="sel-receita-vinculada-opcional"
+                  className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5"
+                >
+                  Receita vinculada (opcional)
+                </label>
+                <select
+                  id="sel-receita-vinculada-opcional"
+                  value={form.recipeId}
+                  onChange={(e) => setForm({ ...form, recipeId: e.target.value })}
+                  className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink transition-colors bg-paper"
+                >
                   <option value="">Nenhuma receita</option>
                   {recipes.map((r) => (
-                    <option key={r.id} value={r.id}>{r.name}</option>
+                    <option key={r.id} value={r.id}>
+                      {r.name}
+                    </option>
                   ))}
                 </select>
                 {linkedRecipe?.image && !form.image && (
@@ -355,13 +483,29 @@ export default function ProdutosPage() {
                 )}
               </div>
               <div>
-                <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Foto do produto</label>
+                <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">
+                  Foto do produto
+                </label>
                 <div className="flex items-center gap-3">
                   <div className="w-20 h-20 rounded-lg overflow-hidden bg-cream border border-line flex items-center justify-center shrink-0">
                     {form.image ? (
-                      <NextImage src={form.image} alt="Prévia do produto" width={80} height={80} unoptimized className="w-full h-full object-cover" />
+                      <NextImage
+                        src={form.image}
+                        alt="Prévia do produto"
+                        width={80}
+                        height={80}
+                        unoptimized
+                        className="w-full h-full object-cover"
+                      />
                     ) : linkedRecipe?.image ? (
-                      <NextImage src={linkedRecipe.image} alt={`Foto da receita ${linkedRecipe.name}`} width={80} height={80} unoptimized className="w-full h-full object-cover opacity-70" />
+                      <NextImage
+                        src={linkedRecipe.image}
+                        alt={`Foto da receita ${linkedRecipe.name}`}
+                        width={80}
+                        height={80}
+                        unoptimized
+                        className="w-full h-full object-cover opacity-70"
+                      />
                     ) : (
                       <ImagePlus className="w-6 h-6 text-kraft" />
                     )}
@@ -370,10 +514,20 @@ export default function ProdutosPage() {
                     <label className="flex items-center gap-2 h-9 px-3 rounded-lg border border-line text-xs font-medium text-ink hover:bg-cream transition-colors cursor-pointer">
                       <ImagePlus className="w-4 h-4" />
                       {imageLoading ? "Processando..." : form.image ? "Trocar foto" : "Enviar foto"}
-                      <input type="file" accept="image/*" onChange={handleImageSelect} className="hidden" disabled={imageLoading} />
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageSelect}
+                        className="hidden"
+                        disabled={imageLoading}
+                      />
                     </label>
                     {form.image && (
-                      <button type="button" onClick={removeImage} className="flex items-center gap-1 text-xs font-medium text-danger hover:underline">
+                      <button
+                        type="button"
+                        onClick={removeImage}
+                        className="flex items-center gap-1 text-xs font-medium text-danger hover:underline"
+                      >
                         <Trash2 className="w-3.5 h-3.5" /> Remover foto
                       </button>
                     )}
@@ -383,7 +537,12 @@ export default function ProdutosPage() {
               </div>
               <div className="flex items-center justify-between bg-cream border border-line rounded-lg px-3 py-2.5">
                 <label className="flex items-center gap-2 text-sm font-medium text-ink cursor-pointer">
-                  <input type="checkbox" checked={form.active} onChange={(e) => setForm({ ...form, active: e.target.checked })} className="accent-ink w-4 h-4" />
+                  <input
+                    type="checkbox"
+                    checked={form.active}
+                    onChange={(e) => setForm({ ...form, active: e.target.checked })}
+                    className="accent-ink w-4 h-4"
+                  />
                   Produto ativo no catálogo
                 </label>
                 <span className="text-xs text-muted">
@@ -394,7 +553,7 @@ export default function ProdutosPage() {
           </Modal>
         )}
       </div>
-        {dialog}
+      {dialog}
     </AppShell>
   )
 }

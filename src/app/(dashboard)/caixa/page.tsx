@@ -31,7 +31,7 @@ function displayDate(date: string) {
 }
 
 export default function CaixaPage() {
-  const { canEdit } = useRole();
+  const { canEdit } = useRole()
   const { confirm, dialog } = useConfirm()
   const [showModal, setShowModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
@@ -140,17 +140,19 @@ export default function CaixaPage() {
           </Card>
           <Card>
             <p className="text-xs font-medium text-muted uppercase tracking-wide">Saldo Hoje</p>
-            <p className={`text-xl font-bold mt-1 ${todayBalance >= 0 ? "text-success" : "text-danger"}`}>R$ {todayBalance.toFixed(0)}</p>
+            <p className={`text-xl font-bold mt-1 ${todayBalance >= 0 ? "text-success" : "text-danger"}`}>
+              R$ {todayBalance.toFixed(0)}
+            </p>
           </Card>
           <Card>
             <p className="text-xs font-medium text-muted uppercase tracking-wide">Saldo Mês</p>
-            <p className={`text-xl font-bold mt-1 ${(monthIn - monthOut) >= 0 ? "text-success" : "text-danger"}`}>R$ {(monthIn - monthOut).toFixed(0)}</p>
+            <p className={`text-xl font-bold mt-1 ${monthIn - monthOut >= 0 ? "text-success" : "text-danger"}`}>
+              R$ {(monthIn - monthOut).toFixed(0)}
+            </p>
           </Card>
         </div>
 
-        {error && (
-          <ErrorState message={error} onRetry={invalidate} />
-        )}
+        {error && <ErrorState message={error} onRetry={invalidate} />}
 
         {loading ? (
           <div className="space-y-4">
@@ -165,9 +167,25 @@ export default function CaixaPage() {
             <Card padded={false} className="overflow-hidden">
               <Table>
                 <THead className="border-b border-line">
-                  <Tr>{Array.from({ length: 6 }).map((_, i) => (<Th key={i}><Skeleton className="h-3 w-16" /></Th>))}</Tr>
+                  <Tr>
+                    {Array.from({ length: 6 }).map((_, i) => (
+                      <Th key={i}>
+                        <Skeleton className="h-3 w-16" />
+                      </Th>
+                    ))}
+                  </Tr>
                 </THead>
-                <TBody>{Array.from({ length: 4 }).map((_, i) => (<Tr key={i}>{Array.from({ length: 6 }).map((_, j) => (<Td key={j}><Skeleton className="h-4 w-full" /></Td>))}</Tr>))}</TBody>
+                <TBody>
+                  {Array.from({ length: 4 }).map((_, i) => (
+                    <Tr key={i}>
+                      {Array.from({ length: 6 }).map((_, j) => (
+                        <Td key={j}>
+                          <Skeleton className="h-4 w-full" />
+                        </Td>
+                      ))}
+                    </Tr>
+                  ))}
+                </TBody>
               </Table>
             </Card>
           </div>
@@ -188,11 +206,17 @@ export default function CaixaPage() {
                 {entries.map((entry) => (
                   <Tr key={entry.id}>
                     <Td>
-                      {entry.type === "ENTRADA" ? <ArrowUpRight className="w-4 h-4 text-success" /> : <ArrowDownLeft className="w-4 h-4 text-danger" />}
+                      {entry.type === "ENTRADA" ? (
+                        <ArrowUpRight className="w-4 h-4 text-success" />
+                      ) : (
+                        <ArrowDownLeft className="w-4 h-4 text-danger" />
+                      )}
                     </Td>
                     <Td className="text-sm text-ink">{entry.category}</Td>
                     <Td className="text-sm text-muted">{entry.description}</Td>
-                    <Td className={`text-sm font-semibold text-right ${(entry.amount || 0) >= 0 ? "text-success" : "text-danger"}`}>
+                    <Td
+                      className={`text-sm font-semibold text-right ${(entry.amount || 0) >= 0 ? "text-success" : "text-danger"}`}
+                    >
                       R$ {Math.abs(entry.amount || 0).toFixed(2)}
                     </Td>
                     <Td className="text-sm text-muted">{displayDate(entry.date)}</Td>
@@ -200,8 +224,22 @@ export default function CaixaPage() {
                       <div className="flex items-center justify-center gap-1">
                         {canEdit && (
                           <>
-                            <button type="button" onClick={() => openEdit(entry)} aria-label="Editar" className="p-1.5 rounded-md hover:bg-cream text-muted"><Edit className="w-4 h-4" /></button>
-                            <button type="button" onClick={() => handleDelete(entry.id)} aria-label="Excluir" className="p-1.5 rounded-md hover:bg-cream text-danger"><Trash2 className="w-4 h-4" /></button>
+                            <button
+                              type="button"
+                              onClick={() => openEdit(entry)}
+                              aria-label="Editar"
+                              className="p-1.5 rounded-md hover:bg-cream text-muted"
+                            >
+                              <Edit className="w-4 h-4" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDelete(entry.id)}
+                              aria-label="Excluir"
+                              className="p-1.5 rounded-md hover:bg-cream text-danger"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
                           </>
                         )}
                       </div>
@@ -209,7 +247,11 @@ export default function CaixaPage() {
                   </Tr>
                 ))}
                 {entries.length === 0 && (
-                  <Tr><Td colSpan={6} className="px-4 py-8 text-center text-sm text-muted">Nenhum lançamento</Td></Tr>
+                  <Tr>
+                    <Td colSpan={6} className="px-4 py-8 text-center text-sm text-muted">
+                      Nenhum lançamento
+                    </Td>
+                  </Tr>
                 )}
               </TBody>
             </Table>
@@ -224,8 +266,12 @@ export default function CaixaPage() {
             size="md"
             footer={
               <div className="flex gap-2">
-                <Button variant="secondary" className="flex-1" onClick={() => setShowModal(false)}>Cancelar</Button>
-                <Button className="flex-1" onClick={handleSave}>Salvar</Button>
+                <Button variant="secondary" className="flex-1" onClick={() => setShowModal(false)}>
+                  Cancelar
+                </Button>
+                <Button className="flex-1" onClick={handleSave}>
+                  Salvar
+                </Button>
               </div>
             }
           >
@@ -233,23 +279,51 @@ export default function CaixaPage() {
               <div>
                 <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Tipo</label>
                 <div className="grid grid-cols-2 gap-2">
-                  <button type="button" onClick={() => setFormType("ENTRADA")} className={`h-10 border rounded-lg text-sm font-medium transition-colors ${formType === "ENTRADA" ? "border-success bg-success/10 text-success" : "border-line text-muted hover:bg-cream"}`}>Entrada</button>
-                  <button type="button" onClick={() => setFormType("SAIDA")} className={`h-10 border rounded-lg text-sm font-medium transition-colors ${formType === "SAIDA" ? "border-danger bg-danger/10 text-danger" : "border-line text-muted hover:bg-cream"}`}>Saída</button>
+                  <button
+                    type="button"
+                    onClick={() => setFormType("ENTRADA")}
+                    className={`h-10 border rounded-lg text-sm font-medium transition-colors ${formType === "ENTRADA" ? "border-success bg-success/10 text-success" : "border-line text-muted hover:bg-cream"}`}
+                  >
+                    Entrada
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFormType("SAIDA")}
+                    className={`h-10 border rounded-lg text-sm font-medium transition-colors ${formType === "SAIDA" ? "border-danger bg-danger/10 text-danger" : "border-line text-muted hover:bg-cream"}`}
+                  >
+                    Saída
+                  </button>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <FormField label="Valor (R$)" required>
-                  <Input type="number" step="0.01" placeholder="0.00" value={formAmount} onChange={(e) => setFormAmount(e.target.value)} />
+                  <Input
+                    type="number"
+                    step="0.01"
+                    placeholder="0.00"
+                    value={formAmount}
+                    onChange={(e) => setFormAmount(e.target.value)}
+                  />
                 </FormField>
                 <FormField label="Data">
                   <Input type="date" value={formDate} onChange={(e) => setFormDate(e.target.value)} />
                 </FormField>
               </div>
               <FormField label="Categoria" required>
-                <Input type="text" placeholder="Ex: Venda, Compra, Frete..." value={formCategory} onChange={(e) => setFormCategory(e.target.value)} />
+                <Input
+                  type="text"
+                  placeholder="Ex: Venda, Compra, Frete..."
+                  value={formCategory}
+                  onChange={(e) => setFormCategory(e.target.value)}
+                />
               </FormField>
               <FormField label="Descrição" required>
-                <Input type="text" placeholder="Descrição do lançamento" value={formDescription} onChange={(e) => setFormDescription(e.target.value)} />
+                <Input
+                  type="text"
+                  placeholder="Descrição do lançamento"
+                  value={formDescription}
+                  onChange={(e) => setFormDescription(e.target.value)}
+                />
               </FormField>
             </div>
           </Modal>
@@ -258,13 +332,27 @@ export default function CaixaPage() {
         {showEditModal && editingEntry && (
           <Modal
             open={showEditModal}
-            onClose={() => { setShowEditModal(false); setEditingEntry(null); }}
+            onClose={() => {
+              setShowEditModal(false)
+              setEditingEntry(null)
+            }}
             title="Editar Lançamento"
             size="md"
             footer={
               <div className="flex gap-2">
-                <Button variant="secondary" className="flex-1" onClick={() => { setShowEditModal(false); setEditingEntry(null); }}>Cancelar</Button>
-                <Button className="flex-1" onClick={handleEditSave}>Salvar</Button>
+                <Button
+                  variant="secondary"
+                  className="flex-1"
+                  onClick={() => {
+                    setShowEditModal(false)
+                    setEditingEntry(null)
+                  }}
+                >
+                  Cancelar
+                </Button>
+                <Button className="flex-1" onClick={handleEditSave}>
+                  Salvar
+                </Button>
               </div>
             }
           >
@@ -272,29 +360,57 @@ export default function CaixaPage() {
               <div>
                 <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Tipo</label>
                 <div className="grid grid-cols-2 gap-2">
-                  <button type="button" onClick={() => setEditType("ENTRADA")} className={`h-10 border rounded-lg text-sm font-medium transition-colors ${editType === "ENTRADA" ? "border-success bg-success/10 text-success" : "border-line text-muted hover:bg-cream"}`}>Entrada</button>
-                  <button type="button" onClick={() => setEditType("SAIDA")} className={`h-10 border rounded-lg text-sm font-medium transition-colors ${editType === "SAIDA" ? "border-danger bg-danger/10 text-danger" : "border-line text-muted hover:bg-cream"}`}>Saída</button>
+                  <button
+                    type="button"
+                    onClick={() => setEditType("ENTRADA")}
+                    className={`h-10 border rounded-lg text-sm font-medium transition-colors ${editType === "ENTRADA" ? "border-success bg-success/10 text-success" : "border-line text-muted hover:bg-cream"}`}
+                  >
+                    Entrada
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEditType("SAIDA")}
+                    className={`h-10 border rounded-lg text-sm font-medium transition-colors ${editType === "SAIDA" ? "border-danger bg-danger/10 text-danger" : "border-line text-muted hover:bg-cream"}`}
+                  >
+                    Saída
+                  </button>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <FormField label="Valor (R$)" required>
-                  <Input type="number" step="0.01" placeholder="0.00" value={editAmount} onChange={(e) => setEditAmount(e.target.value)} />
+                  <Input
+                    type="number"
+                    step="0.01"
+                    placeholder="0.00"
+                    value={editAmount}
+                    onChange={(e) => setEditAmount(e.target.value)}
+                  />
                 </FormField>
                 <FormField label="Data">
                   <Input type="date" value={editDate} onChange={(e) => setEditDate(e.target.value)} />
                 </FormField>
               </div>
               <FormField label="Categoria" required>
-                <Input type="text" placeholder="Ex: Venda, Compra, Frete..." value={editCategory} onChange={(e) => setEditCategory(e.target.value)} />
+                <Input
+                  type="text"
+                  placeholder="Ex: Venda, Compra, Frete..."
+                  value={editCategory}
+                  onChange={(e) => setEditCategory(e.target.value)}
+                />
               </FormField>
               <FormField label="Descrição" required>
-                <Input type="text" placeholder="Descrição do lançamento" value={editDescription} onChange={(e) => setEditDescription(e.target.value)} />
+                <Input
+                  type="text"
+                  placeholder="Descrição do lançamento"
+                  value={editDescription}
+                  onChange={(e) => setEditDescription(e.target.value)}
+                />
               </FormField>
             </div>
           </Modal>
         )}
       </div>
-        {dialog}
+      {dialog}
     </AppShell>
   )
 }

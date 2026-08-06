@@ -1,5 +1,25 @@
 import type { EntityTable } from "dexie"
-import { db, getLastSyncTime, setLastSyncTime, addSyncError, clearSyncErrorsFor, type LocalOrder, type LocalSale, type LocalCashFlow, type LocalProduction, type LocalProduct, type LocalIngredient, type LocalRecipe, type LocalDocument, type LocalDeliveryCost, type LocalContact, type LocalContactInteraction, type LocalPriceTier, type LocalChannel, type SyncQueueItem } from "./db-local"
+import {
+  db,
+  getLastSyncTime,
+  setLastSyncTime,
+  addSyncError,
+  clearSyncErrorsFor,
+  type LocalOrder,
+  type LocalSale,
+  type LocalCashFlow,
+  type LocalProduction,
+  type LocalProduct,
+  type LocalIngredient,
+  type LocalRecipe,
+  type LocalDocument,
+  type LocalDeliveryCost,
+  type LocalContact,
+  type LocalContactInteraction,
+  type LocalPriceTier,
+  type LocalChannel,
+  type SyncQueueItem,
+} from "./db-local"
 import { emitDataRefresh } from "./refresh-events"
 import { MAX_PUSH_BODY } from "./files"
 
@@ -102,7 +122,7 @@ async function recordBatchFailure(batch: SyncQueueItem[], status: number) {
 
 export async function pushPendingChanges() {
   if (!navigator.onLine) return { pushed: 0 }
-  if (!await acquireLock()) return { pushed: 0 }
+  if (!(await acquireLock())) return { pushed: 0 }
 
   try {
     const pending = await db.syncQueue.toArray()
@@ -139,12 +159,24 @@ export async function pushPendingChanges() {
             const attempts = (item.attempts || 0) + 1
             if (attempts >= MAX_PUSH_ATTEMPTS) {
               await db.syncQueue.delete(p.queueId)
-              await addSyncError({ entity: item.entity, action: item.action, error: p.error || "Erro desconhecido", dropped: true, itemKey })
+              await addSyncError({
+                entity: item.entity,
+                action: item.action,
+                error: p.error || "Erro desconhecido",
+                dropped: true,
+                itemKey,
+              })
               continue
             }
             await db.syncQueue.update(p.queueId, { attempts, lastAttemptAt: new Date().toISOString() })
           }
-          await addSyncError({ entity: item?.entity || "desconhecido", action: item?.action || "?", error: p.error || "Erro desconhecido", dropped: false, itemKey })
+          await addSyncError({
+            entity: item?.entity || "desconhecido",
+            action: item?.action || "?",
+            error: p.error || "Erro desconhecido",
+            dropped: false,
+            itemKey,
+          })
           continue
         }
         pushed++
@@ -193,15 +225,19 @@ async function pullUnsyncedIds<T extends { id: string; _synced?: boolean }>(tabl
   return new Set((await table.toArray()).filter((r) => r._synced === false).map((r) => r.id))
 }
 
-async function writeRows<TLocal extends LocalSyncRow>(
-  table: EntityTable<TLocal, "id">,
-  rows: TLocal[] | undefined,
-) {
+async function writeRows<TLocal extends LocalSyncRow>(table: EntityTable<TLocal, "id">, rows: TLocal[] | undefined) {
   if (!rows?.length) return 0
   const skip = await pullUnsyncedIds(table)
   const toWrite = rows
     .filter((r) => !skip.has(r.id))
-    .map((r) => ({ ...r, _synced: true, _updatedAt: (r as { updatedAt?: string }).updatedAt || new Date().toISOString() } as TLocal))
+    .map(
+      (r) =>
+        ({
+          ...r,
+          _synced: true,
+          _updatedAt: (r as { updatedAt?: string }).updatedAt || new Date().toISOString(),
+        }) as TLocal,
+    )
   if (!toWrite.length) return 0
   await table.bulkPut(toWrite)
   return toWrite.length
@@ -239,7 +275,9 @@ async function applyLocalDelete(entity: string, recordId: string) {
         try {
           const items = JSON.parse(r.ingredients)
           if (Array.isArray(items) && items.some((i: { ingredientId: string }) => i.ingredientId === recordId)) {
-            await db.recipes.update(r.id, { ingredients: JSON.stringify(items.filter((i: { ingredientId: string }) => i.ingredientId !== recordId)) })
+            await db.recipes.update(r.id, {
+              ingredients: JSON.stringify(items.filter((i: { ingredientId: string }) => i.ingredientId !== recordId)),
+            })
           }
         } catch {
           /* JSON inválido local: ignora */
@@ -253,7 +291,7 @@ async function applyLocalDelete(entity: string, recordId: string) {
 
 export async function pullChanges() {
   if (!navigator.onLine) return { pulled: 0 }
-  if (!await acquireLock()) return { pulled: 0 }
+  if (!(await acquireLock())) return { pulled: 0 }
 
   try {
     const since = await getLastSyncTime()
@@ -276,7 +314,10 @@ export async function pullChanges() {
       pulled += await writeRows(db.documents, data.documents as LocalDocument[] | undefined)
       pulled += await writeRows(db.deliveryCosts, data.deliveryCosts as LocalDeliveryCost[] | undefined)
       pulled += await writeRows(db.contacts, data.contacts as LocalContact[] | undefined)
-      pulled += await writeRows(db.contactInteractions, data.contactInteractions as LocalContactInteraction[] | undefined)
+      pulled += await writeRows(
+        db.contactInteractions,
+        data.contactInteractions as LocalContactInteraction[] | undefined,
+      )
       pulled += await writeRows(db.channels, data.channels as LocalChannel[] | undefined)
 
       const recipeRows = data.recipes as Array<Omit<LocalRecipe, "ingredients"> & { ingredients?: unknown }> | undefined
@@ -284,7 +325,12 @@ export async function pullChanges() {
         const skip = await pullUnsyncedIds(db.recipes)
         const toWrite = recipeRows
           .filter((r) => !skip.has(r.id))
-          .map((r) => ({ ...r, ingredients: JSON.stringify(r.ingredients || []), _synced: true, _updatedAt: (r as { updatedAt?: string }).updatedAt || new Date().toISOString() }))
+          .map((r) => ({
+            ...r,
+            ingredients: JSON.stringify(r.ingredients || []),
+            _synced: true,
+            _updatedAt: (r as { updatedAt?: string }).updatedAt || new Date().toISOString(),
+          }))
         if (toWrite.length) {
           await db.recipes.bulkPut(toWrite)
           pulled += toWrite.length
@@ -309,7 +355,11 @@ export async function pullChanges() {
         for (const del of deletions) {
           const table = getLocalTable(del.entity)
           if (!table) continue
-          if ((protectedIdsByEntity.get(del.entity) || new Set<string>()).has(del.recordId) || queuedIds.has(del.recordId)) continue
+          if (
+            (protectedIdsByEntity.get(del.entity) || new Set<string>()).has(del.recordId) ||
+            queuedIds.has(del.recordId)
+          )
+            continue
           const local = await table.get(del.recordId)
           if (local) {
             await applyLocalDelete(del.entity, del.recordId)
@@ -352,11 +402,15 @@ export function registerBackgroundSync() {
 
   if ("serviceWorker" in navigator && "sync" in window.ServiceWorkerRegistration.prototype) {
     navigator.serviceWorker.ready.then((reg) => {
-      ;(reg as ServiceWorkerRegistration & { sync?: { register(tag: string): Promise<void> } }).sync?.register("sync-so-manager")
+      ;(reg as ServiceWorkerRegistration & { sync?: { register(tag: string): Promise<void> } }).sync?.register(
+        "sync-so-manager",
+      )
     })
   }
 
-  window.addEventListener("online", () => { scheduleSync() })
+  window.addEventListener("online", () => {
+    scheduleSync()
+  })
 
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "visible" && navigator.onLine) {

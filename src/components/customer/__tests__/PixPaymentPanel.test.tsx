@@ -8,7 +8,8 @@ function makeOrder(overrides: Partial<PixPaymentOrder> = {}): PixPaymentOrder {
   return {
     paymentStatus: "AGUARDANDO_PAGAMENTO",
     paymentQrCode: "00020126580014br.gov.bcb.pix0136example-psmpeypix",
-    paymentQrCodeBase64: "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
+    paymentQrCodeBase64:
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
     paymentExpiresAt: new Date(Date.now() + 30 * 60_000).toISOString(),
     ...overrides,
   }

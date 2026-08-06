@@ -4,10 +4,7 @@ import { getContact, updateContact, deleteContact, isNotFoundError } from "@/lib
 import { recordSyncDelete } from "@/lib/sync-deletes"
 import { updateContactSchema, getZodIssues } from "@/lib/validation"
 
-export async function GET(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { error } = await requireAuth(request)
   if (error) return error
   try {
@@ -20,10 +17,7 @@ export async function GET(
   }
 }
 
-export async function PATCH(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { error } = await requireAuth(request, "OPERACIONAL")
   if (error) return error
   try {
@@ -40,10 +34,7 @@ export async function PATCH(
   }
 }
 
-export async function DELETE(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { error } = await requireAuth(request, "OPERACIONAL")
   if (error) return error
   try {

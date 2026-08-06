@@ -41,7 +41,11 @@ export async function fetchNineFoodOrder(account: AccountRecord, orderUrlOrId: s
   return res.json() as Promise<PlatformOrderDetails>
 }
 
-export async function updateNineFoodOrderStatus(account: AccountRecord, orderId: string, operation: string): Promise<void> {
+export async function updateNineFoodOrderStatus(
+  account: AccountRecord,
+  orderId: string,
+  operation: string,
+): Promise<void> {
   const token = await getNineFoodToken(account)
   const res = await fetch(`${baseUrl()}/orders/${orderId}/${operation}`, {
     method: "PATCH",

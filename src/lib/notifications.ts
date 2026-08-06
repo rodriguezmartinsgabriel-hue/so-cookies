@@ -40,13 +40,11 @@ function clearOldReads(currentIds: string[]) {
 }
 
 async function buildNotifications(): Promise<Notification[]> {
-  const [ingredientsResp, ordersResp] = await Promise.all([
-    fetch("/api/ingredients"),
-    fetch("/api/orders"),
-  ])
+  const [ingredientsResp, ordersResp] = await Promise.all([fetch("/api/ingredients"), fetch("/api/orders")])
 
-  const ingredients: { id: string; name: string; stockKg?: number; minStockKg?: number }[] =
-    ingredientsResp.ok ? await ingredientsResp.json() : []
+  const ingredients: { id: string; name: string; stockKg?: number; minStockKg?: number }[] = ingredientsResp.ok
+    ? await ingredientsResp.json()
+    : []
   const orders: { status: string }[] = ordersResp.ok ? await ordersResp.json() : []
 
   const readIds = getReadIds()
@@ -125,7 +123,9 @@ export function useNotifications() {
       if (!ignore) setLoading(false)
     }
     loadOnce()
-    return () => { ignore = true }
+    return () => {
+      ignore = true
+    }
   }, [])
 
   useEffect(() => {
@@ -135,7 +135,7 @@ export function useNotifications() {
 
   function markAsRead(id: string) {
     markRead(id)
-    setNotifications((prev) => prev.map((n) => n.id === id ? { ...n, read: true } : n))
+    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)))
   }
 
   function markAllRead() {

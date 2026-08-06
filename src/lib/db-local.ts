@@ -394,14 +394,23 @@ export async function getPendingSyncCount(): Promise<number> {
 
 const SYNC_ERRORS_CAP = 100
 
-export async function addSyncError(data: { entity: string; action: string; error: string; dropped?: boolean; itemKey?: string }) {
+export async function addSyncError(data: {
+  entity: string
+  action: string
+  error: string
+  dropped?: boolean
+  itemKey?: string
+}) {
   if (data.itemKey) {
     await clearSyncErrorsFor(data.itemKey)
   }
   await db.syncErrors.add({ ...data, dropped: data.dropped || false, createdAt: new Date().toISOString() })
   const count = await db.syncErrors.count()
   if (count > SYNC_ERRORS_CAP) {
-    const oldest = await db.syncErrors.orderBy("id").limit(count - SYNC_ERRORS_CAP).toArray()
+    const oldest = await db.syncErrors
+      .orderBy("id")
+      .limit(count - SYNC_ERRORS_CAP)
+      .toArray()
     await db.syncErrors.bulkDelete(oldest.map((r) => r.id!).filter((id): id is number => id !== undefined))
   }
 }

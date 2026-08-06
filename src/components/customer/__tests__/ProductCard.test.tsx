@@ -18,14 +18,16 @@ function makeProduct(overrides: Partial<CatalogProduct> = {}): CatalogProduct {
   }
 }
 
-function setup(overrides: {
-  qty?: number
-  isExpanded?: boolean
-  onExpand?: () => void
-  onCollapse?: () => void
-  onAdd?: () => void
-  onSetQty?: (qty: number) => void
-} = {}) {
+function setup(
+  overrides: {
+    qty?: number
+    isExpanded?: boolean
+    onExpand?: () => void
+    onCollapse?: () => void
+    onAdd?: () => void
+    onSetQty?: (qty: number) => void
+  } = {},
+) {
   const props = {
     product: makeProduct(),
     qty: 0,
@@ -136,6 +138,9 @@ describe("ProductCard", () => {
 
   it("sets aria-expanded to match the isExpanded prop", () => {
     setup({ isExpanded: false })
-    expect(screen.getByRole("button", { name: /ver detalhes de cookie de chocolate/i })).toHaveAttribute("aria-expanded", "false")
+    expect(screen.getByRole("button", { name: /ver detalhes de cookie de chocolate/i })).toHaveAttribute(
+      "aria-expanded",
+      "false",
+    )
   })
 })

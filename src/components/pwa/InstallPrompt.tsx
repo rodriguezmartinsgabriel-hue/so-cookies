@@ -11,9 +11,15 @@ interface BeforeInstallPromptEvent extends Event {
 
 export function InstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null)
-  const [isStandalone] = useState(() => typeof window !== "undefined" && window.matchMedia("(display-mode: standalone)").matches)
-  const [dismissed, setDismissed] = useState(() => typeof window !== "undefined" && localStorage.getItem("pwa-dismissed") === "true")
-  const [isIOS] = useState(() => typeof window !== "undefined" && /iPad|iPhone|iPod/.test(navigator.userAgent) && !("MSStream" in window))
+  const [isStandalone] = useState(
+    () => typeof window !== "undefined" && window.matchMedia("(display-mode: standalone)").matches,
+  )
+  const [dismissed, setDismissed] = useState(
+    () => typeof window !== "undefined" && localStorage.getItem("pwa-dismissed") === "true",
+  )
+  const [isIOS] = useState(
+    () => typeof window !== "undefined" && /iPad|iPhone|iPod/.test(navigator.userAgent) && !("MSStream" in window),
+  )
   const [installed, setInstalled] = useState(false)
 
   useEffect(() => {
@@ -53,14 +59,7 @@ export function InstallPrompt() {
       <GlassSurface tone="strong" className="mx-auto max-w-md rounded-2xl p-6 text-ink shadow-lg">
         <div className="space-y-4">
           <div className="space-y-2 text-center">
-            <Image
-              src="/logo.svg"
-              alt="Só"
-              width={64}
-              height={64}
-              unoptimized
-              className="h-16 w-auto mx-auto"
-            />
+            <Image src="/logo.svg" alt="Só" width={64} height={64} unoptimized className="h-16 w-auto mx-auto" />
             <p className="text-sm opacity-80">
               Instale o app no seu dispositivo para acesso rápido e funcionamento offline.
             </p>

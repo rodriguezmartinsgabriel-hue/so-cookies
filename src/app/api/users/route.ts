@@ -27,7 +27,13 @@ export async function POST(request: Request) {
     }
     const password = await hash(parsed.password, 10)
     const user = await createUser({ ...parsed, password })
-    return NextResponse.json({ id: user.id, name: user.name, email: user.email, role: user.role, createdAt: user.createdAt })
+    return NextResponse.json({
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      createdAt: user.createdAt,
+    })
   } catch (e) {
     const issues = getZodIssues(e)
     if (issues) {

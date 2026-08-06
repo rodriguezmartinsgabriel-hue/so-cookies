@@ -1,4 +1,4 @@
-import { headers } from "next/headers";
+import { headers } from "next/headers"
 import "./globals.css"
 import type { Metadata, Viewport } from "next"
 import { Inter, Space_Grotesk } from "next/font/google"
@@ -34,9 +34,7 @@ export const metadata: Metadata = {
       { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
       { url: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
     ],
-    apple: [
-      { url: "/icons/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
-    ],
+    apple: [{ url: "/icons/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
   },
   appleWebApp: {
     capable: true,
@@ -69,7 +67,7 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode
 }>) {
-  const nonce = (await headers()).get("x-nonce") || "";
+  const nonce = (await headers()).get("x-nonce") || ""
   return (
     <html
       lang="pt-BR"

@@ -10,7 +10,10 @@ export function isIpAllowed(ip: string | null, allowlist: string): boolean {
   if (!ip) return false
   try {
     const blockList = new BlockList()
-    for (const entry of allowlist.split(",").map((e) => e.trim()).filter(Boolean)) {
+    for (const entry of allowlist
+      .split(",")
+      .map((e) => e.trim())
+      .filter(Boolean)) {
       if (entry.includes("/")) {
         const [addr, prefix] = entry.split("/")
         blockList.addSubnet(addr, Number(prefix))

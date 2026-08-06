@@ -9,7 +9,10 @@ import { rateLimit } from "@/lib/rate-limit"
 export async function POST(request: Request) {
   const limited = rateLimit(request, 5, 60_000)
   if (!limited.ok) {
-    return NextResponse.json({ error: "Muitas tentativas. Tente novamente em instantes." }, { status: 429, headers: { "Retry-After": String(limited.retryAfterSeconds) } })
+    return NextResponse.json(
+      { error: "Muitas tentativas. Tente novamente em instantes." },
+      { status: 429, headers: { "Retry-After": String(limited.retryAfterSeconds) } },
+    )
   }
   try {
     const json = await request.json()
@@ -25,7 +28,12 @@ export async function POST(request: Request) {
     })
     await setCustomerCookie(customer.id)
     try {
-      await syncCustomerToContact({ id: customer.id, name: parsed.name, email: parsed.email, phone: parsed.phone || null })
+      await syncCustomerToContact({
+        id: customer.id,
+        name: parsed.name,
+        email: parsed.email,
+        phone: parsed.phone || null,
+      })
     } catch (e) {
       console.error("Falha ao sincronizar contato do cliente", e)
     }

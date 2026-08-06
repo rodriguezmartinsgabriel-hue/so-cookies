@@ -58,23 +58,15 @@ function sumMacros(
   }
   if (!hasData) return null
   // Divide pelo yield total. Se há múltiplas receitas, somamos os totais.
-  const totalYield = recipes.reduce(
-    (sum, r) => sum + (r.yield > 0 ? r.yield : 0),
-    0,
-  )
+  const totalYield = recipes.reduce((sum, r) => sum + (r.yield > 0 ? r.yield : 0), 0)
   if (totalYield <= 0) return null
   return total / totalYield
 }
 
-export function computeProductNutrition(
-  recipes: RecipeInfo[] | undefined,
-): ProductNutrition | null {
+export function computeProductNutrition(recipes: RecipeInfo[] | undefined): ProductNutrition | null {
   if (!recipes || recipes.length === 0) return null
 
-  const totalYield = recipes.reduce(
-    (sum, r) => sum + (r.yield > 0 ? r.yield : 0),
-    0,
-  )
+  const totalYield = recipes.reduce((sum, r) => sum + (r.yield > 0 ? r.yield : 0), 0)
   if (totalYield <= 0) return null
 
   // Agregar ingredientes (nomes únicos, ordenados)
@@ -96,9 +88,7 @@ export function computeProductNutrition(
   }
 
   // Tags = interseção entre todos os ingredientes (se todos têm a tag, mantém)
-  const tagSets = Array.from(allTagsPerIngredient.values()).map(
-    (t) => new Set(t),
-  )
+  const tagSets = Array.from(allTagsPerIngredient.values()).map((t) => new Set(t))
   const tags: string[] = []
   if (tagSets.length > 0) {
     const first = tagSets[0]

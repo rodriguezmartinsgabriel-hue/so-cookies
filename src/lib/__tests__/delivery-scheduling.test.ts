@@ -95,20 +95,12 @@ describe("geração de datas das rotas", () => {
   })
 
   it("rota extraordinária usa data fixa", () => {
-    const dates = generateRouteDates(
-      route({ recurring: false, dayOfWeek: null, date: "2026-09-07" }),
-      "2026-08-01",
-      5,
-    )
+    const dates = generateRouteDates(route({ recurring: false, dayOfWeek: null, date: "2026-09-07" }), "2026-08-01", 5)
     expect(dates).toEqual(["2026-09-07"])
   })
 
   it("rota extraordinária já passada não aparece", () => {
-    const dates = generateRouteDates(
-      route({ recurring: false, dayOfWeek: null, date: "2026-07-01" }),
-      "2026-08-01",
-      5,
-    )
+    const dates = generateRouteDates(route({ recurring: false, dayOfWeek: null, date: "2026-07-01" }), "2026-08-01", 5)
     expect(dates).toEqual([])
   })
 })
@@ -147,7 +139,18 @@ describe("buildSlots", () => {
     const usage = new Map()
     usage.set(usageKey("tue", "2026-08-04"), { orders: 3, items: 24 })
     const slots = buildSlots({
-      routes: [{ ...route(), id: "tue", name: "Terça", dayOfWeek: 2, zoneName: "SP", capacityEnabled: true, maxOrders: 10, maxItems: 100 }],
+      routes: [
+        {
+          ...route(),
+          id: "tue",
+          name: "Terça",
+          dayOfWeek: 2,
+          zoneName: "SP",
+          capacityEnabled: true,
+          maxOrders: 10,
+          maxItems: 100,
+        },
+      ],
       blocked: [],
       usage,
       now,
@@ -158,7 +161,17 @@ describe("buildSlots", () => {
 
   it("expõe a janela de entrega no slot", () => {
     const slots = buildSlots({
-      routes: [{ ...route(), id: "tue", name: "Terça", dayOfWeek: 2, zoneName: "SP", windowStart: "12:00", windowEnd: "18:00" }],
+      routes: [
+        {
+          ...route(),
+          id: "tue",
+          name: "Terça",
+          dayOfWeek: 2,
+          zoneName: "SP",
+          windowStart: "12:00",
+          windowEnd: "18:00",
+        },
+      ],
       blocked: [],
       usage: new Map(),
       now,

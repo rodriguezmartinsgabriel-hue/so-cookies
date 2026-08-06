@@ -156,7 +156,10 @@ export function cutoffAtFor(route: Pick<DeliveryRouteInput, "cutoffTime" | "cuto
   return fromSpParts({ y, m, d, hh, mm })
 }
 
-export function cutoffLabelFor(route: Pick<DeliveryRouteInput, "cutoffTime" | "cutoffOffsetDays">, dateKey: string): string {
+export function cutoffLabelFor(
+  route: Pick<DeliveryRouteInput, "cutoffTime" | "cutoffOffsetDays">,
+  dateKey: string,
+): string {
   const cutoffKey = shiftDateKey(dateKey, -route.cutoffOffsetDays)
   return `${WEEKDAY_LONG[weekdayOf(cutoffKey)]}, ${timeLabel(route.cutoffTime)}`
 }
@@ -262,7 +265,24 @@ export function buildSlots(params: BuildSlotsParams): DeliverySlot[] {
   return slots.filter((s) => s.open).slice(0, limit)
 }
 
-function toRouteInput(route: { id: string; name: string; zoneId: string; recurring: boolean; dayOfWeek: number | null; date: Date | null; startDate: Date | null; endDate: Date | null; cutoffTime: string; cutoffOffsetDays: number; windowStart: string; windowEnd: string; capacityEnabled: boolean; maxOrders: number | null; maxItems: number | null; active: boolean }): DeliveryRouteInput {
+function toRouteInput(route: {
+  id: string
+  name: string
+  zoneId: string
+  recurring: boolean
+  dayOfWeek: number | null
+  date: Date | null
+  startDate: Date | null
+  endDate: Date | null
+  cutoffTime: string
+  cutoffOffsetDays: number
+  windowStart: string
+  windowEnd: string
+  capacityEnabled: boolean
+  maxOrders: number | null
+  maxItems: number | null
+  active: boolean
+}): DeliveryRouteInput {
   return {
     id: route.id,
     name: route.name,
@@ -283,13 +303,22 @@ function toRouteInput(route: { id: string; name: string; zoneId: string; recurri
   }
 }
 
-export async function getDeliverySlots(options?: { zoneId?: string; now?: Date; limit?: number }): Promise<DeliverySlot[]> {
+export async function getDeliverySlots(options?: {
+  zoneId?: string
+  now?: Date
+  limit?: number
+}): Promise<DeliverySlot[]> {
   const zones = await prisma.deliveryZone.findMany({ where: { active: true } })
-  const zoneIds = options?.zoneId ? zones.filter((z) => z.id === options.zoneId).map((z) => z.id) : zones.map((z) => z.id)
+  const zoneIds = options?.zoneId
+    ? zones.filter((z) => z.id === options.zoneId).map((z) => z.id)
+    : zones.map((z) => z.id)
   if (zoneIds.length === 0) return []
 
   const [routes, blocked] = await Promise.all([
-    prisma.deliveryRoute.findMany({ where: { active: true, zoneId: { in: zoneIds } }, include: { zone: { select: { name: true } } } }),
+    prisma.deliveryRoute.findMany({
+      where: { active: true, zoneId: { in: zoneIds } },
+      include: { zone: { select: { name: true } } },
+    }),
     prisma.deliveryBlockedDate.findMany({ where: { zoneId: { in: zoneIds } } }),
   ])
 

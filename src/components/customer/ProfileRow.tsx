@@ -44,10 +44,7 @@ export function ProfileRow({ icon, label, value, href, onClick, className }: Pro
   }
 
   return (
-    <div
-      className={sharedClasses}
-      {...(onClick ? { onClick } : {})}
-    >
+    <div className={sharedClasses} {...(onClick ? { onClick } : {})}>
       {content}
     </div>
   )

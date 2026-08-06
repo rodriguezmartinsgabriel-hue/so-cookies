@@ -1,21 +1,21 @@
-"use client";
+"use client"
 
-import { useSyncExternalStore, type CSSProperties, type ElementType, type ReactNode } from "react";
-import { cn } from "@/lib/utils";
+import { useSyncExternalStore, type CSSProperties, type ElementType, type ReactNode } from "react"
+import { cn } from "@/lib/utils"
 
 type GlassSurfaceProps = {
-  as?: ElementType;
-  variant?: "glass" | "solid";
-  tone?: "default" | "strong";
-  className?: string;
-  children?: ReactNode;
-} & Record<string, unknown>;
+  as?: ElementType
+  variant?: "glass" | "solid"
+  tone?: "default" | "strong"
+  className?: string
+  children?: ReactNode
+} & Record<string, unknown>
 
-const emptySubscribe = () => () => {};
+const emptySubscribe = () => () => {}
 
 function supportsAppleVisualEffect(): boolean {
-  if (typeof CSS === "undefined" || typeof CSS.supports !== "function") return false;
-  return CSS.supports("-apple-visual-effect", "auto");
+  if (typeof CSS === "undefined" || typeof CSS.supports !== "function") return false
+  return CSS.supports("-apple-visual-effect", "auto")
 }
 
 export function GlassSurface({
@@ -30,7 +30,7 @@ export function GlassSurface({
     emptySubscribe,
     () => supportsAppleVisualEffect(),
     () => false,
-  );
+  )
 
   const style: CSSProperties =
     appleEffect && variant === "glass"
@@ -47,15 +47,11 @@ export function GlassSurface({
           }
         : {
             backgroundColor: "var(--paper)",
-          };
+          }
 
   return (
-    <Tag
-      className={cn("glass-surface", className)}
-      style={style}
-      {...(props as Record<string, unknown>)}
-    >
+    <Tag className={cn("glass-surface", className)} style={style} {...(props as Record<string, unknown>)}>
       {children}
     </Tag>
-  );
+  )
 }

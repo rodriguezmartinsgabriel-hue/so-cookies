@@ -12,7 +12,12 @@ type AddressFormProps = {
   showOptionalFields?: boolean
 }
 
-export function AddressForm({ address, onChange, disabled = false, showOptionalFields = true }: AddressFormProps) {
+export function AddressForm({
+  address,
+  onChange,
+  disabled = false,
+  showOptionalFields: _showOptionalFields = true,
+}: AddressFormProps) {
   const handleChange = (key: keyof AddressState) => (e: ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value
     onChange({ ...address, [key]: value })

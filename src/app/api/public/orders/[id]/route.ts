@@ -6,10 +6,7 @@ import { SlotError } from "@/lib/delivery-scheduling"
 import { expireUnpaidOrders } from "@/lib/payments/service"
 import { rateLimit } from "@/lib/rate-limit"
 
-export async function GET(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { error, customer } = await requireCustomer()
   if (error) return error
   try {
@@ -33,15 +30,15 @@ export async function GET(
   }
 }
 
-export async function PATCH(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { error, customer } = await requireCustomer()
   if (error) return error
   const limited = rateLimit(request, 20, 60_000)
   if (!limited.ok) {
-    return NextResponse.json({ error: "Muitas tentativas. Tente novamente em instantes." }, { status: 429, headers: { "Retry-After": String(limited.retryAfterSeconds) } })
+    return NextResponse.json(
+      { error: "Muitas tentativas. Tente novamente em instantes." },
+      { status: 429, headers: { "Retry-After": String(limited.retryAfterSeconds) } },
+    )
   }
   try {
     const { id } = await params

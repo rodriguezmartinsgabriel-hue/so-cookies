@@ -64,7 +64,11 @@ function itemOptionText(options: unknown[], pick: (o: PlatformOption) => string 
 
 function platformFeeTotal(fees: unknown[], pick: (f: PlatformFee) => unknown): number {
   return asArray<PlatformFee>(fees)
-    .filter((f) => (f?.receivedBy && f.receivedBy !== "MERCHANT") || ["MARKETPLACE", "PLATFORM_FEE", "COMMISSION"].includes(String(f?.type || "").toUpperCase()))
+    .filter(
+      (f) =>
+        (f?.receivedBy && f.receivedBy !== "MERCHANT") ||
+        ["MARKETPLACE", "PLATFORM_FEE", "COMMISSION"].includes(String(f?.type || "").toUpperCase()),
+    )
     .map(pick)
     .reduce((a: number, b) => a + money(b), 0)
 }
@@ -84,7 +88,8 @@ export function normalize99FoodOrder(details: PlatformOrderDetails): NormalizedO
   })
 
   const fees = platformFeeTotal(details?.otherFees ?? [], (f) => f?.price)
-  const total = money(details?.totalPrice) || asArray<PlatformItem>(details?.items).reduce((s, it) => s + money(it?.totalPrice), 0)
+  const total =
+    money(details?.totalPrice) || asArray<PlatformItem>(details?.items).reduce((s, it) => s + money(it?.totalPrice), 0)
   const customer = firstText(details?.customer?.name) || "Cliente 99"
 
   return {
@@ -115,7 +120,10 @@ export function normalizeIfoodOrder(details: PlatformOrderDetails): NormalizedOr
   })
 
   const fees = platformFeeTotal(details?.otherFees ?? [], (f) => f?.amount ?? f?.price)
-  const total = money(details?.total) || money(details?.orderAmount) || asArray<PlatformItem>(details?.items).reduce((s, it) => s + money(it?.totalPrice), 0)
+  const total =
+    money(details?.total) ||
+    money(details?.orderAmount) ||
+    asArray<PlatformItem>(details?.items).reduce((s, it) => s + money(it?.totalPrice), 0)
   const customer = firstText(details?.customer?.name) || "Cliente iFood"
 
   return {

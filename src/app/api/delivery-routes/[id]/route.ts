@@ -7,10 +7,7 @@ function parseDate(v: string | null | undefined): Date | null {
   return v ? new Date(`${v}T00:00:00.000Z`) : null
 }
 
-export async function PUT(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { error } = await requireAuth(request, "ADMIN")
   if (error) return error
   try {
@@ -48,10 +45,7 @@ export async function PUT(
   }
 }
 
-export async function DELETE(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { error } = await requireAuth(request, "ADMIN")
   if (error) return error
   try {

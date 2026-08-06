@@ -39,15 +39,7 @@ const TAG_LABELS: Record<string, string> = {
   SEM_LACTOSE: "Sem lactose",
 }
 
-export function ProductCard({
-  product,
-  qty,
-  isExpanded,
-  onExpand,
-  onCollapse,
-  onAdd,
-  onSetQty,
-}: ProductCardProps) {
+export function ProductCard({ product, qty, isExpanded, onExpand, onCollapse, onAdd, onSetQty }: ProductCardProps) {
   const haptic = useHapticFeedback()
   const n = product.nutrition
 
@@ -105,11 +97,7 @@ export function ProductCard({
         tabIndex={0}
         aria-expanded={isExpanded}
         aria-controls={`panel-${product.id}`}
-        aria-label={
-          isExpanded
-            ? `Recolher ${product.name}`
-            : `Ver detalhes de ${product.name}`
-        }
+        aria-label={isExpanded ? `Recolher ${product.name}` : `Ver detalhes de ${product.name}`}
         onClick={handleHeaderClick}
         onKeyDown={handleHeaderKeyDown}
         className="flex items-center gap-3 p-3 cursor-pointer select-none"
@@ -170,62 +158,51 @@ export function ProductCard({
         </div>
 
         <div className="shrink-0 flex items-center gap-2">
-          {!isExpanded && (qty === 0 ? (
-            <Button
-              variant="primary"
-              size="sm"
-              className="!h-11"
-              onClick={handleAdd}
-              aria-label={`Adicionar ${product.name} ao carrinho`}
-            >
-              <Plus className="w-4 h-4" />
-            </Button>
-          ) : (
-            <div className="flex items-center gap-1">
-              <Button
-                variant="secondary"
-                size="icon"
-                className="!h-11 !w-11"
-                onClick={handleDec}
-                aria-label={`Diminuir ${product.name}`}
-              >
-                <Minus className="w-3 h-3" />
-              </Button>
-              <span
-                className="w-5 text-center text-xs font-semibold text-ink"
-                aria-label={`Quantidade ${qty}`}
-              >
-                {qty}
-              </span>
+          {!isExpanded &&
+            (qty === 0 ? (
               <Button
                 variant="primary"
-                size="icon"
-                className="!h-11 !w-11"
-                onClick={handleInc}
-                aria-label={`Aumentar ${product.name}`}
+                size="sm"
+                className="!h-11"
+                onClick={handleAdd}
+                aria-label={`Adicionar ${product.name} ao carrinho`}
               >
-                <Plus className="w-3 h-3" />
+                <Plus className="w-4 h-4" />
               </Button>
-            </div>
-          ))}
+            ) : (
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="secondary"
+                  size="icon"
+                  className="!h-11 !w-11"
+                  onClick={handleDec}
+                  aria-label={`Diminuir ${product.name}`}
+                >
+                  <Minus className="w-3 h-3" />
+                </Button>
+                <span className="w-5 text-center text-xs font-semibold text-ink" aria-label={`Quantidade ${qty}`}>
+                  {qty}
+                </span>
+                <Button
+                  variant="primary"
+                  size="icon"
+                  className="!h-11 !w-11"
+                  onClick={handleInc}
+                  aria-label={`Aumentar ${product.name}`}
+                >
+                  <Plus className="w-3 h-3" />
+                </Button>
+              </div>
+            ))}
           <ChevronDown
-            className={`w-4 h-4 text-muted transition-transform duration-200 ${
-              isExpanded ? "rotate-180" : ""
-            }`}
+            className={`w-4 h-4 text-muted transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`}
             aria-hidden="true"
           />
         </div>
       </div>
 
       {/* Painel expandido inline (sem overlay, sem modal) */}
-      {isExpanded && (
-        <ProductCardExpandable
-          product={product}
-          qty={qty}
-          onSetQty={onSetQty}
-          onCollapse={onCollapse}
-        />
-      )}
+      {isExpanded && <ProductCardExpandable product={product} qty={qty} onSetQty={onSetQty} onCollapse={onCollapse} />}
     </Card>
   )
 }

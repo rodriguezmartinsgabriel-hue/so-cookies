@@ -5,17 +5,32 @@ const nineFoodFixture = {
   id: "ord-99-1",
   status: "CREATED",
   items: [
-    { id: "it-1", name: "Cookie Red Velvet", quantity: 2, unitPrice: { value: 12.5, currency: "BRL" }, totalPrice: { value: 25, currency: "BRL" }, options: [{ name: "Borda com chocolate" }] },
+    {
+      id: "it-1",
+      name: "Cookie Red Velvet",
+      quantity: 2,
+      unitPrice: { value: 12.5, currency: "BRL" },
+      totalPrice: { value: 25, currency: "BRL" },
+      options: [{ name: "Borda com chocolate" }],
+    },
     { id: "it-2", name: "Limonada", quantity: 1, totalPrice: { value: 8, currency: "BRL" } },
   ],
   otherFees: [
     { name: "Taxa de Entrega", type: "DELIVERY_FEE", receivedBy: "MERCHANT", price: { value: 5, currency: "BRL" } },
-    { name: "Taxa da Plataforma", type: "COMMISSION", receivedBy: "MARKETPLACE", price: { value: 4.5, currency: "BRL" } },
+    {
+      name: "Taxa da Plataforma",
+      type: "COMMISSION",
+      receivedBy: "MARKETPLACE",
+      price: { value: 4.5, currency: "BRL" },
+    },
   ],
   totalPrice: { value: 38, currency: "BRL" },
   observations: "Sem cebola",
   customer: { name: "João Silva", phone: { number: "+5511999999999" }, id: "c-1" },
-  delivery: { deliveredBy: "ORDERING_APP", deliveryAddress: { formattedAddress: "Rua A, 100 - Centro, São Paulo - SP", postalCode: "01000-000" } },
+  delivery: {
+    deliveredBy: "ORDERING_APP",
+    deliveryAddress: { formattedAddress: "Rua A, 100 - Centro, São Paulo - SP", postalCode: "01000-000" },
+  },
 }
 
 describe("normalize99FoodOrder", () => {

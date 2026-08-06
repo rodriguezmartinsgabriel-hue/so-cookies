@@ -1,12 +1,12 @@
-import type { HTMLAttributes } from "react";
-import { cn } from "@/lib/utils";
-import { GlassSurface } from "@/components/ui/GlassSurface";
+import type { HTMLAttributes } from "react"
+import { cn } from "@/lib/utils"
+import { GlassSurface } from "@/components/ui/GlassSurface"
 
 type CardProps = HTMLAttributes<HTMLDivElement> & {
-  variant?: "glass" | "solid";
-  padded?: boolean;
-  interactive?: boolean;
-};
+  variant?: "glass" | "solid"
+  padded?: boolean
+  interactive?: boolean
+}
 
 export function Card({
   variant = "glass",
@@ -30,5 +30,5 @@ export function Card({
     >
       {children}
     </GlassSurface>
-  );
+  )
 }

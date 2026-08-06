@@ -26,7 +26,7 @@
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
   --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.06);
   --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.08);
-  --shadow-xl: 0 12px 40px rgba(0, 0, 0, 0.10);
+  --shadow-xl: 0 12px 40px rgba(0, 0, 0, 0.1);
   --shadow-card: var(--shadow-sm);
 
   --glass-blur: 24px;
@@ -41,16 +41,9 @@
   );
   --glass-shadow: 0 8px 32px -8px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.04);
 
-  --ambient: radial-gradient(
-      1200px 600px at 80% -10%,
-      rgba(0, 120, 211, 0.14),
-      transparent 60%
-    ),
-    radial-gradient(
-      900px 500px at 0% 110%,
-      rgba(46, 94, 170, 0.08),
-      transparent 60%
-    );
+  --ambient:
+    radial-gradient(1200px 600px at 80% -10%, rgba(0, 120, 211, 0.14), transparent 60%),
+    radial-gradient(900px 500px at 0% 110%, rgba(46, 94, 170, 0.08), transparent 60%);
 }
 
 .dark {
@@ -81,16 +74,9 @@
     rgba(255, 255, 255, 0.08)
   );
 
-  --ambient: radial-gradient(
-      1200px 600px at 80% -10%,
-      rgba(0, 120, 211, 0.1),
-      transparent 60%
-    ),
-    radial-gradient(
-      900px 500px at 0% 110%,
-      rgba(46, 94, 170, 0.06),
-      transparent 60%
-    );
+  --ambient:
+    radial-gradient(1200px 600px at 80% -10%, rgba(0, 120, 211, 0.1), transparent 60%),
+    radial-gradient(900px 500px at 0% 110%, rgba(46, 94, 170, 0.06), transparent 60%);
 }
 
 @theme inline {
@@ -408,8 +394,12 @@ html.splash-skip .loading-screen {
 }
 
 @keyframes shimmer-sweep {
-  0% { transform: translateX(-100%); }
-  100% { transform: translateX(100%); }
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
 }
 
 .animate-shimmer-sweep {

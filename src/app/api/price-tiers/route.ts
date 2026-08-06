@@ -1,7 +1,7 @@
-import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-import { requireAuth } from "@/lib/api-auth";
-import { createPriceTierSchema, getZodIssues } from "@/lib/validation";
+import { NextResponse } from "next/server"
+import { prisma } from "@/lib/prisma"
+import { requireAuth } from "@/lib/api-auth"
+import { createPriceTierSchema, getZodIssues } from "@/lib/validation"
 
 export async function GET(request: Request) {
   const { error } = await requireAuth(request)

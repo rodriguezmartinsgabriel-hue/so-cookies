@@ -92,35 +92,15 @@ function CadastroForm() {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <FormField label="Nome" htmlFor="name" required>
-            <Input
-              id="name"
-              name="name"
-              type="text"
-              autoComplete="name"
-              placeholder="Seu nome"
-              required
-            />
+            <Input id="name" name="name" type="text" autoComplete="name" placeholder="Seu nome" required />
           </FormField>
 
           <FormField label="Email" htmlFor="email" required>
-            <Input
-              id="email"
-              name="email"
-              type="email"
-              autoComplete="email"
-              placeholder="seu@email.com"
-              required
-            />
+            <Input id="email" name="email" type="email" autoComplete="email" placeholder="seu@email.com" required />
           </FormField>
 
           <FormField label="Telefone (opcional)" htmlFor="phone">
-            <Input
-              id="phone"
-              name="phone"
-              type="tel"
-              autoComplete="tel"
-              placeholder="(11) 99999-9999"
-            />
+            <Input id="phone" name="phone" type="tel" autoComplete="tel" placeholder="(11) 99999-9999" />
           </FormField>
 
           <FormField label="Senha" htmlFor="password" required>

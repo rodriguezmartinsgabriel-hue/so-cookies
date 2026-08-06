@@ -13,7 +13,8 @@ export function CalorieBadge({ calories, variant = "inline", className = "" }: C
 
   const configs = {
     inline: "inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-ink/5 text-ink text-xs font-medium",
-    compact: "inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-accent/10 text-accent text-[10px] font-medium"
+    compact:
+      "inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-accent/10 text-accent text-[10px] font-medium",
   }
 
   return (

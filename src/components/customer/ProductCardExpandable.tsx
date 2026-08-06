@@ -35,12 +35,7 @@ const TAG_LABELS: Record<string, string> = {
   SEM_LACTOSE: "Sem lactose",
 }
 
-export function ProductCardExpandable({
-  product,
-  qty,
-  onSetQty,
-  onCollapse,
-}: ProductCardExpandableProps) {
+export function ProductCardExpandable({ product, qty, onSetQty, onCollapse }: ProductCardExpandableProps) {
   const haptic = useHapticFeedback()
   const panelRef = useRef<HTMLDivElement>(null)
   const activeElementRef = useRef<HTMLElement | null>(null)
@@ -56,8 +51,7 @@ export function ProductCardExpandable({
 
   // Guarda o elemento que tinha foco antes de abrir (para restaurar ao recolher).
   useEffect(() => {
-    activeElementRef.current =
-      document.activeElement instanceof HTMLElement ? document.activeElement : null
+    activeElementRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null
     panelRef.current?.focus({ preventScroll: true })
     return () => {
       activeElementRef.current?.focus?.()
@@ -174,9 +168,7 @@ export function ProductCardExpandable({
 
             {n && n.ingredients.length > 0 && (
               <div>
-                <p className="text-xs font-medium text-muted uppercase tracking-wide mb-1.5">
-                  Ingredientes
-                </p>
+                <p className="text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Ingredientes</p>
                 <ul className="text-sm text-ink leading-relaxed space-y-0.5">
                   {n.ingredients.map((i) => (
                     <li key={i.name}>
@@ -199,10 +191,7 @@ export function ProductCardExpandable({
               >
                 <Minus className="w-3 h-3" />
               </Button>
-              <span
-                className="w-5 text-center text-xs font-semibold text-ink"
-                aria-label={`Quantidade atual ${qty}`}
-              >
+              <span className="w-5 text-center text-xs font-semibold text-ink" aria-label={`Quantidade atual ${qty}`}>
                 {qty}
               </span>
               <Button

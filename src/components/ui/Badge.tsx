@@ -1,9 +1,9 @@
-import type { HTMLAttributes } from "react";
-import { cn } from "@/lib/utils";
+import type { HTMLAttributes } from "react"
+import { cn } from "@/lib/utils"
 
 type BadgeProps = HTMLAttributes<HTMLSpanElement> & {
-  variant?: "neutral" | "success" | "warning" | "danger" | "info" | "accent";
-};
+  variant?: "neutral" | "success" | "warning" | "danger" | "info" | "accent"
+}
 
 const variants = {
   neutral: "bg-kraft/20 text-muted",
@@ -12,7 +12,7 @@ const variants = {
   danger: "bg-danger/10 text-danger",
   info: "bg-info/10 text-info",
   accent: "bg-accent/10 text-accent",
-};
+}
 
 export function Badge({ variant = "neutral", className, children, ...props }: BadgeProps) {
   return (
@@ -26,5 +26,5 @@ export function Badge({ variant = "neutral", className, children, ...props }: Ba
     >
       {children}
     </span>
-  );
+  )
 }

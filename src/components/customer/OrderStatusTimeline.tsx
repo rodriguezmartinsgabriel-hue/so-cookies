@@ -26,11 +26,7 @@ export function OrderStatusTimeline({ status }: { status: string }) {
         const current = idx === stepIndex
         const done = idx < stepIndex || (current && finalStep)
         return (
-          <li
-            key={st}
-            style={{ "--stagger": idx } as CSSProperties}
-            className="relative flex gap-3 pb-3 last:pb-0"
-          >
+          <li key={st} style={{ "--stagger": idx } as CSSProperties} className="relative flex gap-3 pb-3 last:pb-0">
             {idx < statusOrder.length - 1 && (
               <span
                 aria-hidden

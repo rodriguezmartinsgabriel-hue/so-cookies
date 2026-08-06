@@ -26,8 +26,7 @@ function computeCount(items: CartItem[]): number {
   return items.reduce((sum, i) => sum + i.qty, 0)
 }
 
-let lastStored: string | null =
-  typeof window !== "undefined" ? localStorage.getItem(STORAGE_KEY) : null
+let lastStored: string | null = typeof window !== "undefined" ? localStorage.getItem(STORAGE_KEY) : null
 
 let cartState: CartState = (() => {
   const items = loadCart()
@@ -123,11 +122,7 @@ if (typeof window !== "undefined") {
 }
 
 export function useCart() {
-  const { items, count } = useSyncExternalStore(
-    cartStore.subscribe,
-    cartStore.getSnapshot,
-    () => EMPTY_CART,
-  )
+  const { items, count } = useSyncExternalStore(cartStore.subscribe, cartStore.getSnapshot, () => EMPTY_CART)
 
   const addItem = useCallback((productId: string, qty = 1) => cartStore.addItem(productId, qty), [])
   const setQty = useCallback((productId: string, qty: number) => cartStore.setQty(productId, qty), [])

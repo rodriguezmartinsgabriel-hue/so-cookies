@@ -8,10 +8,7 @@ type CountdownLabelProps = {
   className?: string
 }
 
-export const CountdownLabel = memo(function CountdownLabel({
-  target,
-  className = "",
-}: CountdownLabelProps) {
+export const CountdownLabel = memo(function CountdownLabel({ target, className = "" }: CountdownLabelProps) {
   const label = useCountdown(target)
   return <span className={className}>{label}</span>
 })

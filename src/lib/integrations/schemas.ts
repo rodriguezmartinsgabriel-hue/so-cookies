@@ -11,10 +11,9 @@ export const ifoodWebhookSchema = z
     orderId: idField.optional(),
     createdAt: z.string().optional(),
   })
-  .refine(
-    (v) => v.code === "presence" || (v.id !== undefined && v.orderId !== undefined),
-    { message: "Evento iFood deve conter id e orderId (ou ser presence)" },
-  )
+  .refine((v) => v.code === "presence" || (v.id !== undefined && v.orderId !== undefined), {
+    message: "Evento iFood deve conter id e orderId (ou ser presence)",
+  })
 
 export const ninentyNineFoodWebhookSchema = z.object({
   eventId: idField,

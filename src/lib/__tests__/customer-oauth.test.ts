@@ -69,15 +69,17 @@ beforeAll(() => {
 
 const secret = new TextEncoder().encode("test-secret")
 
-async function signGoogleToken(opts: {
-  sub?: string
-  email?: string
-  name?: string
-  emailVerified?: boolean
-  nonce?: string
-  issuer?: string
-  audience?: string
-} = {}) {
+async function signGoogleToken(
+  opts: {
+    sub?: string
+    email?: string
+    name?: string
+    emailVerified?: boolean
+    nonce?: string
+    issuer?: string
+    audience?: string
+  } = {},
+) {
   return new SignJWT({
     email: opts.email ?? "cliente@example.com",
     name: opts.name ?? "Cliente Teste",
@@ -163,23 +165,28 @@ describe("exchangeGoogleCode", () => {
 
   it("throws on a non-ok response", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false, json: async () => ({}) }))
-    await expect(
-      exchangeGoogleCode({ code: "x", clientId: "c", clientSecret: "s", redirectUri: "r" }),
-    ).rejects.toThrow("google_token_error")
+    await expect(exchangeGoogleCode({ code: "x", clientId: "c", clientSecret: "s", redirectUri: "r" })).rejects.toThrow(
+      "google_token_error",
+    )
   })
 
   it("throws when tokens are missing", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => ({ foo: "bar" }) }))
-    await expect(
-      exchangeGoogleCode({ code: "x", clientId: "c", clientSecret: "s", redirectUri: "r" }),
-    ).rejects.toThrow("google_token_error")
+    await expect(exchangeGoogleCode({ code: "x", clientId: "c", clientSecret: "s", redirectUri: "r" })).rejects.toThrow(
+      "google_token_error",
+    )
   })
 })
 
 describe("verifyGoogleIdToken", () => {
   it("accepts a valid token", async () => {
     const token = await signGoogleToken()
-    const profile = await verifyGoogleIdToken({ idToken: token, clientId: "client-id", nonce: "correct-nonce", keys: secret })
+    const profile = await verifyGoogleIdToken({
+      idToken: token,
+      clientId: "client-id",
+      nonce: "correct-nonce",
+      keys: secret,
+    })
     expect(profile).toEqual({
       providerAccountId: "google-sub-123",
       email: "cliente@example.com",

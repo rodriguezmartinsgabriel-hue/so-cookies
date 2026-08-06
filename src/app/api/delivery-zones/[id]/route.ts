@@ -3,10 +3,7 @@ import { prisma } from "@/lib/prisma"
 import { requireAuth } from "@/lib/api-auth"
 import { deliveryZoneSchema, getZodIssues } from "@/lib/validation"
 
-export async function PUT(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { error } = await requireAuth(request, "ADMIN")
   if (error) return error
   try {
@@ -22,10 +19,7 @@ export async function PUT(
   }
 }
 
-export async function DELETE(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { error } = await requireAuth(request, "ADMIN")
   if (error) return error
   try {

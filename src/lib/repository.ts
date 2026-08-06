@@ -1,4 +1,12 @@
-import { db, addToSyncQueue, clearSyncErrorsFor, type LocalContact, type LocalContactInteraction, type LocalProduct, type LocalRecipe } from "./db-local"
+import {
+  db,
+  addToSyncQueue,
+  clearSyncErrorsFor,
+  type LocalContact,
+  type LocalContactInteraction,
+  type LocalProduct,
+  type LocalRecipe,
+} from "./db-local"
 import { scheduleSync } from "./sync-service"
 import { emitDataRefresh } from "./refresh-events"
 import { computeMargin } from "./utils"
@@ -89,7 +97,13 @@ export const repository = {
       return cached
     },
 
-    async create(data: { channel: string; customer: string; total: number; notes?: string; items: { productId: string; qty: number; price: number }[] }) {
+    async create(data: {
+      channel: string
+      customer: string
+      total: number
+      notes?: string
+      items: { productId: string; qty: number; price: number }[]
+    }) {
       const id = generateTempId()
       const products = await db.products.toArray()
       const productNameById = new Map(products.map((p) => [p.id, p.name]))
@@ -100,11 +114,26 @@ export const repository = {
         productName: productNameById.get(item.productId) || null,
         _synced: false,
       }))
-      const order = { ...data, id, status: "PENDENTE", createdAt: now(), updatedAt: now(), _updatedAt: now(), _synced: false, items }
+      const order = {
+        ...data,
+        id,
+        status: "PENDENTE",
+        createdAt: now(),
+        updatedAt: now(),
+        _updatedAt: now(),
+        _synced: false,
+        items,
+      }
 
       await db.orders.add(order)
       await db.orderItems.bulkAdd(items)
-      await addToSyncQueue({ action: "create", entity: "order", data: { ...order, items }, tempId: id, createdAt: now() })
+      await addToSyncQueue({
+        action: "create",
+        entity: "order",
+        data: { ...order, items },
+        tempId: id,
+        createdAt: now(),
+      })
 
       scheduleSync()
       return order
@@ -147,7 +176,12 @@ export const repository = {
       return cached
     },
 
-    async create(data: { channelId: string; total: number; userId?: string; items: { productId: string; qty: number; price: number }[] }) {
+    async create(data: {
+      channelId: string
+      total: number
+      userId?: string
+      items: { productId: string; qty: number; price: number }[]
+    }) {
       const id = generateTempId()
       const channelRow = await db.channels.get(data.channelId)
       const products = await db.products.toArray()
@@ -159,7 +193,15 @@ export const repository = {
         productName: productNameById.get(item.productId) || null,
         _synced: false,
       }))
-      const sale = { ...data, id, channelName: channelRow?.name, createdAt: now(), _synced: false, _updatedAt: now(), items }
+      const sale = {
+        ...data,
+        id,
+        channelName: channelRow?.name,
+        createdAt: now(),
+        _synced: false,
+        _updatedAt: now(),
+        items,
+      }
 
       await db.sales.add(sale)
       await db.saleItems.bulkAdd(items)
@@ -188,9 +230,23 @@ export const repository = {
       return cached
     },
 
-    async create(data: { type: "ENTRADA" | "SAIDA"; category: string; description: string; amount: number; userId?: string; date?: string }) {
+    async create(data: {
+      type: "ENTRADA" | "SAIDA"
+      category: string
+      description: string
+      amount: number
+      userId?: string
+      date?: string
+    }) {
       const id = generateTempId()
-      const entry = { ...data, amount: data.type === "SAIDA" ? -Math.abs(data.amount) : Math.abs(data.amount), id, date: data.date || now(), _synced: false, _updatedAt: now() }
+      const entry = {
+        ...data,
+        amount: data.type === "SAIDA" ? -Math.abs(data.amount) : Math.abs(data.amount),
+        id,
+        date: data.date || now(),
+        _synced: false,
+        _updatedAt: now(),
+      }
 
       await db.cashFlow.add(entry)
       await addToSyncQueue({ action: "create", entity: "cashFlow", data: entry, tempId: id, createdAt: now() })
@@ -199,7 +255,10 @@ export const repository = {
       return entry
     },
 
-    async update(id: string, data: { type?: "ENTRADA" | "SAIDA"; category?: string; description?: string; amount?: number; date?: string }) {
+    async update(
+      id: string,
+      data: { type?: "ENTRADA" | "SAIDA"; category?: string; description?: string; amount?: number; date?: string },
+    ) {
       const updatedAt = now()
       const patch: Record<string, unknown> = { ...data, _synced: false, _updatedAt: updatedAt }
       if (data.amount !== undefined) {
@@ -230,7 +289,14 @@ export const repository = {
 
     async create(data: { batchCode: string; productId: string; qty: number; status?: string; notes?: string }) {
       const id = generateTempId()
-      const production = { ...data, id, startTime: now(), status: data.status || "pendente", _synced: false, _updatedAt: now() }
+      const production = {
+        ...data,
+        id,
+        startTime: now(),
+        status: data.status || "pendente",
+        _synced: false,
+        _updatedAt: now(),
+      }
 
       await db.productions.add(production)
       await addToSyncQueue({ action: "create", entity: "production", data: production, tempId: id, createdAt: now() })
@@ -271,7 +337,16 @@ export const repository = {
       return cached
     },
 
-    async create(data: { name: string; sku: string; category: string; price: number; cost: number; unit?: string; image?: string | null; active?: boolean }) {
+    async create(data: {
+      name: string
+      sku: string
+      category: string
+      price: number
+      cost: number
+      unit?: string
+      image?: string | null
+      active?: boolean
+    }) {
       const id = generateTempId()
       const product = {
         ...data,
@@ -293,7 +368,19 @@ export const repository = {
       return product
     },
 
-    async update(id: string, data: { name?: string; sku?: string; category?: string; price?: number; cost?: number; unit?: string; image?: string | null; active?: boolean }) {
+    async update(
+      id: string,
+      data: {
+        name?: string
+        sku?: string
+        category?: string
+        price?: number
+        cost?: number
+        unit?: string
+        image?: string | null
+        active?: boolean
+      },
+    ) {
       const updatedAt = now()
       const patch: UpdateSpec<LocalProduct> = { ...data, _synced: false, _updatedAt: updatedAt }
       if (typeof data.price === "number" || typeof data.cost === "number") {
@@ -324,9 +411,27 @@ export const repository = {
       return cached
     },
 
-    async create(data: { name: string; brand?: string; stockKg?: number; minStockKg?: number; costPerKg: number; supplier: string; caloriesPer100g?: number; proteinPer100g?: number; carbsPer100g?: number; fatPer100g?: number }) {
+    async create(data: {
+      name: string
+      brand?: string
+      stockKg?: number
+      minStockKg?: number
+      costPerKg: number
+      supplier: string
+      caloriesPer100g?: number
+      proteinPer100g?: number
+      carbsPer100g?: number
+      fatPer100g?: number
+    }) {
       const id = generateTempId()
-      const ingredient = { ...data, id, stockKg: data.stockKg ?? 0, minStockKg: data.minStockKg ?? 0, _synced: false, _updatedAt: now() }
+      const ingredient = {
+        ...data,
+        id,
+        stockKg: data.stockKg ?? 0,
+        minStockKg: data.minStockKg ?? 0,
+        _synced: false,
+        _updatedAt: now(),
+      }
 
       await db.ingredients.add(ingredient)
       await addToSyncQueue({ action: "create", entity: "ingredient", data: ingredient, tempId: id, createdAt: now() })
@@ -335,7 +440,21 @@ export const repository = {
       return ingredient
     },
 
-    async update(id: string, data: { name?: string; brand?: string; stockKg?: number; minStockKg?: number; costPerKg?: number; supplier?: string; caloriesPer100g?: number; proteinPer100g?: number; carbsPer100g?: number; fatPer100g?: number }) {
+    async update(
+      id: string,
+      data: {
+        name?: string
+        brand?: string
+        stockKg?: number
+        minStockKg?: number
+        costPerKg?: number
+        supplier?: string
+        caloriesPer100g?: number
+        proteinPer100g?: number
+        carbsPer100g?: number
+        fatPer100g?: number
+      },
+    ) {
       const updatedAt = now()
       await db.ingredients.update(id, { ...data, _synced: false, _updatedAt: updatedAt })
       await addToSyncQueue({ action: "update", entity: "ingredient", data: { id, ...data }, createdAt: now() })
@@ -350,8 +469,17 @@ export const repository = {
           const items = JSON.parse(r.ingredients)
           if (Array.isArray(items) && items.some((i: { ingredientId: string }) => i.ingredientId === id)) {
             const remaining = items.filter((i: { ingredientId: string }) => i.ingredientId !== id)
-            await db.recipes.update(r.id, { ingredients: JSON.stringify(remaining), _synced: false, _updatedAt: updatedAt })
-            await addToSyncQueue({ action: "update", entity: "recipe", data: { id: r.id, ingredients: remaining }, createdAt: now() })
+            await db.recipes.update(r.id, {
+              ingredients: JSON.stringify(remaining),
+              _synced: false,
+              _updatedAt: updatedAt,
+            })
+            await addToSyncQueue({
+              action: "update",
+              entity: "recipe",
+              data: { id: r.id, ingredients: remaining },
+              createdAt: now(),
+            })
           }
         } catch {
           /* JSON inválido local: ignora */
@@ -422,10 +550,18 @@ export const repository = {
       return tier
     },
 
-    async update(id: string, data: { name?: string; minQty?: number; maxQty?: number; price?: number; productId?: string }) {
+    async update(
+      id: string,
+      data: { name?: string; minQty?: number; maxQty?: number; price?: number; productId?: string },
+    ) {
       const updatedAt = now()
       await db.priceTiers.update(id, { ...data, updatedAt, _synced: false, _updatedAt: updatedAt })
-      await addToSyncQueue({ action: "update", entity: "priceTier", data: { id, ...data, updatedAt }, createdAt: now() })
+      await addToSyncQueue({
+        action: "update",
+        entity: "priceTier",
+        data: { id, ...data, updatedAt },
+        createdAt: now(),
+      })
       scheduleSync()
     },
 
@@ -441,7 +577,12 @@ export const repository = {
       const cached = (await db.recipes.toArray()).map((r) => ({ ...r, ingredients: JSON.parse(r.ingredients) }))
       if (isOnline() && shouldFetch("/api/recipes")) {
         mergeTable(db.recipes, "/api/recipes", {
-          transform: (r) => ({ ...r, ingredients: JSON.stringify(r.ingredients || []), _synced: true, _updatedAt: now() }),
+          transform: (r) => ({
+            ...r,
+            ingredients: JSON.stringify(r.ingredients || []),
+            _synced: true,
+            _updatedAt: now(),
+          }),
           onDelete: async (r) => {
             await db.recipeItems.where("recipeId").equals(r.id).delete()
           },
@@ -452,7 +593,16 @@ export const repository = {
       return cached
     },
 
-    async create(data: { name: string; yield: number; yieldUnit?: string; totalCost?: number; productId?: string | null; preparation?: string; image?: string; ingredients: { ingredientId: string; qty: number; unit: string }[] }) {
+    async create(data: {
+      name: string
+      yield: number
+      yieldUnit?: string
+      totalCost?: number
+      productId?: string | null
+      preparation?: string
+      image?: string
+      ingredients: { ingredientId: string; qty: number; unit: string }[]
+    }) {
       const id = generateTempId()
       const recipe = {
         ...data,
@@ -480,7 +630,19 @@ export const repository = {
       return { ...recipe, ingredients: JSON.parse(recipe.ingredients) }
     },
 
-    async update(id: string, data: { name?: string; yield?: number; yieldUnit?: string; totalCost?: number; productId?: string | null; preparation?: string; image?: string; ingredients?: { ingredientId: string; qty: number; unit: string }[] }) {
+    async update(
+      id: string,
+      data: {
+        name?: string
+        yield?: number
+        yieldUnit?: string
+        totalCost?: number
+        productId?: string | null
+        preparation?: string
+        image?: string
+        ingredients?: { ingredientId: string; qty: number; unit: string }[]
+      },
+    ) {
       const updatedAt = now()
       const { ingredients, ...rest } = data
       const patch: UpdateSpec<LocalRecipe> = { ...rest, _synced: false, _updatedAt: updatedAt }
@@ -509,9 +671,25 @@ export const repository = {
       return cached
     },
 
-    async create(data: { title: string; description?: string; category: string; content?: string; fileUrl?: string | null; tags?: string; userId?: string }) {
+    async create(data: {
+      title: string
+      description?: string
+      category: string
+      content?: string
+      fileUrl?: string | null
+      tags?: string
+      userId?: string
+    }) {
       const id = generateTempId()
-      const doc = { ...data, id, fileUrl: data.fileUrl ?? null, createdAt: now(), updatedAt: now(), _synced: false, _updatedAt: now() }
+      const doc = {
+        ...data,
+        id,
+        fileUrl: data.fileUrl ?? null,
+        createdAt: now(),
+        updatedAt: now(),
+        _synced: false,
+        _updatedAt: now(),
+      }
 
       await db.documents.add(doc)
       await addToSyncQueue({ action: "create", entity: "document", data: doc, tempId: id, createdAt: now() })
@@ -520,7 +698,17 @@ export const repository = {
       return doc
     },
 
-    async update(id: string, data: { title?: string; description?: string; category?: string; content?: string; fileUrl?: string | null; tags?: string }) {
+    async update(
+      id: string,
+      data: {
+        title?: string
+        description?: string
+        category?: string
+        content?: string
+        fileUrl?: string | null
+        tags?: string
+      },
+    ) {
       const updatedAt = now()
       await db.documents.update(id, { ...data, _synced: false, _updatedAt: updatedAt })
       await addToSyncQueue({ action: "update", entity: "document", data: { id, ...data }, createdAt: now() })
@@ -563,7 +751,10 @@ export const repository = {
       return cost
     },
 
-    async update(id: string, data: { date?: string; channel?: string; orderId?: string; amount?: number; notes?: string }) {
+    async update(
+      id: string,
+      data: { date?: string; channel?: string; orderId?: string; amount?: number; notes?: string },
+    ) {
       const updatedAt = now()
       await db.deliveryCosts.update(id, { ...data, _synced: false, _updatedAt: updatedAt })
       await addToSyncQueue({ action: "update", entity: "deliveryCost", data: { id, ...data }, createdAt: now() })
@@ -599,9 +790,7 @@ export const repository = {
             }
 
             await db.contacts.bulkPut(
-              data
-                .filter((c) => !unsyncedIds.has(c.id))
-                .map((c) => ({ ...c, _synced: true, _updatedAt: now() })),
+              data.filter((c) => !unsyncedIds.has(c.id)).map((c) => ({ ...c, _synced: true, _updatedAt: now() })),
             )
 
             const allInteractions = data.flatMap((c) => (c.interactions || []).map((i) => ({ ...i, contactId: c.id })))
@@ -617,9 +806,24 @@ export const repository = {
       return cached
     },
 
-    async create(data: { name: string; email?: string; phone?: string; type?: string; company?: string; notes?: string }) {
+    async create(data: {
+      name: string
+      email?: string
+      phone?: string
+      type?: string
+      company?: string
+      notes?: string
+    }) {
       const id = generateTempId()
-      const contact = { ...data, id, type: data.type || "CLIENTE", createdAt: now(), updatedAt: now(), _synced: false, _updatedAt: now() }
+      const contact = {
+        ...data,
+        id,
+        type: data.type || "CLIENTE",
+        createdAt: now(),
+        updatedAt: now(),
+        _synced: false,
+        _updatedAt: now(),
+      }
 
       await db.contacts.add(contact)
       await addToSyncQueue({ action: "create", entity: "contact", data: contact, tempId: id, createdAt: now() })
@@ -628,7 +832,10 @@ export const repository = {
       return contact
     },
 
-    async update(id: string, data: { name?: string; email?: string; phone?: string; type?: string; company?: string; notes?: string }) {
+    async update(
+      id: string,
+      data: { name?: string; email?: string; phone?: string; type?: string; company?: string; notes?: string },
+    ) {
       const updatedAt = now()
       await db.contacts.update(id, { ...data, updatedAt, _synced: false, _updatedAt: updatedAt })
       await addToSyncQueue({ action: "update", entity: "contact", data: { id, ...data }, createdAt: now() })
@@ -657,10 +864,24 @@ export const repository = {
 
     async createInteraction(contactId: string, data: { type?: string; note: string }) {
       const id = generateTempId()
-      const interaction = { ...data, id, contactId, type: data.type || "NOTA", createdAt: now(), _synced: false, _updatedAt: now() }
+      const interaction = {
+        ...data,
+        id,
+        contactId,
+        type: data.type || "NOTA",
+        createdAt: now(),
+        _synced: false,
+        _updatedAt: now(),
+      }
 
       await db.contactInteractions.add(interaction)
-      await addToSyncQueue({ action: "create", entity: "contactInteraction", data: interaction, tempId: id, createdAt: now() })
+      await addToSyncQueue({
+        action: "create",
+        entity: "contactInteraction",
+        data: interaction,
+        tempId: id,
+        createdAt: now(),
+      })
 
       scheduleSync()
       return interaction

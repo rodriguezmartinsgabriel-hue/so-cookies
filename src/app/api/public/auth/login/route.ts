@@ -8,7 +8,10 @@ import { rateLimit } from "@/lib/rate-limit"
 export async function POST(request: Request) {
   const limited = rateLimit(request, 10, 60_000)
   if (!limited.ok) {
-    return NextResponse.json({ error: "Muitas tentativas. Tente novamente em instantes." }, { status: 429, headers: { "Retry-After": String(limited.retryAfterSeconds) } })
+    return NextResponse.json(
+      { error: "Muitas tentativas. Tente novamente em instantes." },
+      { status: 429, headers: { "Retry-After": String(limited.retryAfterSeconds) } },
+    )
   }
   try {
     const json = await request.json()
@@ -18,10 +21,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "E-mail ou senha inválidos" }, { status: 401 })
     }
     if (!customer.password) {
-      return NextResponse.json(
-        { error: "Esta conta usa login com Google. Entre com o Google." },
-        { status: 401 }
-      )
+      return NextResponse.json({ error: "Esta conta usa login com Google. Entre com o Google." }, { status: 401 })
     }
     const valid = await compare(parsed.password, customer.password)
     if (!valid) {

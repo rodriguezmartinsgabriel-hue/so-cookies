@@ -8,9 +8,23 @@ export async function GET(request: Request) {
 
   try {
     const [
-      users, products, ingredients, recipes, recipeItems, priceTiers,
-      channels, sales, saleItems, orders, orderItems, cashFlow,
-      productions, deliveryCosts, documents, contacts, contactInteractions,
+      users,
+      products,
+      ingredients,
+      recipes,
+      recipeItems,
+      priceTiers,
+      channels,
+      sales,
+      saleItems,
+      orders,
+      orderItems,
+      cashFlow,
+      productions,
+      deliveryCosts,
+      documents,
+      contacts,
+      contactInteractions,
     ] = await Promise.all([
       prisma.user.count(),
       prisma.product.count(),
@@ -38,9 +52,23 @@ export async function GET(request: Request) {
 
     return NextResponse.json({
       tables: {
-        users, products, ingredients, recipes, recipeItems, priceTiers,
-        channels, sales, saleItems, orders, orderItems, cashFlow,
-        productions, deliveryCosts, documents, contacts, contactInteractions,
+        users,
+        products,
+        ingredients,
+        recipes,
+        recipeItems,
+        priceTiers,
+        channels,
+        sales,
+        saleItems,
+        orders,
+        orderItems,
+        cashFlow,
+        productions,
+        deliveryCosts,
+        documents,
+        contacts,
+        contactInteractions,
       },
       syncApply: { total: syncApplyTotal, last7d: syncApply7d },
     })

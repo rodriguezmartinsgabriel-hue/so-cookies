@@ -13,9 +13,7 @@ const store = vi.hoisted(() => {
   const mockPrisma = {
     contact: {
       findFirst: async ({ where }: { where?: Record<string, unknown> }) => {
-        const or = where?.OR as
-          | ({ customerId?: string; email?: string; type?: string } | undefined)[]
-          | undefined
+        const or = where?.OR as ({ customerId?: string; email?: string; type?: string } | undefined)[] | undefined
         if (or) {
           for (const cond of or) {
             if (cond?.customerId) {
@@ -68,7 +66,12 @@ describe("syncCustomerToContact", () => {
   beforeEach(() => store.reset())
 
   it("cria contato CLIENTE com nota e vínculo quando não existe", async () => {
-    const result = await syncCustomerToContact({ id: "cust-1", name: "Maria", email: "maria@test.com", phone: "11999999999" })
+    const result = await syncCustomerToContact({
+      id: "cust-1",
+      name: "Maria",
+      email: "maria@test.com",
+      phone: "11999999999",
+    })
     expect(result.created).toBe(true)
     const contact = [...store.contacts.values()][0]
     expect(contact).toMatchObject({
@@ -90,9 +93,22 @@ describe("syncCustomerToContact", () => {
   it("vincula contato manual existente (mesmo email) e preenche lacunas", async () => {
     store.contacts.set(
       "ct-manual",
-      baseContact({ id: "ct-manual", name: "", email: "maria@test.com", phone: null, type: "CLIENTE", notes: "contato do whatsapp", customerId: null }),
+      baseContact({
+        id: "ct-manual",
+        name: "",
+        email: "maria@test.com",
+        phone: null,
+        type: "CLIENTE",
+        notes: "contato do whatsapp",
+        customerId: null,
+      }),
     )
-    const result = await syncCustomerToContact({ id: "cust-1", name: "Maria", email: "maria@test.com", phone: "11999999999" })
+    const result = await syncCustomerToContact({
+      id: "cust-1",
+      name: "Maria",
+      email: "maria@test.com",
+      phone: "11999999999",
+    })
     expect(result.created).toBe(false)
     const contact = store.contacts.get("ct-manual")!
     expect(contact.customerId).toBe("cust-1")
@@ -104,7 +120,15 @@ describe("syncCustomerToContact", () => {
   it("não duplica quando já existe contato vinculado ao customerId", async () => {
     store.contacts.set(
       "ct-1",
-      baseContact({ id: "ct-1", name: "Maria", email: "maria@test.com", phone: null, type: "CLIENTE", notes: "n", customerId: "cust-1" }),
+      baseContact({
+        id: "ct-1",
+        name: "Maria",
+        email: "maria@test.com",
+        phone: null,
+        type: "CLIENTE",
+        notes: "n",
+        customerId: "cust-1",
+      }),
     )
     const result = await syncCustomerToContact({ id: "cust-1", name: "Maria", email: "maria@test.com" })
     expect(result.created).toBe(false)
@@ -115,7 +139,15 @@ describe("syncCustomerToContact", () => {
   it("não sobrescreve edições do manager, mas preenche lacunas", async () => {
     store.contacts.set(
       "ct-1",
-      baseContact({ id: "ct-1", name: "Maria Silva (Loja)", email: "maria@test.com", phone: null, type: "CLIENTE", notes: "nota do manager", customerId: "cust-1" }),
+      baseContact({
+        id: "ct-1",
+        name: "Maria Silva (Loja)",
+        email: "maria@test.com",
+        phone: null,
+        type: "CLIENTE",
+        notes: "nota do manager",
+        customerId: "cust-1",
+      }),
     )
     await syncCustomerToContact({ id: "cust-1", name: "Maria", email: "maria@test.com", phone: "11999999999" })
     const contact = store.contacts.get("ct-1")!
@@ -146,7 +178,9 @@ describe("syncCustomerToContact", () => {
       throw new Error("boom")
     }
     const logSpy = vi.spyOn(console, "error").mockImplementation(() => {})
-    await expect(syncCustomerToContact({ id: "cust-1", name: "Maria", email: "maria@test.com" })).rejects.toThrow("boom")
+    await expect(syncCustomerToContact({ id: "cust-1", name: "Maria", email: "maria@test.com" })).rejects.toThrow(
+      "boom",
+    )
     expect(logSpy).toHaveBeenCalled()
     logSpy.mockRestore()
     store.mockPrisma.contact.create = originalCreate

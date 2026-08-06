@@ -378,23 +378,36 @@ export default function RotasPage() {
                       </p>
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
-                      <Button variant="ghost" size="icon" onClick={() => handleToggleZone(zone)} aria-label={zone.active ? "Desativar" : "Ativar"}>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleToggleZone(zone)}
+                        aria-label={zone.active ? "Desativar" : "Ativar"}
+                      >
                         <Edit className="w-4 h-4" />
                       </Button>
-                      <Button variant="ghost" size="icon" onClick={() => handleDeleteZone(zone)} aria-label="Excluir zona">
-                        <span className="text-danger"><Trash2 className="w-4 h-4" /></span>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleDeleteZone(zone)}
+                        aria-label="Excluir zona"
+                      >
+                        <span className="text-danger">
+                          <Trash2 className="w-4 h-4" />
+                        </span>
                       </Button>
                     </div>
                   </div>
                 ))}
-                {zones.length === 0 && (
-                  <p className="text-center text-sm text-muted py-8">Nenhuma zona cadastrada</p>
-                )}
+                {zones.length === 0 && <p className="text-center text-sm text-muted py-8">Nenhuma zona cadastrada</p>}
                 <div className="p-3">
                   <Button
                     variant="secondary"
                     size="sm"
-                    onClick={() => { setZoneForm({ name: "", active: true }); setShowZone(true); }}
+                    onClick={() => {
+                      setZoneForm({ name: "", active: true })
+                      setShowZone(true)
+                    }}
                   >
                     <Store className="w-4 h-4" /> Nova zona
                   </Button>
@@ -413,41 +426,52 @@ export default function RotasPage() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <p className="text-sm font-semibold text-ink">{route.name}</p>
-                        <Badge variant={route.active ? "success" : "neutral"}>{route.active ? "Ativa" : "Inativa"}</Badge>
+                        <Badge variant={route.active ? "success" : "neutral"}>
+                          {route.active ? "Ativa" : "Inativa"}
+                        </Badge>
                         {route.recurring ? (
                           <Badge variant="info">Recorrente</Badge>
                         ) : (
                           <Badge variant="accent">Extraordinária</Badge>
                         )}
-                        {route.capacityEnabled && (
-                          <Badge variant="warning">Capacidade on</Badge>
-                        )}
+                        {route.capacityEnabled && <Badge variant="warning">Capacidade on</Badge>}
                       </div>
                       <p className="text-xs text-muted mt-0.5">
                         {route.zone?.name} · {routeSummary(route)}
                       </p>
                       {route.capacityEnabled && (
                         <p className="text-xs text-muted mt-0.5">
-                          <Clock className="w-3 h-3 inline" /> máx {route.maxOrders ?? "∞"} pedidos · {route.maxItems ?? "∞"} itens
+                          <Clock className="w-3 h-3 inline" /> máx {route.maxOrders ?? "∞"} pedidos ·{" "}
+                          {route.maxItems ?? "∞"} itens
                         </p>
                       )}
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
-                      <Button variant="ghost" size="icon" onClick={() => handleToggleRoute(route)} aria-label={route.active ? "Desativar" : "Ativar"}>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleToggleRoute(route)}
+                        aria-label={route.active ? "Desativar" : "Ativar"}
+                      >
                         <Edit className="w-4 h-4" />
                       </Button>
                       <Button variant="ghost" size="icon" onClick={() => openEditRoute(route)} aria-label="Editar rota">
                         <Edit className="w-4 h-4" />
                       </Button>
-                      <Button variant="ghost" size="icon" onClick={() => handleDeleteRoute(route)} aria-label="Excluir rota">
-                        <span className="text-danger"><Trash2 className="w-4 h-4" /></span>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleDeleteRoute(route)}
+                        aria-label="Excluir rota"
+                      >
+                        <span className="text-danger">
+                          <Trash2 className="w-4 h-4" />
+                        </span>
                       </Button>
                     </div>
                   </div>
                 ))}
-                {routes.length === 0 && (
-                  <p className="text-center text-sm text-muted py-8">Nenhuma rota cadastrada</p>
-                )}
+                {routes.length === 0 && <p className="text-center text-sm text-muted py-8">Nenhuma rota cadastrada</p>}
               </div>
             </Card>
 
@@ -464,14 +488,19 @@ export default function RotasPage() {
                       {block.reason && <p className="text-xs text-muted">{block.reason}</p>}
                     </div>
                     <p className="text-xs text-muted shrink-0">{block.zone?.name}</p>
-                    <Button variant="ghost" size="icon" onClick={() => handleDeleteBlock(block)} aria-label="Remover bloqueio">
-                      <span className="text-danger"><Trash2 className="w-4 h-4" /></span>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleDeleteBlock(block)}
+                      aria-label="Remover bloqueio"
+                    >
+                      <span className="text-danger">
+                        <Trash2 className="w-4 h-4" />
+                      </span>
                     </Button>
                   </div>
                 ))}
-                {blocks.length === 0 && (
-                  <p className="text-center text-sm text-muted py-8">Nenhuma data bloqueada</p>
-                )}
+                {blocks.length === 0 && <p className="text-center text-sm text-muted py-8">Nenhuma data bloqueada</p>}
               </div>
             </Card>
           </>
@@ -485,14 +514,23 @@ export default function RotasPage() {
             size="sm"
             footer={
               <div className="flex gap-2">
-                <Button variant="secondary" className="flex-1" onClick={() => setShowZone(false)}>Cancelar</Button>
-                <Button className="flex-1" onClick={handleCreateZone}>Salvar</Button>
+                <Button variant="secondary" className="flex-1" onClick={() => setShowZone(false)}>
+                  Cancelar
+                </Button>
+                <Button className="flex-1" onClick={handleCreateZone}>
+                  Salvar
+                </Button>
               </div>
             }
           >
             <div className="p-4 space-y-3">
               <FormField label="Nome da zona" required>
-                <Input type="text" placeholder="Ex.: São Paulo" value={zoneForm.name} onChange={(e) => setZoneForm({ ...zoneForm, name: e.target.value })} />
+                <Input
+                  type="text"
+                  placeholder="Ex.: São Paulo"
+                  value={zoneForm.name}
+                  onChange={(e) => setZoneForm({ ...zoneForm, name: e.target.value })}
+                />
               </FormField>
             </div>
           </Modal>
@@ -506,8 +544,12 @@ export default function RotasPage() {
             size="lg"
             footer={
               <div className="flex gap-2">
-                <Button variant="secondary" className="flex-1" onClick={() => setShowRoute(false)}>Cancelar</Button>
-                <Button className="flex-1" onClick={handleSaveRoute}>Salvar</Button>
+                <Button variant="secondary" className="flex-1" onClick={() => setShowRoute(false)}>
+                  Cancelar
+                </Button>
+                <Button className="flex-1" onClick={handleSaveRoute}>
+                  Salvar
+                </Button>
               </div>
             }
           >
@@ -515,12 +557,25 @@ export default function RotasPage() {
               {routeError && <p className="text-sm text-danger">{routeError}</p>}
               <div className="grid grid-cols-2 gap-3">
                 <FormField label="Nome da rota" required>
-                  <Input type="text" placeholder="Ex.: Rota Terça" value={routeForm.name} onChange={(e) => setRouteForm({ ...routeForm, name: e.target.value })} />
+                  <Input
+                    type="text"
+                    placeholder="Ex.: Rota Terça"
+                    value={routeForm.name}
+                    onChange={(e) => setRouteForm({ ...routeForm, name: e.target.value })}
+                  />
                 </FormField>
                 <FormField label="Zona" required>
-                  <select value={routeForm.zoneId} onChange={(e) => setRouteForm({ ...routeForm, zoneId: e.target.value })} className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink bg-paper focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink transition-colors">
+                  <select
+                    value={routeForm.zoneId}
+                    onChange={(e) => setRouteForm({ ...routeForm, zoneId: e.target.value })}
+                    className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink bg-paper focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink transition-colors"
+                  >
                     <option value="">Selecionar</option>
-                    {zones.map((z) => <option key={z.id} value={z.id}>{z.name}</option>)}
+                    {zones.map((z) => (
+                      <option key={z.id} value={z.id}>
+                        {z.name}
+                      </option>
+                    ))}
                   </select>
                 </FormField>
               </div>
@@ -528,10 +583,18 @@ export default function RotasPage() {
               <div>
                 <p className="text-xs font-medium text-muted uppercase tracking-wide mb-2">Tipo</p>
                 <div className="grid grid-cols-2 gap-2">
-                  <button type="button" onClick={() => setRouteForm({ ...routeForm, recurring: true })} className={`h-10 rounded-lg border text-sm font-medium transition-colors ${routeForm.recurring ? "border-ink bg-ink text-paper" : "border-line text-ink hover:bg-cream"}`}>
+                  <button
+                    type="button"
+                    onClick={() => setRouteForm({ ...routeForm, recurring: true })}
+                    className={`h-10 rounded-lg border text-sm font-medium transition-colors ${routeForm.recurring ? "border-ink bg-ink text-paper" : "border-line text-ink hover:bg-cream"}`}
+                  >
                     Recorrente (semanal)
                   </button>
-                  <button type="button" onClick={() => setRouteForm({ ...routeForm, recurring: false })} className={`h-10 rounded-lg border text-sm font-medium transition-colors ${!routeForm.recurring ? "border-ink bg-ink text-paper" : "border-line text-ink hover:bg-cream"}`}>
+                  <button
+                    type="button"
+                    onClick={() => setRouteForm({ ...routeForm, recurring: false })}
+                    className={`h-10 rounded-lg border text-sm font-medium transition-colors ${!routeForm.recurring ? "border-ink bg-ink text-paper" : "border-line text-ink hover:bg-cream"}`}
+                  >
                     Extraordinária (data fixa)
                   </button>
                 </div>
@@ -540,7 +603,11 @@ export default function RotasPage() {
               {routeForm.recurring ? (
                 <div className="grid grid-cols-3 gap-3">
                   <FormField label="Dia da semana">
-                    <select value={routeForm.dayOfWeek} onChange={(e) => setRouteForm({ ...routeForm, dayOfWeek: e.target.value })} className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink bg-paper focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink transition-colors">
+                    <select
+                      value={routeForm.dayOfWeek}
+                      onChange={(e) => setRouteForm({ ...routeForm, dayOfWeek: e.target.value })}
+                      className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink bg-paper focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink transition-colors"
+                    >
                       <option value="1">Segunda</option>
                       <option value="2">Terça</option>
                       <option value="3">Quarta</option>
@@ -551,37 +618,69 @@ export default function RotasPage() {
                     </select>
                   </FormField>
                   <FormField label="Início">
-                    <Input type="date" value={routeForm.startDate} onChange={(e) => setRouteForm({ ...routeForm, startDate: e.target.value })} />
+                    <Input
+                      type="date"
+                      value={routeForm.startDate}
+                      onChange={(e) => setRouteForm({ ...routeForm, startDate: e.target.value })}
+                    />
                   </FormField>
                   <FormField label="Fim">
-                    <Input type="date" value={routeForm.endDate} onChange={(e) => setRouteForm({ ...routeForm, endDate: e.target.value })} />
+                    <Input
+                      type="date"
+                      value={routeForm.endDate}
+                      onChange={(e) => setRouteForm({ ...routeForm, endDate: e.target.value })}
+                    />
                   </FormField>
                 </div>
               ) : (
                 <FormField label="Data da rota" required>
-                  <Input type="date" value={routeForm.date} onChange={(e) => setRouteForm({ ...routeForm, date: e.target.value })} />
+                  <Input
+                    type="date"
+                    value={routeForm.date}
+                    onChange={(e) => setRouteForm({ ...routeForm, date: e.target.value })}
+                  />
                 </FormField>
               )}
 
               <div className="grid grid-cols-2 gap-3">
                 <FormField label="Fechar pedidos às">
-                  <Input type="time" value={routeForm.cutoffTime} onChange={(e) => setRouteForm({ ...routeForm, cutoffTime: e.target.value })} />
+                  <Input
+                    type="time"
+                    value={routeForm.cutoffTime}
+                    onChange={(e) => setRouteForm({ ...routeForm, cutoffTime: e.target.value })}
+                  />
                 </FormField>
                 <FormField label="Dias antes da rota">
-                  <Input type="number" min="0" max="7" value={routeForm.cutoffOffsetDays} onChange={(e) => setRouteForm({ ...routeForm, cutoffOffsetDays: e.target.value })} />
+                  <Input
+                    type="number"
+                    min="0"
+                    max="7"
+                    value={routeForm.cutoffOffsetDays}
+                    onChange={(e) => setRouteForm({ ...routeForm, cutoffOffsetDays: e.target.value })}
+                  />
                 </FormField>
               </div>
 
               <p className="text-sm font-medium text-ink">Janela de entrega</p>
               <div className="grid grid-cols-2 gap-3">
                 <FormField label="Entrega a partir de">
-                  <Input type="time" value={routeForm.windowStart} onChange={(e) => setRouteForm({ ...routeForm, windowStart: e.target.value })} />
+                  <Input
+                    type="time"
+                    value={routeForm.windowStart}
+                    onChange={(e) => setRouteForm({ ...routeForm, windowStart: e.target.value })}
+                  />
                 </FormField>
                 <FormField label="Entrega até">
-                  <Input type="time" value={routeForm.windowEnd} onChange={(e) => setRouteForm({ ...routeForm, windowEnd: e.target.value })} />
+                  <Input
+                    type="time"
+                    value={routeForm.windowEnd}
+                    onChange={(e) => setRouteForm({ ...routeForm, windowEnd: e.target.value })}
+                  />
                 </FormField>
               </div>
-              <p className="text-xs text-muted -mt-2">Exibida ao cliente no carrinho e no pedido. Ex.: &quot;Entrega entre 12h e 18h&quot;.</p>
+              <p className="text-xs text-muted -mt-2">
+                Exibida ao cliente no carrinho e no pedido. Ex.: &quot;Entrega entre 12h e 18h&quot;.
+              </p>
 
               <div className="flex items-center justify-between border border-line rounded-lg p-3">
                 <div>
@@ -599,10 +698,22 @@ export default function RotasPage() {
               {routeForm.capacityEnabled && (
                 <div className="grid grid-cols-2 gap-3">
                   <FormField label="Máx. pedidos">
-                    <Input type="number" min="1" value={routeForm.maxOrders} onChange={(e) => setRouteForm({ ...routeForm, maxOrders: e.target.value })} placeholder="Sem limite" />
+                    <Input
+                      type="number"
+                      min="1"
+                      value={routeForm.maxOrders}
+                      onChange={(e) => setRouteForm({ ...routeForm, maxOrders: e.target.value })}
+                      placeholder="Sem limite"
+                    />
                   </FormField>
                   <FormField label="Máx. itens (cookies)">
-                    <Input type="number" min="1" value={routeForm.maxItems} onChange={(e) => setRouteForm({ ...routeForm, maxItems: e.target.value })} placeholder="Sem limite" />
+                    <Input
+                      type="number"
+                      min="1"
+                      value={routeForm.maxItems}
+                      onChange={(e) => setRouteForm({ ...routeForm, maxItems: e.target.value })}
+                      placeholder="Sem limite"
+                    />
                   </FormField>
                 </div>
               )}
@@ -631,23 +742,44 @@ export default function RotasPage() {
             size="sm"
             footer={
               <div className="flex gap-2">
-                <Button variant="secondary" className="flex-1" onClick={() => setShowBlock(false)}>Cancelar</Button>
-                <Button className="flex-1" onClick={handleCreateBlock}>Bloquear</Button>
+                <Button variant="secondary" className="flex-1" onClick={() => setShowBlock(false)}>
+                  Cancelar
+                </Button>
+                <Button className="flex-1" onClick={handleCreateBlock}>
+                  Bloquear
+                </Button>
               </div>
             }
           >
             <div className="p-4 space-y-3">
               <FormField label="Zona">
-                <select value={blockForm.zoneId} onChange={(e) => setBlockForm({ ...blockForm, zoneId: e.target.value })} className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink bg-paper focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink transition-colors">
+                <select
+                  value={blockForm.zoneId}
+                  onChange={(e) => setBlockForm({ ...blockForm, zoneId: e.target.value })}
+                  className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink bg-paper focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink transition-colors"
+                >
                   <option value="">Selecionar</option>
-                  {zones.map((z) => <option key={z.id} value={z.id}>{z.name}</option>)}
+                  {zones.map((z) => (
+                    <option key={z.id} value={z.id}>
+                      {z.name}
+                    </option>
+                  ))}
                 </select>
               </FormField>
               <FormField label="Data" required>
-                <Input type="date" value={blockForm.date} onChange={(e) => setBlockForm({ ...blockForm, date: e.target.value })} />
+                <Input
+                  type="date"
+                  value={blockForm.date}
+                  onChange={(e) => setBlockForm({ ...blockForm, date: e.target.value })}
+                />
               </FormField>
               <FormField label="Motivo">
-                <Input type="text" placeholder="Ex.: Feriado" value={blockForm.reason} onChange={(e) => setBlockForm({ ...blockForm, reason: e.target.value })} />
+                <Input
+                  type="text"
+                  placeholder="Ex.: Feriado"
+                  value={blockForm.reason}
+                  onChange={(e) => setBlockForm({ ...blockForm, reason: e.target.value })}
+                />
               </FormField>
             </div>
           </Modal>

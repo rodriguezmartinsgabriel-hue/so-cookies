@@ -2,7 +2,14 @@
 
 import { useEffect, useCallback, useState, useSyncExternalStore } from "react"
 import { syncAll, registerBackgroundSync } from "@/lib/sync-service"
-import { getPendingSyncCount, getSyncErrors, clearSyncErrors, getLastSyncTime, NEVER_SYNCED, type SyncErrorItem } from "@/lib/db-local"
+import {
+  getPendingSyncCount,
+  getSyncErrors,
+  clearSyncErrors,
+  getLastSyncTime,
+  NEVER_SYNCED,
+  type SyncErrorItem,
+} from "@/lib/db-local"
 
 function normalizeLastSync(iso: string): string | null {
   return iso && iso !== NEVER_SYNCED ? iso : null
@@ -70,7 +77,9 @@ export function useSync() {
     }
     refresh()
 
-    const handleOnline = () => { doSync() }
+    const handleOnline = () => {
+      doSync()
+    }
 
     window.addEventListener("online", handleOnline)
     return () => {

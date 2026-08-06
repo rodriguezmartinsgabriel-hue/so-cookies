@@ -70,10 +70,17 @@ describe("createCustomerOrder — pagamento PIX", () => {
     vi.clearAllMocks()
     mocks.productFindMany.mockResolvedValue([{ id: "p1", name: "Cookie", price: 21.25, active: true, deletedAt: null }])
     mocks.customerFindUnique.mockResolvedValue({
-      id: "cust-1", name: "Maria", phone: "11999999999",
+      id: "cust-1",
+      name: "Maria",
+      phone: "11999999999",
       email: "maria@email.com",
-      addressCep: null, addressStreet: null, addressNumber: null,
-      addressComplement: null, addressNeighborhood: null, addressCity: null, addressState: null,
+      addressCep: null,
+      addressStreet: null,
+      addressNumber: null,
+      addressComplement: null,
+      addressNeighborhood: null,
+      addressCity: null,
+      addressState: null,
     })
     mocks.engineCalculatePrice.mockResolvedValue({
       total: 42.5,
@@ -97,10 +104,12 @@ describe("createCustomerOrder — pagamento PIX", () => {
     })
 
     expect(mocks.orderDelete).not.toHaveBeenCalled()
-    expect(mocks.orderUpdate).toHaveBeenCalledWith(expect.objectContaining({
-      where: { id: "ord-1" },
-      data: expect.objectContaining({ paymentStatus: "EXPIRADO", status: "CANCELADO" }),
-    }))
+    expect(mocks.orderUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: "ord-1" },
+        data: expect.objectContaining({ paymentStatus: "EXPIRADO", status: "CANCELADO" }),
+      }),
+    )
     expect(result.paymentStatus).toBe("EXPIRADO")
   })
 
@@ -128,9 +137,7 @@ describe("updateCustomerOrder — cancelamento", () => {
       paymentStatus: "AGUARDANDO_PAGAMENTO",
       total: 42.5,
       items: [{ id: "i1", qty: 2, price: 21.25 }],
-      paymentEvents: [
-        { id: "pe-1", type: "PAYMENT", status: "RECEIVED", orderId: "ord-1" },
-      ],
+      paymentEvents: [{ id: "pe-1", type: "PAYMENT", status: "RECEIVED", orderId: "ord-1" }],
     })
     mocks.orderUpdate.mockResolvedValue({ id: "ord-1", status: "CANCELADO" })
   })
@@ -141,14 +148,18 @@ describe("updateCustomerOrder — cancelamento", () => {
 
   it("cancela pedido PENDENTE com sucesso", async () => {
     const result = await updateCustomerOrder("cust-1", "ord-1", { status: "CANCELADO" })
-    expect(mocks.orderUpdate).toHaveBeenCalledWith(expect.objectContaining({
-      where: { id: "ord-1" },
-      data: expect.objectContaining({ status: "CANCELADO" }),
-    }))
-    expect(mocks.paymentEventUpdate).toHaveBeenCalledWith(expect.objectContaining({
-      where: { id: "pe-1" },
-      data: expect.objectContaining({ status: "CANCELLED" }),
-    }))
+    expect(mocks.orderUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: "ord-1" },
+        data: expect.objectContaining({ status: "CANCELADO" }),
+      }),
+    )
+    expect(mocks.paymentEventUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: "pe-1" },
+        data: expect.objectContaining({ status: "CANCELLED" }),
+      }),
+    )
     expect(result.status).toBe("CANCELADO")
   })
 
@@ -163,9 +174,9 @@ describe("updateCustomerOrder — cancelamento", () => {
       paymentEvents: [],
     })
 
-    await expect(
-      updateCustomerOrder("cust-1", "ord-1", { status: "CANCELADO" })
-    ).rejects.toThrow("Este pedido não pode mais ser cancelado")
+    await expect(updateCustomerOrder("cust-1", "ord-1", { status: "CANCELADO" })).rejects.toThrow(
+      "Este pedido não pode mais ser cancelado",
+    )
   })
 
   it("rejeita cancelamento de pedido já CONCLUIDO", async () => {
@@ -179,9 +190,9 @@ describe("updateCustomerOrder — cancelamento", () => {
       paymentEvents: [],
     })
 
-    await expect(
-      updateCustomerOrder("cust-1", "ord-1", { status: "CANCELADO" })
-    ).rejects.toThrow("Este pedido não pode mais ser cancelado")
+    await expect(updateCustomerOrder("cust-1", "ord-1", { status: "CANCELADO" })).rejects.toThrow(
+      "Este pedido não pode mais ser cancelado",
+    )
   })
 
   it("não tenta cancelar pagamento quando status é alterado sem CANCELADO", async () => {
@@ -192,9 +203,7 @@ describe("updateCustomerOrder — cancelamento", () => {
       paymentStatus: "AGUARDANDO_PAGAMENTO",
       total: 42.5,
       items: [{ id: "i1", qty: 2, price: 21.25 }],
-      paymentEvents: [
-        { id: "pe-1", type: "PAYMENT", status: "RECEIVED", orderId: "ord-1" },
-      ],
+      paymentEvents: [{ id: "pe-1", type: "PAYMENT", status: "RECEIVED", orderId: "ord-1" }],
     })
 
     await updateCustomerOrder("cust-1", "ord-1", { status: "CONFIRMADO" })

@@ -23,7 +23,6 @@ describe("verifyWebhookSignature", () => {
     const dataId = "123456"
     const xRequestId = "req-1"
     const ts = "1742505638683"
-    const xSignature = sign(SECRET, dataId, xRequestId, ts)
     const tampered = `ts=${ts},v1=${"0".repeat(64)}`
     expect(verifyWebhookSignature({ secret: SECRET, xSignature: tampered, xRequestId, dataId })).toBe(false)
   })

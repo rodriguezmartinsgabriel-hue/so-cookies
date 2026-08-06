@@ -44,7 +44,7 @@ function EntrarForm() {
   const searchParams = useSearchParams()
   const [error, setError] = useState(() => {
     const oauthError = searchParams.get("oauth_error")
-    return oauthError ? OAUTH_ERROR_MESSAGES[oauthError] ?? "" : ""
+    return oauthError ? (OAUTH_ERROR_MESSAGES[oauthError] ?? "") : ""
   })
   const [loading, setLoading] = useState(false)
 
@@ -94,14 +94,7 @@ function EntrarForm() {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <FormField label="Email" htmlFor="email" required>
-            <Input
-              id="email"
-              name="email"
-              type="email"
-              autoComplete="email"
-              placeholder="seu@email.com"
-              required
-            />
+            <Input id="email" name="email" type="email" autoComplete="email" placeholder="seu@email.com" required />
           </FormField>
 
           <FormField label="Senha" htmlFor="password" required>
@@ -124,7 +117,10 @@ function EntrarForm() {
 
         <p className="text-sm text-muted text-center">
           Não tem conta?{" "}
-          <Link href={`/cadastro${searchParams.get("next") ? `?next=${searchParams.get("next")}` : ""}`} className="text-ink font-medium underline">
+          <Link
+            href={`/cadastro${searchParams.get("next") ? `?next=${searchParams.get("next")}` : ""}`}
+            className="text-ink font-medium underline"
+          >
             Cadastre-se
           </Link>
         </p>

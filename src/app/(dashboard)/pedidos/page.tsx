@@ -16,7 +16,21 @@ import { Modal } from "@/components/ui/Modal"
 import { GlassSurface } from "@/components/ui/GlassSurface"
 import { Table, THead, TBody, Tr, Th, Td } from "@/components/ui/Table"
 import { repository } from "@/lib/repository"
-import { Clock, ChefHat, Package, Truck, X, Plus, Check, Edit, Trash2, Ban, ChevronDown, ChevronRight, Smartphone } from "lucide-react"
+import {
+  Clock,
+  ChefHat,
+  Package,
+  Truck,
+  X,
+  Plus,
+  Check,
+  Edit,
+  Trash2,
+  Ban,
+  ChevronDown,
+  ChevronRight,
+  Smartphone,
+} from "lucide-react"
 import type { Order, OrderItem } from "@/lib/entity-types"
 
 const columns = [
@@ -60,16 +74,11 @@ function canCancel(status: string) {
 }
 
 export default function PedidosPage() {
-  const { canEdit } = useRole();
+  const { canEdit } = useRole()
   const { confirm, dialog } = useConfirm()
-  const {
-    data: orders,
-    isLoading: loading,
-    error: ordersError,
-    invalidate,
-  } = useQueryData("orders");
-  const { data: products, error: productsError } = useQueryData("products");
-  const { data: channels, error: channelsError } = useQueryData("channels");
+  const { data: orders, isLoading: loading, error: ordersError, invalidate } = useQueryData("orders")
+  const { data: products, error: productsError } = useQueryData("products")
+  const { data: channels, error: channelsError } = useQueryData("channels")
   const error = ordersError || productsError || channelsError ? "Erro ao carregar pedidos" : null
   const [selectedOrder, setSelectedOrder] = useState<string | null>(null)
   const [showCreateModal, setShowCreateModal] = useState(false)
@@ -159,11 +168,13 @@ export default function PedidosPage() {
       channel: channelName,
       customer: formCustomer,
       total: formTotal,
-      items: formItems.filter((i) => i.productId && i.qty).map((i) => ({
-        productId: i.productId,
-        qty: parseInt(i.qty) || 1,
-        price: parseFloat(i.price) || 0,
-      })),
+      items: formItems
+        .filter((i) => i.productId && i.qty)
+        .map((i) => ({
+          productId: i.productId,
+          qty: parseInt(i.qty) || 1,
+          price: parseFloat(i.price) || 0,
+        })),
     })
     setShowCreateModal(false)
     setFormChannel("")
@@ -180,11 +191,31 @@ export default function PedidosPage() {
           <h1 className="text-2xl font-bold text-ink">Pedidos</h1>
           <div className="flex items-center gap-2">
             <div className="flex border border-line rounded-lg overflow-hidden">
-              <button type="button" onClick={() => setView("kanban")} className={`px-3 py-2 text-xs font-medium transition-colors ${view === "kanban" ? "bg-ink text-paper" : "text-muted hover:bg-cream"}`}>Kanban</button>
-              <button type="button" onClick={() => setView("list")} className={`px-3 py-2 text-xs font-medium transition-colors ${view === "list" ? "bg-ink text-paper" : "text-muted hover:bg-cream"}`}>Lista</button>
+              <button
+                type="button"
+                onClick={() => setView("kanban")}
+                className={`px-3 py-2 text-xs font-medium transition-colors ${view === "kanban" ? "bg-ink text-paper" : "text-muted hover:bg-cream"}`}
+              >
+                Kanban
+              </button>
+              <button
+                type="button"
+                onClick={() => setView("list")}
+                className={`px-3 py-2 text-xs font-medium transition-colors ${view === "list" ? "bg-ink text-paper" : "text-muted hover:bg-cream"}`}
+              >
+                Lista
+              </button>
             </div>
             {canEdit && (
-              <Button onClick={() => { setFormChannel(""); setFormCustomer(""); setFormItems([]); setFormTotal(0); setShowCreateModal(true); }}>
+              <Button
+                onClick={() => {
+                  setFormChannel("")
+                  setFormCustomer("")
+                  setFormItems([])
+                  setFormTotal(0)
+                  setShowCreateModal(true)
+                }}
+              >
                 <Plus className="w-4 h-4" />
                 Novo Pedido
               </Button>
@@ -192,9 +223,7 @@ export default function PedidosPage() {
           </div>
         </div>
 
-        {error && (
-          <ErrorState message={error} onRetry={invalidate} />
-        )}
+        {error && <ErrorState message={error} onRetry={invalidate} />}
 
         {routes.length > 0 && (
           <div className="flex gap-2 overflow-x-auto pb-1">
@@ -206,17 +235,19 @@ export default function PedidosPage() {
             >
               Todas
             </button>
-            {routes.filter((r) => r.active).map((r) => (
-              <button
-                key={r.id}
-                onClick={() => setRouteFilter(routeFilter === r.id ? "all" : r.id)}
-                className={`h-8 px-3 border rounded-full text-xs font-medium transition-colors shrink-0 ${
-                  routeFilter === r.id ? "border-ink bg-ink text-paper" : "border-line text-ink hover:bg-cream"
-                }`}
-              >
-                {r.name}
-              </button>
-            ))}
+            {routes
+              .filter((r) => r.active)
+              .map((r) => (
+                <button
+                  key={r.id}
+                  onClick={() => setRouteFilter(routeFilter === r.id ? "all" : r.id)}
+                  className={`h-8 px-3 border rounded-full text-xs font-medium transition-colors shrink-0 ${
+                    routeFilter === r.id ? "border-ink bg-ink text-paper" : "border-line text-ink hover:bg-cream"
+                  }`}
+                >
+                  {r.name}
+                </button>
+              ))}
           </div>
         )}
 
@@ -241,56 +272,66 @@ export default function PedidosPage() {
           </div>
         ) : view === "kanban" ? (
           <div className="space-y-4">
-            {columns.filter((c) => c.id !== "CONCLUIDO" && c.id !== "CANCELADO").map((col) => {
-              const colOrders = orders.filter((o) => o.status === col.id && (routeFilter === "all" || o.deliveryRouteId === routeFilter))
-              return (
-                <Card key={col.id} padded={false} className="overflow-hidden">
-                  <div className={`flex items-center gap-2 px-4 py-3 border-b border-line ${col.bg}`}>
-                    <col.icon className={`w-4 h-4 ${col.color}`} strokeWidth={1.5} />
-                    <span className="text-sm font-semibold text-ink">{col.label}</span>
-                    <span className="text-xs text-muted bg-paper px-2 py-0.5 rounded-full">{colOrders.length}</span>
-                  </div>
-                  <div className="p-2 space-y-2">
-                    {colOrders.map((o) => (
-                      <button
-                        key={o.id}
-                        onClick={() => setSelectedOrder(o.id)}
-                        className={`w-full text-left p-3 border border-line rounded-lg bg-paper hover:bg-cream/50 transition-colors border-l-4 ${statusColors[o.status] || ""}`}
-                      >
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="text-xs font-medium text-muted">#{o.id.slice(0, 6)}</span>
-                          <span className="text-xs text-muted">{o.createdAt ? new Date(o.createdAt).toLocaleDateString("pt-BR") : ""}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <p className="text-sm font-medium text-ink truncate">{o.customer}</p>
-                          {o.customerId && (
-                            <Badge variant="info" className="shrink-0" title="Cliente cadastrado pelo app">
-                              <Smartphone className="w-3 h-3" /> App
-                            </Badge>
+            {columns
+              .filter((c) => c.id !== "CONCLUIDO" && c.id !== "CANCELADO")
+              .map((col) => {
+                const colOrders = orders.filter(
+                  (o) => o.status === col.id && (routeFilter === "all" || o.deliveryRouteId === routeFilter),
+                )
+                return (
+                  <Card key={col.id} padded={false} className="overflow-hidden">
+                    <div className={`flex items-center gap-2 px-4 py-3 border-b border-line ${col.bg}`}>
+                      <col.icon className={`w-4 h-4 ${col.color}`} strokeWidth={1.5} />
+                      <span className="text-sm font-semibold text-ink">{col.label}</span>
+                      <span className="text-xs text-muted bg-paper px-2 py-0.5 rounded-full">{colOrders.length}</span>
+                    </div>
+                    <div className="p-2 space-y-2">
+                      {colOrders.map((o) => (
+                        <button
+                          key={o.id}
+                          onClick={() => setSelectedOrder(o.id)}
+                          className={`w-full text-left p-3 border border-line rounded-lg bg-paper hover:bg-cream/50 transition-colors border-l-4 ${statusColors[o.status] || ""}`}
+                        >
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-xs font-medium text-muted">#{o.id.slice(0, 6)}</span>
+                            <span className="text-xs text-muted">
+                              {o.createdAt ? new Date(o.createdAt).toLocaleDateString("pt-BR") : ""}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <p className="text-sm font-medium text-ink truncate">{o.customer}</p>
+                            {o.customerId && (
+                              <Badge variant="info" className="shrink-0" title="Cliente cadastrado pelo app">
+                                <Smartphone className="w-3 h-3" /> App
+                              </Badge>
+                            )}
+                          </div>
+                          {o.pickupCode && (
+                            <p className="text-xs font-bold text-ink tracking-wider mt-1">Retirada: {o.pickupCode}</p>
                           )}
+                          {o.deliveryDate && (
+                            <p className="text-xs text-muted mt-1">
+                              Entrega: {new Date(o.deliveryDate).toLocaleDateString("pt-BR")}
+                              {routeName(o.deliveryRouteId) ? ` · ${routeName(o.deliveryRouteId)}` : ""}
+                            </p>
+                          )}
+                          <div className="flex items-center justify-between mt-2">
+                            <span className="text-xs text-muted">
+                              {o.channel} · {(o.items || []).length} itens
+                            </span>
+                            <span className="text-sm font-bold text-ink">R$ {o.total}</span>
+                          </div>
+                        </button>
+                      ))}
+                      {colOrders.length === 0 && (
+                        <div className="p-4 text-center text-xs text-muted border border-dashed border-line rounded-lg">
+                          Nenhum pedido
                         </div>
-                        {o.pickupCode && (
-                          <p className="text-xs font-bold text-ink tracking-wider mt-1">Retirada: {o.pickupCode}</p>
-                        )}
-                        {o.deliveryDate && (
-                          <p className="text-xs text-muted mt-1">
-                            Entrega: {new Date(o.deliveryDate).toLocaleDateString("pt-BR")}
-                            {routeName(o.deliveryRouteId) ? ` · ${routeName(o.deliveryRouteId)}` : ""}
-                          </p>
-                        )}
-                        <div className="flex items-center justify-between mt-2">
-                          <span className="text-xs text-muted">{o.channel} · {(o.items || []).length} itens</span>
-                          <span className="text-sm font-bold text-ink">R$ {o.total}</span>
-                        </div>
-                      </button>
-                    ))}
-                    {colOrders.length === 0 && (
-                      <div className="p-4 text-center text-xs text-muted border border-dashed border-line rounded-lg">Nenhum pedido</div>
-                    )}
-                  </div>
-                </Card>
-              )
-            })}
+                      )}
+                    </div>
+                  </Card>
+                )
+              })}
 
             {(() => {
               const concludedCount = orders.filter((o) => o.status === "CONCLUIDO").length
@@ -302,44 +343,60 @@ export default function PedidosPage() {
                     onClick={() => setShowCompleted(!showCompleted)}
                     className="w-full flex items-center gap-2 px-4 py-3 text-left hover:bg-cream/50 transition-colors"
                   >
-                    {showCompleted ? <ChevronDown className="w-4 h-4 text-muted" /> : <ChevronRight className="w-4 h-4 text-muted" />}
+                    {showCompleted ? (
+                      <ChevronDown className="w-4 h-4 text-muted" />
+                    ) : (
+                      <ChevronRight className="w-4 h-4 text-muted" />
+                    )}
                     <span className="text-sm font-semibold text-muted">Arquivo</span>
-                    <span className="text-xs text-muted bg-cream px-2 py-0.5 rounded-full">{concludedCount + cancelledCount}</span>
+                    <span className="text-xs text-muted bg-cream px-2 py-0.5 rounded-full">
+                      {concludedCount + cancelledCount}
+                    </span>
                   </button>
                   {showCompleted && (
                     <div className="border-t border-line p-2 space-y-2">
-                      {orders.filter((o) => o.status === "CONCLUIDO" || o.status === "CANCELADO").map((o) => (
-                        <button
-                          key={o.id}
-                          onClick={() => setSelectedOrder(o.id)}
-                          className={`w-full text-left p-3 border border-line rounded-lg bg-paper hover:bg-cream/50 transition-colors border-l-4 ${statusColors[o.status] || ""}`}
-                        >
-                          <div className="flex items-center justify-between mb-1">
-                            <span className="text-xs font-medium text-muted">#{o.id.slice(0, 6)}</span>
-                            <span className="text-xs text-muted">{o.createdAt ? new Date(o.createdAt).toLocaleDateString("pt-BR") : ""}</span>
-                          </div>
-                        <div className="flex items-center gap-2">
-                          <p className="text-sm font-medium text-ink truncate">{o.customer}</p>
-                          {o.customerId && (
-                            <Badge variant="info" className="shrink-0" title="Cliente cadastrado pelo app">
-                              <Smartphone className="w-3 h-3" /> App
-                            </Badge>
-                          )}
-                          {o.paymentStatus === "PAGO" && (
-                            <Badge variant="success" className="shrink-0">
-                              <Check className="w-3 h-3" /> Pago
-                            </Badge>
-                          )}
-                          {o.paymentStatus === "AGUARDANDO_PAGAMENTO" && (
-                            <Badge variant="warning" className="shrink-0">PIX</Badge>
-                          )}
-                        </div>
-                          <div className="flex items-center justify-between mt-2">
-                            <span className="text-xs text-muted">{o.channel} · R$ {o.total}</span>
-                            <Badge variant={o.status === "CANCELADO" ? "danger" : "success"}>{o.status === "CANCELADO" ? "Cancelado" : "Concluído"}</Badge>
-                          </div>
-                        </button>
-                      ))}
+                      {orders
+                        .filter((o) => o.status === "CONCLUIDO" || o.status === "CANCELADO")
+                        .map((o) => (
+                          <button
+                            key={o.id}
+                            onClick={() => setSelectedOrder(o.id)}
+                            className={`w-full text-left p-3 border border-line rounded-lg bg-paper hover:bg-cream/50 transition-colors border-l-4 ${statusColors[o.status] || ""}`}
+                          >
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="text-xs font-medium text-muted">#{o.id.slice(0, 6)}</span>
+                              <span className="text-xs text-muted">
+                                {o.createdAt ? new Date(o.createdAt).toLocaleDateString("pt-BR") : ""}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <p className="text-sm font-medium text-ink truncate">{o.customer}</p>
+                              {o.customerId && (
+                                <Badge variant="info" className="shrink-0" title="Cliente cadastrado pelo app">
+                                  <Smartphone className="w-3 h-3" /> App
+                                </Badge>
+                              )}
+                              {o.paymentStatus === "PAGO" && (
+                                <Badge variant="success" className="shrink-0">
+                                  <Check className="w-3 h-3" /> Pago
+                                </Badge>
+                              )}
+                              {o.paymentStatus === "AGUARDANDO_PAGAMENTO" && (
+                                <Badge variant="warning" className="shrink-0">
+                                  PIX
+                                </Badge>
+                              )}
+                            </div>
+                            <div className="flex items-center justify-between mt-2">
+                              <span className="text-xs text-muted">
+                                {o.channel} · R$ {o.total}
+                              </span>
+                              <Badge variant={o.status === "CANCELADO" ? "danger" : "success"}>
+                                {o.status === "CANCELADO" ? "Cancelado" : "Concluído"}
+                              </Badge>
+                            </div>
+                          </button>
+                        ))}
                     </div>
                   )}
                 </Card>
@@ -388,13 +445,37 @@ export default function PedidosPage() {
                       <div className="flex items-center justify-center gap-1">
                         {canEdit && (
                           <>
-                            <button type="button" onClick={() => openEditModal(o)} aria-label="Editar" className="p-1.5 rounded-md hover:bg-cream text-muted"><Edit className="w-4 h-4" /></button>
+                            <button
+                              type="button"
+                              onClick={() => openEditModal(o)}
+                              aria-label="Editar"
+                              className="p-1.5 rounded-md hover:bg-cream text-muted"
+                            >
+                              <Edit className="w-4 h-4" />
+                            </button>
                             {canCancel(o.status) && (
-                              <button type="button" onClick={() => handleStatusChange(o.id, "CANCELADO")} className="p-1.5 rounded-md hover:bg-cream text-danger"><Ban className="w-4 h-4" /></button>
+                              <button
+                                type="button"
+                                onClick={() => handleStatusChange(o.id, "CANCELADO")}
+                                className="p-1.5 rounded-md hover:bg-cream text-danger"
+                              >
+                                <Ban className="w-4 h-4" />
+                              </button>
                             )}
-                            <button type="button" onClick={() => handleDeleteOrder(o.id)} aria-label="Excluir" className="p-1.5 rounded-md hover:bg-cream text-danger"><Trash2 className="w-4 h-4" /></button>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteOrder(o.id)}
+                              aria-label="Excluir"
+                              className="p-1.5 rounded-md hover:bg-cream text-danger"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
                             {nextStatus[o.status] && (
-                              <button type="button" onClick={() => handleStatusChange(o.id, nextStatus[o.status])} className="text-xs px-3 py-1.5 bg-ink text-paper rounded-lg font-medium hover:bg-ink/90 transition-colors">
+                              <button
+                                type="button"
+                                onClick={() => handleStatusChange(o.id, nextStatus[o.status])}
+                                className="text-xs px-3 py-1.5 bg-ink text-paper rounded-lg font-medium hover:bg-ink/90 transition-colors"
+                              >
                                 {nextStatusLabel[o.status]}
                               </button>
                             )}
@@ -410,99 +491,139 @@ export default function PedidosPage() {
         )}
 
         {order && (
-          <div className="fixed inset-0 z-50 bg-ink/30 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="order-detail-title">
+          <div
+            className="fixed inset-0 z-50 bg-ink/30 flex items-center justify-center p-4"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="order-detail-title"
+          >
             <div ref={orderModalRef} className="w-full max-w-md max-h-[80vh]">
-            <GlassSurface tone="strong" className="rounded-xl w-full max-w-md max-h-[80vh] overflow-y-auto">
-              <div className="flex items-center justify-between p-4 border-b border-line">
-                <div>
-                  <h3 id="order-detail-title" className="text-lg font-bold text-ink">Pedido #{order.id.slice(0, 6)}</h3>
-                  <p className="text-xs text-muted">{order.channel} · {order.createdAt ? new Date(order.createdAt).toLocaleDateString("pt-BR") : ""}</p>
+              <GlassSurface tone="strong" className="rounded-xl w-full max-w-md max-h-[80vh] overflow-y-auto">
+                <div className="flex items-center justify-between p-4 border-b border-line">
+                  <div>
+                    <h3 id="order-detail-title" className="text-lg font-bold text-ink">
+                      Pedido #{order.id.slice(0, 6)}
+                    </h3>
+                    <p className="text-xs text-muted">
+                      {order.channel} · {order.createdAt ? new Date(order.createdAt).toLocaleDateString("pt-BR") : ""}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedOrder(null)}
+                    data-close-modal
+                    aria-label="Fechar"
+                    className="p-1.5 rounded-md hover:bg-cream text-muted"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
                 </div>
-                <button type="button" onClick={() => setSelectedOrder(null)} data-close-modal aria-label="Fechar" className="p-1.5 rounded-md hover:bg-cream text-muted"><X className="w-5 h-5" /></button>
-              </div>
-              <div className="p-4 space-y-3">
-                <div>
-                  <p className="text-xs text-muted uppercase tracking-wide mb-1">Cliente</p>
-                  <p className="text-sm font-medium text-ink">{order.customer}</p>
-                  {order.customerId && (
-                    <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1.5 items-center">
-                      <Badge variant="info" title="Cliente cadastrado pelo app">
-                        <Smartphone className="w-3 h-3" /> Do app
-                      </Badge>
-                      {order.customerRef?.email && <span className="text-xs text-muted truncate">{order.customerRef.email}</span>}
-                      {order.customerRef?.phone && <span className="text-xs text-muted">{order.customerRef.phone}</span>}
+                <div className="p-4 space-y-3">
+                  <div>
+                    <p className="text-xs text-muted uppercase tracking-wide mb-1">Cliente</p>
+                    <p className="text-sm font-medium text-ink">{order.customer}</p>
+                    {order.customerId && (
+                      <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1.5 items-center">
+                        <Badge variant="info" title="Cliente cadastrado pelo app">
+                          <Smartphone className="w-3 h-3" /> Do app
+                        </Badge>
+                        {order.customerRef?.email && (
+                          <span className="text-xs text-muted truncate">{order.customerRef.email}</span>
+                        )}
+                        {order.customerRef?.phone && (
+                          <span className="text-xs text-muted">{order.customerRef.phone}</span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  {order.notes && (
+                    <div>
+                      <p className="text-xs text-muted uppercase tracking-wide mb-1">Observações</p>
+                      <p className="text-sm text-ink">{order.notes}</p>
                     </div>
                   )}
-                </div>
-                {order.notes && (
                   <div>
-                    <p className="text-xs text-muted uppercase tracking-wide mb-1">Observações</p>
-                    <p className="text-sm text-ink">{order.notes}</p>
+                    <p className="text-xs text-muted uppercase tracking-wide mb-1">Status</p>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Badge variant="neutral">{order.status}</Badge>
+                      {order.paymentStatus === "PAGO" && (
+                        <Badge variant="success">
+                          <Check className="w-3 h-3" /> Pago via{" "}
+                          {order.paymentProvider === "MERCADO_PAGO" ? "PIX" : order.paymentProvider || "online"}
+                        </Badge>
+                      )}
+                      {order.paymentStatus === "AGUARDANDO_PAGAMENTO" && (
+                        <Badge variant="warning">Aguardando pagamento</Badge>
+                      )}
+                      {order.paymentStatus === "EXPIRADO" && <Badge variant="danger">Pagamento expirado</Badge>}
+                    </div>
                   </div>
-                )}
-                <div>
-                  <p className="text-xs text-muted uppercase tracking-wide mb-1">Status</p>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Badge variant="neutral">{order.status}</Badge>
-                    {order.paymentStatus === "PAGO" && (
-                      <Badge variant="success">
-                        <Check className="w-3 h-3" /> Pago via {order.paymentProvider === "MERCADO_PAGO" ? "PIX" : order.paymentProvider || "online"}
-                      </Badge>
-                    )}
-                    {order.paymentStatus === "AGUARDANDO_PAGAMENTO" && (
-                      <Badge variant="warning">Aguardando pagamento</Badge>
-                    )}
-                    {order.paymentStatus === "EXPIRADO" && (
-                      <Badge variant="danger">Pagamento expirado</Badge>
-                    )}
-                  </div>
-                </div>
-                {order.pickupCode && (
+                  {order.pickupCode && (
+                    <div>
+                      <p className="text-xs text-muted uppercase tracking-wide mb-1">Código de retirada</p>
+                      <p className="text-sm font-bold text-ink tracking-[0.2em]">{order.pickupCode}</p>
+                    </div>
+                  )}
                   <div>
-                    <p className="text-xs text-muted uppercase tracking-wide mb-1">Código de retirada</p>
-                    <p className="text-sm font-bold text-ink tracking-[0.2em]">{order.pickupCode}</p>
+                    <p className="text-xs text-muted uppercase tracking-wide mb-1">Itens</p>
+                    <div className="space-y-1">
+                      {(order.items || []).map((item: OrderItem, i: number) => (
+                        <div key={i} className="flex items-center justify-between text-sm">
+                          <span className="text-ink">
+                            {item.qty}x {item.name || item.product?.name || "Item externo"}
+                          </span>
+                          <span className="text-muted">R$ {(item.price * item.qty).toFixed(2)}</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                )}
-                <div>
-                  <p className="text-xs text-muted uppercase tracking-wide mb-1">Itens</p>
-                  <div className="space-y-1">
-                    {(order.items || []).map((item: OrderItem, i: number) => (
-                      <div key={i} className="flex items-center justify-between text-sm">
-                        <span className="text-ink">{item.qty}x {item.name || item.product?.name || "Item externo"}</span>
-                        <span className="text-muted">R$ {(item.price * item.qty).toFixed(2)}</span>
-                      </div>
-                    ))}
+                  <div className="border-t border-line pt-3 flex items-center justify-between">
+                    <span className="text-sm font-semibold text-ink">Total</span>
+                    <span className="text-lg font-bold text-ink">R$ {order.total}</span>
                   </div>
                 </div>
-                <div className="border-t border-line pt-3 flex items-center justify-between">
-                  <span className="text-sm font-semibold text-ink">Total</span>
-                  <span className="text-lg font-bold text-ink">R$ {order.total}</span>
-                </div>
-              </div>
-              <div className="p-4 border-t border-line flex gap-2">
-                {canEdit && (
-                  <>
-                    <button type="button" onClick={() => handleDeleteOrder(order.id)} aria-label="Excluir" className="h-10 px-3 border border-danger/30 rounded-lg text-sm font-medium text-danger hover:bg-danger/5 transition-colors">
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                    <Button variant="secondary" onClick={() => { setSelectedOrder(null); openEditModal(order); }} aria-label="Editar">
-                      <Edit className="w-4 h-4" />
-                    </Button>
-                    {canCancel(order.status) && (
-                      <button type="button" onClick={() => handleStatusChange(order.id, "CANCELADO")} className="h-10 px-3 border border-danger/30 rounded-lg text-sm font-medium text-danger hover:bg-danger/5 transition-colors">
-                        <Ban className="w-4 h-4" />
+                <div className="p-4 border-t border-line flex gap-2">
+                  {canEdit && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteOrder(order.id)}
+                        aria-label="Excluir"
+                        className="h-10 px-3 border border-danger/30 rounded-lg text-sm font-medium text-danger hover:bg-danger/5 transition-colors"
+                      >
+                        <Trash2 className="w-4 h-4" />
                       </button>
-                    )}
-                  </>
-                )}
-                <Button variant="secondary" className="flex-1" onClick={() => setSelectedOrder(null)}>Fechar</Button>
-                {canEdit && nextStatus[order.status] && (
-                  <Button className="flex-1" onClick={() => handleStatusChange(order.id, nextStatus[order.status])}>
-                    {nextStatusLabel[order.status]}
+                      <Button
+                        variant="secondary"
+                        onClick={() => {
+                          setSelectedOrder(null)
+                          openEditModal(order)
+                        }}
+                        aria-label="Editar"
+                      >
+                        <Edit className="w-4 h-4" />
+                      </Button>
+                      {canCancel(order.status) && (
+                        <button
+                          type="button"
+                          onClick={() => handleStatusChange(order.id, "CANCELADO")}
+                          className="h-10 px-3 border border-danger/30 rounded-lg text-sm font-medium text-danger hover:bg-danger/5 transition-colors"
+                        >
+                          <Ban className="w-4 h-4" />
+                        </button>
+                      )}
+                    </>
+                  )}
+                  <Button variant="secondary" className="flex-1" onClick={() => setSelectedOrder(null)}>
+                    Fechar
                   </Button>
-                )}
-              </div>
-            </GlassSurface>
+                  {canEdit && nextStatus[order.status] && (
+                    <Button className="flex-1" onClick={() => handleStatusChange(order.id, nextStatus[order.status])}>
+                      {nextStatusLabel[order.status]}
+                    </Button>
+                  )}
+                </div>
+              </GlassSurface>
             </div>
           </div>
         )}
@@ -510,24 +631,54 @@ export default function PedidosPage() {
         {showEditModal && editingOrder && (
           <Modal
             open
-            onClose={() => { setShowEditModal(false); setEditingOrder(null); }}
+            onClose={() => {
+              setShowEditModal(false)
+              setEditingOrder(null)
+            }}
             title={`Editar Pedido #${editingOrder.id.slice(0, 6)}`}
             size="sm"
             footer={
               <div className="flex gap-2">
-                <Button variant="secondary" className="flex-1" onClick={() => { setShowEditModal(false); setEditingOrder(null); }}>Cancelar</Button>
-                <Button className="flex-1" onClick={handleEditSave}>Salvar</Button>
+                <Button
+                  variant="secondary"
+                  className="flex-1"
+                  onClick={() => {
+                    setShowEditModal(false)
+                    setEditingOrder(null)
+                  }}
+                >
+                  Cancelar
+                </Button>
+                <Button className="flex-1" onClick={handleEditSave}>
+                  Salvar
+                </Button>
               </div>
             }
           >
             <div className="p-4 space-y-4">
               <div>
-                <label htmlFor="sel-cliente-label-input-type-text-value-edit" className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Cliente</label>
-                <Input type="text" value={editForm.customer} onChange={(e) => setEditForm({ ...editForm, customer: e.target.value })} />
+                <label
+                  htmlFor="sel-cliente-label-input-type-text-value-edit"
+                  className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5"
+                >
+                  Cliente
+                </label>
+                <Input
+                  type="text"
+                  value={editForm.customer}
+                  onChange={(e) => setEditForm({ ...editForm, customer: e.target.value })}
+                />
               </div>
               <div>
-                <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Observações</label>
-                <textarea value={editForm.notes} onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })} rows={3} className="w-full px-3 py-2 border border-line rounded-lg text-sm text-ink placeholder:text-kraft focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink transition-colors resize-none" />
+                <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">
+                  Observações
+                </label>
+                <textarea
+                  value={editForm.notes}
+                  onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })}
+                  rows={3}
+                  className="w-full px-3 py-2 border border-line rounded-lg text-sm text-ink placeholder:text-kraft focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink transition-colors resize-none"
+                />
               </div>
             </div>
           </Modal>
@@ -541,8 +692,12 @@ export default function PedidosPage() {
             size="md"
             footer={
               <div className="flex gap-2">
-                <Button variant="secondary" className="flex-1" onClick={() => setShowCreateModal(false)}>Cancelar</Button>
-                <Button className="flex-1" onClick={handleCreateOrder}>Criar Pedido</Button>
+                <Button variant="secondary" className="flex-1" onClick={() => setShowCreateModal(false)}>
+                  Cancelar
+                </Button>
+                <Button className="flex-1" onClick={handleCreateOrder}>
+                  Criar Pedido
+                </Button>
               </div>
             }
           >
@@ -550,31 +705,82 @@ export default function PedidosPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Canal *</label>
-                  <select id="sel-cliente-label-input-type-text-value-edit" value={formChannel} onChange={(e) => setFormChannel(e.target.value)} className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink bg-paper">
+                  <select
+                    id="sel-cliente-label-input-type-text-value-edit"
+                    value={formChannel}
+                    onChange={(e) => setFormChannel(e.target.value)}
+                    className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink bg-paper"
+                  >
                     <option value="">Selecionar</option>
-                    {channels.map((ch) => <option key={ch.id} value={ch.id}>{ch.name}</option>)}
+                    {channels.map((ch) => (
+                      <option key={ch.id} value={ch.id}>
+                        {ch.name}
+                      </option>
+                    ))}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Cliente *</label>
-                  <Input type="text" placeholder="Nome do cliente" value={formCustomer} onChange={(e) => setFormCustomer(e.target.value)} />
+                  <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">
+                    Cliente *
+                  </label>
+                  <Input
+                    type="text"
+                    placeholder="Nome do cliente"
+                    value={formCustomer}
+                    onChange={(e) => setFormCustomer(e.target.value)}
+                  />
                 </div>
               </div>
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <label className="text-xs font-semibold text-muted uppercase tracking-wide">Itens</label>
-                  <button type="button" onClick={addItem} className="flex items-center gap-1 text-xs font-medium text-info"><Plus className="w-3 h-3" /> Adicionar</button>
+                  <button
+                    type="button"
+                    onClick={addItem}
+                    className="flex items-center gap-1 text-xs font-medium text-info"
+                  >
+                    <Plus className="w-3 h-3" /> Adicionar
+                  </button>
                 </div>
                 <div className="space-y-2">
                   {formItems.map((item, i) => (
                     <div key={i} className="flex items-center gap-2 bg-cream/50 rounded-lg p-2">
-                      <select value={item.productId} onChange={(e) => updateItem(i, "productId", e.target.value)} className="flex-1 h-9 px-2 border border-line rounded-lg text-xs text-ink bg-paper">
+                      <select
+                        value={item.productId}
+                        onChange={(e) => updateItem(i, "productId", e.target.value)}
+                        className="flex-1 h-9 px-2 border border-line rounded-lg text-xs text-ink bg-paper"
+                      >
                         <option value="">Produto</option>
-                        {products.filter((p) => p.active).map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                        {products
+                          .filter((p) => p.active)
+                          .map((p) => (
+                            <option key={p.id} value={p.id}>
+                              {p.name}
+                            </option>
+                          ))}
                       </select>
-                      <input type="number" min="1" value={item.qty} onChange={(e) => updateItem(i, "qty", e.target.value)} className="w-16 h-9 px-2 border border-line rounded-lg text-xs text-ink bg-paper" />
-                      <input type="number" step="0.01" value={item.price} onChange={(e) => updateItem(i, "price", e.target.value)} className="w-24 h-9 px-2 border border-line rounded-lg text-xs text-ink bg-paper" />
-                      <button type="button" onClick={() => removeItem(i)} aria-label="Remover" className="p-1 text-danger"><X className="w-3 h-3" /></button>
+                      <input
+                        type="number"
+                        min="1"
+                        value={item.qty}
+                        onChange={(e) => updateItem(i, "qty", e.target.value)}
+                        className="w-16 h-9 px-2 border border-line rounded-lg text-xs text-ink bg-paper"
+                      />
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={item.price}
+                        onChange={(e) => updateItem(i, "price", e.target.value)}
+                        className="w-24 h-9 px-2 border border-line rounded-lg text-xs text-ink bg-paper"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeItem(i)}
+                        aria-label="Remover"
+                        className="p-1 text-danger"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
                     </div>
                   ))}
                 </div>
@@ -587,7 +793,7 @@ export default function PedidosPage() {
           </Modal>
         )}
       </div>
-        {dialog}
+      {dialog}
     </AppShell>
   )
 }

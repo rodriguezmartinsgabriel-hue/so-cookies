@@ -29,18 +29,32 @@ export default function IndicadoresPage() {
 
   const lowStockItems = ingredients.data.filter((i: Ingredient) => (i.stockKg || 0) <= (i.minStockKg || 0))
   const totalRevenue = sales.data.reduce((sum: number, s: Sale) => sum + (s.total || 0), 0)
-  const totalCost = sales.data.reduce((sum: number, s: Sale) => sum + (s.items || []).reduce((acc: number, it: SaleItem) => acc + (it.product?.cost || 0) * it.qty, 0), 0)
+  const totalCost = sales.data.reduce(
+    (sum: number, s: Sale) =>
+      sum + (s.items || []).reduce((acc: number, it: SaleItem) => acc + (it.product?.cost || 0) * it.qty, 0),
+    0,
+  )
   const profit = totalRevenue - totalCost
   const margin = totalRevenue > 0 ? (profit / totalRevenue) * 100 : 0
   const avgTicket = sales.data.length > 0 ? totalRevenue / sales.data.length : 0
   const activeProducts = products.data.filter((p: Product) => p.active)
 
   const kpis = [
-    { icon: DollarSign, label: "Receita", value: `R$ ${totalRevenue.toFixed(0)}`, sub: `${sales.data.length} venda(s) registrada(s)` },
+    {
+      icon: DollarSign,
+      label: "Receita",
+      value: `R$ ${totalRevenue.toFixed(0)}`,
+      sub: `${sales.data.length} venda(s) registrada(s)`,
+    },
     { icon: Wallet, label: "Lucro Estimado", value: `R$ ${profit.toFixed(0)}`, sub: "receita − custo dos produtos" },
     { icon: Percent, label: "Margem", value: `${margin.toFixed(1)}%`, sub: "sobre a receita total" },
     { icon: TrendingUp, label: "Ticket Médio", value: `R$ ${avgTicket.toFixed(2)}`, sub: "receita ÷ nº de vendas" },
-    { icon: Package, label: "Sabores Ativos", value: String(activeProducts.length), sub: activeProducts.map((p: Product) => p.name).join(", ") || "Nenhum produto cadastrado" },
+    {
+      icon: Package,
+      label: "Sabores Ativos",
+      value: String(activeProducts.length),
+      sub: activeProducts.map((p: Product) => p.name).join(", ") || "Nenhum produto cadastrado",
+    },
   ]
 
   function fmtMoney(value: number): string {
@@ -77,7 +91,12 @@ export default function IndicadoresPage() {
       {
         title: "Margens por produto",
         headers: ["Produto", "Preço", "Custo", "Margem"],
-        rows: activeProducts.map((p: Product) => [p.name, fmtMoney(p.price || 0), fmtMoney(p.cost || 0), `${(p.margin || 0).toFixed(1).replace(".", ",")}%`]),
+        rows: activeProducts.map((p: Product) => [
+          p.name,
+          fmtMoney(p.price || 0),
+          fmtMoney(p.cost || 0),
+          `${(p.margin || 0).toFixed(1).replace(".", ",")}%`,
+        ]),
       },
     ]
     downloadCsv(`indicadores-${fileStamp(new Date())}.csv`, csvFromSections(sections))
@@ -89,24 +108,15 @@ export default function IndicadoresPage() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h1 className="text-2xl font-bold text-ink">Indicadores</h1>
-            <p className="text-sm text-muted">
-              Análise baseada nos dados reais do negócio
-            </p>
+            <p className="text-sm text-muted">Análise baseada nos dados reais do negócio</p>
           </div>
-          <Button
-            onClick={handleExportCsv}
-            variant="ghost"
-            size="sm"
-            className="bg-ink/10 hover:bg-ink/20"
-          >
+          <Button onClick={handleExportCsv} variant="ghost" size="sm" className="bg-ink/10 hover:bg-ink/20">
             <FileSpreadsheet className="w-4 h-4" />
             Exportar Planilha
           </Button>
         </div>
 
-        {error && (
-          <ErrorState message={error} onRetry={retryAll} />
-        )}
+        {error && <ErrorState message={error} onRetry={retryAll} />}
 
         {loading ? (
           <div className="space-y-4">
@@ -168,28 +178,34 @@ export default function IndicadoresPage() {
             )}
 
             <Card className="p-4">
-              <h2 className="text-sm font-semibold text-ink uppercase tracking-wide mb-3">
-                Custos por Receita
-              </h2>
+              <h2 className="text-sm font-semibold text-ink uppercase tracking-wide mb-3">Custos por Receita</h2>
               <div className="space-y-2">
-                {recipes.data.length > 0 ? recipes.data.map((r: Recipe) => (
-                  <div key={r.id} className="flex items-center justify-between p-2 rounded-lg hover:bg-cream transition-colors">
-                    <span className="text-sm text-ink">{r.name}</span>
-                    <div className="flex items-center gap-3">
-                      <span className="text-xs text-muted">Rende {r.yield}{r.yieldUnit}</span>
-                      <span className="text-sm font-semibold text-ink">R$ {(r.yield > 0 ? r.totalCost / r.yield : 0).toFixed(3)}/un</span>
+                {recipes.data.length > 0 ? (
+                  recipes.data.map((r: Recipe) => (
+                    <div
+                      key={r.id}
+                      className="flex items-center justify-between p-2 rounded-lg hover:bg-cream transition-colors"
+                    >
+                      <span className="text-sm text-ink">{r.name}</span>
+                      <div className="flex items-center gap-3">
+                        <span className="text-xs text-muted">
+                          Rende {r.yield}
+                          {r.yieldUnit}
+                        </span>
+                        <span className="text-sm font-semibold text-ink">
+                          R$ {(r.yield > 0 ? r.totalCost / r.yield : 0).toFixed(3)}/un
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                )) : (
+                  ))
+                ) : (
                   <p className="text-sm text-muted text-center py-4">Nenhuma receita cadastrada</p>
                 )}
               </div>
             </Card>
 
             <Card className="p-4">
-              <h2 className="text-sm font-semibold text-ink uppercase tracking-wide mb-3">
-                Margens por Produto
-              </h2>
+              <h2 className="text-sm font-semibold text-ink uppercase tracking-wide mb-3">Margens por Produto</h2>
               <Table>
                 <THead>
                   <Tr>
@@ -200,15 +216,21 @@ export default function IndicadoresPage() {
                   </Tr>
                 </THead>
                 <TBody>
-                  {activeProducts.length > 0 ? activeProducts.map((p: Product) => (
-                    <Tr key={p.id}>
-                      <Td className="font-medium">{p.name}</Td>
-                      <Td className="text-right">R$ {(p.price || 0).toFixed(2)}</Td>
-                      <Td className="text-right text-muted">R$ {(p.cost || 0).toFixed(3)}</Td>
-                      <Td className="text-right text-success font-medium">{(p.margin || 0).toFixed(1)}%</Td>
+                  {activeProducts.length > 0 ? (
+                    activeProducts.map((p: Product) => (
+                      <Tr key={p.id}>
+                        <Td className="font-medium">{p.name}</Td>
+                        <Td className="text-right">R$ {(p.price || 0).toFixed(2)}</Td>
+                        <Td className="text-right text-muted">R$ {(p.cost || 0).toFixed(3)}</Td>
+                        <Td className="text-right text-success font-medium">{(p.margin || 0).toFixed(1)}%</Td>
+                      </Tr>
+                    ))
+                  ) : (
+                    <Tr>
+                      <Td colSpan={4} className="text-center py-4 text-muted">
+                        Nenhum produto cadastrado
+                      </Td>
                     </Tr>
-                  )) : (
-                    <Tr><Td colSpan={4} className="text-center py-4 text-muted">Nenhum produto cadastrado</Td></Tr>
                   )}
                 </TBody>
               </Table>

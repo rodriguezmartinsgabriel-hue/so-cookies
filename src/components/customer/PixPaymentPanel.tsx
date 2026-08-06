@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import Image from "next/image"
 import { Check, CheckCircle2, Clock, Copy, QrCode, RefreshCw, AlertTriangle } from "lucide-react"
 import { Card } from "@/components/ui/Card"
 import { Button } from "@/components/ui/Button"
@@ -35,11 +36,7 @@ export function PixPaymentPanel({
 
   const expiredByTimer = countdown === "Prazo encerrado"
   const paid = order.paymentStatus === "PAGO"
-  const expired = order.paymentStatus === "EXPIRADO" || expiredByTimer
-  const active =
-    order.paymentStatus === "AGUARDANDO_PAGAMENTO" &&
-    Boolean(order.paymentQrCode) &&
-    !expiredByTimer
+  const active = order.paymentStatus === "AGUARDANDO_PAGAMENTO" && Boolean(order.paymentQrCode) && !expiredByTimer
 
   async function handleCopy() {
     const value = order.paymentQrCode
@@ -110,9 +107,12 @@ export function PixPaymentPanel({
 
           {order.paymentQrCodeBase64 ? (
             <div className="bg-white rounded-xl p-3 mx-auto w-fit">
-              <img
+              <Image
                 src={`data:image/png;base64,${order.paymentQrCodeBase64}`}
                 alt="QR Code PIX"
+                width={208}
+                height={208}
+                unoptimized
                 className="w-52 h-52 rounded-lg"
               />
             </div>
@@ -132,7 +132,9 @@ export function PixPaymentPanel({
         <div className="p-4 space-y-3">
           <p className="text-xs font-semibold text-muted uppercase tracking-wide">PIX copia e cola</p>
           <div className="rounded-lg border border-line bg-cream/40 p-3">
-            <code className="block text-xs text-ink break-all select-all whitespace-pre-wrap">{order.paymentQrCode}</code>
+            <code className="block text-xs text-ink break-all select-all whitespace-pre-wrap">
+              {order.paymentQrCode}
+            </code>
           </div>
           <Button variant="secondary" size="lg" className="w-full min-h-12" onClick={handleCopy}>
             {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
@@ -140,7 +142,9 @@ export function PixPaymentPanel({
           </Button>
           <div className="flex items-center gap-1.5 text-xs text-muted">
             <Clock className="w-3 h-3" />
-            <span>Expira em <CountdownLabel target={order.paymentExpiresAt} className="font-semibold text-ink" /></span>
+            <span>
+              Expira em <CountdownLabel target={order.paymentExpiresAt} className="font-semibold text-ink" />
+            </span>
           </div>
         </div>
       </Card>

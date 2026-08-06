@@ -4,10 +4,7 @@ import { updateAccount, deleteAccount } from "@/lib/integrations/accounts"
 import { accountUpdateSchema } from "@/lib/integrations/validation"
 import { getZodIssues } from "@/lib/validation"
 
-export async function PATCH(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> },
-) {
+export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { error } = await requireAuth(request, "ADMIN")
   if (error) return error
   try {
@@ -31,10 +28,7 @@ export async function PATCH(
   }
 }
 
-export async function DELETE(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> },
-) {
+export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { error } = await requireAuth(request, "ADMIN")
   if (error) return error
   try {

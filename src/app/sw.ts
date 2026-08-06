@@ -20,9 +20,7 @@ const serwist = new Serwist({
   navigationPreload: true,
   runtimeCaching: [
     {
-      matcher: ({ request, url }) =>
-        request.method === "GET" &&
-        url.pathname.startsWith("/icons/"),
+      matcher: ({ request, url }) => request.method === "GET" && url.pathname.startsWith("/icons/"),
       handler: new NetworkFirst({
         cacheName: `icons-${CACHE_VERSION}`,
         plugins: [

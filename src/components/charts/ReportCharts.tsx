@@ -1,17 +1,6 @@
 "use client"
 
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-} from "recharts"
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts"
 
 type ChartProps = {
   salesPerDay: { name: string; total: number }[]
@@ -23,9 +12,7 @@ export default function ReportCharts({ salesPerDay, channelData, statusData }: C
   return (
     <>
       <div className="border border-line rounded-lg bg-paper p-4 shadow-card">
-        <h2 className="text-sm font-semibold text-ink uppercase tracking-wide mb-4">
-          Vendas por Dia
-        </h2>
+        <h2 className="text-sm font-semibold text-ink uppercase tracking-wide mb-4">Vendas por Dia</h2>
         {salesPerDay.length > 0 && salesPerDay.some((d) => d.total > 0) ? (
           <div className="h-56">
             <ResponsiveContainer width="100%" height="100%">
@@ -34,7 +21,10 @@ export default function ReportCharts({ salesPerDay, channelData, statusData }: C
                 <XAxis dataKey="name" tick={{ fontSize: 10, fill: "var(--muted)" }} tickLine={false} />
                 <YAxis tick={{ fontSize: 10, fill: "var(--muted)" }} tickLine={false} width={54} />
                 <Tooltip
-                  formatter={(value) => [`R$ ${Number(value).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`, "Receita"]}
+                  formatter={(value) => [
+                    `R$ ${Number(value).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`,
+                    "Receita",
+                  ]}
                   labelStyle={{ color: "var(--ink)" }}
                   contentStyle={{
                     background: "var(--paper)",
@@ -54,9 +44,7 @@ export default function ReportCharts({ salesPerDay, channelData, statusData }: C
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className="border border-line rounded-lg bg-paper p-4 shadow-card">
-          <h2 className="text-sm font-semibold text-ink uppercase tracking-wide mb-4">
-            Vendas por Canal
-          </h2>
+          <h2 className="text-sm font-semibold text-ink uppercase tracking-wide mb-4">Vendas por Canal</h2>
           {channelData.length > 0 ? (
             <div className="h-48">
               <ResponsiveContainer width="100%" height="100%">
@@ -84,9 +72,7 @@ export default function ReportCharts({ salesPerDay, channelData, statusData }: C
         </div>
 
         <div className="border border-line rounded-lg bg-paper p-4 shadow-card">
-          <h2 className="text-sm font-semibold text-ink uppercase tracking-wide mb-4">
-            Pedidos por Status
-          </h2>
+          <h2 className="text-sm font-semibold text-ink uppercase tracking-wide mb-4">Pedidos por Status</h2>
           {statusData.length > 0 ? (
             <div className="space-y-2">
               {statusData.map((item) => (

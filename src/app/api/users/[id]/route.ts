@@ -4,10 +4,7 @@ import { requireAuth } from "@/lib/api-auth"
 import { getUserById, updateUser, deleteUser, isNotFoundError, isConstraintError } from "@/lib/db"
 import { updateUserSchema, getZodIssues } from "@/lib/validation"
 
-export async function PATCH(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { error } = await requireAuth(request, "ADMIN")
   if (error) return error
   try {
@@ -30,10 +27,7 @@ export async function PATCH(
   }
 }
 
-export async function DELETE(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { error, session } = await requireAuth(request, "ADMIN")
   if (error) return error
   try {
@@ -47,7 +41,11 @@ export async function DELETE(
     return NextResponse.json({ ok: true })
   } catch (e) {
     if (isNotFoundError(e)) return NextResponse.json({ error: "Não encontrado" }, { status: 404 })
-    if (isConstraintError(e)) return NextResponse.json({ error: "Usuário possui registros associados (vendas, caixa ou documentos) e não pode ser excluído" }, { status: 409 })
+    if (isConstraintError(e))
+      return NextResponse.json(
+        { error: "Usuário possui registros associados (vendas, caixa ou documentos) e não pode ser excluído" },
+        { status: 409 },
+      )
     return NextResponse.json({ error: "Erro ao excluir usuário" }, { status: 500 })
   }
 }

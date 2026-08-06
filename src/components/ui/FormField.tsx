@@ -1,25 +1,17 @@
-import type { ReactNode } from "react";
-import { cn } from "@/lib/utils";
+import type { ReactNode } from "react"
+import { cn } from "@/lib/utils"
 
 type FormFieldProps = {
-  label?: string;
-  htmlFor?: string;
-  hint?: string;
-  error?: string;
-  required?: boolean;
-  children: ReactNode;
-  className?: string;
-};
+  label?: string
+  htmlFor?: string
+  hint?: string
+  error?: string
+  required?: boolean
+  children: ReactNode
+  className?: string
+}
 
-export function FormField({
-  label,
-  htmlFor,
-  hint,
-  error,
-  required,
-  children,
-  className,
-}: FormFieldProps) {
+export function FormField({ label, htmlFor, hint, error, required, children, className }: FormFieldProps) {
   return (
     <div className={cn("space-y-1.5", className)}>
       {label && (
@@ -32,5 +24,5 @@ export function FormField({
       {hint && !error && <p className="text-xs text-muted">{hint}</p>}
       {error && <p className="text-xs text-danger">{error}</p>}
     </div>
-  );
+  )
 }

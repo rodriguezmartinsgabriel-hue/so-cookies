@@ -1,14 +1,11 @@
-import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-import { requireAuth } from "@/lib/api-auth";
-import { isNotFoundError } from "@/lib/db";
-import { recordSyncDelete } from "@/lib/sync-deletes";
-import { updatePriceTierSchema, getZodIssues } from "@/lib/validation";
+import { NextResponse } from "next/server"
+import { prisma } from "@/lib/prisma"
+import { requireAuth } from "@/lib/api-auth"
+import { isNotFoundError } from "@/lib/db"
+import { recordSyncDelete } from "@/lib/sync-deletes"
+import { updatePriceTierSchema, getZodIssues } from "@/lib/validation"
 
-export async function PUT(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { error } = await requireAuth(request, "ADMIN")
   if (error) return error
   try {
@@ -24,10 +21,7 @@ export async function PUT(
   }
 }
 
-export async function DELETE(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { error } = await requireAuth(request, "ADMIN")
   if (error) return error
   try {

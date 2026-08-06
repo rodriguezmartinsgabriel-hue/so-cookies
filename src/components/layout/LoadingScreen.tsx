@@ -5,12 +5,34 @@ import { usePathname } from "next/navigation"
 
 const SPLASH_KEY = "splash-shown"
 
-const CLIENT_ROUTES = ["/", "/cardapio", "/carrinho", "/entrar", "/cadastro", "/perfil", "/pedido", "/pedidos", "/vendas", "/contatos", "/estoque", "/produtos", "/receitas", "/canais", "/caixa", "/delivery", "/rotas", "/integracoes", "/producao", "/documentos", "/relatorios", "/usuarios", "/indicadores"]
+const CLIENT_ROUTES = [
+  "/",
+  "/cardapio",
+  "/carrinho",
+  "/entrar",
+  "/cadastro",
+  "/perfil",
+  "/pedido",
+  "/pedidos",
+  "/vendas",
+  "/contatos",
+  "/estoque",
+  "/produtos",
+  "/receitas",
+  "/canais",
+  "/caixa",
+  "/delivery",
+  "/rotas",
+  "/integracoes",
+  "/producao",
+  "/documentos",
+  "/relatorios",
+  "/usuarios",
+  "/indicadores",
+]
 
 function isClientRoute(pathname: string) {
-  return CLIENT_ROUTES.some(
-    (route) => pathname === route || pathname.startsWith(route + "/"),
-  )
+  return CLIENT_ROUTES.some((route) => pathname === route || pathname.startsWith(route + "/"))
 }
 
 function markSplashShown() {

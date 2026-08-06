@@ -67,8 +67,14 @@ export function loadImageFromFile(file: File): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const url = URL.createObjectURL(file)
     const img = new Image()
-    img.onload = () => { URL.revokeObjectURL(url); resolve(img) }
-    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("Falha ao carregar imagem")) }
+    img.onload = () => {
+      URL.revokeObjectURL(url)
+      resolve(img)
+    }
+    img.onerror = () => {
+      URL.revokeObjectURL(url)
+      reject(new Error("Falha ao carregar imagem"))
+    }
     img.src = url
   })
 }
@@ -91,7 +97,7 @@ export async function compressImage(file: File, maxDim = 900, quality = 0.82, fo
   if (!ctx) throw new Error("Canvas não suportado")
   ctx.drawImage(source, 0, 0, canvas.width, canvas.height)
   if ("close" in source && typeof (source as ImageBitmap).close === "function") {
-    (source as ImageBitmap).close()
+    ;(source as ImageBitmap).close()
   }
   const isPng = !forceJpeg && file.type === "image/png"
   return canvas.toDataURL(isPng ? "image/png" : "image/jpeg", isPng ? undefined : quality)
@@ -112,7 +118,7 @@ export async function compressImageToFit(file: File): Promise<string> {
     if (dataUrlSize(jpeg) <= MAX_SYNC_BASE64) return jpeg
   }
   throw new Error(
-    `Imagem grande demais para sincronizar. Reduza a resolução ou use uma versão menor (máx. ${formatBytes(MAX_IMAGE_UPLOAD)}).`
+    `Imagem grande demais para sincronizar. Reduza a resolução ou use uma versão menor (máx. ${formatBytes(MAX_IMAGE_UPLOAD)}).`,
   )
 }
 

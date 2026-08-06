@@ -1,17 +1,17 @@
-import { type ClassValue, clsx } from "clsx";
-import { type ProductNutrition, computeProductNutrition } from "./recipe-nutrition";
+import { type ClassValue, clsx } from "clsx"
+import { type ProductNutrition, computeProductNutrition } from "./recipe-nutrition"
 
 export function cn(...inputs: ClassValue[]) {
-  return clsx(inputs);
+  return clsx(inputs)
 }
 
 export function parseCurrencyPtBr(value: string): number {
-  let s = value.replace(/[^\d,.-]/g, "");
+  let s = value.replace(/[^\d,.-]/g, "")
   if (s.includes(",")) {
-    s = s.replace(/\./g, "").replace(",", ".");
+    s = s.replace(/\./g, "").replace(",", ".")
   }
-  const n = parseFloat(s);
-  return Number.isFinite(n) ? n : NaN;
+  const n = parseFloat(s)
+  return Number.isFinite(n) ? n : NaN
 }
 
 export function computeMargin(price: number, cost: number): number {

@@ -28,11 +28,7 @@ export function CustomerShell({
   if (isAuthPage) {
     return (
       <div className="min-h-dvh">
-        <GlassSurface
-          as="header"
-          tone="strong"
-          className="sticky top-0 z-40 rounded-none border-0 w-full"
-        >
+        <GlassSurface as="header" tone="strong" className="sticky top-0 z-40 rounded-none border-0 w-full">
           <div className="max-w-md mx-auto px-4 pt-[calc(env(safe-area-inset-top,0px)+0.75rem)] pb-3 flex items-center justify-between min-h-14">
             <Link href="/cardapio" className="font-bold text-ink truncate">
               Só Cookies & Café
@@ -78,9 +74,7 @@ export function CustomerShell({
 
       <main className="max-w-md mx-auto px-4 py-4 pb-[calc(5rem+env(safe-area-inset-bottom))]">{children}</main>
 
-      {showCartBar && cartCount > 0 && (
-        <CartFloatingBar total={cartTotal} itemCount={cartCount} />
-      )}
+      {showCartBar && cartCount > 0 && <CartFloatingBar total={cartTotal} itemCount={cartCount} />}
 
       <InstallPrompt />
 
@@ -91,7 +85,14 @@ export function CustomerShell({
         >
           <div className="w-full max-w-md px-2 pb-[env(safe-area-inset-bottom,0px)] pt-2 flex items-center justify-around h-16">
             <NavLink href="/cardapio" label="Cardápio" icon={LayoutGrid} pathname={pathname} haptic={haptic} />
-            <NavLink href="/carrinho" label="Carrinho" icon={ShoppingBag} pathname={pathname} badge={cartCount} haptic={haptic} />
+            <NavLink
+              href="/carrinho"
+              label="Carrinho"
+              icon={ShoppingBag}
+              pathname={pathname}
+              badge={cartCount}
+              haptic={haptic}
+            />
             <NavLink href="/perfil" label="Conta" icon={User} pathname={pathname} haptic={haptic} />
           </div>
         </GlassSurface>
@@ -131,20 +132,19 @@ function NavLink({
         }`}
         onClick={() => haptic.tap()}
       >
-      {badge > 0 && (
-        <motion.span
-          key={badge}
-          initial={{ scale: 0 }}
-          animate={{ scale: 1 }}
-          className="absolute top-1 right-2 min-w-4 h-4 px-1 rounded-full bg-accent text-paper text-[10px] font-bold flex items-center justify-center"
-        >
-          {badge}
-        </motion.span>
-      )}
-      <Icon className="w-5 h-5" strokeWidth={1.5} />
-              <span className="text-xs font-medium leading-none">{label}</span>
-    </Link>
+        {badge > 0 && (
+          <motion.span
+            key={badge}
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            className="absolute top-1 right-2 min-w-4 h-4 px-1 rounded-full bg-accent text-paper text-[10px] font-bold flex items-center justify-center"
+          >
+            {badge}
+          </motion.span>
+        )}
+        <Icon className="w-5 h-5" strokeWidth={1.5} />
+        <span className="text-xs font-medium leading-none">{label}</span>
+      </Link>
     </motion.div>
   )
 }
-

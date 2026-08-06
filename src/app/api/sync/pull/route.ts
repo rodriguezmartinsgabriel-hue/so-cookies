@@ -18,7 +18,22 @@ export async function POST(request: Request) {
 
     const serverTime = new Date().toISOString()
 
-    const [orders, sales, cashFlow, productions, products, ingredients, recipes, documents, deliveryCosts, contacts, contactInteractions, priceTiers, deletions, channels] = await Promise.all([
+    const [
+      orders,
+      sales,
+      cashFlow,
+      productions,
+      products,
+      ingredients,
+      recipes,
+      documents,
+      deliveryCosts,
+      contacts,
+      contactInteractions,
+      priceTiers,
+      deletions,
+      channels,
+    ] = await Promise.all([
       prisma.order.findMany({
         where: { updatedAt: { gt: sinceDate } },
         include: { items: { include: { product: { select: { id: true, name: true } } } } },
@@ -66,7 +81,23 @@ export async function POST(request: Request) {
       prisma.saleChannel.findMany({}),
     ])
 
-    const data = { orders, sales, cashFlow, productions, products, ingredients, recipes, documents, deliveryCosts, contacts, contactInteractions, priceTiers, deletions, channels, serverTime }
+    const data = {
+      orders,
+      sales,
+      cashFlow,
+      productions,
+      products,
+      ingredients,
+      recipes,
+      documents,
+      deliveryCosts,
+      contacts,
+      contactInteractions,
+      priceTiers,
+      deletions,
+      channels,
+      serverTime,
+    }
 
     return NextResponse.json(data)
   } catch {

@@ -15,7 +15,15 @@ export async function upsertOrder(input: {
 }) {
   const existing = await prisma.order.findUnique({
     where: { platform_externalId: { platform: input.platform, externalId: input.externalId } },
-    select: { id: true, customer: true, notes: true, deliveryAddress: true, customerPhone: true, platformFee: true, confirmBy: true },
+    select: {
+      id: true,
+      customer: true,
+      notes: true,
+      deliveryAddress: true,
+      customerPhone: true,
+      platformFee: true,
+      confirmBy: true,
+    },
   })
 
   const isPending = input.internalStatus === "PENDENTE"
@@ -31,7 +39,7 @@ export async function upsertOrder(input: {
         deliveryAddress: input.order.deliveryAddress ?? existing.deliveryAddress,
         platformFee: input.order.platformFee ?? existing.platformFee,
         notes: input.order.notes ?? existing.notes,
-        confirmBy: isPending ? existing.confirmBy ?? confirmDeadline() : null,
+        confirmBy: isPending ? (existing.confirmBy ?? confirmDeadline()) : null,
         updatedAt: new Date(),
       },
     })

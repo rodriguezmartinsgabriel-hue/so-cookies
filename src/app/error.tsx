@@ -2,13 +2,7 @@
 
 import { Button } from "@/components/ui/Button"
 
-export default function ErrorPage({
-  error,
-  reset,
-}: {
-  error: Error & { digest?: string }
-  reset: () => void
-}) {
+export default function ErrorPage({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
   return (
     <main className="flex min-h-screen flex-col items-center justify-center px-4 py-20">
       <div className="max-w-md text-center">

@@ -1,27 +1,27 @@
-"use client";
+"use client"
 
-import { useSession, signOut } from "next-auth/react";
-import { useRouter, usePathname } from "next/navigation";
-import { useEffect, useRef } from "react";
-import { Sidebar } from "./Sidebar";
-import { BottomNav } from "./BottomNav";
-import { Header } from "./Header";
-import { OfflineBanner } from "@/components/pwa/OfflineBanner";
-import { PullToRefresh } from "@/components/ui/PullToRefresh";
-import { emitDataRefresh } from "@/lib/refresh-events";
-import { clearSWCaches } from "@/lib/sw";
+import { useSession, signOut } from "next-auth/react"
+import { useRouter, usePathname } from "next/navigation"
+import { useEffect, useRef } from "react"
+import { Sidebar } from "./Sidebar"
+import { BottomNav } from "./BottomNav"
+import { Header } from "./Header"
+import { OfflineBanner } from "@/components/pwa/OfflineBanner"
+import { PullToRefresh } from "@/components/ui/PullToRefresh"
+import { emitDataRefresh } from "@/lib/refresh-events"
+import { clearSWCaches } from "@/lib/sw"
 
 export function AppShell({ children }: { children: React.ReactNode }) {
-  const { data: session, status } = useSession();
-  const router = useRouter();
-  const pathname = usePathname();
-  const mainRef = useRef<HTMLElement>(null);
+  const { data: session, status } = useSession()
+  const router = useRouter()
+  const pathname = usePathname()
+  const mainRef = useRef<HTMLElement>(null)
 
   useEffect(() => {
     if (status === "unauthenticated" && pathname !== "/login") {
-      router.push("/login");
+      router.push("/login")
     }
-  }, [status, pathname, router]);
+  }, [status, pathname, router])
 
   if (status === "loading") {
     return (
@@ -31,11 +31,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <p className="text-muted text-sm mt-2">Carregando...</p>
         </div>
       </div>
-    );
+    )
   }
 
   if (status === "unauthenticated" && pathname !== "/login") {
-    return null;
+    return null
   }
 
   const handleLogout = async () => {
@@ -64,5 +64,5 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </div>
       <BottomNav />
     </div>
-  );
+  )
 }

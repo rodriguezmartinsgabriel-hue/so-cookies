@@ -18,7 +18,7 @@ import type { SaleChannel } from "@/lib/entity-types"
 import { Plus, Edit, Trash2, Store } from "lucide-react"
 
 export default function CanaisPage() {
-  const { canEdit } = useRole();
+  const { canEdit } = useRole()
   const { confirm, dialog } = useConfirm()
   const { data: channels, isLoading: loading, error: channelsError, invalidate } = useQueryData("channels")
   const error = channelsError ? "Erro ao carregar canais" : null
@@ -68,33 +68,54 @@ export default function CanaisPage() {
             <p className="text-sm text-muted">{channels.length} canais cadastrados</p>
           </div>
           {canEdit && (
-            <Button onClick={() => { resetForm(); setShowModal(true); }}>
+            <Button
+              onClick={() => {
+                resetForm()
+                setShowModal(true)
+              }}
+            >
               <Plus className="w-4 h-4" />
               Novo Canal
             </Button>
           )}
         </div>
 
-        {error && (
-          <ErrorState message={error} onRetry={invalidate} />
-        )}
+        {error && <ErrorState message={error} onRetry={invalidate} />}
 
         {loading ? (
           <Card padded={false} className="overflow-hidden">
             <Table>
               <THead>
                 <Tr>
-                  <Th><Skeleton className="h-3 w-20" /></Th>
-                  <Th className="text-right"><Skeleton className="h-3 w-16 ml-auto" /></Th>
-                  <Th className="text-center"><Skeleton className="h-3 w-12 mx-auto" /></Th>
+                  <Th>
+                    <Skeleton className="h-3 w-20" />
+                  </Th>
+                  <Th className="text-right">
+                    <Skeleton className="h-3 w-16 ml-auto" />
+                  </Th>
+                  <Th className="text-center">
+                    <Skeleton className="h-3 w-12 mx-auto" />
+                  </Th>
                 </Tr>
               </THead>
               <TBody>
                 {Array.from({ length: 3 }).map((_, i) => (
                   <Tr key={i}>
-                    <Td><div className="flex items-center gap-3"><Skeleton className="h-8 w-8 rounded-lg" /><Skeleton className="h-4 w-24" /></div></Td>
-                    <Td className="text-right"><Skeleton className="h-4 w-12 ml-auto" /></Td>
-                    <Td className="text-center"><div className="flex justify-center gap-1"><Skeleton className="h-7 w-7" /><Skeleton className="h-7 w-7" /></div></Td>
+                    <Td>
+                      <div className="flex items-center gap-3">
+                        <Skeleton className="h-8 w-8 rounded-lg" />
+                        <Skeleton className="h-4 w-24" />
+                      </div>
+                    </Td>
+                    <Td className="text-right">
+                      <Skeleton className="h-4 w-12 ml-auto" />
+                    </Td>
+                    <Td className="text-center">
+                      <div className="flex justify-center gap-1">
+                        <Skeleton className="h-7 w-7" />
+                        <Skeleton className="h-7 w-7" />
+                      </div>
+                    </Td>
                   </Tr>
                 ))}
               </TBody>
@@ -125,15 +146,22 @@ export default function CanaisPage() {
                         <span className="text-sm font-medium text-ink">{ch.name}</span>
                       </div>
                     </Td>
-                    <Td className="text-right">
-                      {ch.commission > 0 ? `${(ch.commission * 100).toFixed(0)}%` : "—"}
-                    </Td>
+                    <Td className="text-right">{ch.commission > 0 ? `${(ch.commission * 100).toFixed(0)}%` : "—"}</Td>
                     <Td className="text-center">
                       <div className="flex items-center justify-center gap-1">
                         {canEdit && (
                           <>
-                            <Button variant="ghost" size="icon" onClick={() => openEdit(ch)} aria-label="Editar"><Edit className="w-4 h-4" /></Button>
-                            <Button variant="ghost" size="icon" onClick={() => handleDelete(ch.id)} aria-label="Excluir"><Trash2 className="w-4 h-4 text-danger" /></Button>
+                            <Button variant="ghost" size="icon" onClick={() => openEdit(ch)} aria-label="Editar">
+                              <Edit className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleDelete(ch.id)}
+                              aria-label="Excluir"
+                            >
+                              <Trash2 className="w-4 h-4 text-danger" />
+                            </Button>
                           </>
                         )}
                       </div>
@@ -147,27 +175,56 @@ export default function CanaisPage() {
 
         <Modal
           open={showModal}
-          onClose={() => { setShowModal(false); resetForm(); }}
+          onClose={() => {
+            setShowModal(false)
+            resetForm()
+          }}
           title={editingItem ? "Editar Canal" : "Novo Canal"}
           size="md"
           footer={
             <div className="flex gap-2">
-              <Button variant="secondary" className="flex-1" onClick={() => { setShowModal(false); resetForm(); }}>Cancelar</Button>
-              <Button className="flex-1" onClick={handleSave}>Salvar</Button>
+              <Button
+                variant="secondary"
+                className="flex-1"
+                onClick={() => {
+                  setShowModal(false)
+                  resetForm()
+                }}
+              >
+                Cancelar
+              </Button>
+              <Button className="flex-1" onClick={handleSave}>
+                Salvar
+              </Button>
             </div>
           }
         >
           <div className="p-4 space-y-4">
             <FormField label="Nome" required htmlFor="canal-name">
-              <Input id="canal-name" type="text" placeholder="Ex: WhatsApp, iFood..." value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+              <Input
+                id="canal-name"
+                type="text"
+                placeholder="Ex: WhatsApp, iFood..."
+                value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+              />
             </FormField>
             <FormField label="Comissão (0-1)" htmlFor="canal-commission" hint="Ex: 0.23 = 23% de comissão">
-              <Input id="canal-commission" type="number" step="0.01" min="0" max="1" placeholder="0 = sem comissão" value={form.commission} onChange={(e) => setForm({ ...form, commission: e.target.value })} />
+              <Input
+                id="canal-commission"
+                type="number"
+                step="0.01"
+                min="0"
+                max="1"
+                placeholder="0 = sem comissão"
+                value={form.commission}
+                onChange={(e) => setForm({ ...form, commission: e.target.value })}
+              />
             </FormField>
           </div>
         </Modal>
       </div>
-        {dialog}
+      {dialog}
     </AppShell>
   )
 }

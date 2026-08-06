@@ -3,10 +3,7 @@ import { getSale, deleteSale, isNotFoundError } from "@/lib/db"
 import { requireAuth } from "@/lib/api-auth"
 import { recordSyncDelete } from "@/lib/sync-deletes"
 
-export async function GET(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { error } = await requireAuth(request)
   if (error) return error
   try {
@@ -19,10 +16,7 @@ export async function GET(
   }
 }
 
-export async function DELETE(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { error } = await requireAuth(request, "OPERACIONAL")
   if (error) return error
   try {

@@ -1,5 +1,19 @@
 import { describe, it, expect } from "vitest"
-import { createOrderSchema, createSaleSchema, createIngredientSchema, createCashFlowSchema, createRecipeSchema, updateRecipeSchema, createDocumentSchema, updateDocumentSchema, createProductionSchema, createPriceTierSchema, createProductSchema, updateCustomerProfileSchema, createCustomerOrderSchema } from "@/lib/validation"
+import {
+  createOrderSchema,
+  createSaleSchema,
+  createIngredientSchema,
+  createCashFlowSchema,
+  createRecipeSchema,
+  updateRecipeSchema,
+  createDocumentSchema,
+  updateDocumentSchema,
+  createProductionSchema,
+  createPriceTierSchema,
+  createProductSchema,
+  updateCustomerProfileSchema,
+  createCustomerOrderSchema,
+} from "@/lib/validation"
 
 describe("createOrderSchema", () => {
   it("accepts valid order", () => {
@@ -13,21 +27,25 @@ describe("createOrderSchema", () => {
   })
 
   it("rejects empty customer", () => {
-    expect(() => createOrderSchema.parse({
-      channel: "WhatsApp",
-      customer: "",
-      total: 50,
-      items: [{ productId: "p1", qty: 2, price: 25 }],
-    })).toThrow()
+    expect(() =>
+      createOrderSchema.parse({
+        channel: "WhatsApp",
+        customer: "",
+        total: 50,
+        items: [{ productId: "p1", qty: 2, price: 25 }],
+      }),
+    ).toThrow()
   })
 
   it("rejects empty items", () => {
-    expect(() => createOrderSchema.parse({
-      channel: "WhatsApp",
-      customer: "João",
-      total: 0,
-      items: [],
-    })).toThrow()
+    expect(() =>
+      createOrderSchema.parse({
+        channel: "WhatsApp",
+        customer: "João",
+        total: 0,
+        items: [],
+      }),
+    ).toThrow()
   })
 })
 
@@ -53,10 +71,12 @@ describe("createIngredientSchema", () => {
   })
 
   it("rejects missing name", () => {
-    expect(() => createIngredientSchema.parse({
-      costPerKg: 5,
-      supplier: "Fornecedor A",
-    })).toThrow()
+    expect(() =>
+      createIngredientSchema.parse({
+        costPerKg: 5,
+        supplier: "Fornecedor A",
+      }),
+    ).toThrow()
   })
 })
 
@@ -157,12 +177,14 @@ describe("createCashFlowSchema", () => {
   })
 
   it("rejects invalid type", () => {
-    expect(() => createCashFlowSchema.parse({
-      type: "INVALIDO",
-      category: "Vendas",
-      description: "teste",
-      amount: 100,
-    })).toThrow()
+    expect(() =>
+      createCashFlowSchema.parse({
+        type: "INVALIDO",
+        category: "Vendas",
+        description: "teste",
+        amount: 100,
+      }),
+    ).toThrow()
   })
 })
 
@@ -233,18 +255,22 @@ describe("createProductionSchema", () => {
   })
 
   it("rejects qty zero", () => {
-    expect(() => createProductionSchema.parse({
-      batchCode: "LOTE-20260724",
-      productId: "p1",
-      qty: 0,
-    })).toThrow()
+    expect(() =>
+      createProductionSchema.parse({
+        batchCode: "LOTE-20260724",
+        productId: "p1",
+        qty: 0,
+      }),
+    ).toThrow()
   })
 
   it("rejects missing product", () => {
-    expect(() => createProductionSchema.parse({
-      batchCode: "LOTE-20260724",
-      qty: 20,
-    })).toThrow()
+    expect(() =>
+      createProductionSchema.parse({
+        batchCode: "LOTE-20260724",
+        qty: 20,
+      }),
+    ).toThrow()
   })
 })
 
@@ -271,12 +297,14 @@ describe("createPriceTierSchema", () => {
   })
 
   it("rejects negative price", () => {
-    expect(() => createPriceTierSchema.parse({
-      productId: "p1",
-      name: "Assado",
-      minQty: 1,
-      price: -5,
-    })).toThrow()
+    expect(() =>
+      createPriceTierSchema.parse({
+        productId: "p1",
+        name: "Assado",
+        minQty: 1,
+        price: -5,
+      }),
+    ).toThrow()
   })
 })
 

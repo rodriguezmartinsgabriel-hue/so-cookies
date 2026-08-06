@@ -17,7 +17,7 @@ export function useFocusTrap(isActive: boolean) {
 
     function handleKeyDown(e: KeyboardEvent) {
       if (e.key === "Escape") {
-        const closeBtn = container.querySelector('[data-close-modal]') as HTMLElement
+        const closeBtn = container.querySelector("[data-close-modal]") as HTMLElement
         closeBtn?.click()
         return
       }

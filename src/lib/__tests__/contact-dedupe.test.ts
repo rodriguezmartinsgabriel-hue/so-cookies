@@ -14,7 +14,10 @@ function makeDb(existing: unknown | null): FakeDb {
     contact: {
       findFirst: vi.fn().mockResolvedValue(existing),
       create: vi.fn().mockResolvedValue({ id: "new-contact", ...(existing as object) }),
-      update: vi.fn().mockResolvedValue({ id: existing && typeof existing === "object" && "id" in existing ? (existing as { id: string }).id : "x", ...(existing as object) }),
+      update: vi.fn().mockResolvedValue({
+        id: existing && typeof existing === "object" && "id" in existing ? (existing as { id: string }).id : "x",
+        ...(existing as object),
+      }),
     },
   }
 }
@@ -71,7 +74,15 @@ describe("findOrCreateContact", () => {
   })
 
   it("preenche lacunas no contato existente via update", async () => {
-    const db = makeDb({ id: "c4", name: "Ana", email: "ana@teste.com", phone: null, company: null, notes: null, customerId: null })
+    const db = makeDb({
+      id: "c4",
+      name: "Ana",
+      email: "ana@teste.com",
+      phone: null,
+      company: null,
+      notes: null,
+      customerId: null,
+    })
     const result = await findOrCreateContact(db as unknown as never, {
       name: "Ana",
       email: "ana@teste.com",

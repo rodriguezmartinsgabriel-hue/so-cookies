@@ -42,10 +42,17 @@ export async function find99FoodAccountByMerchant(merchantId: string): Promise<A
   return accounts.find((a) => is99FoodCredentials(a.credentials) && a.credentials.appShoppId === merchantId) || null
 }
 
-export async function findIfoodAccountBySignature(rawBody: string, signature: string | null): Promise<AccountRecord | null> {
+export async function findIfoodAccountBySignature(
+  rawBody: string,
+  signature: string | null,
+): Promise<AccountRecord | null> {
   if (!signature) return null
   const accounts = await getEnabledAccounts("IFOOD")
-  return accounts.find((a) => !is99FoodCredentials(a.credentials) && verifyHmacSha256(rawBody, a.credentials.clientSecret, signature)) || null
+  return (
+    accounts.find(
+      (a) => !is99FoodCredentials(a.credentials) && verifyHmacSha256(rawBody, a.credentials.clientSecret, signature),
+    ) || null
+  )
 }
 
 export async function saveAccount(input: {

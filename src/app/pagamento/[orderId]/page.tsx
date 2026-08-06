@@ -120,9 +120,7 @@ export default function PagamentoPage({ params }: { params: Promise<{ id: string
 
         {loading && <div className="text-center py-12 text-muted">Carregando pagamento...</div>}
 
-        {!loading && notFound && (
-          <div className="text-center py-12 text-muted">Pedido não encontrado</div>
-        )}
+        {!loading && notFound && <div className="text-center py-12 text-muted">Pedido não encontrado</div>}
 
         {!loading && order && order.paymentStatus === null && (
           <div className="text-center py-12 text-muted">Pedido sem pagamento pendente</div>
@@ -142,7 +140,8 @@ export default function PagamentoPage({ params }: { params: Promise<{ id: string
                     </p>
                     {order.deliveryStreet && (
                       <p className="text-xs text-muted">
-                        {order.deliveryStreet}{order.deliveryNumber ? `, ${order.deliveryNumber}` : ""}
+                        {order.deliveryStreet}
+                        {order.deliveryNumber ? `, ${order.deliveryNumber}` : ""}
                         {order.deliveryNeighborhood ? ` · ${order.deliveryNeighborhood}` : ""}
                         {order.deliveryCity ? ` · ${order.deliveryCity}` : ""}
                         {order.deliveryState ? ` - ${order.deliveryState}` : ""}
@@ -154,9 +153,7 @@ export default function PagamentoPage({ params }: { params: Promise<{ id: string
                     <Store className="w-3 h-3" /> Retirada na loja · código {order.pickupCode ?? "—"}
                   </p>
                 )}
-                <p className="text-xs text-muted">
-                  {new Date(order.createdAt).toLocaleString("pt-BR")}
-                </p>
+                <p className="text-xs text-muted">{new Date(order.createdAt).toLocaleString("pt-BR")}</p>
               </div>
             </Card>
 

@@ -12,24 +12,24 @@ import { Input } from "@/components/ui/Input"
 import type { CatalogProduct } from "@/lib/utils"
 
 export default function CardapioPage() {
-   const router = useRouter()
-   const [products, setProducts] = useState<CatalogProduct[]>([])
-   const [loading, setLoading] = useState(true)
-   const [error, setError] = useState(false)
-   const [query, setQuery] = useState("")
-   const { items, addItem, setQty, count } = useCart()
-   const { result: pricingResult } = usePricing({ channel: "pickup" })
-   const [showBackToTop, setShowBackToTop] = useState(false)
-   const [expandedId, setExpandedId] = useState<string | null>(null)
-   const scrollRef = useRef<HTMLDivElement>(null)
+  const router = useRouter()
+  const [products, setProducts] = useState<CatalogProduct[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(false)
+  const [query, setQuery] = useState("")
+  const { items, addItem, setQty, count } = useCart()
+  const { result: pricingResult } = usePricing({ channel: "pickup" })
+  const [showBackToTop, setShowBackToTop] = useState(false)
+  const [expandedId, setExpandedId] = useState<string | null>(null)
+  const scrollRef = useRef<HTMLDivElement>(null)
 
-   useEffect(() => {
-     const ref = scrollRef.current
-     if (!ref) return
-     const handler = () => setShowBackToTop(ref.scrollTop > 400)
-     ref.addEventListener("scroll", handler, { passive: true })
-     return () => ref.removeEventListener("scroll", handler)
-   }, [])
+  useEffect(() => {
+    const ref = scrollRef.current
+    if (!ref) return
+    const handler = () => setShowBackToTop(ref.scrollTop > 400)
+    ref.addEventListener("scroll", handler, { passive: true })
+    return () => ref.removeEventListener("scroll", handler)
+  }, [])
 
   useEffect(() => {
     fetch("/api/public/catalog")
@@ -68,9 +68,7 @@ export default function CardapioPage() {
           [
             category,
             categoryItems.filter(
-              (p) =>
-                p.name.toLowerCase().includes(queryLower) ||
-                category.toLowerCase().includes(queryLower),
+              (p) => p.name.toLowerCase().includes(queryLower) || category.toLowerCase().includes(queryLower),
             ),
           ] as const,
       )
@@ -111,7 +109,7 @@ export default function CardapioPage() {
 
   return (
     <CustomerShell cartCount={count} cartTotal={cartTotal}>
-       <div className="space-y-4 cardapio-scroll" ref={scrollRef}>
+      <div className="space-y-4 cardapio-scroll" ref={scrollRef}>
         <div className="animate-fade-in-up">
           <h1 className="text-2xl font-bold text-ink">Cardápio</h1>
           <p className="text-sm text-muted">Escolha seus cookies — retirada na loja</p>
@@ -149,9 +147,7 @@ export default function CardapioPage() {
             ))}
           </div>
         )}
-        {error && (
-          <div className="text-center py-12 text-danger">Não foi possível carregar o cardápio</div>
-        )}
+        {error && <div className="text-center py-12 text-danger">Não foi possível carregar o cardápio</div>}
 
         {!loading &&
           !error &&
@@ -165,15 +161,15 @@ export default function CardapioPage() {
                   const staggerIndex = Math.min((categoryStart.get(category) ?? 0) + itemIndex, 10)
                   return (
                     <div key={p.id} style={{ ["--stagger" as string]: staggerIndex }}>
-                       <ProductCard
-                         product={p}
-                         qty={qtyMap.get(p.id) ?? 0}
-                         isExpanded={expandedId === p.id}
-                         onExpand={() => setExpandedId(p.id)}
-                         onCollapse={() => setExpandedId(null)}
-                         onAdd={() => addItem(p.id)}
-                         onSetQty={(q) => setQty(p.id, q)}
-                       />
+                      <ProductCard
+                        product={p}
+                        qty={qtyMap.get(p.id) ?? 0}
+                        isExpanded={expandedId === p.id}
+                        onExpand={() => setExpandedId(p.id)}
+                        onCollapse={() => setExpandedId(null)}
+                        onAdd={() => addItem(p.id)}
+                        onSetQty={(q) => setQty(p.id, q)}
+                      />
                     </div>
                   )
                 })}
@@ -190,25 +186,23 @@ export default function CardapioPage() {
         )}
 
         {!loading && !error && products.length > 0 && filtered.length === 0 && (
-           <div className="text-center py-12">
-             <p className="text-base font-semibold text-ink">Nada encontrado</p>
-             <p className="text-sm text-muted mt-1">
-               Não achamos nenhum item para &ldquo;{query.trim()}&rdquo;.
-             </p>
-           </div>
-         )}
+          <div className="text-center py-12">
+            <p className="text-base font-semibold text-ink">Nada encontrado</p>
+            <p className="text-sm text-muted mt-1">Não achamos nenhum item para &ldquo;{query.trim()}&rdquo;.</p>
+          </div>
+        )}
 
-         {showBackToTop && (
-           <button
-             type="button"
-             onClick={() => scrollRef.current?.scrollTo({ top: 0, behavior: "smooth" })}
-             className="fixed bottom-20 right-4 z-40 w-11 h-11 rounded-full bg-ink text-paper flex items-center justify-center shadow-lg hover:bg-ink/90 transition-colors"
-             aria-label="Voltar ao topo"
-           >
-             <ArrowUp className="w-5 h-5" />
-           </button>
-         )}
-       </div>
-     </CustomerShell>
+        {showBackToTop && (
+          <button
+            type="button"
+            onClick={() => scrollRef.current?.scrollTo({ top: 0, behavior: "smooth" })}
+            className="fixed bottom-20 right-4 z-40 w-11 h-11 rounded-full bg-ink text-paper flex items-center justify-center shadow-lg hover:bg-ink/90 transition-colors"
+            aria-label="Voltar ao topo"
+          >
+            <ArrowUp className="w-5 h-5" />
+          </button>
+        )}
+      </div>
+    </CustomerShell>
   )
 }
