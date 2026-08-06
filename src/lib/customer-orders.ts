@@ -5,6 +5,7 @@ import { buildPricingEngine } from "@so-cookies/pricing"
 import { PricingContext } from "@so-cookies/pricing"
 import { createOrderPayment } from "./payments/service"
 import { PaymentError } from "./payments/errors"
+import type { OrderStatus } from "@/generated/prisma/enums"
 
 const PICKUP_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
 
@@ -236,6 +237,7 @@ export async function updateCustomerOrder(
   customerId: string,
   orderId: string,
   input: {
+    status?: OrderStatus
     deliveryDate?: string | null
     deliveryRouteId?: string | null
     deliveryCep?: string | null
@@ -249,10 +251,21 @@ export async function updateCustomerOrder(
 ) {
   const existing = await prisma.order.findFirst({
     where: { id: orderId, customerId },
-    include: { items: { select: { qty: true } } },
+    include: { items: { select: { qty: true } }, paymentEvents: true },
   })
   if (!existing) throw new SlotError("NOT_FOUND", "Pedido não encontrado")
-  if (existing.status !== "PENDENTE") {
+
+  if (input.status !== undefined) {
+    const cancellableStatuses = ["PENDENTE", "CONFIRMADO"] as const
+    if (input.status === "CANCELADO" && !cancellableStatuses.includes(existing.status as typeof cancellableStatuses[number])) {
+      throw new SlotError("ORDER_LOCKED", "Este pedido não pode mais ser cancelado")
+    }
+    if (input.status !== "CANCELADO" && existing.status === "CANCELADO") {
+      throw new SlotError("ORDER_LOCKED", "Pedido já cancelado")
+    }
+  }
+
+  if (existing.status !== "PENDENTE" && input.status === undefined) {
     throw new SlotError("ORDER_LOCKED", "Este pedido já foi confirmado e não pode mais ter a data alterada")
   }
 
@@ -262,6 +275,10 @@ export async function updateCustomerOrder(
   const switchToPickup = input.deliveryDate === null || input.deliveryRouteId === null
 
   let data: Record<string, unknown> = {}
+
+  if (input.status !== undefined) {
+    data.status = input.status
+  }
 
   if (switchToDelivery) {
     await assertSlotAvailable({
@@ -282,6 +299,7 @@ export async function updateCustomerOrder(
       deliveryState: input.deliveryState ?? existing.deliveryState,
     }
     data = {
+      ...data,
       deliveryDate: new Date(`${input.deliveryDate}T00:00:00.000Z`),
       deliveryRouteId: route.id,
       deliveryZoneId: route.zoneId,
@@ -297,6 +315,7 @@ export async function updateCustomerOrder(
     }
   } else if (switchToPickup) {
     data = {
+      ...data,
       deliveryDate: null,
       deliveryRouteId: null,
       deliveryZoneId: null,
@@ -321,6 +340,7 @@ export async function updateCustomerOrder(
       deliveryState: input.deliveryState ?? existing.deliveryState,
     }
     data = {
+      ...data,
       deliveryCep: address.deliveryCep,
       deliveryStreet: address.deliveryStreet,
       deliveryNumber: address.deliveryNumber,
@@ -329,6 +349,18 @@ export async function updateCustomerOrder(
       deliveryCity: address.deliveryCity,
       deliveryState: address.deliveryState,
       deliveryAddress: formatDeliveryAddress(address),
+    }
+  }
+
+  if (input.status === "CANCELADO") {
+    const pendingPayment = existing.paymentEvents.find(
+      (e) => e.type === "PAYMENT" && e.status === "RECEIVED"
+    )
+    if (pendingPayment) {
+      await prisma.paymentEvent.update({
+        where: { id: pendingPayment.id },
+        data: { status: "CANCELLED" },
+      })
     }
   }
 

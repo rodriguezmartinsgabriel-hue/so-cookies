@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/Badge"
 import { useFocusTrap } from "@/hooks/useFocusTrap"
 import { useCart } from "@/hooks/useCart"
 import { useHapticFeedback } from "@/hooks/useHapticFeedback"
+import { useToast } from "@/components/ui/Toast"
 
 type PublicOrderItem = {
   id: string
@@ -114,12 +115,13 @@ async function handleShareOrder(orderId: string) {
  }
 
 export default function PedidoPage({ params }: { params: Promise<{ id: string }> }) {
-   const [order, setOrder] = useState<PublicOrder | null>(null)
-   const [notFound, setNotFound] = useState(false)
-   const [loading, setLoading] = useState(true)
-    const { count } = useCart()
-    const haptic = useHapticFeedback()
-    const router = useRouter()
+    const [order, setOrder] = useState<PublicOrder | null>(null)
+    const [notFound, setNotFound] = useState(false)
+    const [loading, setLoading] = useState(true)
+     const { count } = useCart()
+     const haptic = useHapticFeedback()
+     const router = useRouter()
+     const { toast } = useToast()
 
    const [showDeliveryModal, setShowDeliveryModal] = useState(false)
    const [showCancelConfirm, setShowCancelConfirm] = useState(false)
@@ -247,10 +249,13 @@ export default function PedidoPage({ params }: { params: Promise<{ id: string }>
       })
       if (!res.ok) {
         const data = await res.json().catch(() => null)
-        setDeliveryError(data?.error || "Não foi possível cancelar o pedido")
+        const errorMsg = data?.error || "Não foi possível cancelar o pedido"
+        setDeliveryError(errorMsg)
+        toast("danger", "Erro ao cancelar", errorMsg)
         return
       }
       setShowCancelConfirm(false)
+      toast("success", "Pedido cancelado", "Seu pedido foi cancelado com sucesso")
       await load(order.id)
     } finally {
       setActionLoading(false)

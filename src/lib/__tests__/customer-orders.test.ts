@@ -7,10 +7,12 @@ const mocks = vi.hoisted(() => ({
   orderCreate: vi.fn(),
   orderUpdate: vi.fn(),
   orderFindUnique: vi.fn(),
+  orderFindFirst: vi.fn(),
   orderDelete: vi.fn(),
   createOrderPayment: vi.fn(),
   assertSlotAvailable: vi.fn(),
   engineCalculatePrice: vi.fn(),
+  paymentEventUpdate: vi.fn(),
 }))
 
 vi.mock("@/lib/prisma", () => ({
@@ -21,7 +23,11 @@ vi.mock("@/lib/prisma", () => ({
       create: mocks.orderCreate,
       update: mocks.orderUpdate,
       findUnique: mocks.orderFindUnique,
+      findFirst: mocks.orderFindFirst,
       delete: mocks.orderDelete,
+    },
+    paymentEvent: {
+      update: mocks.paymentEventUpdate,
     },
   },
 }))
@@ -46,7 +52,7 @@ vi.mock("@so-cookies/pricing", () => ({
   buildPricingEngine: () => ({ calculatePrice: mocks.engineCalculatePrice }),
 }))
 
-import { createCustomerOrder } from "@/lib/customer-orders"
+import { createCustomerOrder, updateCustomerOrder } from "@/lib/customer-orders"
 
 const baseCreatedOrder = {
   id: "ord-1",
@@ -109,5 +115,89 @@ describe("createCustomerOrder — pagamento PIX", () => {
 
     expect(mocks.orderDelete).not.toHaveBeenCalled()
     expect(result.paymentStatus).toBe("AGUARDANDO_PAGAMENTO")
+  })
+})
+
+describe("updateCustomerOrder — cancelamento", () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mocks.orderFindFirst.mockResolvedValue({
+      id: "ord-1",
+      customerId: "cust-1",
+      status: "PENDENTE",
+      paymentStatus: "AGUARDANDO_PAGAMENTO",
+      total: 42.5,
+      items: [{ id: "i1", qty: 2, price: 21.25 }],
+      paymentEvents: [
+        { id: "pe-1", type: "PAYMENT", status: "RECEIVED", orderId: "ord-1" },
+      ],
+    })
+    mocks.orderUpdate.mockResolvedValue({ id: "ord-1", status: "CANCELADO" })
+  })
+
+  afterEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it("cancela pedido PENDENTE com sucesso", async () => {
+    const result = await updateCustomerOrder("cust-1", "ord-1", { status: "CANCELADO" })
+    expect(mocks.orderUpdate).toHaveBeenCalledWith(expect.objectContaining({
+      where: { id: "ord-1" },
+      data: expect.objectContaining({ status: "CANCELADO" }),
+    }))
+    expect(mocks.paymentEventUpdate).toHaveBeenCalledWith(expect.objectContaining({
+      where: { id: "pe-1" },
+      data: expect.objectContaining({ status: "CANCELLED" }),
+    }))
+    expect(result.status).toBe("CANCELADO")
+  })
+
+  it("rejeita cancelamento de pedido já em PRODUCAO", async () => {
+    mocks.orderFindFirst.mockResolvedValue({
+      id: "ord-1",
+      customerId: "cust-1",
+      status: "PRODUCAO",
+      paymentStatus: null,
+      total: 42.5,
+      items: [{ id: "i1", qty: 2, price: 21.25 }],
+      paymentEvents: [],
+    })
+
+    await expect(
+      updateCustomerOrder("cust-1", "ord-1", { status: "CANCELADO" })
+    ).rejects.toThrow("Este pedido não pode mais ser cancelado")
+  })
+
+  it("rejeita cancelamento de pedido já CONCLUIDO", async () => {
+    mocks.orderFindFirst.mockResolvedValue({
+      id: "ord-1",
+      customerId: "cust-1",
+      status: "CONCLUIDO",
+      paymentStatus: null,
+      total: 42.5,
+      items: [{ id: "i1", qty: 2, price: 21.25 }],
+      paymentEvents: [],
+    })
+
+    await expect(
+      updateCustomerOrder("cust-1", "ord-1", { status: "CANCELADO" })
+    ).rejects.toThrow("Este pedido não pode mais ser cancelado")
+  })
+
+  it("não tenta cancelar pagamento quando status é alterado sem CANCELADO", async () => {
+    mocks.orderFindFirst.mockResolvedValue({
+      id: "ord-1",
+      customerId: "cust-1",
+      status: "PENDENTE",
+      paymentStatus: "AGUARDANDO_PAGAMENTO",
+      total: 42.5,
+      items: [{ id: "i1", qty: 2, price: 21.25 }],
+      paymentEvents: [
+        { id: "pe-1", type: "PAYMENT", status: "RECEIVED", orderId: "ord-1" },
+      ],
+    })
+
+    await updateCustomerOrder("cust-1", "ord-1", { status: "CONFIRMADO" })
+    expect(mocks.paymentEventUpdate).not.toHaveBeenCalled()
   })
 })
