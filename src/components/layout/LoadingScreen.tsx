@@ -57,18 +57,14 @@ export function LoadingScreen() {
 
   return (
     <div
-      className={`loading-screen fixed inset-0 z-50 flex items-center justify-center bg-paper ${phase === "fading" ? "loading-screen-exit" : "loading-screen-enter"}`}
+      className={`loading-screen fixed inset-0 z-50 flex items-center justify-center bg-[#ffffff] ${phase === "fading" ? "loading-screen-exit" : "loading-screen-enter"}`}
     >
-      <div className="loading-card-wrapper">
-        <div className="loading-card">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/so-cookies-logo-final.png"
-            alt="Só Cookies & Café"
-            className="loading-logo-img h-20 w-20 sm:h-24 sm:w-24 md:h-28 md:w-28"
-          />
-        </div>
-      </div>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src="/so-cookies-logo-final.png"
+        alt="Só Cookies & Café"
+        className="loading-logo-zoom loading-logo-img h-20 w-20 sm:h-24 sm:w-24 md:h-28 md:w-28"
+      />
     </div>
   )
 }
