@@ -169,9 +169,8 @@ export default function CardapioPage() {
                          product={p}
                          qty={qtyMap.get(p.id) ?? 0}
                          isExpanded={expandedId === p.id}
-                         onExpand={() =>
-                           setExpandedId((prev) => (prev === p.id ? null : p.id))
-                         }
+                         onExpand={() => setExpandedId(p.id)}
+                         onCollapse={() => setExpandedId(null)}
                          onAdd={() => addItem(p.id)}
                          onSetQty={(q) => setQty(p.id, q)}
                        />
