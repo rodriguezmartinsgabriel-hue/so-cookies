@@ -3,21 +3,21 @@
 import { useMemo, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useQueryClient } from "@tanstack/react-query"
-import { User, MapPin, Lock, Package, ChevronRight } from "lucide-react"
+import { User, MapPin, Lock } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { ProfileHero } from "@/components/customer/ProfileHero"
 import { ProfileInfoCard } from "@/components/customer/ProfileInfoCard"
 import { ProfileInfoRow } from "@/components/customer/ProfileInfoRow"
 import { ProfileSignOut } from "@/components/customer/ProfileSignOut"
 import { ProfileSkeleton } from "@/components/customer/ProfileSkeleton"
+import { OrderHistoryCard } from "@/components/customer/OrderHistoryCard"
 import { EditProfileModal, type EditProfileInput } from "@/components/customer/EditProfileModal"
 import { EditPasswordModal } from "@/components/customer/EditPasswordModal"
 import { LoyaltySection } from "@/components/customer/LoyaltySection"
 import { Button } from "@/components/ui/Button"
 import { useHapticFeedback } from "@/hooks/useHapticFeedback"
 import { useToast } from "@/components/ui/Toast"
-import { formatBRL } from "@/lib/utils"
-import { type AddressState, statusLabel } from "@/lib/customer-types"
+import { type AddressState } from "@/lib/customer-types"
 import { meQueryKey, useLoyaltyBalance, useMe, useOrders } from "@/hooks/customer/queries"
 
 const containerVariants = {
@@ -269,49 +269,7 @@ export function PerfilTab() {
           )}
 
           <motion.div variants={itemVariants}>
-            <ProfileInfoCard
-              icon={<Package className="w-4 h-4" />}
-              eyebrow="Histórico"
-              title="Meus pedidos"
-            >
-              {orders.length === 0 ? (
-                <div className="px-5 py-6 text-center">
-                  <p className="text-sm text-muted">Nenhum pedido ainda</p>
-                  <p className="text-xs text-muted mt-1">
-                    Seus pedidos confirmados vão aparecer aqui.
-                  </p>
-                </div>
-              ) : (
-                <ul className="divide-y divide-line/30">
-                  {orders.slice(0, 5).map((o) => (
-                    <li key={o.id}>
-                      <button
-                        type="button"
-                        className="w-full flex items-center justify-between gap-3 px-5 py-3 hover:bg-cream/50
-                                   transition-colors cursor-pointer text-left"
-                        onClick={() => {
-                          haptic.tap()
-                          router.push(`/pedido/${o.id}`)
-                        }}
-                      >
-                        <div className="min-w-0">
-                          <p className="text-sm font-semibold text-ink truncate">
-                            #{o.id.slice(0, 6)} · {new Date(o.createdAt).toLocaleDateString("pt-BR")}
-                          </p>
-                          <p className="text-xs text-muted">
-                            {o.items.reduce((s, i) => s + i.qty, 0)} itens · {formatBRL(o.total)}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-2 shrink-0">
-                          <span className="text-[11px] font-medium text-ink">{statusLabel[o.status]}</span>
-                          <ChevronRight className="w-4 h-4 text-muted" />
-                        </div>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </ProfileInfoCard>
+            <OrderHistoryCard orders={orders} />
           </motion.div>
 
           <motion.div variants={itemVariants}>
