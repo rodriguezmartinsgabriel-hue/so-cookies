@@ -98,6 +98,22 @@ describe("ProductCard", () => {
     expect(minus).not.toHaveStyle({ pointerEvents: "none" })
   })
 
+  it("renders the expanded panel visible immediately (no grid-rows-0fr animation state)", () => {
+    setup({ qty: 1, isExpanded: true })
+    const panel = document.getElementById("panel-cookie-1")
+    expect(panel).not.toBeNull()
+    expect(panel!.className).toContain("grid-rows-[1fr]")
+    expect(panel!.className).not.toContain("grid-rows-[0fr]")
+  })
+
+  it("expanded stepper works on first render without waiting for animation frames", async () => {
+    const user = userEvent.setup()
+    const props = setup({ qty: 0, isExpanded: true })
+    const plus = screen.getByRole("button", { name: /aumentar quantidade/i })
+    await user.click(plus)
+    expect(props.onSetQty).toHaveBeenCalledWith(1)
+  })
+
   it("hides the header quantity controls when expanded to avoid duplicates", () => {
     setup({ qty: 3, isExpanded: true })
     expect(screen.queryByRole("button", { name: /aumentar cookie de chocolate/i })).not.toBeInTheDocument()

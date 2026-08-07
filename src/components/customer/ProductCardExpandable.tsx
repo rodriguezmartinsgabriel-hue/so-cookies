@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useRef } from "react"
 import { Plus, Minus, ShoppingBag } from "lucide-react"
 import NextImage from "next/image"
 import type { CatalogProduct } from "@/lib/utils"
@@ -50,15 +50,8 @@ export function ProductCardExpandable({
   const haptic = useHapticFeedback()
   const panelRef = useRef<HTMLDivElement>(null)
   const activeElementRef = useRef<HTMLElement | null>(null)
-  const [open, setOpen] = useState(false)
 
   const id = `panel-${product.id}`
-
-  // Abertura animada 100% via CSS (grid-template-rows 0fr -> 1fr), sem JS de animação.
-  useEffect(() => {
-    const raf = requestAnimationFrame(() => setOpen(true))
-    return () => cancelAnimationFrame(raf)
-  }, [])
 
   // Guarda o elemento que tinha foco antes de abrir (para restaurar ao recolher).
   useEffect(() => {
@@ -86,6 +79,7 @@ export function ProductCardExpandable({
   const handleQtyDown = useCallback(
     (e: React.MouseEvent) => {
       e.stopPropagation()
+      e.preventDefault()
       if (qty <= 0) return
       haptic.tap()
       onSetQty(qty - 1)
@@ -96,6 +90,7 @@ export function ProductCardExpandable({
   const handleQtyUp = useCallback(
     (e: React.MouseEvent) => {
       e.stopPropagation()
+      e.preventDefault()
       haptic.tap()
       onSetQty(qty + 1)
     },
@@ -111,9 +106,7 @@ export function ProductCardExpandable({
       role="region"
       aria-label={`Detalhes de ${product.name}`}
       tabIndex={-1}
-      className={`grid transition-[grid-template-rows] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] focus:outline-none ${
-        open ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
-      }`}
+      className="grid grid-rows-[1fr] focus:outline-none"
     >
       <div className="overflow-hidden min-h-0">
         <div className="grid grid-cols-1 md:grid-cols-[14rem_1fr] gap-4 p-3 pt-0">
@@ -210,7 +203,7 @@ export function ProductCardExpandable({
               <Button
                 variant="secondary"
                 size="icon"
-                className="!h-11 !w-11"
+                className="!h-11 !w-11 pointer-events-auto"
                 onClick={handleQtyDown}
                 aria-label="Diminuir quantidade"
                 disabled={qty <= 0}
@@ -223,7 +216,7 @@ export function ProductCardExpandable({
               <Button
                 variant="primary"
                 size="icon"
-                className="!h-11 !w-11"
+                className="!h-11 !w-11 pointer-events-auto"
                 onClick={handleQtyUp}
                 aria-label="Aumentar quantidade"
               >

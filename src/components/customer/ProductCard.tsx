@@ -108,9 +108,12 @@ export const ProductCard = memo(function ProductCard({ product, qty, isExpanded,
         onKeyDown={handleHeaderKeyDown}
         className="flex items-center gap-3 p-3 cursor-pointer select-none"
       >
-        {/* FOTO miniatura — só no estado colapsado */}
+        {/* FOTO miniatura — só no estado colapsado.
+            Wrapper espelha o do painel expandido: rounded interno + overflow-hidden
+            + respiro (m-0.5) para a foto nao tocar/extrapolar o canto curvo (rounded-2xl)
+            do Card pai. Sem drop-shadow/border externos para nao vazar a moldura. */}
         {!isExpanded && (
-          <div className="relative shrink-0 w-16 h-16 rounded-xl overflow-hidden bg-cream border border-line">
+          <div className="relative shrink-0 w-16 h-16 m-0.5 rounded-lg overflow-hidden bg-cream">
             {product.image ? (
               <NextImage
                 src={product.image}
@@ -118,7 +121,7 @@ export const ProductCard = memo(function ProductCard({ product, qty, isExpanded,
                 fill
                 sizes="(max-width: 768px) 64px, 64px"
                 loading="lazy"
-                className="w-full h-full object-cover drop-shadow-[0_4px_12px_rgba(0,0,0,0.12)]"
+                className="w-full h-full object-cover"
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center">
