@@ -53,8 +53,16 @@ export default function PagamentoPage({ params }: { params: Promise<{ id: string
 
   const load = useCallback(async (id: string) => {
     try {
-      const res = await fetch(`/api/public/orders/${id}`, { cache: "no-store" })
+      const res = await fetch(`/api/public/orders/${id}`, {
+        cache: "no-store",
+        credentials: "include",
+      })
       if (res.status === 404) {
+        setNotFound(true)
+        setOrder(null)
+        return
+      }
+      if (res.status === 403) {
         setNotFound(true)
         setOrder(null)
         return
@@ -93,6 +101,11 @@ export default function PagamentoPage({ params }: { params: Promise<{ id: string
 
     params.then(({ id }) => {
       if (cancelled) return
+      if (!id || id === "undefined") {
+        setNotFound(true)
+        setLoading(false)
+        return
+      }
       load(id)
       interval = setInterval(() => {
         const nextInterval = getInterval()

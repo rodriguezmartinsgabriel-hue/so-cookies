@@ -470,7 +470,7 @@ export async function retryCustomerOrderPayment(customerId: string, orderId: str
 }
 
 export async function getCustomerOrder(customerId: string, orderId: string) {
-  return prisma.order.findFirst({
+  const order = await prisma.order.findFirst({
     where: { id: orderId, customerId },
     include: {
       items: { include: { product: true } },
@@ -478,6 +478,22 @@ export async function getCustomerOrder(customerId: string, orderId: string) {
       deliveryZone: { select: { id: true, name: true } },
     },
   })
+  if (!order) {
+    const existing = await prisma.order.findUnique({
+      where: { id: orderId },
+      select: { id: true, customerId: true },
+    })
+    if (!existing) {
+      logger.warn("[getCustomerOrder] Pedido não existe", { orderId })
+    } else {
+      logger.warn("[getCustomerOrder] Pedido existe mas customerId não corresponde", {
+        orderId,
+        requestedBy: customerId,
+        ownedBy: existing.customerId,
+      })
+    }
+  }
+  return order
 }
 
 export async function getCustomerOrders(customerId: string) {

@@ -1,17 +1,47 @@
 import { NextResponse } from "next/server"
+import { prisma } from "@/lib/prisma"
 import { requireCustomer } from "@/lib/customer-auth"
 import { getCustomerOrder, updateCustomerOrder } from "@/lib/customer-orders"
 import { updateCustomerOrderSchema, getZodIssues } from "@/lib/validation"
 import { SlotError } from "@/lib/delivery-scheduling"
 import { expireUnpaidOrders } from "@/lib/payments/service"
 import { rateLimit } from "@/lib/rate-limit"
+import { logger } from "@/lib/logger"
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { error, customer } = await requireCustomer()
   if (error) return error
   try {
     const { id } = await params
+    if (!id || id === "undefined") {
+      return NextResponse.json({ error: "Pedido não encontrado" }, { status: 404 })
+    }
+
+    const baseOrder = await prisma.order.findUnique({ where: { id }, select: { customerId: true } })
+    if (!baseOrder) {
+      logger.warn("[orders] Pedido não encontrado", { orderId: id, customerId: customer.id })
+      return NextResponse.json({ error: "Pedido não encontrado" }, { status: 404 })
+    }
+    if (baseOrder.customerId && baseOrder.customerId !== customer.id) {
+      logger.warn("[orders] Acesso negado: pedido pertence a outro cliente", {
+        orderId: id,
+        requestedBy: customer.id,
+        ownedBy: baseOrder.customerId,
+      })
+      return NextResponse.json({ error: "Acesso negado" }, { status: 403 })
+    }
+
     let order = await getCustomerOrder(customer.id, id)
+    if (!order) {
+      order = await prisma.order.findUnique({
+        where: { id },
+        include: {
+          items: { include: { product: true } },
+          deliveryRoute: { select: { id: true, name: true, windowStart: true, windowEnd: true } },
+          deliveryZone: { select: { id: true, name: true } },
+        },
+      })
+    }
     if (!order) return NextResponse.json({ error: "Pedido não encontrado" }, { status: 404 })
 
     if (
