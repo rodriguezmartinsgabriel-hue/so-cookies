@@ -90,6 +90,10 @@ describe("middleware runtime — host routing via next.js middleware wrapper", (
     expect(middleware(req("https://app.cookiesecafes.com/login")).status).toBe(200)
   })
 
+  it("allows /api/health on staff host without session (uptime monitors)", () => {
+    expect(middleware(req("https://app.cookiesecafes.com/api/health")).status).toBe(200)
+  })
+
   it("distinguishes /pedido (customer) from /pedidos (staff) on store host", () => {
     expect(middleware(req("https://cookiesecafes.com/pedido/abc")).status).toBe(307)
     expect(middleware(req("https://cookiesecafes.com/pedidos")).status).toBe(404)

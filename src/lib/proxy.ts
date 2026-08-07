@@ -99,6 +99,10 @@ function isWebhookRoute(pathname: string) {
   )
 }
 
+function isHealthRoute(pathname: string) {
+  return pathname === "/api/health" || pathname.startsWith("/api/health/")
+}
+
 function routeRequest(request: NextRequest): NextResponse {
   const { pathname } = request.nextUrl
   const role = getHostRole(request.nextUrl.hostname)
@@ -127,7 +131,8 @@ function routeRequest(request: NextRequest): NextResponse {
     isCustomerApi(pathname) ||
     isAuthRoute(pathname) ||
     isInfraRoute(pathname) ||
-    isWebhookRoute(pathname)
+    isWebhookRoute(pathname) ||
+    isHealthRoute(pathname)
 
   if (isPublicRoute) {
     return NextResponse.next()
