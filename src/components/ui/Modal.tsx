@@ -62,7 +62,7 @@ export function Modal({ open, onClose, title, size = "md", children, footer, cla
           <MotionGlassSurface
             ref={dialogRef}
             tone="strong"
-            className={cn("w-full rounded-xl max-h-[85vh] overflow-y-auto flex flex-col", sizes[size], className)}
+            className={cn("w-full rounded-2xl max-h-[85vh] overflow-y-auto flex flex-col", sizes[size], className)}
             onClick={(e: React.MouseEvent) => e.stopPropagation()}
             initial={reducedMotion ? {} : { scale: 0.96, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
@@ -71,7 +71,9 @@ export function Modal({ open, onClose, title, size = "md", children, footer, cla
           >
             {title && (
               <div className="flex items-center justify-between px-4 py-3 border-b border-line shrink-0">
-                <h3 className="text-base font-bold text-ink">{title}</h3>
+                <h3 className="text-base font-bold text-ink" style={{ fontFamily: "var(--font-ui)" }}>
+                  {title}
+                </h3>
                 <button
                   onClick={() => {
                     haptic.tap()
@@ -79,7 +81,7 @@ export function Modal({ open, onClose, title, size = "md", children, footer, cla
                   }}
                   data-close-modal
                   aria-label="Fechar"
-                  className="p-1.5 -m-1 rounded-md hover:bg-cream text-muted"
+                  className="p-1.5 -m-1 rounded-full hover:bg-cream text-muted"
                 >
                   <X className="w-5 h-5" />
                 </button>

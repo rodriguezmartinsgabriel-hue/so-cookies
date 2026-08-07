@@ -65,7 +65,7 @@ export function LoadingScreen() {
 
   return (
     <div
-      className={`loading-screen fixed inset-0 z-50 flex items-center justify-center bg-[#ffffff] ${phase === "fading" ? "loading-screen-exit" : "loading-screen-enter"}`}
+      className={`loading-screen fixed inset-0 z-50 flex items-center justify-center bg-paper ${phase === "fading" ? "loading-screen-exit" : "loading-screen-enter"}`}
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img

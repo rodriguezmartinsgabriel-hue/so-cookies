@@ -109,6 +109,7 @@
 
 html {
   -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
   color-scheme: light dark;
 }
 
@@ -117,6 +118,9 @@ body {
   background-image: var(--ambient);
   color: var(--ink);
   font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overscroll-behavior-y: contain;
 }
 
 @media (max-width: 640px) {
