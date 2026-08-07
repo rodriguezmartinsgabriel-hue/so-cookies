@@ -231,6 +231,13 @@ export type Contact = {
   type: ContactType
   company: string | null
   notes: string | null
+  addressCep: string | null
+  addressStreet: string | null
+  addressNumber: string | null
+  addressComplement: string | null
+  addressNeighborhood: string | null
+  addressCity: string | null
+  addressState: string | null
   customerId?: string | null
   createdAt: string
   updatedAt: string

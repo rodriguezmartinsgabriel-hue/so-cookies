@@ -15,12 +15,41 @@ async function withRetry<T>(op: () => Promise<T>): Promise<T> {
   }
 }
 
-export async function syncCustomerToContact(customer: {
+export type CustomerContactInput = {
   id: string
   name: string
   email: string
   phone?: string | null
-}) {
+  addressCep?: string | null
+  addressStreet?: string | null
+  addressNumber?: string | null
+  addressComplement?: string | null
+  addressNeighborhood?: string | null
+  addressCity?: string | null
+  addressState?: string | null
+}
+
+const ADDRESS_FIELDS = [
+  "addressCep",
+  "addressStreet",
+  "addressNumber",
+  "addressComplement",
+  "addressNeighborhood",
+  "addressCity",
+  "addressState",
+] as const
+
+const OVERWRITABLE_FIELDS = ["name", "phone", ...ADDRESS_FIELDS] as const
+
+/**
+ * Sincroniza os dados do cliente para o Contact no Manager (Clientes).
+ *
+ * O cliente é a fonte da verdade: campos fornecidos (diferentes de undefined)
+ * sobrescrevem o contato, inclusive com null para limpar. Campos ausentes não
+ * são tocados. O e-mail é imutável (não é editável no app) e só é preenchido
+ * na criação. type/company/notes/interactions são preservados.
+ */
+export async function syncCustomerToContact(customer: CustomerContactInput) {
   try {
     const existing = await prisma.contact.findFirst({
       where: {
@@ -31,9 +60,10 @@ export async function syncCustomerToContact(customer: {
     if (existing) {
       const patch: Record<string, unknown> = {}
       if (existing.customerId !== customer.id) patch.customerId = customer.id
-      if (!existing.name && customer.name) patch.name = customer.name
       if (!existing.email && customer.email) patch.email = customer.email
-      if (!existing.phone && customer.phone) patch.phone = customer.phone
+      for (const field of OVERWRITABLE_FIELDS) {
+        if (customer[field] !== undefined) patch[field] = customer[field] ?? null
+      }
       if (Object.keys(patch).length > 0) {
         await withRetry(() => prisma.contact.update({ where: { id: existing.id }, data: patch }))
       }
@@ -49,6 +79,13 @@ export async function syncCustomerToContact(customer: {
           type: "CLIENTE",
           notes: CUSTOMER_CONTACT_NOTE,
           customerId: customer.id,
+          addressCep: customer.addressCep || null,
+          addressStreet: customer.addressStreet || null,
+          addressNumber: customer.addressNumber || null,
+          addressComplement: customer.addressComplement || null,
+          addressNeighborhood: customer.addressNeighborhood || null,
+          addressCity: customer.addressCity || null,
+          addressState: customer.addressState || null,
         },
       }),
     )

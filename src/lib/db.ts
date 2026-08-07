@@ -703,6 +703,10 @@ export async function getContacts(search?: string, type?: string) {
       { email: { contains: search, mode: "insensitive" } },
       { phone: { contains: search, mode: "insensitive" } },
       { company: { contains: search, mode: "insensitive" } },
+      { addressStreet: { contains: search, mode: "insensitive" } },
+      { addressNeighborhood: { contains: search, mode: "insensitive" } },
+      { addressCity: { contains: search, mode: "insensitive" } },
+      { addressCep: { contains: search, mode: "insensitive" } },
     ]
   }
   if (type && type !== "ALL") where.type = type
@@ -727,6 +731,13 @@ export async function createContact(data: {
   type?: ContactType
   company?: string
   notes?: string
+  addressCep?: string
+  addressStreet?: string
+  addressNumber?: string
+  addressComplement?: string
+  addressNeighborhood?: string
+  addressCity?: string
+  addressState?: string
 }) {
   const { contact } = await findOrCreateContact(prisma, data)
   return contact
@@ -742,6 +753,13 @@ export async function findOrCreateContact(
     company?: string
     notes?: string
     customerId?: string
+    addressCep?: string
+    addressStreet?: string
+    addressNumber?: string
+    addressComplement?: string
+    addressNeighborhood?: string
+    addressCity?: string
+    addressState?: string
   },
 ) {
   const email = (data.email || "").trim().toLowerCase()
@@ -769,6 +787,18 @@ export async function findOrCreateContact(
     if (!existing.company && data.company) patch.company = data.company
     if (!existing.notes && data.notes) patch.notes = data.notes
     if (data.customerId && existing.customerId !== data.customerId) patch.customerId = data.customerId
+    const addressFields = [
+      "addressCep",
+      "addressStreet",
+      "addressNumber",
+      "addressComplement",
+      "addressNeighborhood",
+      "addressCity",
+      "addressState",
+    ] as const
+    for (const field of addressFields) {
+      if (data[field] && !existing[field]) patch[field] = data[field]
+    }
     if (Object.keys(patch).length > 0) {
       const updated = await db.contact.update({ where: { id: existing.id }, data: patch, include })
       return { contact: updated, created: false }
@@ -785,6 +815,13 @@ export async function findOrCreateContact(
       company: data.company || null,
       notes: data.notes || null,
       customerId: data.customerId || null,
+      addressCep: data.addressCep || null,
+      addressStreet: data.addressStreet || null,
+      addressNumber: data.addressNumber || null,
+      addressComplement: data.addressComplement || null,
+      addressNeighborhood: data.addressNeighborhood || null,
+      addressCity: data.addressCity || null,
+      addressState: data.addressState || null,
     },
     include,
   })
@@ -800,6 +837,13 @@ export async function updateContact(
     type: ContactType
     company: string
     notes: string
+    addressCep: string
+    addressStreet: string
+    addressNumber: string
+    addressComplement: string
+    addressNeighborhood: string
+    addressCity: string
+    addressState: string
   }>,
 ) {
   const patch: Record<string, unknown> = {}
@@ -809,6 +853,18 @@ export async function updateContact(
   if (data.type) patch.type = data.type
   if (data.company !== undefined) patch.company = data.company || null
   if (data.notes !== undefined) patch.notes = data.notes || null
+  const addressFields = [
+    "addressCep",
+    "addressStreet",
+    "addressNumber",
+    "addressComplement",
+    "addressNeighborhood",
+    "addressCity",
+    "addressState",
+  ] as const
+  for (const field of addressFields) {
+    if (data[field] !== undefined) patch[field] = data[field] || null
+  }
   return prisma.contact.update({
     where: { id },
     data: patch,

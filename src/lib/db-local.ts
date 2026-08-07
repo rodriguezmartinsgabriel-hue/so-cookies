@@ -213,6 +213,13 @@ export interface LocalContact {
   type: string
   company?: string
   notes?: string
+  addressCep?: string
+  addressStreet?: string
+  addressNumber?: string
+  addressComplement?: string
+  addressNeighborhood?: string
+  addressCity?: string
+  addressState?: string
   customerId?: string
   createdAt: string
   updatedAt: string

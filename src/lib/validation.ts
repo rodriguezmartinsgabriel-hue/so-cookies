@@ -294,6 +294,16 @@ export const INTERACTION_TYPES = ["NOTA", "LIGACAO", "EMAIL", "WHATSAPP", "VISIT
 
 const optionalEmail = z.union([z.string().email("E-mail inválido"), z.literal("")]).optional()
 
+export const contactAddressSchema = z.object({
+  addressCep: z.string().optional(),
+  addressStreet: z.string().optional(),
+  addressNumber: z.string().optional(),
+  addressComplement: z.string().optional(),
+  addressNeighborhood: z.string().optional(),
+  addressCity: z.string().optional(),
+  addressState: z.string().optional(),
+})
+
 export const createContactSchema = z.object({
   name: z.string().min(1, "Nome é obrigatório"),
   email: optionalEmail,
@@ -301,6 +311,7 @@ export const createContactSchema = z.object({
   type: z.enum(CONTACT_TYPES).default("CLIENTE"),
   company: z.string().optional(),
   notes: z.string().optional(),
+  ...contactAddressSchema.shape,
 })
 
 export const updateContactSchema = z.object({
@@ -310,6 +321,7 @@ export const updateContactSchema = z.object({
   type: z.enum(CONTACT_TYPES).optional(),
   company: z.string().optional(),
   notes: z.string().optional(),
+  ...contactAddressSchema.shape,
 })
 
 export const createInteractionSchema = z.object({

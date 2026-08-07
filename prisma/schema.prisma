@@ -482,15 +482,22 @@ enum DocumentCategory {
 }
 
 model Contact {
-  id        String      @id @default(cuid())
-  name      String
-  email     String?
-  phone     String?
-  type      ContactType @default(CLIENTE)
-  company   String?
-  notes     String?
-  createdAt DateTime    @default(now())
-  updatedAt DateTime    @updatedAt
+  id                  String      @id @default(cuid())
+  name                String
+  email               String?
+  phone               String?
+  type                ContactType @default(CLIENTE)
+  company             String?
+  notes               String?
+  addressCep          String?
+  addressStreet       String?
+  addressNumber       String?
+  addressComplement   String?
+  addressNeighborhood String?
+  addressCity         String?
+  addressState        String?
+  createdAt           DateTime    @default(now())
+  updatedAt           DateTime    @updatedAt
 
   interactions ContactInteraction[]
 
@@ -499,6 +506,8 @@ model Contact {
 
   @@index([name])
   @@index([type])
+  @@index([addressCity])
+  @@index([addressCep])
 }
 
 model ContactInteraction {

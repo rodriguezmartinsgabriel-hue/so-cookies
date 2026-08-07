@@ -136,24 +136,105 @@ describe("syncCustomerToContact", () => {
     expect(store.contacts.size).toBe(1)
   })
 
-  it("não sobrescreve edições do manager, mas preenche lacunas", async () => {
+  it("cliente é a fonte da verdade: sobrescreve nome/telefone, preserva notes/type/company", async () => {
     store.contacts.set(
       "ct-1",
       baseContact({
         id: "ct-1",
         name: "Maria Silva (Loja)",
         email: "maria@test.com",
-        phone: null,
+        phone: "11988888888",
         type: "CLIENTE",
+        company: "Loja da Maria",
         notes: "nota do manager",
         customerId: "cust-1",
       }),
     )
     await syncCustomerToContact({ id: "cust-1", name: "Maria", email: "maria@test.com", phone: "11999999999" })
     const contact = store.contacts.get("ct-1")!
-    expect(contact.name).toBe("Maria Silva (Loja)")
+    expect(contact.name).toBe("Maria")
     expect(contact.phone).toBe("11999999999")
     expect(contact.notes).toBe("nota do manager")
+    expect(contact.company).toBe("Loja da Maria")
+    expect(contact.type).toBe("CLIENTE")
+  })
+
+  it("cria contato com endereço completo", async () => {
+    const result = await syncCustomerToContact({
+      id: "cust-1",
+      name: "Maria",
+      email: "maria@test.com",
+      addressCep: "12345-678",
+      addressStreet: "Rua A",
+      addressNumber: "100",
+      addressComplement: "Apto 5",
+      addressNeighborhood: "Centro",
+      addressCity: "São Paulo",
+      addressState: "SP",
+    })
+    expect(result.created).toBe(true)
+    const contact = [...store.contacts.values()][0]
+    expect(contact).toMatchObject({
+      addressCep: "12345-678",
+      addressStreet: "Rua A",
+      addressNumber: "100",
+      addressComplement: "Apto 5",
+      addressNeighborhood: "Centro",
+      addressCity: "São Paulo",
+      addressState: "SP",
+    })
+  })
+
+  it("sobrescreve endereço do contato quando o cliente fornece novo endereço", async () => {
+    store.contacts.set(
+      "ct-1",
+      baseContact({
+        id: "ct-1",
+        name: "Maria",
+        email: "maria@test.com",
+        phone: null,
+        type: "CLIENTE",
+        notes: "n",
+        customerId: "cust-1",
+        addressStreet: "Rua Antiga",
+        addressCity: "Campinas",
+        addressCep: "00000-000",
+      }),
+    )
+    await syncCustomerToContact({
+      id: "cust-1",
+      name: "Maria",
+      email: "maria@test.com",
+      addressStreet: "Rua Nova",
+      addressCity: "São Paulo",
+      addressState: "SP",
+    })
+    const contact = store.contacts.get("ct-1")!
+    expect(contact.addressStreet).toBe("Rua Nova")
+    expect(contact.addressCity).toBe("São Paulo")
+    expect(contact.addressState).toBe("SP")
+    expect(contact.addressCep).toBe("00000-000")
+  })
+
+  it("limpa endereço com null quando o cliente informa null", async () => {
+    store.contacts.set(
+      "ct-1",
+      baseContact({
+        id: "ct-1",
+        name: "Maria",
+        email: "maria@test.com",
+        phone: null,
+        type: "CLIENTE",
+        notes: "n",
+        customerId: "cust-1",
+        addressStreet: "Rua Antiga",
+        addressCity: "Campinas",
+      }),
+    )
+    await syncCustomerToContact({ id: "cust-1", name: "Maria", email: "maria@test.com", addressStreet: null })
+    const contact = store.contacts.get("ct-1")!
+    expect(contact.addressStreet).toBeNull()
+    expect(contact.addressCity).toBe("Campinas")
   })
 
   it("tenta novamente quando o create falha na primeira vez", async () => {

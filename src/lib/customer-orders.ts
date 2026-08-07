@@ -6,6 +6,7 @@ import { PricingContext } from "@so-cookies/pricing"
 import { createOrderPayment, reconcileOrderPayment } from "./payments/service"
 import { PaymentError } from "./payments/errors"
 import { logger } from "./logger"
+import { syncCustomerToContact } from "./customer-contact"
 import { LoyaltyService } from "./loyalty/service"
 import type { OrderStatus } from "@/generated/prisma/enums"
 
@@ -285,11 +286,28 @@ export async function createCustomerOrder(
     })
   }
 
+  try {
+    await syncCustomerToContact({
+      id: customer.id,
+      name: customer.name,
+      email: customer.email,
+      phone: customer.phone,
+      addressCep: address.deliveryCep ?? customer.addressCep,
+      addressStreet: address.deliveryStreet ?? customer.addressStreet,
+      addressNumber: address.deliveryNumber ?? customer.addressNumber,
+      addressComplement: address.deliveryComplement ?? customer.addressComplement,
+      addressNeighborhood: address.deliveryNeighborhood ?? customer.addressNeighborhood,
+      addressCity: address.deliveryCity ?? customer.addressCity,
+      addressState: address.deliveryState ?? customer.addressState,
+    })
+  } catch (e) {
+    logger.error("[orders] Falha ao sincronizar contato do cliente no pedido", { customerId: customer.id, orderId: order.id }, e)
+  }
+
   if (input.paymentMethod === "PIX") {
     try {
       await createOrderPayment(order.id)
-    } catch (e) {
-      const message = e instanceof Error ? e.message : String(e)
+    } catch (e) {      const message = e instanceof Error ? e.message : String(e)
       logger.error("[orders] Falha ao criar pagamento PIX para pedido", { orderId: order.id, errorCode: e instanceof PaymentError ? e.code : undefined }, new Error(message))
       if (e instanceof PaymentError) {
         try {
@@ -459,11 +477,37 @@ export async function updateCustomerOrder(
     }
   }
 
-  return prisma.order.update({
+  const updatedOrder = await prisma.order.update({
     where: { id: orderId },
     data,
     include: { items: { include: { product: true } }, deliveryRoute: true, deliveryZone: true },
   })
+
+  if (updatedOrder.deliveryStreet || updatedOrder.deliveryCity) {
+    try {
+      const contactCustomer = await prisma.customer.findUnique({
+        where: { id: customerId },
+        select: { email: true },
+      })
+      await syncCustomerToContact({
+        id: customerId,
+        name: updatedOrder.customer,
+        email: contactCustomer?.email ?? "",
+        phone: updatedOrder.customerPhone,
+        addressCep: updatedOrder.deliveryCep,
+        addressStreet: updatedOrder.deliveryStreet,
+        addressNumber: updatedOrder.deliveryNumber,
+        addressComplement: updatedOrder.deliveryComplement,
+        addressNeighborhood: updatedOrder.deliveryNeighborhood,
+        addressCity: updatedOrder.deliveryCity,
+        addressState: updatedOrder.deliveryState,
+      })
+    } catch (e) {
+      logger.error("[orders] Falha ao sincronizar contato do cliente ao atualizar pedido", { customerId, orderId }, e)
+    }
+  }
+
+  return updatedOrder
 }
 
 export async function retryCustomerOrderPayment(customerId: string, orderId: string) {

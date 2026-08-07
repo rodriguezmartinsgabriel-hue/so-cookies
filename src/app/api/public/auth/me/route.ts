@@ -4,6 +4,8 @@ import { prisma } from "@/lib/prisma"
 import { compare, hash } from "bcryptjs"
 import { updateCustomerProfileSchema, getZodIssues } from "@/lib/validation"
 import { rateLimit } from "@/lib/rate-limit"
+import { syncCustomerToContact } from "@/lib/customer-contact"
+import { logger } from "@/lib/logger"
 
 export async function GET() {
   const { error, customer } = await requireCustomer()
@@ -69,6 +71,11 @@ export async function PATCH(request: Request) {
       data,
       select: customerSafeSelect,
     })
+    try {
+      await syncCustomerToContact(updated)
+    } catch (e) {
+      logger.error("Falha ao sincronizar contato do cliente no perfil", { customerId: customer.id }, e)
+    }
     return NextResponse.json(updated)
   } catch (e) {
     const issues = getZodIssues(e)

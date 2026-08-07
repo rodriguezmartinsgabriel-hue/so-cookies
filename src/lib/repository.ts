@@ -858,6 +858,13 @@ export const repository = {
       type?: string
       company?: string
       notes?: string
+      addressCep?: string
+      addressStreet?: string
+      addressNumber?: string
+      addressComplement?: string
+      addressNeighborhood?: string
+      addressCity?: string
+      addressState?: string
     }) {
       const id = generateTempId()
       const contact = {
@@ -879,7 +886,21 @@ export const repository = {
 
     async update(
       id: string,
-      data: { name?: string; email?: string; phone?: string; type?: string; company?: string; notes?: string },
+      data: {
+        name?: string
+        email?: string
+        phone?: string
+        type?: string
+        company?: string
+        notes?: string
+        addressCep?: string
+        addressStreet?: string
+        addressNumber?: string
+        addressComplement?: string
+        addressNeighborhood?: string
+        addressCity?: string
+        addressState?: string
+      },
     ) {
       const updatedAt = now()
       await db.contacts.update(id, { ...data, updatedAt, _synced: false, _updatedAt: updatedAt })

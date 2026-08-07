@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/Badge"
 import { Modal } from "@/components/ui/Modal"
 import { GlassSurface } from "@/components/ui/GlassSurface"
 import { repository } from "@/lib/repository"
+import { downloadCsv, csvFromSections, fileStamp } from "@/lib/csv"
 import type { Contact } from "@/lib/entity-types"
 import type { LocalContactInteraction } from "@/lib/db-local"
 import {
@@ -33,6 +34,8 @@ import {
   Send,
   Eye,
   Smartphone,
+  MapPin,
+  Download,
 } from "lucide-react"
 
 const TYPE_CONFIG: Record<
@@ -66,6 +69,29 @@ const FILTERS = [
 const inputClass =
   "w-full h-10 px-3 border border-line rounded-lg text-sm text-ink placeholder:text-kraft focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink transition-colors"
 
+function formatAddress(c: Contact): string | null {
+  const street = [c.addressStreet, c.addressNumber].filter(Boolean).join(", ")
+  const area = [c.addressNeighborhood, c.addressCity].filter(Boolean).join(" - ")
+  const state = c.addressState ? ` - ${c.addressState}` : ""
+  const cep = c.addressCep ? `CEP ${c.addressCep}` : ""
+  const main = [street, `${area}${state}`].filter(Boolean).join(" · ")
+  return [main, c.addressComplement, cep].filter(Boolean).join(" · ") || null
+}
+
+function searchableAddress(c: Contact): string {
+  return [
+    c.addressStreet,
+    c.addressNumber,
+    c.addressNeighborhood,
+    c.addressCity,
+    c.addressState,
+    c.addressCep,
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase()
+}
+
 export default function ContatosPage() {
   const { canEdit } = useRole()
   const { confirm, dialog } = useConfirm()
@@ -74,7 +100,21 @@ export default function ContatosPage() {
   const [search, setSearch] = useState("")
   const [filter, setFilter] = useState("ALL")
   const [showModal, setShowModal] = useState(false)
-  const [form, setForm] = useState({ name: "", email: "", phone: "", type: "CLIENTE", company: "", notes: "" })
+  const [form, setForm] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    type: "CLIENTE",
+    company: "",
+    notes: "",
+    addressCep: "",
+    addressStreet: "",
+    addressNumber: "",
+    addressComplement: "",
+    addressNeighborhood: "",
+    addressCity: "",
+    addressState: "",
+  })
 
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null)
   const [interactions, setInteractions] = useState<LocalContactInteraction[]>([])
@@ -103,7 +143,8 @@ export default function ContatosPage() {
       (c.name || "").toLowerCase().includes(q) ||
       (c.email || "").toLowerCase().includes(q) ||
       (c.phone || "").toLowerCase().includes(q) ||
-      (c.company || "").toLowerCase().includes(q)
+      (c.company || "").toLowerCase().includes(q) ||
+      searchableAddress(c).includes(q)
     return matchesFilter && matchesSearch
   })
 
@@ -114,8 +155,64 @@ export default function ContatosPage() {
   }, {})
   const appCount = contacts.filter((c) => !!c.customerId).length
 
+  function handleExportCsv() {
+    const rows = filtered.map((c) => [
+      c.name,
+      c.type,
+      c.company || "",
+      c.email || "",
+      c.phone || "",
+      c.addressStreet || "",
+      c.addressNumber || "",
+      c.addressComplement || "",
+      c.addressNeighborhood || "",
+      c.addressCity || "",
+      c.addressState || "",
+      c.addressCep || "",
+      c.notes || "",
+      c.customerId ? "sim" : "não",
+    ])
+    const content = csvFromSections([
+      {
+        title: "Contatos",
+        headers: [
+          "Nome",
+          "Tipo",
+          "Empresa",
+          "E-mail",
+          "Telefone",
+          "Rua",
+          "Número",
+          "Complemento",
+          "Bairro",
+          "Cidade",
+          "UF",
+          "CEP",
+          "Observações",
+          "Do app",
+        ],
+        rows,
+      },
+    ])
+    downloadCsv(`contatos-${fileStamp(new Date())}.csv`, content)
+  }
+
   function resetForm() {
-    setForm({ name: "", email: "", phone: "", type: "CLIENTE", company: "", notes: "" })
+    setForm({
+      name: "",
+      email: "",
+      phone: "",
+      type: "CLIENTE",
+      company: "",
+      notes: "",
+      addressCep: "",
+      addressStreet: "",
+      addressNumber: "",
+      addressComplement: "",
+      addressNeighborhood: "",
+      addressCity: "",
+      addressState: "",
+    })
   }
 
   async function handleCreate() {
@@ -127,6 +224,13 @@ export default function ContatosPage() {
       type: form.type,
       company: form.company.trim() || undefined,
       notes: form.notes.trim() || undefined,
+      addressCep: form.addressCep.trim() || undefined,
+      addressStreet: form.addressStreet.trim() || undefined,
+      addressNumber: form.addressNumber.trim() || undefined,
+      addressComplement: form.addressComplement.trim() || undefined,
+      addressNeighborhood: form.addressNeighborhood.trim() || undefined,
+      addressCity: form.addressCity.trim() || undefined,
+      addressState: form.addressState.trim() || undefined,
     })
     setShowModal(false)
     resetForm()
@@ -223,6 +327,10 @@ export default function ContatosPage() {
               Novo Contato
             </Button>
           )}
+          <Button variant="secondary" onClick={handleExportCsv}>
+            <Download className="w-4 h-4" />
+            Exportar CSV
+          </Button>
         </div>
 
         <div className="flex gap-2 overflow-x-auto pb-1">
@@ -244,7 +352,7 @@ export default function ContatosPage() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
           <Input
             type="text"
-            placeholder="Buscar por nome, e-mail, telefone ou empresa..."
+            placeholder="Buscar por nome, e-mail, telefone, empresa ou endereço..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-10 pr-4"
@@ -426,6 +534,12 @@ export default function ContatosPage() {
                       </span>
                     )}
                   </div>
+                  {formatAddress(c) && (
+                    <div className="flex items-center gap-1 text-xs text-muted truncate mt-1.5">
+                      <MapPin className="w-3 h-3 shrink-0" />
+                      <span className="truncate">{formatAddress(c)}</span>
+                    </div>
+                  )}
                 </Card>
               )
             })}
@@ -487,6 +601,56 @@ export default function ContatosPage() {
                     placeholder="Ex: Padaria Central"
                     value={form.company}
                     onChange={(e) => setForm({ ...form, company: e.target.value })}
+                  />
+                </div>
+              </div>
+              <div>
+                <p className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Endereço</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="col-span-2">
+                    <Input
+                      type="text"
+                      placeholder="Rua / Avenida"
+                      value={form.addressStreet}
+                      onChange={(e) => setForm({ ...form, addressStreet: e.target.value })}
+                    />
+                  </div>
+                  <Input
+                    type="text"
+                    placeholder="Número"
+                    value={form.addressNumber}
+                    onChange={(e) => setForm({ ...form, addressNumber: e.target.value })}
+                  />
+                  <Input
+                    type="text"
+                    placeholder="Complemento"
+                    value={form.addressComplement}
+                    onChange={(e) => setForm({ ...form, addressComplement: e.target.value })}
+                  />
+                  <Input
+                    type="text"
+                    placeholder="Bairro"
+                    value={form.addressNeighborhood}
+                    onChange={(e) => setForm({ ...form, addressNeighborhood: e.target.value })}
+                  />
+                  <Input
+                    type="text"
+                    placeholder="CEP"
+                    value={form.addressCep}
+                    onChange={(e) => setForm({ ...form, addressCep: e.target.value })}
+                  />
+                  <Input
+                    type="text"
+                    placeholder="Cidade"
+                    value={form.addressCity}
+                    onChange={(e) => setForm({ ...form, addressCity: e.target.value })}
+                  />
+                  <Input
+                    type="text"
+                    placeholder="UF"
+                    maxLength={2}
+                    value={form.addressState}
+                    onChange={(e) => setForm({ ...form, addressState: e.target.value })}
                   />
                 </div>
               </div>
@@ -587,6 +751,12 @@ export default function ContatosPage() {
                       </span>
                     )}
                   </div>
+                  {formatAddress(selectedContact) && (
+                    <div className="flex items-start gap-2 text-sm text-ink bg-cream rounded-lg p-3 border border-line">
+                      <MapPin className="w-4 h-4 text-muted shrink-0 mt-0.5" />
+                      <span>{formatAddress(selectedContact)}</span>
+                    </div>
+                  )}
                   {editingNotes ? (
                     <div>
                       <p className="text-xs font-semibold text-muted uppercase tracking-wide mb-1">Observações</p>
