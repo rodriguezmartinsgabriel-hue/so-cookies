@@ -3,6 +3,7 @@ import { z } from "zod"
 import { prisma } from "@/lib/prisma"
 import type { Prisma } from "@/generated/prisma/client"
 import { requireAuth } from "@/lib/api-auth"
+import { logger } from "@/lib/logger"
 import { applyOrderUpdate, findOrCreateContact } from "@/lib/db"
 import { resolveRefs, runDelete } from "@/lib/sync-refs"
 import { recordSyncDelete } from "@/lib/sync-deletes"
@@ -670,7 +671,7 @@ export async function POST(request: Request) {
         }
       }
     } catch (e) {
-      console.error(`Sync error for ${key}`, e)
+      logger.error(`Sync error for ${key}`, { key }, e)
       entry.error = "Erro ao aplicar alteração"
       if (e && typeof e === "object" && (e as { code?: unknown }).code === "P2025") {
         entry.notFound = true
@@ -689,7 +690,7 @@ export async function POST(request: Request) {
     const deleteCutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
     await prisma.syncDelete.deleteMany({ where: { createdAt: { lt: deleteCutoff } } })
   } catch (e) {
-    console.error("Falha ao purgar SyncApply/SyncDelete:", e)
+    logger.error("Falha ao purgar SyncApply/SyncDelete", undefined, e)
   }
 
   return NextResponse.json({ ok: processed.every((p) => p.ok), processed })

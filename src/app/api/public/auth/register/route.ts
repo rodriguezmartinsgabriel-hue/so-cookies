@@ -5,6 +5,7 @@ import { setCustomerCookie, customerSafeSelect } from "@/lib/customer-auth"
 import { syncCustomerToContact } from "@/lib/customer-contact"
 import { registerCustomerSchema, getZodIssues } from "@/lib/validation"
 import { rateLimit } from "@/lib/rate-limit"
+import { logger } from "@/lib/logger"
 
 export async function POST(request: Request) {
   const limited = rateLimit(request, 5, 60_000)
@@ -35,7 +36,7 @@ export async function POST(request: Request) {
         phone: parsed.phone || null,
       })
     } catch (e) {
-      console.error("Falha ao sincronizar contato do cliente", e)
+      logger.error("Falha ao sincronizar contato do cliente", { customerId: customer.id }, e)
     }
     return NextResponse.json(customer, { status: 201 })
   } catch (e) {

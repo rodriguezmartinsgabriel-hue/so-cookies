@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma"
+import { logger } from "./logger"
 
 export const CUSTOMER_CONTACT_NOTE = "Cliente cadastrado pelo app"
 
@@ -8,7 +9,7 @@ async function withRetry<T>(op: () => Promise<T>): Promise<T> {
   try {
     return await op()
   } catch (e) {
-    console.error("[syncCustomerToContact] primeira tentativa falhou; tentando novamente", e)
+    logger.warn("[syncCustomerToContact] primeira tentativa falhou; tentando novamente", undefined, e)
     await sleep(200)
     return op()
   }
@@ -53,11 +54,11 @@ export async function syncCustomerToContact(customer: {
     )
     return { contactId: created.id, created: true }
   } catch (e) {
-    console.error("[syncCustomerToContact] falha ao sincronizar contato do cliente", {
-      customerId: customer.id,
-      email: customer.email,
-      error: e instanceof Error ? e.message : String(e),
-    })
+    logger.error(
+      "[syncCustomerToContact] falha ao sincronizar contato do cliente",
+      { customerId: customer.id, email: customer.email },
+      e,
+    )
     throw e
   }
 }

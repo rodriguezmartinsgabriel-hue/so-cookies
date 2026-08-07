@@ -1,6 +1,7 @@
 import { randomUUID } from "crypto"
 import { mpAccessToken } from "./config"
 import { PaymentError } from "./errors"
+import { logger } from "../logger"
 
 const API_BASE = "https://api.mercadopago.com"
 
@@ -59,7 +60,9 @@ export async function createPixPayment(input: CreatePixPaymentInput): Promise<Cr
     const detail =
       [json?.message, json?.error, JSON.stringify(json?.cause ?? null)].filter(Boolean).join(" ") ||
       JSON.stringify(json)
-    console.error("[payments] Mercado Pago falhou ao criar pagamento", { status: res.status, response: json })
+    logger.error("[payments] Mercado Pago falhou ao criar pagamento", {
+      status: res.status,
+    })
     throw new PaymentError("PROVIDER_ERROR", `Mercado Pago falhou ao criar pagamento (${res.status}): ${detail}`)
   }
   const tx = json?.point_of_interaction?.transaction_data

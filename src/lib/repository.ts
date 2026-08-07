@@ -9,15 +9,14 @@ import {
 } from "./db-local"
 import { scheduleSync } from "./sync-service"
 import { emitDataRefresh } from "./refresh-events"
+import { logger } from "./logger"
 import { computeMargin } from "./utils"
 import type { EntityTable, IDType, UpdateSpec } from "dexie"
 
 export { onDataRefresh } from "./refresh-events"
 
 function logSyncError(entity: string, error: unknown): void {
-  if (process.env.NODE_ENV !== "production") {
-    console.error(`[sync:${entity}]`, error)
-  }
+  logger.error(`[sync:${entity}]`, { entity }, error)
 }
 
 const isOnline = () => navigator.onLine

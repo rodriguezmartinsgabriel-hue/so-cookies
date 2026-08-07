@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/Button"
 import { useQueryData } from "@/hooks/useQueryData"
 import { REPORT_PERIODS, buildReportSummary } from "@/lib/reports"
 import { buildReportCsv, downloadCsv, fileStamp } from "@/lib/csv"
+import { logger } from "@/lib/logger"
 import { TrendingUp, DollarSign, ShoppingCart, Package, Truck, FileDown, FileSpreadsheet, Loader2 } from "lucide-react"
 
 const COLORS = ["var(--danger)", "var(--warning)", "var(--success)", "var(--ink)"]
@@ -60,7 +61,7 @@ export default function RelatoriosPage() {
       const { downloadReportPdf } = await import("@/lib/report-pdf")
       downloadReportPdf(summary, `relatorio-${period.key}-${fileStamp(new Date())}.pdf`)
     } catch (e) {
-      console.error("Erro ao gerar PDF:", e)
+      logger.error("Erro ao gerar PDF", undefined, e)
     } finally {
       setExporting(false)
     }

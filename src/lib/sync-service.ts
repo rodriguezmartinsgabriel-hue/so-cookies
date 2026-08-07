@@ -1,4 +1,5 @@
 import type { EntityTable } from "dexie"
+import { logger } from "./logger"
 import {
   db,
   getLastSyncTime,
@@ -200,7 +201,7 @@ export async function pushPendingChanges() {
     }
     return { pushed }
   } catch (e) {
-    console.error("Erro no push:", e)
+    logger.error("Erro no push", undefined, e)
   } finally {
     releaseLock()
   }
@@ -374,7 +375,7 @@ export async function pullChanges() {
       return { pulled }
     }
   } catch (e) {
-    console.error("Erro no pull:", e)
+    logger.error("Erro no pull", undefined, e)
   } finally {
     releaseLock()
   }

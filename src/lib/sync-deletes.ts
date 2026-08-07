@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma"
+import { logger } from "./logger"
 
 export async function recordSyncDelete(entity: string, recordId: string) {
   try {
@@ -8,6 +9,6 @@ export async function recordSyncDelete(entity: string, recordId: string) {
       create: { entity, recordId },
     })
   } catch (e) {
-    console.error("Falha ao registrar exclusão:", e)
+    logger.error("Falha ao registrar exclusão", { entity, recordId }, e)
   }
 }

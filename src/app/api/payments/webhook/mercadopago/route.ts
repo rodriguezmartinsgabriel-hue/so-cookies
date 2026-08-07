@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { verifyWebhookSignature } from "@/lib/payments/webhook"
 import { handlePaymentWebhook } from "@/lib/payments/service"
 import { mpWebhookSecret } from "@/lib/payments/config"
+import { logger } from "@/lib/logger"
 
 export async function POST(request: Request) {
   const searchParams = new URL(request.url).searchParams
@@ -27,7 +28,7 @@ export async function POST(request: Request) {
   try {
     await handlePaymentWebhook({ paymentId: dataId })
   } catch (error) {
-    console.error("[webhook] erro ao processar", error)
+    logger.error("[webhook] erro ao processar", { paymentId: dataId }, error)
     return NextResponse.json({ error: "Erro ao processar webhook" }, { status: 500 })
   }
 

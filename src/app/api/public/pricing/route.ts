@@ -4,6 +4,7 @@ import { buildPricingEngine, PricingContext } from "@so-cookies/pricing"
 import { prisma } from "@/lib/prisma"
 import { getCustomerSession } from "@/lib/customer-auth"
 import { toNumber } from "@/lib/utils"
+import { logger } from "@/lib/logger"
 
 const pricingSchema = z.object({
   items: z
@@ -60,7 +61,7 @@ export async function POST(req: NextRequest) {
     const result = await engine.calculatePrice(context)
     return NextResponse.json(result)
   } catch (err) {
-    console.error("[pricing] error:", err)
+    logger.error("[pricing] error:", undefined, err)
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Failed to calculate price" },
       { status: 400 },

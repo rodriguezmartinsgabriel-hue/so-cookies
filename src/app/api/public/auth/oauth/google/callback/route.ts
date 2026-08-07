@@ -12,6 +12,7 @@ import {
 import { setCustomerCookie } from "@/lib/customer-auth"
 import { syncCustomerToContact } from "@/lib/customer-contact"
 import { rateLimit } from "@/lib/rate-limit"
+import { logger } from "@/lib/logger"
 
 export async function GET(request: Request) {
   const limited = rateLimit(request, 10, 60_000)
@@ -26,9 +27,8 @@ export async function GET(request: Request) {
   const saved = stateParam ? await verifyOAuthState(stateParam) : null
 
   if (!saved) {
-    console.warn("[oauth] invalid_state", {
+    logger.warn("[oauth] invalid_state", {
       hasStateParam: Boolean(stateParam),
-      invalidSignature: Boolean(stateParam),
     })
     return oauthErrorRedirect(request, "invalid_state")
   }
@@ -57,7 +57,7 @@ export async function GET(request: Request) {
       try {
         await syncCustomerToContact({ id: customerId, name: profile.name || profile.email, email: profile.email })
       } catch (e) {
-        console.error("Falha ao sincronizar contato do cliente OAuth", e)
+        logger.error("Falha ao sincronizar contato do cliente OAuth", { customerId }, e)
       }
     }
     await setCustomerCookie(customerId)

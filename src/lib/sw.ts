@@ -1,3 +1,5 @@
+import { logger } from "./logger"
+
 export async function clearSWCaches(): Promise<void> {
   if (typeof caches === "undefined") return
   const cacheNames = await caches.keys()
@@ -12,7 +14,7 @@ export async function clearDexieDB(): Promise<void> {
     request.onsuccess = () => resolve()
     request.onerror = () => reject(request.error)
     request.onblocked = () => {
-      console.warn("[sw] IndexedDB delete blocked - will retry on next unload")
+      logger.warn("[sw] IndexedDB delete blocked - will retry on next unload")
       resolve()
     }
   })

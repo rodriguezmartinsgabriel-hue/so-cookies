@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
+import { logger } from "./logger"
 
 export type Notification = {
   id: string
@@ -104,7 +105,7 @@ export function useNotifications() {
       clearOldReads(notifs.map((n) => n.id))
       setNotifications(notifs)
     } catch (e) {
-      console.error("Erro ao carregar notificações:", e)
+      logger.error("Erro ao carregar notificações", undefined, e)
     }
     setLoading(false)
   }, [])
@@ -118,7 +119,7 @@ export function useNotifications() {
         clearOldReads(notifs.map((n) => n.id))
         setNotifications(notifs)
       } catch (e) {
-        console.error("Erro ao carregar notificações:", e)
+        logger.error("Erro ao carregar notificações", undefined, e)
       }
       if (!ignore) setLoading(false)
     }

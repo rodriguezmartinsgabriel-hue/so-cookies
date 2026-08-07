@@ -5,6 +5,7 @@ import { buildPricingEngine } from "@so-cookies/pricing"
 import { PricingContext } from "@so-cookies/pricing"
 import { createOrderPayment } from "./payments/service"
 import { PaymentError } from "./payments/errors"
+import { logger } from "./logger"
 import type { OrderStatus } from "@/generated/prisma/enums"
 
 const PICKUP_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
@@ -245,7 +246,7 @@ export async function createCustomerOrder(
       await createOrderPayment(order.id)
     } catch (e) {
       const message = e instanceof Error ? e.message : String(e)
-      console.error("[orders] Falha ao criar pagamento PIX para pedido %s: %s", order.id, message)
+      logger.error("[orders] Falha ao criar pagamento PIX para pedido", { orderId: order.id }, new Error(message))
       if (e instanceof PaymentError) {
         await prisma.order
           .update({

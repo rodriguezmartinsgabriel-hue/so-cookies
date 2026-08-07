@@ -6,7 +6,6 @@ import { SerwistProvider } from "@serwist/turbopack/react"
 import Providers from "./providers"
 import { LoadingScreen } from "@/components/layout/LoadingScreen"
 import { UpdateWatcher } from "@/components/pwa/UpdateWatcher"
-import { WebVitals } from "@/components/layout/WebVitals"
 
 const inter = Inter({
   subsets: ["latin"],
@@ -110,7 +109,6 @@ export default async function RootLayout({
           <Providers>
             <LoadingScreen />
             <UpdateWatcher />
-            <WebVitals />
             {children}
           </Providers>
         </SerwistProvider>

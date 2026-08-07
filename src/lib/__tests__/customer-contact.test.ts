@@ -164,7 +164,7 @@ describe("syncCustomerToContact", () => {
       if (calls === 1) throw new Error("boom")
       return originalCreate(args)
     }
-    const logSpy = vi.spyOn(console, "error").mockImplementation(() => {})
+    const logSpy = vi.spyOn(console, "warn").mockImplementation(() => {})
     const result = await syncCustomerToContact({ id: "cust-1", name: "Maria", email: "maria@test.com" })
     expect(calls).toBe(2)
     expect(result.created).toBe(true)
