@@ -9,6 +9,8 @@ import { StickyBottomCTA } from "@/components/customer/StickyBottomCTA"
 import { CheckoutStepper } from "@/components/customer/CheckoutStepper"
 import { OrderNotesField } from "@/components/customer/OrderNotesField"
 import { OrderConfirmDialog } from "@/components/customer/OrderConfirmDialog"
+import { PageHeader } from "@/components/customer/PageHeader"
+import { SectionCard } from "@/components/customer/SectionCard"
 import { EmptyState } from "@/components/ui/EmptyState"
 import { useCart } from "@/hooks/useCart"
 import { usePricing } from "@/hooks/usePricing"
@@ -219,10 +221,7 @@ export default function CarrinhoPage() {
   return (
     <CustomerShell cartCount={count} cartTotal={total} showCartBar={false}>
       <div className="space-y-4">
-        <div>
-          <h1 className="text-2xl font-bold text-ink">Carrinho</h1>
-          <p className="text-sm text-muted">Revise seu pedido antes de finalizar</p>
-        </div>
+        <PageHeader eyebrow="Carrinho" title="Finalize seu pedido" subtitle="Revise os itens e escolha como receber" />
 
         {loading && (
           <div className="space-y-2">
@@ -267,7 +266,7 @@ export default function CarrinhoPage() {
                         exit={{ opacity: 0, x: -20, scale: 0.97 }}
                         transition={{ duration: 0.25, ease: "easeOut" }}
                       >
-                        <Card padded={false} className="flex items-center gap-2 sm:gap-3 p-3 overflow-hidden">
+                        <Card padded={false} className="flex items-center gap-2 sm:gap-3 p-3 overflow-hidden rounded-2xl">
                           {l.product.image ? (
                             <div className="relative w-14 h-14 sm:w-16 sm:h-16 shrink-0">
                               <Skeleton
@@ -373,7 +372,7 @@ export default function CarrinhoPage() {
 
             {checkoutStep === 2 && (
               <>
-                <Card padded={false}>
+                <Card padded={false} className="rounded-2xl overflow-hidden">
                   <div className="p-4">
                     <p className="text-sm font-semibold text-ink mb-3">Como você quer receber?</p>
                     <div className="grid grid-cols-2 gap-2">
@@ -383,7 +382,7 @@ export default function CarrinhoPage() {
                           haptic.selection()
                           setMode("retirada")
                         }}
-                        className={`flex items-center justify-center gap-2 h-12 rounded-lg border text-sm font-medium transition-colors ${mode === "retirada" ? "border-ink bg-ink text-paper" : "border-line text-ink hover:bg-cream"}`}
+                        className={`flex items-center justify-center gap-2 h-12 rounded-2xl border text-sm font-medium transition-colors ${mode === "retirada" ? "border-ink bg-ink text-paper" : "border-line text-ink hover:bg-cream"}`}
                       >
                         <Store className="w-4 h-4" /> Retirar na loja
                       </button>
@@ -395,7 +394,7 @@ export default function CarrinhoPage() {
                           setSlotsLoading(true)
                           setSlotsError("")
                         }}
-                        className={`flex items-center justify-center gap-2 h-12 rounded-lg border text-sm font-medium transition-colors ${mode === "entrega" ? "border-ink bg-ink text-paper" : "border-line text-ink hover:bg-cream"}`}
+                        className={`flex items-center justify-center gap-2 h-12 rounded-2xl border text-sm font-medium transition-colors ${mode === "entrega" ? "border-ink bg-ink text-paper" : "border-line text-ink hover:bg-cream"}`}
                       >
                         <Truck className="w-4 h-4" /> Entrega agendada
                       </button>
@@ -426,7 +425,7 @@ export default function CarrinhoPage() {
                                   type="button"
                                   disabled={full}
                                   onClick={() => setSelectedSlot(slot)}
-                                  className={`w-full text-left p-3 rounded-lg border transition-colors ${full ? "opacity-50 cursor-not-allowed border-line bg-cream/30" : active ? "border-ink bg-ink text-paper" : "border-line bg-paper hover:bg-cream/50"}`}
+                                  className={`w-full text-left p-3 rounded-2xl border transition-colors ${full ? "opacity-50 cursor-not-allowed border-line bg-cream/30" : active ? "border-ink bg-ink text-paper" : "border-line bg-paper hover:bg-cream/50"}`}
                                 >
                                   <div className="flex items-center justify-between gap-2">
                                     <span className={`text-sm font-semibold ${active ? "text-paper" : "text-ink"}`}>
@@ -559,9 +558,8 @@ export default function CarrinhoPage() {
 
             {checkoutStep === 3 && (
               <>
-                <Card padded={false}>
+                <SectionCard title="Resumo dos itens">
                   <div className="p-4 space-y-3">
-                    <p className="text-sm font-semibold text-ink">Resumo dos itens</p>
                     {lines.map((l) => {
                       const resolved = resolvedUnitPriceByProduct.get(l.productId)
                       const hasDiscount = resolved !== undefined && resolved < l.product.price
@@ -584,14 +582,11 @@ export default function CarrinhoPage() {
                       )
                     })}
                   </div>
-                </Card>
+                </SectionCard>
 
                 {mode === "entrega" && selectedSlot && (
-                  <Card padded={false}>
+                  <SectionCard icon={<Truck className="w-4 h-4" />} title="Entrega">
                     <div className="p-4 space-y-1">
-                      <p className="text-sm font-semibold text-ink flex items-center gap-1.5">
-                        <Truck className="w-4 h-4" /> Entrega
-                      </p>
                       <p className="text-sm text-ink">{selectedSlot.dateLabel}</p>
                       <p className="text-xs text-muted">{selectedSlot.windowLabel}</p>
                       {address.street && (
@@ -603,16 +598,15 @@ export default function CarrinhoPage() {
                         </p>
                       )}
                     </div>
-                  </Card>
+                  </SectionCard>
                 )}
 
                 <OrderNotesField value={orderNotes} onChange={setOrderNotes} />
 
                 <LoyaltyPreview preview={result?.state.loyaltyPreview} />
 
-                <Card padded={false}>
+                <SectionCard title="Cupom de desconto">
                   <div className="p-4 space-y-2">
-                    <p className="text-sm font-semibold text-ink">Cupom de desconto</p>
                     <div className="flex gap-2">
                       <Input
                         type="text"
@@ -651,7 +645,7 @@ export default function CarrinhoPage() {
                       </p>
                     ) : null}
                   </div>
-                </Card>
+                </SectionCard>
 
                 <div className="flex items-center justify-between border-t border-line pt-3">
                   <p className="text-sm text-muted">Total</p>
