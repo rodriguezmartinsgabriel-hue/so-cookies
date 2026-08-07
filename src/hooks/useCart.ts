@@ -1,6 +1,6 @@
 "use client"
 
-import { useSyncExternalStore, useCallback } from "react"
+import { useSyncExternalStore, useCallback, useState } from "react"
 
 export type CartItem = { productId: string; qty: number }
 
@@ -33,31 +33,33 @@ let cartState: CartState = (() => {
   return { items, count: computeCount(items) }
 })()
 
+function syncFromStorage() {
+  if (typeof window === "undefined") return
+  const raw = localStorage.getItem(STORAGE_KEY)
+  if (raw === lastStored) return
+  lastStored = raw
+  let items: CartItem[] = []
+  try {
+    items = raw ? (JSON.parse(raw) as CartItem[]) : []
+  } catch {}
+  cartState = { items, count: computeCount(items) }
+}
+
 function getSnapshot(): CartState {
-  if (typeof window !== "undefined") {
-    const stored = localStorage.getItem(STORAGE_KEY)
-    if (stored !== lastStored) {
-      lastStored = stored
-      let items: CartItem[] = []
-      try {
-        items = stored ? (JSON.parse(stored) as CartItem[]) : []
-      } catch {}
-      cartState = { items, count: computeCount(items) }
-    }
-  }
   return cartState
 }
 
 const listeners = new Set<Listener>()
 
 function persist(items: CartItem[]) {
+  const json = JSON.stringify(items)
   try {
-    const json = JSON.stringify(items)
     localStorage.setItem(STORAGE_KEY, json)
-    lastStored = json
   } catch {}
+  const previous = lastStored
+  lastStored = json
   if (typeof window !== "undefined") {
-    window.dispatchEvent(new StorageEvent("storage", { key: STORAGE_KEY }))
+    window.dispatchEvent(new StorageEvent("storage", { key: STORAGE_KEY, oldValue: previous, newValue: json }))
   }
 }
 
@@ -122,6 +124,11 @@ if (typeof window !== "undefined") {
 }
 
 export function useCart() {
+  useState(() => {
+    syncFromStorage()
+    return false
+  })
+
   const { items, count } = useSyncExternalStore(cartStore.subscribe, cartStore.getSnapshot, () => EMPTY_CART)
 
   const addItem = useCallback((productId: string, qty = 1) => cartStore.addItem(productId, qty), [])

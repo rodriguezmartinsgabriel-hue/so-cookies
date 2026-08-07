@@ -16,6 +16,7 @@ import { EditPasswordModal } from "@/components/customer/EditPasswordModal"
 import { LoyaltySection } from "@/components/customer/LoyaltySection"
 import { Button } from "@/components/ui/Button"
 import { useHapticFeedback } from "@/hooks/useHapticFeedback"
+import { useReducedMotion } from "@/hooks/useReducedMotion"
 import { useToast } from "@/components/ui/Toast"
 import { type AddressState } from "@/lib/customer-types"
 import { meQueryKey, useLoyaltyBalance, useMe, useOrders } from "@/hooks/customer/queries"
@@ -38,6 +39,7 @@ export function PerfilTab() {
   const haptic = useHapticFeedback()
   const { toast } = useToast()
   const queryClient = useQueryClient()
+  const reducedMotion = useReducedMotion()
 
   const { data: profile, isLoading } = useMe()
   const { data: orders = [] } = useOrders()
@@ -139,7 +141,7 @@ export function PerfilTab() {
   const handleScrollToPontos = () => {
     const el = document.getElementById("pontos")
     if (!el) return
-    el.scrollIntoView({ behavior: "smooth", block: "start" })
+    el.scrollIntoView({ behavior: reducedMotion ? "auto" : "smooth", block: "start" })
   }
 
   const loyaltyBalance = loyalty?.balance ?? 0
