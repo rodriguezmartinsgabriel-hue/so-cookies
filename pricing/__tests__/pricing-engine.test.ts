@@ -176,6 +176,19 @@ describe("PricingEngine v2", () => {
     expect(result.summary.total).toBeCloseTo(60, 2)
   })
 
+  it("não aplica faixa de preço quando a flag activatePriceTier está desativada", async () => {
+    const engine = createEngine({
+      products: [productFactory()],
+      priceTiers: { "prod-1": [priceTierFactory({ minQty: 5, maxQty: null, price: new Decimal(12) })] },
+      config: channelConfigFactory({ activatePriceTier: false }),
+    })
+    const result = await engine.calculatePrice(pricingContextFactory())
+
+    expect(result.state.items[0].priceAfterDiscount).toBeCloseTo(15, 2)
+    expect(result.summary.discountTotal).toBeCloseTo(0, 2)
+    expect(result.summary.total).toBeCloseTo(75, 2)
+  })
+
   it("cupom BUY_X_GET_Y gera warning e não desconta", async () => {
     const coupon = couponFactory({ code: "BUY2GET1", type: "BUY_X_GET_Y", value: new Decimal(1) })
     const engine = createEngine({ products: [productFactory()], coupons: [coupon] })

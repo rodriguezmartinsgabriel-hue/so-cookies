@@ -36,6 +36,7 @@ export type Product = {
   unit: string
   active: boolean
   image: string | null
+  description: string | null
   createdAt: string
   updatedAt: string
 }
@@ -86,6 +87,7 @@ export type PriceTier = {
   minQty: number
   maxQty: number | null
   price: number
+  enabled: boolean
   productId: string
   createdAt: string
   updatedAt: string

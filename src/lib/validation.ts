@@ -120,6 +120,7 @@ export const createProductSchema = z.object({
   unit: z.string().optional(),
   image: z.string().nullable().optional(),
   active: z.boolean().optional(),
+  description: z.string().nullable().optional(),
 })
 
 export const createProductSyncSchema = createProductSchema.extend({
@@ -182,6 +183,7 @@ export const createPriceTierSchema = z.object({
   minQty: z.number().int().min(0),
   maxQty: z.number().int().optional(),
   price: z.number().min(0, "Preço deve ser positivo"),
+  enabled: z.boolean().optional(),
 })
 
 export const createDeliveryCostSchema = z.object({
@@ -212,6 +214,7 @@ export const updateProductSchema = z.object({
   sku: z.string().optional(),
   unit: z.string().optional(),
   image: z.string().nullable().optional(),
+  description: z.string().nullable().optional(),
 })
 
 export const updateChannelSchema = z.object({
@@ -268,6 +271,7 @@ export const updatePriceTierSchema = z.object({
   minQty: z.number().int().min(0).optional(),
   maxQty: z.number().int().optional(),
   price: z.number().min(0).optional(),
+  enabled: z.boolean().optional(),
 })
 
 export const USER_ROLES = ["ADMIN", "OPERACIONAL", "VISUALIZADOR"] as const

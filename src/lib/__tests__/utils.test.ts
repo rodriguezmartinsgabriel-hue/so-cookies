@@ -1,5 +1,13 @@
 import { describe, it, expect } from "vitest"
-import { cn, computeMargin, formatBRL, parseCurrencyPtBr, resolveProductImage, toCatalogProduct } from "@/lib/utils"
+import {
+  cn,
+  computeMargin,
+  formatBRL,
+  parseCurrencyPtBr,
+  resolveProductImage,
+  toCatalogProduct,
+  toNumber,
+} from "@/lib/utils"
 
 describe("cn", () => {
   it("merges class names", () => {
@@ -50,6 +58,25 @@ describe("computeMargin", () => {
   it("retorna 0 para preço não finito", () => {
     expect(computeMargin(NaN, 5)).toBe(0)
     expect(computeMargin(Infinity, 5)).toBe(0)
+  })
+})
+
+describe("toNumber", () => {
+  it("aceita number diretamente", () => {
+    expect(toNumber(12.5)).toBe(12.5)
+  })
+
+  it("converte string de Decimal serializado no JSON", () => {
+    expect(toNumber("12.50")).toBe(12.5)
+  })
+
+  it("retorna 0 para string inválida", () => {
+    expect(toNumber("abc")).toBe(0)
+  })
+
+  it("retorna 0 para null e undefined", () => {
+    expect(toNumber(null)).toBe(0)
+    expect(toNumber(undefined)).toBe(0)
   })
 })
 

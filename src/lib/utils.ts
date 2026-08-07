@@ -6,11 +6,23 @@ export function cn(...inputs: ClassValue[]) {
   return clsx(inputs)
 }
 
-/** Normaliza um valor Decimal do Prisma ou number para number (útil em aggregations e KPIs). */
-export function toNumber(value: Decimal | number | null | undefined): number {
+/** Normaliza um valor Decimal do Prisma, string (ex.: Decimal serializado no JSON) ou number para number. */
+export function toNumber(value: unknown): number {
   if (value == null) return 0
   if (typeof value === "number") return value
-  return value.toNumber()
+  if (typeof value === "string") {
+    const n = Number(value)
+    return Number.isFinite(n) ? n : 0
+  }
+  if (
+    typeof value === "object" &&
+    "toNumber" in value &&
+    typeof (value as { toNumber(): number }).toNumber === "function"
+  ) {
+    const n = (value as { toNumber(): number }).toNumber()
+    return Number.isFinite(n) ? n : 0
+  }
+  return 0
 }
 
 export function parseCurrencyPtBr(value: string): number {

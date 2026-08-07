@@ -226,11 +226,19 @@ async function pullUnsyncedIds<T extends { id: string; _synced?: boolean }>(tabl
   return new Set((await table.toArray()).filter((r) => r._synced === false).map((r) => r.id))
 }
 
-async function writeRows<TLocal extends LocalSyncRow>(table: EntityTable<TLocal, "id">, rows: TLocal[] | undefined) {
+async function writeRows<TLocal extends LocalSyncRow>(
+  table: EntityTable<TLocal, "id">,
+  rows: TLocal[] | undefined,
+  normalize?: (row: TLocal) => TLocal,
+) {
   if (!rows?.length) return 0
   const skip = await pullUnsyncedIds(table)
   const toWrite = rows
     .filter((r) => !skip.has(r.id))
+    .map(
+      (r) =>
+        (normalize ? normalize(r) : r) as TLocal & { _synced: boolean; _updatedAt: string },
+    )
     .map(
       (r) =>
         ({
@@ -243,6 +251,41 @@ async function writeRows<TLocal extends LocalSyncRow>(table: EntityTable<TLocal,
   await table.bulkPut(toWrite)
   return toWrite.length
 }
+
+function toNum(value: unknown): number {
+  if (typeof value === "number") return value
+  if (typeof value === "string") {
+    const n = Number(value)
+    return Number.isFinite(n) ? n : 0
+  }
+  if (
+    typeof value === "object" &&
+    value !== null &&
+    "toNumber" in value &&
+    typeof (value as { toNumber(): number }).toNumber === "function"
+  ) {
+    const n = (value as { toNumber(): number }).toNumber()
+    return Number.isFinite(n) ? n : 0
+  }
+  return 0
+}
+
+const normalizeProduct = (r: LocalProduct): LocalProduct => ({
+  ...r,
+  price: toNum(r.price),
+  cost: toNum(r.cost),
+  margin: toNum(r.margin),
+})
+
+const normalizePriceTier = (r: LocalPriceTier): LocalPriceTier => ({
+  ...r,
+  price: toNum(r.price),
+})
+
+const normalizeChannel = (r: LocalChannel): LocalChannel => ({
+  ...r,
+  commission: toNum(r.commission),
+})
 
 function getLocalTable(entity: string): LocalSyncTable | undefined {
   const tableName = ENTITY_TABLES[entity]
@@ -309,9 +352,9 @@ export async function pullChanges() {
       pulled += await writeRows(db.sales, data.sales as LocalSale[] | undefined)
       pulled += await writeRows(db.cashFlow, data.cashFlow as LocalCashFlow[] | undefined)
       pulled += await writeRows(db.productions, data.productions as LocalProduction[] | undefined)
-      pulled += await writeRows(db.products, data.products as LocalProduct[] | undefined)
+      pulled += await writeRows(db.products, data.products as LocalProduct[] | undefined, normalizeProduct)
       pulled += await writeRows(db.ingredients, data.ingredients as LocalIngredient[] | undefined)
-      pulled += await writeRows(db.priceTiers, data.priceTiers as LocalPriceTier[] | undefined)
+      pulled += await writeRows(db.priceTiers, data.priceTiers as LocalPriceTier[] | undefined, normalizePriceTier)
       pulled += await writeRows(db.documents, data.documents as LocalDocument[] | undefined)
       pulled += await writeRows(db.deliveryCosts, data.deliveryCosts as LocalDeliveryCost[] | undefined)
       pulled += await writeRows(db.contacts, data.contacts as LocalContact[] | undefined)
@@ -319,7 +362,7 @@ export async function pullChanges() {
         db.contactInteractions,
         data.contactInteractions as LocalContactInteraction[] | undefined,
       )
-      pulled += await writeRows(db.channels, data.channels as LocalChannel[] | undefined)
+      pulled += await writeRows(db.channels, data.channels as LocalChannel[] | undefined, normalizeChannel)
 
       const recipeRows = data.recipes as Array<Omit<LocalRecipe, "ingredients"> & { ingredients?: unknown }> | undefined
       if (recipeRows?.length) {

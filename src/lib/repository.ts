@@ -15,6 +15,24 @@ import type { EntityTable, IDType, UpdateSpec } from "dexie"
 
 export { onDataRefresh } from "./refresh-events"
 
+function toNum(value: unknown): number {
+  if (typeof value === "number") return value
+  if (typeof value === "string") {
+    const n = Number(value)
+    return Number.isFinite(n) ? n : 0
+  }
+  if (
+    typeof value === "object" &&
+    value !== null &&
+    "toNumber" in value &&
+    typeof (value as { toNumber(): number }).toNumber === "function"
+  ) {
+    const n = (value as { toNumber(): number }).toNumber()
+    return Number.isFinite(n) ? n : 0
+  }
+  return 0
+}
+
 function logSyncError(entity: string, error: unknown): void {
   logger.error(`[sync:${entity}]`, { entity }, error)
 }
@@ -59,7 +77,8 @@ async function mergeTable<TLocal extends { id: string; _synced?: boolean }>(
 ) {
   const resp = await fetch(url)
   if (!resp.ok) return
-  const data = (await resp.json()) as TLocal[]
+  const raw = (await resp.json()) as TLocal[] | { data?: TLocal[]; nextCursor?: string | null }
+  const data = Array.isArray(raw) ? raw : Array.isArray(raw?.data) ? raw.data : []
   const realIds = new Set(data.map((r) => r.id))
   const unsyncedIds = await getUnsyncedIds(table)
   const queuedIds = await getQueuedIds()
@@ -329,7 +348,16 @@ export const repository = {
     async getAll() {
       const cached = await db.products.toArray()
       if (isOnline() && shouldFetch("/api/products")) {
-        mergeTable(db.products, "/api/products")
+        mergeTable(db.products, "/api/products", {
+          transform: (r) => ({
+            ...r,
+            price: toNum(r.price),
+            cost: toNum(r.cost),
+            margin: toNum(r.margin),
+            _synced: true,
+            _updatedAt: now(),
+          }),
+        })
           .then(() => emitDataRefresh())
           .catch((e) => logSyncError("products", e))
       }
@@ -345,6 +373,7 @@ export const repository = {
       unit?: string
       image?: string | null
       active?: boolean
+      description?: string | null
     }) {
       const id = generateTempId()
       const product = {
@@ -354,6 +383,7 @@ export const repository = {
         unit: data.unit || "un",
         active: data.active ?? true,
         image: data.image ?? null,
+        description: data.description ?? null,
         createdAt: now(),
         updatedAt: now(),
         _synced: false,
@@ -378,6 +408,7 @@ export const repository = {
         unit?: string
         image?: string | null
         active?: boolean
+        description?: string | null
       },
     ) {
       const updatedAt = now()
@@ -538,9 +569,24 @@ export const repository = {
       return cached
     },
 
-    async create(data: { name: string; minQty: number; maxQty?: number; price: number; productId?: string }) {
+    async create(data: {
+      name: string
+      minQty: number
+      maxQty?: number
+      price: number
+      productId?: string
+      enabled?: boolean
+    }) {
       const id = generateTempId()
-      const tier = { ...data, id, createdAt: now(), updatedAt: now(), _synced: false, _updatedAt: now() }
+      const tier = {
+        ...data,
+        enabled: data.enabled ?? true,
+        id,
+        createdAt: now(),
+        updatedAt: now(),
+        _synced: false,
+        _updatedAt: now(),
+      }
 
       await db.priceTiers.add(tier)
       await addToSyncQueue({ action: "create", entity: "priceTier", data: tier, tempId: id, createdAt: now() })
@@ -551,7 +597,7 @@ export const repository = {
 
     async update(
       id: string,
-      data: { name?: string; minQty?: number; maxQty?: number; price?: number; productId?: string },
+      data: { name?: string; minQty?: number; maxQty?: number; price?: number; productId?: string; enabled?: boolean },
     ) {
       const updatedAt = now()
       await db.priceTiers.update(id, { ...data, updatedAt, _synced: false, _updatedAt: updatedAt })

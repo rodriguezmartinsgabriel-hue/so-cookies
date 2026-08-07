@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef } from "react"
+import { useState, useRef, useMemo } from "react"
 import { useConfirm } from "@/hooks/useConfirm"
 import { useRole } from "@/hooks/useRole"
 import { useQueryData } from "@/hooks/useQueryData"
@@ -10,9 +10,11 @@ import { ErrorState } from "@/components/ui/ErrorState"
 import { Card } from "@/components/ui/Card"
 import { Button } from "@/components/ui/Button"
 import { Input } from "@/components/ui/Input"
+import { Badge } from "@/components/ui/Badge"
 import { Modal } from "@/components/ui/Modal"
 import { Table, THead, TBody, Tr, Th, Td } from "@/components/ui/Table"
 import { repository } from "@/lib/repository"
+import { formatBRL } from "@/lib/utils"
 import type { Ingredient, PriceTier, Product, Recipe, RecipeItem } from "@/lib/entity-types"
 import { Plus, Search, Edit, Trash2, AlertTriangle } from "lucide-react"
 
@@ -510,11 +512,9 @@ function PriceTiersTab() {
   const error = tiersError || productsError ? "Erro ao carregar faixas de preço" : null
   const [showModal, setShowModal] = useState(false)
   const [editingTier, setEditingTier] = useState<PriceTier | null>(null)
-  const [form, setForm] = useState({ name: "", minQty: "", maxQty: "", price: "", productId: "", type: "assado" })
+  const [form, setForm] = useState({ name: "", minQty: "", maxQty: "", price: "", productId: "" })
 
-  function productName(tier: PriceTier) {
-    return products.find((p: Product) => p.id === tier.productId)?.name || "—"
-  }
+  const resetForm = () => setForm({ name: "", minQty: "", maxQty: "", price: "", productId: "" })
 
   async function handleSave() {
     if (!form.name || !form.price) return
@@ -536,7 +536,7 @@ function PriceTiersTab() {
     }
     setShowModal(false)
     setEditingTier(null)
-    setForm({ name: "", minQty: "", maxQty: "", price: "", productId: "", type: "assado" })
+    resetForm()
     await invalidate()
   }
 
@@ -546,8 +546,28 @@ function PriceTiersTab() {
     await invalidate()
   }
 
-  const assadoTiers = tiers.filter((t: PriceTier) => t.name?.toLowerCase().includes("assado"))
-  const congeladoTiers = tiers.filter((t: PriceTier) => t.name?.toLowerCase().includes("congelado"))
+  async function handleToggleEnabled(tier: PriceTier) {
+    await repository.priceTiers.update(tier.id, { enabled: tier.enabled !== false ? false : true })
+    await invalidate()
+  }
+
+  const groups = useMemo(() => {
+    const list: { productId: string; name: string; tiers: PriceTier[] }[] = []
+    const index = new Map<string, number>()
+    for (const t of tiers) {
+      const pid = t.productId || "sem-produto"
+      const existing = index.has(pid) ? list[index.get(pid)!] : undefined
+      if (existing) {
+        existing.tiers.push(t)
+        continue
+      }
+      const display = products.find((p: Product) => p.id === t.productId)?.name
+      const group = { productId: pid, name: display || "Outros", tiers: [t] }
+      index.set(pid, list.length)
+      list.push(group)
+    }
+    return list.sort((a, b) => a.name.localeCompare(b.name))
+  }, [tiers, products])
 
   return (
     <div className="space-y-4">
@@ -557,7 +577,7 @@ function PriceTiersTab() {
           <Button
             onClick={() => {
               setEditingTier(null)
-              setForm({ name: "", minQty: "", maxQty: "", price: "", productId: "", type: "assado" })
+              resetForm()
               setShowModal(true)
             }}
           >
@@ -586,138 +606,95 @@ function PriceTiersTab() {
             </Card>
           ))}
         </div>
+      ) : groups.length === 0 ? (
+        <div className="text-center py-8 text-muted border border-dashed border-line rounded-lg">
+          Nenhuma faixa de preço cadastrada.
+        </div>
       ) : (
-        <>
-          <Card padded={false} className="overflow-hidden">
-            <div className="px-4 py-3 bg-cream border-b border-line">
-              <p className="text-sm font-semibold text-ink">Cookies Assados</p>
-            </div>
-            <Table>
-              <THead>
-                <Tr>
-                  <Th>Produto</Th>
-                  <Th>Faixa</Th>
-                  <Th className="text-right">Qtd Mín</Th>
-                  <Th className="text-right">Qtd Máx</Th>
-                  <Th className="text-right">Preço/Un</Th>
-                  <Th className="text-center">Ações</Th>
-                </Tr>
-              </THead>
-              <TBody>
-                {assadoTiers.map((tier: PriceTier) => (
-                  <Tr key={tier.id}>
-                    <Td className="text-sm text-muted">{productName(tier)}</Td>
-                    <Td className="text-sm font-medium text-ink">{tier.name}</Td>
-                    <Td className="text-sm text-right text-muted">{tier.minQty}</Td>
-                    <Td className="text-sm text-right text-muted">{tier.maxQty || "∞"}</Td>
-                    <Td className="text-sm font-semibold text-ink text-right">R$ {tier.price.toFixed(2)}</Td>
-                    <Td className="text-center">
-                      <div className="flex items-center justify-center gap-1">
-                        {isAdmin && (
-                          <>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setEditingTier(tier)
-                                setForm({
-                                  name: tier.name,
-                                  minQty: String(tier.minQty),
-                                  maxQty: tier.maxQty ? String(tier.maxQty) : "",
-                                  price: String(tier.price),
-                                  productId: tier.productId || "",
-                                  type: "assado",
-                                })
-                                setShowModal(true)
-                              }}
-                              aria-label="Editar"
-                              className="p-1.5 rounded-md hover:bg-cream text-muted"
-                            >
-                              <Edit className="w-4 h-4" />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleDelete(tier.id)}
-                              aria-label="Excluir"
-                              className="p-1.5 rounded-md hover:bg-cream text-danger"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </>
-                        )}
-                      </div>
-                    </Td>
+        <div className="space-y-4">
+          {groups.map((group) => (
+            <Card key={group.productId} padded={false} className="overflow-hidden">
+              <div className="px-4 py-3 bg-cream border-b border-line">
+                <p className="text-sm font-semibold text-ink">{group.name}</p>
+              </div>
+              <Table>
+                <THead>
+                  <Tr>
+                    <Th>Faixa</Th>
+                    <Th className="text-right">Qtd Mín</Th>
+                    <Th className="text-right">Qtd Máx</Th>
+                    <Th className="text-right">Preço/Un</Th>
+                    <Th className="text-right">Total (Qtd mín)</Th>
+                    <Th className="text-center">Ativa</Th>
+                    <Th className="text-center">Ações</Th>
                   </Tr>
-                ))}
-              </TBody>
-            </Table>
-          </Card>
-
-          <Card padded={false} className="overflow-hidden">
-            <div className="px-4 py-3 bg-cream border-b border-line">
-              <p className="text-sm font-semibold text-ink">Cookies Congelados (Pacotes)</p>
-            </div>
-            <Table>
-              <THead>
-                <Tr>
-                  <Th>Produto</Th>
-                  <Th>Faixa</Th>
-                  <Th className="text-right">Qtd</Th>
-                  <Th className="text-right">Preço Pacote</Th>
-                  <Th className="text-right">Preço/Un</Th>
-                  <Th className="text-center">Ações</Th>
-                </Tr>
-              </THead>
-              <TBody>
-                {congeladoTiers.map((tier: PriceTier) => (
-                  <Tr key={tier.id}>
-                    <Td className="text-sm text-muted">{productName(tier)}</Td>
-                    <Td className="text-sm font-medium text-ink">{tier.name}</Td>
-                    <Td className="text-sm text-right text-muted">{tier.minQty}</Td>
-                    <Td className="text-sm font-semibold text-ink text-right">
-                      R$ {(tier.price * tier.minQty).toFixed(2)}
-                    </Td>
-                    <Td className="text-sm text-ink text-right">R$ {tier.price.toFixed(2)}</Td>
-                    <Td className="text-center">
-                      <div className="flex items-center justify-center gap-1">
-                        {isAdmin && (
-                          <>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setEditingTier(tier)
-                                setForm({
-                                  name: tier.name,
-                                  minQty: String(tier.minQty),
-                                  maxQty: tier.maxQty ? String(tier.maxQty) : "",
-                                  price: String(tier.price),
-                                  productId: tier.productId || "",
-                                  type: "congelado",
-                                })
-                                setShowModal(true)
-                              }}
-                              aria-label="Editar"
-                              className="p-1.5 rounded-md hover:bg-cream text-muted"
-                            >
-                              <Edit className="w-4 h-4" />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleDelete(tier.id)}
-                              aria-label="Excluir"
-                              className="p-1.5 rounded-md hover:bg-cream text-danger"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </>
+                </THead>
+                <TBody>
+                  {group.tiers.map((tier: PriceTier) => (
+                    <Tr key={tier.id}>
+                      <Td className="text-sm font-medium text-ink">{tier.name}</Td>
+                      <Td className="text-sm text-right text-muted">{tier.minQty}</Td>
+                      <Td className="text-sm text-right text-muted">{tier.maxQty || "∞"}</Td>
+                      <Td className="text-sm text-right text-muted">{formatBRL(Number(tier.price) || 0)}</Td>
+                      <Td className="text-sm font-semibold text-ink text-right">
+                        {formatBRL((Number(tier.price) || 0) * (tier.minQty || 0))}
+                      </Td>
+                      <Td className="text-center">
+                        {isAdmin ? (
+                          <button
+                            type="button"
+                            onClick={() => handleToggleEnabled(tier)}
+                            className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${tier.enabled !== false ? "bg-green-100 text-green-700 hover:bg-green-200" : "bg-kraft/20 text-muted hover:bg-kraft/40"}`}
+                          >
+                            {tier.enabled !== false ? "Ativa" : "Inativa"}
+                          </button>
+                        ) : (
+                          <Badge variant={tier.enabled !== false ? "success" : "neutral"}>
+                            {tier.enabled !== false ? "Ativa" : "Inativa"}
+                          </Badge>
                         )}
-                      </div>
-                    </Td>
-                  </Tr>
-                ))}
-              </TBody>
-            </Table>
-          </Card>
-        </>
+                      </Td>
+                      <Td className="text-center">
+                        <div className="flex items-center justify-center gap-1">
+                          {isAdmin && (
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setEditingTier(tier)
+                                  setForm({
+                                    name: tier.name,
+                                    minQty: String(tier.minQty),
+                                    maxQty: tier.maxQty ? String(tier.maxQty) : "",
+                                    price: String(tier.price),
+                                    productId: tier.productId || "",
+                                  })
+                                  setShowModal(true)
+                                }}
+                                aria-label="Editar"
+                                className="p-1.5 rounded-md hover:bg-cream text-muted"
+                              >
+                                <Edit className="w-4 h-4" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDelete(tier.id)}
+                                aria-label="Excluir"
+                                className="p-1.5 rounded-md hover:bg-cream text-danger"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      </Td>
+                    </Tr>
+                  ))}
+                </TBody>
+              </Table>
+            </Card>
+          ))}
+        </div>
       )}
 
       {showModal && (

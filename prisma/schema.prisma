@@ -169,6 +169,7 @@ model PriceTier {
   productId String
   product   Product @relation(fields: [productId], references: [id])
 
+  @@unique([productId, minQty])
   @@index([updatedAt])
 }
 

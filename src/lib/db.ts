@@ -91,6 +91,7 @@ export async function createProduct(data: {
   unit?: string
   image?: string | null
   active?: boolean
+  description?: string | null
 }) {
   return prisma.product.create({
     data: {
@@ -103,6 +104,7 @@ export async function createProduct(data: {
       unit: data.unit || "un",
       image: data.image ?? null,
       active: data.active ?? true,
+      description: data.description ?? null,
     },
   })
 }
@@ -119,6 +121,7 @@ export async function updateProduct(
     category: string
     unit: string
     image: string | null
+    description: string | null
   }>,
 ) {
   const patch: Record<string, unknown> = { ...data }
@@ -599,13 +602,14 @@ export async function createPriceTier(data: {
   minQty: number
   maxQty?: number
   price: number
+  enabled?: boolean
 }) {
   return prisma.priceTier.create({ data })
 }
 
 export async function updatePriceTier(
   id: string,
-  data: Partial<{ name: string; minQty: number; maxQty: number; price: number }>,
+  data: Partial<{ name: string; minQty: number; maxQty: number; price: number; enabled: boolean }>,
 ) {
   return prisma.priceTier.update({ where: { id }, data })
 }

@@ -107,6 +107,7 @@ export interface LocalProduct {
   unit: string
   active: boolean
   image?: string | null
+  description?: string | null
   createdAt?: string
   updatedAt?: string
   _synced: boolean
@@ -144,6 +145,7 @@ export interface LocalPriceTier {
   minQty: number
   maxQty?: number
   price: number
+  enabled?: boolean
   productId?: string
   createdAt?: string
   updatedAt?: string

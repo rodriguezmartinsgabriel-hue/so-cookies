@@ -17,12 +17,12 @@ export class PriceTierRule implements PricingRule {
     private logger: Logger,
   ) {}
 
-  async canApply(_context: PricingContext, _state: PricingState, _data: PricingData): Promise<boolean> {
-    return true
+  async canApply(_context: PricingContext, _state: PricingState, data: PricingData): Promise<boolean> {
+    return data.settings.activatePriceTier
   }
 
-  canApplySync(_context: PricingContext, _state: PricingState, _data: PricingData): boolean {
-    return true
+  canApplySync(_context: PricingContext, _state: PricingState, data: PricingData): boolean {
+    return data.settings.activatePriceTier
   }
 
   async apply(context: PricingContext, state: PricingState, data: PricingData): Promise<PricingAction[]> {

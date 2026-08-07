@@ -32,6 +32,7 @@ const emptyForm = {
   image: "",
   recipeId: "",
   active: true,
+  description: "",
 }
 
 export default function ProdutosPage() {
@@ -57,6 +58,13 @@ export default function ProdutosPage() {
 
   const linkedRecipe = form.recipeId ? recipes.find((r) => r.id === form.recipeId) : undefined
 
+  const productCategories = useMemo(() => {
+    const set = new Set<string>()
+    for (const p of products) if (p.category) set.add(p.category)
+    if (form.category) set.add(form.category)
+    return Array.from(set).sort((a, b) => a.localeCompare(b))
+  }, [products, form.category])
+
   function openEdit(item: Product) {
     setEditingItem(item)
     setForm({
@@ -69,6 +77,7 @@ export default function ProdutosPage() {
       image: item.image || "",
       recipeId: recipeByProduct[item.id]?.id || "",
       active: item.active !== false,
+      description: item.description || "",
     })
     setImageError(null)
     setShowModal(true)
@@ -133,6 +142,7 @@ export default function ProdutosPage() {
       unit: form.unit.trim() || "un",
       image: form.image.trim() || null,
       active: form.active,
+      description: form.description.trim() || null,
     }
     let productId: string
     if (editingItem) {
@@ -425,16 +435,28 @@ export default function ProdutosPage() {
                 </FormField>
               </div>
               <FormField label="Categoria" required>
-                <select
-                  id="sel-nome-label-input-type-text-placeholder-e"
+                <input
+                  type="text"
+                  list="sel-categoria-produto"
+                  placeholder="Ex: Assados, Congelados..."
                   value={form.category}
                   onChange={(e) => setForm({ ...form, category: e.target.value })}
                   className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink bg-paper focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink transition-colors"
-                >
-                  <option value="">Selecione uma categoria</option>
-                  <option value="Assados">Assados</option>
-                  <option value="Congelados">Congelados</option>
-                </select>
+                />
+                <datalist id="sel-categoria-produto">
+                  {productCategories.map((c) => (
+                    <option key={c} value={c} />
+                  ))}
+                </datalist>
+              </FormField>
+              <FormField label="Descrição">
+                <textarea
+                  rows={3}
+                  placeholder="Descrição curta exibida para o cliente (opcional)"
+                  value={form.description}
+                  onChange={(e) => setForm({ ...form, description: e.target.value })}
+                  className="w-full px-3 py-2 border border-line rounded-lg text-sm text-ink bg-paper focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink transition-colors resize-none"
+                />
               </FormField>
               <div className="grid grid-cols-2 gap-3">
                 <FormField label="Preço (R$)" required>

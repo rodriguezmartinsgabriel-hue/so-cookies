@@ -11,6 +11,8 @@ import {
   createProductionSchema,
   createPriceTierSchema,
   createProductSchema,
+  updateProductSchema,
+  updatePriceTierSchema,
   updateCustomerProfileSchema,
   createCustomerOrderSchema,
 } from "@/lib/validation"
@@ -106,6 +108,46 @@ describe("createProductSchema", () => {
     })
     expect(result.image).toBeUndefined()
     expect(result.active).toBeUndefined()
+  })
+
+  it("accepts product with description", () => {
+    const result = createProductSchema.parse({
+      name: "Cookie",
+      sku: "ck",
+      category: "Doces",
+      price: 5,
+      cost: 2.5,
+      description: "Cookie crocante com gotas de chocolate.",
+    })
+    expect(result.description).toBe("Cookie crocante com gotas de chocolate.")
+  })
+
+  it("accepts product with nullable description", () => {
+    const result = createProductSchema.parse({
+      name: "Cookie",
+      sku: "ck",
+      category: "Doces",
+      price: 5,
+      cost: 2.5,
+      description: null,
+    })
+    expect(result.description).toBeNull()
+  })
+})
+
+describe("updateProductSchema", () => {
+  it("accepts description update", () => {
+    const result = updateProductSchema.parse({ description: "Nova descrição" })
+    expect(result.description).toBe("Nova descrição")
+  })
+
+  it("accepts description set to null", () => {
+    const result = updateProductSchema.parse({ description: null })
+    expect(result.description).toBeNull()
+  })
+
+  it("rejects invalid price", () => {
+    expect(() => updateProductSchema.parse({ price: -1 })).toThrow()
   })
 })
 
@@ -305,6 +347,34 @@ describe("createPriceTierSchema", () => {
         price: -5,
       }),
     ).toThrow()
+  })
+
+  it("accepts tier with enabled flag", () => {
+    const result = createPriceTierSchema.parse({
+      productId: "p1",
+      name: "Assado 3un",
+      minQty: 3,
+      price: 8,
+      enabled: false,
+    })
+    expect(result.enabled).toBe(false)
+  })
+})
+
+describe("updatePriceTierSchema", () => {
+  it("accepts enabled toggle", () => {
+    const result = updatePriceTierSchema.parse({ enabled: false })
+    expect(result.enabled).toBe(false)
+  })
+
+  it("accepts name and price update", () => {
+    const result = updatePriceTierSchema.parse({ name: "Leve 10", price: 10 })
+    expect(result.name).toBe("Leve 10")
+    expect(result.price).toBe(10)
+  })
+
+  it("rejects invalid minQty", () => {
+    expect(() => updatePriceTierSchema.parse({ minQty: -1 })).toThrow()
   })
 })
 
