@@ -25,26 +25,25 @@ export function MenuHero({ query, onQueryChange, resultCount }: MenuHeroProps) {
       </div>
 
       <div className="relative">
-        <Search
-          className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-kraft pointer-events-none"
-          strokeWidth={1.5}
-        />
+        <span className="absolute left-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-accent/10 text-accent flex items-center justify-center pointer-events-none">
+          <Search className="w-4 h-4" strokeWidth={1.75} />
+        </span>
         <Input
           type="text"
           value={query}
           onChange={(e) => onQueryChange(e.target.value)}
           placeholder="Buscar no cardápio"
           aria-label="Buscar no cardápio"
-          className="!h-11 pl-9 pr-11"
+          className="!h-12 !rounded-full !border-line/50 !bg-paper/60 backdrop-blur-md pl-12 pr-14"
         />
         {hasQuery && (
           <button
             type="button"
             onClick={() => onQueryChange("")}
             aria-label="Limpar busca"
-            className="absolute right-2 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full flex items-center justify-center text-muted hover:bg-cream transition-colors"
+            className="absolute right-1 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full flex items-center justify-center bg-accent/10 text-accent hover:bg-accent/20 transition-colors"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </button>
         )}
       </div>
