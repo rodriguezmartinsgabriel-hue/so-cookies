@@ -52,8 +52,8 @@ export function LoadingScreen() {
     mounted.current = true
 
     markSplashShown()
-    const fade = setTimeout(() => setPhase("fading"), 1500)
-    const done = setTimeout(() => setPhase("done"), 2100)
+    const fade = setTimeout(() => setPhase("fading"), 2000)
+    const done = setTimeout(() => setPhase("done"), 2500)
     return () => {
       clearTimeout(fade)
       clearTimeout(done)

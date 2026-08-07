@@ -7,6 +7,13 @@
 - Rodar `npm run typecheck`, `npm run lint`, `npm test` e `npm run build` antes de commitar.
 - Padrão de mensagem: `tipo(escopo): descrição` em pt-BR (ex.: `fix(oauth): ...`).
 - `git push` somente depois que o commit está verde e o working tree limpo.
+- **Concorrência entre agentes:** se houver mudanças não commitadas de outra
+  sessão/feature no working tree ao finalizar a sua tarefa, NÃO commitar
+  parcialmente. Aguardar a outra parte terminar e fazer 1 commit único com
+  tudo, rodando typecheck/lint/test/build antes. Se a outra parte já
+  versionou (`git status` mostra só as suas mudanças), commitar só as suas é
+  aceitável, mas confirme com o usuário antes de fazer `git push` para não
+  causar push não-fast-forward na outra sessão.
 
 ## Pricing — tiers de cookies assados
 
