@@ -20,7 +20,13 @@ export function mpNotificationUrl(): string | null {
 }
 
 export function isMercadoPagoConfigured(): boolean {
-  return Boolean(process.env.MERCADO_PAGO_ACCESS_TOKEN)
+  if (!process.env.MERCADO_PAGO_ACCESS_TOKEN) return false
+  if (process.env.NODE_ENV === "production") {
+    return Boolean(
+      process.env.MERCADO_PAGO_WEBHOOK_SECRET && process.env.MERCADO_PAGO_NOTIFICATION_URL,
+    )
+  }
+  return true
 }
 
 let configWarningsLogged = false

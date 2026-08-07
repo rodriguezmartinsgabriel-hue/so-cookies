@@ -29,8 +29,9 @@ vi.mock("@/lib/payments/mercadopago", () => ({
   getPixPayment: mocks.getPixPayment,
 }))
 
-import { createOrderPayment, handlePaymentWebhook, expireUnpaidOrders } from "@/lib/payments/service"
+import { createOrderPayment, handlePaymentWebhook, expireUnpaidOrders, reconcileOrderPayment } from "@/lib/payments/service"
 import { PaymentError } from "@/lib/payments/errors"
+import { isMercadoPagoConfigured } from "@/lib/payments/config"
 
 describe("createOrderPayment", () => {
   beforeEach(() => {
@@ -182,6 +183,34 @@ describe("handlePaymentWebhook", () => {
     })
   })
 
+  it("webhook de PIX antigo (retry) não confirma o pedido — stale_payment", async () => {
+    mocks.getPixPayment.mockResolvedValue({
+      id: 999,
+      status: "approved",
+      status_detail: "accredited",
+      transaction_amount: 42.5,
+      external_reference: "order:ord-1",
+      payer: { email: "a@b.com" },
+    })
+    mocks.orderFindUnique.mockResolvedValue({
+      id: "ord-1",
+      total: 42.5,
+      status: "PENDENTE",
+      paymentStatus: "AGUARDANDO_PAGAMENTO",
+      paymentProviderId: "777",
+    })
+
+    const result = await handlePaymentWebhook({ paymentId: "999" })
+
+    expect(result).toEqual({ ok: true, action: "stale_payment" })
+    expect(mocks.orderUpdateMany).not.toHaveBeenCalled()
+    expect(mocks.paymentEventCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ action: "payment.updated", status: "STALE" }),
+      }),
+    )
+  })
+
   it("valor divergente é ignorado", async () => {
     mocks.getPixPayment.mockResolvedValue({
       id: 123,
@@ -268,6 +297,125 @@ describe("handlePaymentWebhook", () => {
     const result = await handlePaymentWebhook({ paymentId: "999" })
     expect(result.action).toBe("ignored")
     expect(mocks.orderUpdate).not.toHaveBeenCalled()
+  })
+})
+
+describe("reconcileOrderPayment", () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    process.env.MERCADO_PAGO_ACCESS_TOKEN = "APP_USR-teste"
+    mocks.orderUpdateMany.mockResolvedValue({ count: 1 })
+  })
+
+  afterEach(() => {
+    delete process.env.MERCADO_PAGO_ACCESS_TOKEN
+  })
+
+  it("confirma pedido quando o MP já aprovou o PIX (webhook falhou)", async () => {
+    mocks.getPixPayment.mockResolvedValue({
+      id: 123,
+      status: "approved",
+      status_detail: "accredited",
+      transaction_amount: 42.5,
+      external_reference: "order:ord-1",
+      payer: { email: "a@b.com" },
+    })
+
+    const result = await reconcileOrderPayment({
+      id: "ord-1",
+      total: 42.5,
+      paymentStatus: "AGUARDANDO_PAGAMENTO",
+      paymentProviderId: "123",
+    })
+
+    expect(result).toBe(true)
+    expect(mocks.orderUpdateMany).toHaveBeenCalledWith({
+      where: { id: "ord-1", paymentStatus: { not: "PAGO" } },
+      data: expect.objectContaining({ status: "CONFIRMADO", paymentStatus: "PAGO" }),
+    })
+  })
+
+  it("não altera pedido quando o PIX ainda está pending", async () => {
+    mocks.getPixPayment.mockResolvedValue({
+      id: 123,
+      status: "pending",
+      status_detail: "pending_waiting_transfer",
+      transaction_amount: 42.5,
+      external_reference: "order:ord-1",
+      payer: { email: "a@b.com" },
+    })
+
+    const result = await reconcileOrderPayment({
+      id: "ord-1",
+      total: 42.5,
+      paymentStatus: "AGUARDANDO_PAGAMENTO",
+      paymentProviderId: "123",
+    })
+
+    expect(result).toBe(false)
+    expect(mocks.orderUpdateMany).not.toHaveBeenCalled()
+  })
+
+  it("retorna false sem providerId ou quando já PAGO", async () => {
+    expect(
+      await reconcileOrderPayment({ id: "ord-1", total: 42.5, paymentStatus: "AGUARDANDO_PAGAMENTO", paymentProviderId: null }),
+    ).toBe(false)
+    expect(
+      await reconcileOrderPayment({ id: "ord-1", total: 42.5, paymentStatus: "PAGO", paymentProviderId: "123" }),
+    ).toBe(false)
+    expect(mocks.getPixPayment).not.toHaveBeenCalled()
+  })
+
+  it("pagamento PIX com valor divergente não é aplicado", async () => {
+    mocks.getPixPayment.mockResolvedValue({
+      id: 123,
+      status: "approved",
+      status_detail: "accredited",
+      transaction_amount: 1.0,
+      external_reference: "order:ord-1",
+      payer: { email: "a@b.com" },
+    })
+
+    const result = await reconcileOrderPayment({
+      id: "ord-1",
+      total: 42.5,
+      paymentStatus: "AGUARDANDO_PAGAMENTO",
+      paymentProviderId: "123",
+    })
+
+    expect(result).toBe(false)
+    expect(mocks.orderUpdateMany).not.toHaveBeenCalled()
+  })
+})
+
+describe("isMercadoPagoConfigured — endurecimento em produção", () => {
+  afterEach(() => {
+    delete process.env.MERCADO_PAGO_ACCESS_TOKEN
+    delete process.env.MERCADO_PAGO_WEBHOOK_SECRET
+    delete process.env.MERCADO_PAGO_NOTIFICATION_URL
+    vi.unstubAllEnvs()
+  })
+
+  it("em produção exige webhook secret e notification URL", () => {
+    vi.stubEnv("NODE_ENV", "production")
+    process.env.MERCADO_PAGO_ACCESS_TOKEN = "APP_USR-teste"
+
+    expect(isMercadoPagoConfigured()).toBe(false)
+
+    process.env.MERCADO_PAGO_WEBHOOK_SECRET = "secret"
+    expect(isMercadoPagoConfigured()).toBe(false)
+
+    process.env.MERCADO_PAGO_NOTIFICATION_URL = "https://loja.com/api/payments/webhook/mercadopago"
+    expect(isMercadoPagoConfigured()).toBe(true)
+  })
+
+  it("fora de produção basta o access token", () => {
+    vi.stubEnv("NODE_ENV", "development")
+    process.env.MERCADO_PAGO_ACCESS_TOKEN = "APP_USR-teste"
+    expect(isMercadoPagoConfigured()).toBe(true)
+
+    delete process.env.MERCADO_PAGO_ACCESS_TOKEN
+    expect(isMercadoPagoConfigured()).toBe(false)
   })
 })
 

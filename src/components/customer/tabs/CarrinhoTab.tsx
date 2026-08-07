@@ -135,6 +135,7 @@ export function CarrinhoTab() {
       const body: Record<string, unknown> = {
         items: lines.map((l) => ({ productId: l.productId, qty: l.qty })),
         paymentMethod: "PIX",
+        expectedTotal: Math.round(total * 100) / 100,
       }
       const code = couponCode.trim()
       if (code) body.couponCode = code

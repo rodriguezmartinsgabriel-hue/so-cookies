@@ -3,7 +3,7 @@ import { toCatalogProduct, toNumber, type CatalogProduct } from "./utils"
 import { assertSlotAvailable, SlotError } from "./delivery-scheduling"
 import { buildPricingEngine } from "@so-cookies/pricing"
 import { PricingContext } from "@so-cookies/pricing"
-import { createOrderPayment } from "./payments/service"
+import { createOrderPayment, reconcileOrderPayment } from "./payments/service"
 import { PaymentError } from "./payments/errors"
 import { logger } from "./logger"
 import { LoyaltyService } from "./loyalty/service"
@@ -123,6 +123,8 @@ export async function createCustomerOrder(
     items: { productId: string; qty: number }[]
     couponCode?: string | null
     paymentMethod?: "PIX" | null
+    notes?: string | null
+    expectedTotal?: number | null
     deliveryDate?: string | null
     deliveryRouteId?: string | null
     deliveryCep?: string | null
@@ -208,6 +210,17 @@ export async function createCustomerOrder(
 
   const pricingResult = await engine.calculatePrice(pricingContext)
 
+  const total = pricingResult.total
+
+  // Proteção contra divergência de preço entre a prévia exibida no carrinho e
+  // o cálculo feito no servidor (ex.: cupom/tier mudou entre o preview e o POST).
+  if (input.expectedTotal != null) {
+    const expected = Number(input.expectedTotal)
+    if (Number.isFinite(expected) && Math.abs(expected - total) > 0.01) {
+      throw new PaymentError("PRICE_CHANGED", "O valor do pedido mudou. Revise o carrinho e tente novamente.")
+    }
+  }
+
   // Criar itens com preços calculados pelo Pricing Engine
   const items = pricingResult.state.items.map((pricingItem) => ({
     productId: pricingItem.productId,
@@ -215,32 +228,62 @@ export async function createCustomerOrder(
     price: pricingItem.calculatedPrice,
   }))
 
-  const total = pricingResult.total
+  const couponCode = input.couponCode?.trim() || null
+  const couponApplied =
+    Boolean(couponCode) &&
+    (pricingResult.state.logs?.some((log) => {
+      const value = log.value as { couponCode?: unknown } | null | undefined
+      return Boolean(value && typeof value === "object" && String(value.couponCode).toLowerCase() === couponCode!.toLowerCase())
+    }) ?? false)
 
-  const order = await prisma.order.create({
-    data: {
-      channel: "Só App",
-      customer: customer.name,
-      customerPhone: customer.phone,
-      customerId,
-      total,
-      status: "PENDENTE",
-      pickupCode,
-      deliveryDate,
-      deliveryRouteId,
-      deliveryZoneId,
-      deliveryAddress: formatDeliveryAddress(address),
-      deliveryCep: address.deliveryCep,
-      deliveryStreet: address.deliveryStreet,
-      deliveryNumber: address.deliveryNumber,
-      deliveryComplement: address.deliveryComplement,
-      deliveryNeighborhood: address.deliveryNeighborhood,
-      deliveryCity: address.deliveryCity,
-      deliveryState: address.deliveryState,
-      items: { create: items },
-    },
-    include: { items: { include: { product: true } }, deliveryRoute: true, deliveryZone: true },
-  })
+  const createOrderData = {
+    channel: "Só App",
+    customer: customer.name,
+    customerPhone: customer.phone,
+    customerId,
+    total,
+    notes: input.notes?.trim() || null,
+    status: "PENDENTE" as const,
+    pickupCode,
+    deliveryDate,
+    deliveryRouteId,
+    deliveryZoneId,
+    deliveryAddress: formatDeliveryAddress(address),
+    deliveryCep: address.deliveryCep,
+    deliveryStreet: address.deliveryStreet,
+    deliveryNumber: address.deliveryNumber,
+    deliveryComplement: address.deliveryComplement,
+    deliveryNeighborhood: address.deliveryNeighborhood,
+    deliveryCity: address.deliveryCity,
+    deliveryState: address.deliveryState,
+    items: { create: items },
+  }
+
+  let order: Awaited<ReturnType<typeof prisma.order.create>>
+  if (couponApplied && couponCode) {
+    // Claim transacional do cupom junto com a criação do pedido: evita estouro
+    // do usageLimit quando dois pedidos disputam o mesmo cupom.
+    order = await prisma.$transaction(async (tx) => {
+      const coupon = await tx.coupon.findUnique({ where: { code: couponCode } })
+      if (!coupon) throw new PaymentError("COUPON_UNAVAILABLE", "Cupom não encontrado")
+      const claimed = await tx.coupon.updateMany({
+        where: { id: coupon.id, usedCount: { lt: coupon.usageLimit } },
+        data: { usedCount: { increment: 1 } },
+      })
+      if (claimed.count === 0) {
+        throw new PaymentError("COUPON_UNAVAILABLE", "Cupom esgotado ou indisponível no momento")
+      }
+      return tx.order.create({
+        data: createOrderData,
+        include: { items: { include: { product: true } }, deliveryRoute: true, deliveryZone: true },
+      })
+    })
+  } else {
+    order = await prisma.order.create({
+      data: createOrderData,
+      include: { items: { include: { product: true } }, deliveryRoute: true, deliveryZone: true },
+    })
+  }
 
   if (input.paymentMethod === "PIX") {
     try {
@@ -263,11 +306,6 @@ export async function createCustomerOrder(
         } catch (updateErr) {
           logger.error("[orders] CRÍTICO: falha ao marcar pedido como EXPIRADO após erro de pagamento", { orderId: order.id }, updateErr instanceof Error ? updateErr : new Error(String(updateErr)))
         }
-        const failed = await prisma.order.findUnique({
-          where: { id: order.id },
-          include: { items: { include: { product: true } }, deliveryRoute: true, deliveryZone: true },
-        })
-        if (failed) return failed
       }
       throw e
     }
@@ -445,6 +483,16 @@ export async function retryCustomerOrderPayment(customerId: string, orderId: str
       existing.paymentExpiresAt.getTime() < Date.now())
   if (!expired) {
     throw new PaymentError("PAYMENT_PENDING", "O pagamento atual ainda está válido")
+  }
+
+  // Reconciliação antes de gerar um novo PIX: se o PIX anterior já foi pago no
+  // Mercado Pago (webhook pode ter falhado), confirma o pedido e NÃO cria nova
+  // cobrança — evita dupla cobrança.
+  if (existing.paymentProviderId) {
+    const reconciled = await reconcileOrderPayment(existing)
+    if (reconciled) {
+      throw new PaymentError("ALREADY_PAID", "Este pedido já foi pago e confirmado")
+    }
   }
 
   const totalItems = existing.items.reduce((s, i) => s + i.qty, 0)

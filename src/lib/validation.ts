@@ -1,5 +1,4 @@
 import { z } from "zod"
-import { OrderStatus } from "@/generated/prisma/enums"
 
 export function getZodIssues(e: unknown): z.ZodIssue[] | null {
   if (e && typeof e === "object" && "issues" in e && Array.isArray(e.issues)) {
@@ -339,6 +338,8 @@ export const createCustomerOrderSchema = z
       .max(50, "Máximo de 50 itens por pedido"),
     couponCode: z.string().trim().max(50).optional().nullable(),
     paymentMethod: z.enum(["PIX"]).optional().nullable(),
+    notes: z.string().trim().max(1000, "Observações muito longas (máx. 1000 caracteres)").optional().nullable(),
+    expectedTotal: z.number().finite().optional().nullable(),
     deliveryDate: dateKeySchema.optional().nullable(),
     deliveryRouteId: z.string().min(1).optional().nullable(),
     ...deliveryAddressFields,
@@ -367,7 +368,7 @@ export const createCustomerOrderSchema = z
 
 export const updateCustomerOrderSchema = z
   .object({
-    status: z.nativeEnum(OrderStatus).optional(),
+    status: z.literal("CANCELADO").optional(),
     deliveryDate: dateKeySchema.optional().nullable(),
     deliveryRouteId: z.string().min(1).optional().nullable(),
     ...deliveryAddressFields,

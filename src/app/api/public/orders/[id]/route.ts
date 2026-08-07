@@ -4,7 +4,7 @@ import { requireCustomer } from "@/lib/customer-auth"
 import { getCustomerOrder, updateCustomerOrder } from "@/lib/customer-orders"
 import { updateCustomerOrderSchema, getZodIssues } from "@/lib/validation"
 import { SlotError } from "@/lib/delivery-scheduling"
-import { expireUnpaidOrders } from "@/lib/payments/service"
+import { expireUnpaidOrders, reconcileOrderPayment } from "@/lib/payments/service"
 import { rateLimit } from "@/lib/rate-limit"
 import { logger } from "@/lib/logger"
 
@@ -42,6 +42,19 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
         },
       })
     }
+    if (!order) return NextResponse.json({ error: "Pedido não encontrado" }, { status: 404 })
+
+    // Reconciliação: se o webhook falhou, consulta o Mercado Pago diretamente
+    // e confirma o pagamento quando o provedor já o aprovou.
+    if (order.paymentStatus === "AGUARDANDO_PAGAMENTO" && order.paymentProviderId) {
+      try {
+        await reconcileOrderPayment(order)
+        order = await getCustomerOrder(customer.id, id)
+      } catch (err) {
+        logger.warn("[orders] falha ao reconciliar pagamento", { orderId: id, error: err instanceof Error ? err.message : String(err) })
+      }
+    }
+
     if (!order) return NextResponse.json({ error: "Pedido não encontrado" }, { status: 404 })
 
     if (

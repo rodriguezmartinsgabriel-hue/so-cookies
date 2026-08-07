@@ -85,6 +85,119 @@ export async function createOrderPayment(orderId: string) {
   })
 }
 
+type OrderPaymentRef = {
+  id: string
+  total: Decimal | number
+  status: string
+  paymentStatus: string | null
+  paymentProviderId: string | null
+}
+
+async function findOrderByPayment(payment: Awaited<ReturnType<typeof getPixPayment>>): Promise<OrderPaymentRef | null> {
+  const externalRef = payment.external_reference
+  if (externalRef?.startsWith("order:")) {
+    const order = await prisma.order.findUnique({
+      where: { id: externalRef.slice("order:".length) },
+      select: { id: true, total: true, status: true, paymentStatus: true, paymentProviderId: true },
+    })
+    if (order) return order
+  }
+  return prisma.order.findUnique({
+    where: { paymentProviderId: String(payment.id) },
+    select: { id: true, total: true, status: true, paymentStatus: true, paymentProviderId: true },
+  })
+}
+
+/**
+ * Confirma um pedido como PAGO de forma idempotente (guarda no updateMany).
+ * Retorna `false` quando o pedido já estava PAGO (evita crédito duplo de pontos).
+ */
+export async function applyApprovedPayment(
+  orderId: string,
+  payment: { id: number | string; status?: string; status_detail?: string | null; transaction_amount: number },
+): Promise<boolean> {
+  const result = await prisma.order.updateMany({
+    where: { id: orderId, paymentStatus: { not: "PAGO" } },
+    data: {
+      status: "CONFIRMADO",
+      paymentStatus: "PAGO",
+      paidAt: new Date(),
+      updatedAt: new Date(),
+    },
+  })
+  if (result.count === 0) return false
+
+  await logPaymentEvent({
+    orderId,
+    paymentId: String(payment.id),
+    action: "payment.approved",
+    status: "VERIFIED",
+    payload: { status: payment.status ?? "approved", status_detail: payment.status_detail ?? null },
+  })
+
+  try {
+    await LoyaltyService.creditOnPayment(orderId)
+  } catch (err) {
+    await logPaymentEvent({
+      orderId,
+      paymentId: String(payment.id),
+      action: "loyalty.credit.failed",
+      status: "IGNORED",
+      payload: { error: err instanceof Error ? err.message : String(err) },
+    })
+  }
+
+  return true
+}
+
+/**
+ * Reconciliação com o Mercado Pago: consulta o status do PIX do pedido e
+ * confirma o pagamento caso o provedor já o tenha aprovado (webhook pode ter
+ * falhado). Usada no polling do cliente e antes de gerar um novo PIX no retry.
+ */
+export async function reconcileOrderPayment(order: {
+  id: string
+  total: Decimal | number
+  paymentStatus: string | null
+  paymentProviderId: string | null
+}): Promise<boolean> {
+  if (!isMercadoPagoConfigured()) return false
+  if (!order.paymentProviderId || order.paymentStatus === "PAGO") return false
+
+  let payment: Awaited<ReturnType<typeof getPixPayment>>
+  try {
+    payment = await getPixPayment(order.paymentProviderId)
+  } catch (err) {
+    if (err instanceof PaymentError && err.code === "PAYMENT_NOT_FOUND") {
+      await logPaymentEvent({
+        orderId: order.id,
+        paymentId: order.paymentProviderId,
+        action: "payment.reconcile",
+        status: "IGNORED",
+        payload: { error: "payment_not_found" },
+      })
+      return false
+    }
+    throw err
+  }
+
+  const amountMatches = Math.abs(payment.transaction_amount - toNumber(order.total)) <= 0.01
+  if (!amountMatches) {
+    await logPaymentEvent({
+      orderId: order.id,
+      paymentId: order.paymentProviderId,
+      action: "amount.mismatch",
+      status: "IGNORED",
+      payload: { received: payment.transaction_amount, expected: order.total },
+    })
+    return false
+  }
+
+  if (payment.status !== "approved") return false
+
+  return applyApprovedPayment(order.id, payment)
+}
+
 export async function handlePaymentWebhook(input: { paymentId: string }): Promise<{ ok: true; action: string }> {
   let payment: Awaited<ReturnType<typeof getPixPayment>>
   try {
@@ -102,27 +215,13 @@ export async function handlePaymentWebhook(input: { paymentId: string }): Promis
     throw error
   }
 
-  let order: { id: string; total: Decimal | number; status: string; paymentStatus: string | null } | null = null
-  const externalRef = payment.external_reference
-  if (externalRef?.startsWith("order:")) {
-    order = await prisma.order.findUnique({
-      where: { id: externalRef.slice("order:".length) },
-      select: { id: true, total: true, status: true, paymentStatus: true },
-    })
-  }
-  if (!order) {
-    order = await prisma.order.findUnique({
-      where: { paymentProviderId: input.paymentId },
-      select: { id: true, total: true, status: true, paymentStatus: true },
-    })
-  }
-
+  const order = await findOrderByPayment(payment)
   if (!order) {
     await logPaymentEvent({
       paymentId: input.paymentId,
       action: "payment.updated",
       status: "IGNORED",
-      payload: { status: payment.status, external_reference: externalRef },
+      payload: { status: payment.status, external_reference: payment.external_reference },
     })
     return { ok: true, action: "ignored" }
   }
@@ -139,40 +238,22 @@ export async function handlePaymentWebhook(input: { paymentId: string }): Promis
     return { ok: true, action: "amount_mismatch" }
   }
 
-  if (payment.status === "approved") {
-    const result = await prisma.order.updateMany({
-      where: { id: order.id, paymentStatus: { not: "PAGO" } },
-      data: {
-        status: "CONFIRMADO",
-        paymentStatus: "PAGO",
-        paidAt: new Date(),
-        updatedAt: new Date(),
-      },
-    })
-    if (result.count === 0) {
-      return { ok: true, action: "already_paid" }
-    }
+  // Pagamento de um PIX antigo (retry gerou outro): ignora para não confirmar
+  // o pedido com o valor de uma cobrança que já foi substituída.
+  if (order.paymentProviderId && order.paymentProviderId !== String(input.paymentId)) {
     await logPaymentEvent({
       orderId: order.id,
       paymentId: input.paymentId,
-      action: "payment.approved",
-      status: "VERIFIED",
-      payload: { status: payment.status, status_detail: payment.status_detail },
+      action: "payment.updated",
+      status: "STALE",
+      payload: { status: payment.status, currentProviderId: order.paymentProviderId },
     })
+    return { ok: true, action: "stale_payment" }
+  }
 
-    try {
-      await LoyaltyService.creditOnPayment(order.id)
-    } catch (err) {
-      await logPaymentEvent({
-        orderId: order.id,
-        paymentId: input.paymentId,
-        action: "loyalty.credit.failed",
-        status: "IGNORED",
-        payload: { error: err instanceof Error ? err.message : String(err) },
-      })
-    }
-
-    return { ok: true, action: "paid" }
+  if (payment.status === "approved") {
+    const applied = await applyApprovedPayment(order.id, payment)
+    return { ok: true, action: applied ? "paid" : "already_paid" }
   }
 
   await logPaymentEvent({

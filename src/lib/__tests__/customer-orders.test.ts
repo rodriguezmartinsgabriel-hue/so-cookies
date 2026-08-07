@@ -10,10 +10,14 @@ const mocks = vi.hoisted(() => ({
   orderFindFirst: vi.fn(),
   orderDelete: vi.fn(),
   createOrderPayment: vi.fn(),
+  reconcileOrderPayment: vi.fn(),
   assertSlotAvailable: vi.fn(),
   engineCalculatePrice: vi.fn(),
   paymentEventUpdate: vi.fn(),
   loyaltyRefundOnCancel: vi.fn(),
+  transaction: vi.fn(),
+  couponFindUnique: vi.fn(),
+  couponUpdateMany: vi.fn(),
 }))
 
 vi.mock("@/lib/prisma", () => ({
@@ -30,11 +34,17 @@ vi.mock("@/lib/prisma", () => ({
     paymentEvent: {
       update: mocks.paymentEventUpdate,
     },
+    coupon: {
+      findUnique: mocks.couponFindUnique,
+      updateMany: mocks.couponUpdateMany,
+    },
+    $transaction: mocks.transaction,
   },
 }))
 
 vi.mock("@/lib/payments/service", () => ({
   createOrderPayment: mocks.createOrderPayment,
+  reconcileOrderPayment: mocks.reconcileOrderPayment,
 }))
 
 vi.mock("@/lib/loyalty/service", () => ({
@@ -59,7 +69,7 @@ vi.mock("@so-cookies/pricing", () => ({
   buildPricingEngine: () => ({ calculatePrice: mocks.engineCalculatePrice }),
 }))
 
-import { createCustomerOrder, updateCustomerOrder } from "@/lib/customer-orders"
+import { createCustomerOrder, updateCustomerOrder, retryCustomerOrderPayment } from "@/lib/customer-orders"
 
 const baseCreatedOrder = {
   id: "ord-1",
@@ -100,15 +110,16 @@ describe("createCustomerOrder — pagamento PIX", () => {
     vi.clearAllMocks()
   })
 
-  it("marca pedido como EXPIRADO (não deleta) quando createOrderPayment lança PaymentError", async () => {
+  it("marca pedido como EXPIRADO (não deleta) e propaga o erro quando createOrderPayment falha", async () => {
     mocks.createOrderPayment.mockRejectedValue(new PaymentError("NO_PAYER_EMAIL", "Cliente sem e-mail"))
     mocks.orderUpdate.mockResolvedValue({})
-    mocks.orderFindUnique.mockResolvedValue({ ...baseCreatedOrder, paymentStatus: "EXPIRADO", status: "CANCELADO" })
 
-    const result = await createCustomerOrder("cust-1", {
-      items: [{ productId: "p1", qty: 2 }],
-      paymentMethod: "PIX",
-    })
+    await expect(
+      createCustomerOrder("cust-1", {
+        items: [{ productId: "p1", qty: 2 }],
+        paymentMethod: "PIX",
+      }),
+    ).rejects.toMatchObject({ code: "NO_PAYER_EMAIL" })
 
     expect(mocks.orderDelete).not.toHaveBeenCalled()
     expect(mocks.orderUpdate).toHaveBeenCalledWith(
@@ -117,7 +128,6 @@ describe("createCustomerOrder — pagamento PIX", () => {
         data: expect.objectContaining({ paymentStatus: "EXPIRADO", status: "CANCELADO" }),
       }),
     )
-    expect(result.paymentStatus).toBe("EXPIRADO")
   })
 
   it("mantém o pedido criado e atualiza campos de pagamento quando o PIX é gerado", async () => {
@@ -131,6 +141,153 @@ describe("createCustomerOrder — pagamento PIX", () => {
 
     expect(mocks.orderDelete).not.toHaveBeenCalled()
     expect(result.paymentStatus).toBe("AGUARDANDO_PAGAMENTO")
+  })
+
+  it("persiste as observações do pedido", async () => {
+    const result = await createCustomerOrder("cust-1", {
+      items: [{ productId: "p1", qty: 2 }],
+      notes: "  Sem glúten, por favor  ",
+    })
+
+    expect(mocks.orderCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ notes: "Sem glúten, por favor" }),
+      }),
+    )
+    expect(result.total).toBe(42.5)
+  })
+
+  it("rejeita pedido quando o total mudou desde a prévia (PRICE_CHANGED)", async () => {
+    await expect(
+      createCustomerOrder("cust-1", {
+        items: [{ productId: "p1", qty: 2 }],
+        expectedTotal: 50,
+      }),
+    ).rejects.toMatchObject({ code: "PRICE_CHANGED" })
+    expect(mocks.orderCreate).not.toHaveBeenCalled()
+  })
+
+  it("aceita pedido quando expectedTotal bate com o total calculado", async () => {
+    mocks.orderCreate.mockResolvedValue(baseCreatedOrder)
+
+    const result = await createCustomerOrder("cust-1", {
+      items: [{ productId: "p1", qty: 2 }],
+      expectedTotal: 42.5,
+    })
+
+    expect(mocks.orderCreate).toHaveBeenCalled()
+    expect(result.total).toBe(42.5)
+  })
+
+  it("incrementa usedCount do cupom junto com a criação do pedido", async () => {
+    mocks.engineCalculatePrice.mockResolvedValue({
+      total: 38.25,
+      state: {
+        items: [{ productId: "p1", qty: 2, calculatedPrice: 19.125 }],
+        logs: [{ value: { couponCode: "BEM10", couponName: "Bem vindo" } }],
+      },
+    })
+    mocks.transaction.mockImplementation(async (cb: (tx: unknown) => Promise<unknown>) =>
+      cb({
+        coupon: { findUnique: mocks.couponFindUnique, updateMany: mocks.couponUpdateMany },
+        order: { create: mocks.orderCreate },
+      }),
+    )
+    mocks.couponFindUnique.mockResolvedValue({ id: "coup-1", code: "BEM10", usageLimit: 10 })
+    mocks.couponUpdateMany.mockResolvedValue({ count: 1 })
+    mocks.orderCreate.mockResolvedValue({ ...baseCreatedOrder, total: 38.25 })
+
+    const result = await createCustomerOrder("cust-1", {
+      items: [{ productId: "p1", qty: 2 }],
+      couponCode: "bem10",
+    })
+
+    expect(mocks.transaction).toHaveBeenCalled()
+    expect(mocks.couponUpdateMany).toHaveBeenCalledWith({
+      where: { id: "coup-1", usedCount: { lt: 10 } },
+      data: { usedCount: { increment: 1 } },
+    })
+    expect(result.total).toBe(38.25)
+  })
+
+  it("rejeita pedido quando o cupom está esgotado (claim transacional)", async () => {
+    mocks.engineCalculatePrice.mockResolvedValue({
+      total: 38.25,
+      state: {
+        items: [{ productId: "p1", qty: 2, calculatedPrice: 19.125 }],
+        logs: [{ value: { couponCode: "BEM10" } }],
+      },
+    })
+    mocks.transaction.mockImplementation(async (cb: (tx: unknown) => Promise<unknown>) =>
+      cb({
+        coupon: { findUnique: mocks.couponFindUnique, updateMany: mocks.couponUpdateMany },
+        order: { create: mocks.orderCreate },
+      }),
+    )
+    mocks.couponFindUnique.mockResolvedValue({ id: "coup-1", code: "BEM10", usageLimit: 1 })
+    mocks.couponUpdateMany.mockResolvedValue({ count: 0 })
+
+    await expect(
+      createCustomerOrder("cust-1", {
+        items: [{ productId: "p1", qty: 2 }],
+        couponCode: "BEM10",
+      }),
+    ).rejects.toMatchObject({ code: "COUPON_UNAVAILABLE" })
+  })
+})
+
+describe("retryCustomerOrderPayment — reconciliação contra dupla cobrança", () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  afterEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it("não gera novo PIX quando o MP já aprovou o PIX anterior", async () => {
+    mocks.orderFindFirst.mockResolvedValue({
+      id: "ord-1",
+      customerId: "cust-1",
+      status: "PENDENTE",
+      paymentStatus: "EXPIRADO",
+      paymentExpiresAt: new Date(),
+      total: 42.5,
+      paymentProviderId: "123",
+      deliveryRouteId: null,
+      deliveryDate: null,
+      items: [{ id: "i1", qty: 2, price: 21.25 }],
+    })
+    mocks.reconcileOrderPayment.mockResolvedValue(true)
+
+    await expect(retryCustomerOrderPayment("cust-1", "ord-1")).rejects.toMatchObject({
+      code: "ALREADY_PAID",
+    })
+    expect(mocks.createOrderPayment).not.toHaveBeenCalled()
+  })
+
+  it("gera novo PIX quando o PIX anterior não foi pago", async () => {
+    mocks.orderFindFirst.mockResolvedValue({
+      id: "ord-1",
+      customerId: "cust-1",
+      status: "PENDENTE",
+      paymentStatus: "EXPIRADO",
+      paymentExpiresAt: new Date(),
+      total: 42.5,
+      paymentProviderId: "123",
+      deliveryRouteId: null,
+      deliveryDate: null,
+      items: [{ id: "i1", qty: 2, price: 21.25 }],
+    })
+    mocks.reconcileOrderPayment.mockResolvedValue(false)
+    mocks.createOrderPayment.mockResolvedValue({})
+    mocks.orderUpdate.mockResolvedValue({})
+    mocks.orderFindUnique.mockResolvedValue({ ...baseCreatedOrder, paymentStatus: "AGUARDANDO_PAGAMENTO" })
+
+    const result = await retryCustomerOrderPayment("cust-1", "ord-1")
+
+    expect(mocks.createOrderPayment).toHaveBeenCalledWith("ord-1")
+    expect(result?.paymentStatus).toBe("AGUARDANDO_PAGAMENTO")
   })
 })
 

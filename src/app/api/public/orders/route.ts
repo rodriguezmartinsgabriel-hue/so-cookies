@@ -42,7 +42,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: e.message, code: e.code }, { status })
     }
     if (e instanceof PaymentError) {
-      const status = e.code === "PAYMENTS_DISABLED" ? 503 : 400
+      const status = e.code === "PAYMENTS_DISABLED" ? 503 : e.code === "PRICE_CHANGED" ? 409 : 400
       return NextResponse.json({ error: e.message, code: e.code }, { status })
     }
     return NextResponse.json({ error: "Erro ao criar pedido" }, { status: 500 })
