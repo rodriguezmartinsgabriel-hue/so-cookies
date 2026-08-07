@@ -2,13 +2,14 @@
 
 import { useEffect, useMemo, useState, useRef } from "react"
 import { useRouter } from "next/navigation"
-import { Search, X, ArrowUp } from "lucide-react"
+import { ArrowUp } from "lucide-react"
 import { CustomerShell } from "@/components/customer/CustomerShell"
 import { ProductCard } from "@/components/customer/ProductCard"
+import { MenuHero } from "@/components/customer/MenuHero"
+import { MenuSkeleton } from "@/components/customer/MenuSkeleton"
 import { useCart } from "@/hooks/useCart"
 import { usePricing } from "@/hooks/usePricing"
 import { EmptyState } from "@/components/ui/EmptyState"
-import { Input } from "@/components/ui/Input"
 import type { CatalogProduct } from "@/lib/utils"
 
 export default function CardapioPage() {
@@ -113,56 +114,30 @@ export default function CardapioPage() {
     return start
   }, [filtered])
 
-  const hasSearch = query.trim().length > 0
+  const filteredCount = useMemo(
+    () => filtered.reduce((sum, [, categoryItems]) => sum + categoryItems.length, 0),
+    [filtered],
+  )
 
   return (
     <CustomerShell cartCount={count} cartTotal={cartTotal}>
       <div className="space-y-4 cardapio-scroll" ref={scrollRef}>
         <div className="animate-fade-in-up">
-          <h1 className="text-2xl font-bold text-ink">Cardápio</h1>
-          <p className="text-sm text-muted">Escolha seus cookies — retirada na loja</p>
+          <MenuHero query={query} onQueryChange={setQuery} resultCount={filteredCount} />
         </div>
 
-        <div className="relative animate-fade-in-up">
-          <Search
-            className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-kraft pointer-events-none"
-            strokeWidth={1.5}
-          />
-          <Input
-            type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Buscar no cardápio"
-            aria-label="Buscar no cardápio"
-            className="!h-11 pl-9 pr-11"
-          />
-          {hasSearch && (
-            <button
-              type="button"
-              onClick={() => setQuery("")}
-              aria-label="Limpar busca"
-              className="absolute right-2 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full flex items-center justify-center text-muted hover:bg-cream transition-colors"
-            >
-              <X className="w-5 h-5" />
-            </button>
-          )}
-        </div>
-
-        {loading && (
-          <div className="space-y-2">
-            {[1, 2, 3, 4, 5].map((i) => (
-              <div key={i} className="h-20 w-full bg-cream/50 rounded-xl" />
-            ))}
-          </div>
-        )}
+        {loading && <MenuSkeleton />}
         {error && <div className="text-center py-12 text-danger">Não foi possível carregar o cardápio</div>}
 
         {!loading &&
           !error &&
           filtered.map(([category, categoryItems]) => (
             <section key={category}>
-              <h2 className="sticky top-[calc(3.5rem+env(safe-area-inset-top,0px))] z-10 -mx-4 px-4 py-2 mb-2 bg-paper/90 backdrop-blur-sm border-b border-line/40 text-sm font-semibold text-muted uppercase tracking-wide">
-                {category}
+              <h2 className="sticky top-[calc(3.5rem+env(safe-area-inset-top,0px))] z-10 -mx-4 mb-2 px-4 py-2">
+                <span className="inline-flex items-center rounded-full bg-paper/90 backdrop-blur-sm border border-line/40 px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.08em] text-muted">
+                  {category}
+                  <span className="ml-1.5 text-accent tabular-nums">{categoryItems.length}</span>
+                </span>
               </h2>
               <div className="space-y-2 stagger">
                 {categoryItems.map((p, itemIndex) => {

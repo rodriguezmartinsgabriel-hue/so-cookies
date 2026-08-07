@@ -97,7 +97,7 @@ export const ProductCard = memo(function ProductCard({ product, qty, isExpanded,
   )
 
   return (
-    <Card padded={false} interactive className="block p-0 overflow-hidden">
+    <Card padded={false} interactive className="block p-0 overflow-hidden rounded-2xl">
       <div
         role="button"
         tabIndex={0}

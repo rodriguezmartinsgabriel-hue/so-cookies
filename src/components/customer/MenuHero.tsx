@@ -1,0 +1,59 @@
+"use client"
+
+import { Search, X } from "lucide-react"
+import { GlassSurface } from "@/components/ui/GlassSurface"
+import { Input } from "@/components/ui/Input"
+
+type MenuHeroProps = {
+  query: string
+  onQueryChange: (query: string) => void
+  /** Total de itens filtrados; exibido como contagem quando há busca ativa. */
+  resultCount?: number
+}
+
+export function MenuHero({ query, onQueryChange, resultCount }: MenuHeroProps) {
+  const hasQuery = query.trim().length > 0
+
+  return (
+    <GlassSurface tone="strong" className="rounded-2xl p-5 space-y-4">
+      <div>
+        <p className="text-[10px] uppercase tracking-[0.08em] text-accent">Cardápio</p>
+        <h1 className="mt-1 text-2xl font-bold text-ink" style={{ fontFamily: "var(--font-ui)" }}>
+          Escolha seus cookies
+        </h1>
+        <p className="mt-1 text-sm text-muted">Retirada na loja — monte seu pedido</p>
+      </div>
+
+      <div className="relative">
+        <Search
+          className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-kraft pointer-events-none"
+          strokeWidth={1.5}
+        />
+        <Input
+          type="text"
+          value={query}
+          onChange={(e) => onQueryChange(e.target.value)}
+          placeholder="Buscar no cardápio"
+          aria-label="Buscar no cardápio"
+          className="!h-11 pl-9 pr-11"
+        />
+        {hasQuery && (
+          <button
+            type="button"
+            onClick={() => onQueryChange("")}
+            aria-label="Limpar busca"
+            className="absolute right-2 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full flex items-center justify-center text-muted hover:bg-cream transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        )}
+      </div>
+
+      {hasQuery && typeof resultCount === "number" && (
+        <p className="text-xs text-muted" role="status">
+          {resultCount === 1 ? "1 item encontrado" : `${resultCount} itens encontrados`}
+        </p>
+      )}
+    </GlassSurface>
+  )
+}
