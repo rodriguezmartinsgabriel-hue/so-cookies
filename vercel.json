@@ -43,7 +43,7 @@
   "crons": [
     {
       "path": "/api/integrations/reconcile",
-      "schedule": "*/5 * * * *"
+      "schedule": "0 3 * * *"
     }
   ]
 }
