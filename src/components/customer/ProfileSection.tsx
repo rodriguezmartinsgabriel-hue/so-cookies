@@ -4,6 +4,10 @@ import { type ReactNode } from "react"
 import { cn } from "@/lib/utils"
 import { GlassSurface } from "@/components/ui/GlassSurface"
 
+/**
+ * @deprecated Use `ProfileInfoCard` instead. Esta versão fica apenas para
+ * compatibilidade de testes legados.
+ */
 type ProfileSectionProps = {
   icon?: ReactNode
   title: string
@@ -11,6 +15,7 @@ type ProfileSectionProps = {
   className?: string
 }
 
+/** @deprecated Use `ProfileInfoCard` instead. */
 export function ProfileSection({ icon, title, children, className }: ProfileSectionProps) {
   return (
     <GlassSurface variant="solid" className={cn("overflow-hidden", className)}>

@@ -5,6 +5,10 @@ import { ChevronRight } from "lucide-react"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
 
+/**
+ * @deprecated Use `ProfileInfoRow` (read-only) ou Botões diretos (interativos).
+ * Mantido apenas para testes legados.
+ */
 type ProfileRowProps = {
   icon?: ReactNode
   label: string
@@ -14,6 +18,7 @@ type ProfileRowProps = {
   className?: string
 }
 
+/** @deprecated Use `ProfileInfoRow` instead. */
 export function ProfileRow({ icon, label, value, href, onClick, className }: ProfileRowProps) {
   const interactive = href || onClick
   const content = (

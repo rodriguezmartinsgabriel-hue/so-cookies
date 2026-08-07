@@ -1,11 +1,16 @@
 "use client"
 
+/**
+ * @deprecated Use `ProfileHero` instead. Esta versão é mantida apenas para
+ * compatibilidade de testes legados.
+ */
 type ProfileHeaderProps = {
   name: string
   email: string
   phone?: string | null
 }
 
+/** @deprecated Use `ProfileHero` instead. */
 export function ProfileHeader({ name, email, phone }: ProfileHeaderProps) {
   const initial = name.charAt(0).toUpperCase()
 
