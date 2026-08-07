@@ -1,6 +1,5 @@
 import { test, expect, Page } from "@playwright/test"
 
-const MP_TOKEN_URL = "https://merchant-api.ifood.com.br/**"
 const MP_PAYMENTS_URL = "https://api.mercadopago.com/**"
 
 async function mockMercadoPago(page: Page) {

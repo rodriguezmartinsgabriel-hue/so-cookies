@@ -1,4 +1,4 @@
-import type { PrismaClient, Order, Sale } from "@/generated/prisma/client"
+import type { PrismaClient, Order } from "@/generated/prisma/client"
 import type { ListArgs, Paginated } from "../utils"
 
 const orderInclude = {
