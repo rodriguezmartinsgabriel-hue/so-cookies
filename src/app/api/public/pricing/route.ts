@@ -59,7 +59,13 @@ async function getCachedProductsByIds(ids: string[]): Promise<Record<string, Pro
             productCache.set(row.id, { value: brief, expiresAt: now + PRODUCT_CACHE_TTL_MS })
           }
         })
-        .catch(() => {})
+        .catch((err) => {
+          logger.warn(
+            "[pricing] falha ao popular cache de produtos",
+            { ids: missing },
+            err instanceof Error ? err : new Error(String(err)),
+          )
+        })
         .finally(() => {
           inFlightProducts.delete(cacheKey)
         })
