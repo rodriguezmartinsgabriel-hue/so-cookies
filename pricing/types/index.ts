@@ -13,6 +13,17 @@ export interface PricingContext {
   metadata?: Record<string, unknown>
 }
 
+// Preview informational do programa de pontos que será exibido na UI do cliente.
+// Calculado pelo Pricing Engine (fase CUSTOMER) apenas para fins de exibição;
+// os pontos SÓ são creditados após confirmação de pagamento via webhook.
+export interface LoyaltyPreview {
+  currentBalance: number
+  pointsToEarn: number
+  projectedAfter: number
+  active: boolean
+  ruleName: string
+}
+
 // Estado transitório do cálculo de preços
 export interface PricingState {
   items: PricingItem[]
@@ -30,6 +41,8 @@ export interface PricingState {
   subtotal?: number
   /** Tiers de preço disponíveis por produto (somente leitura, exposto no payload público para a UI). */
   availableTiers?: Record<string, PriceTierView[]>
+  /** Preview do programa de pontos (informational; não altera total). */
+  loyaltyPreview?: LoyaltyPreview
 }
 
 // Visão pública (read-only) de um PriceTier exposta no payload público.
@@ -187,6 +200,10 @@ export interface ChannelConfig {
   activateB2B: boolean
   activateFreeShipping: boolean
   b2bDiscountPercent: number
+  activateLoyalty: boolean
+  pointsPerReal: number
+  minOrderTotalForPoints: number
+  roundingMode: "FLOOR" | "CEIL" | "ROUND"
 }
 
 export interface PricingData {
@@ -197,4 +214,6 @@ export interface PricingData {
   campaigns: Campaign[]
   shippingRates: ShippingRate[]
   settings: ChannelConfig
+  /** Saldo atual de pontos do cliente (somente leitura; sem efeitos colaterais no engine). */
+  loyaltyBalance: number
 }

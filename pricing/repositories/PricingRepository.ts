@@ -13,6 +13,10 @@ export const DEFAULT_CHANNEL_CONFIG: ChannelConfig = {
   activateB2B: false,
   activateFreeShipping: false,
   b2bDiscountPercent: 0,
+  activateLoyalty: true,
+  pointsPerReal: 1,
+  minOrderTotalForPoints: 0,
+  roundingMode: "FLOOR",
 }
 
 export const DEFAULT_CHANNEL_CONFIG_JSON = {
@@ -22,6 +26,10 @@ export const DEFAULT_CHANNEL_CONFIG_JSON = {
   activateB2B: false,
   activateFreeShipping: false,
   b2bDiscountPercent: 0,
+  activateLoyalty: true,
+  pointsPerReal: 1,
+  minOrderTotalForPoints: 0,
+  roundingMode: "FLOOR",
 }
 
 export class PricingRepository {
@@ -95,6 +103,22 @@ export class PricingRepository {
         typeof raw.b2bDiscountPercent === "number"
           ? (raw.b2bDiscountPercent as number)
           : DEFAULT_CHANNEL_CONFIG.b2bDiscountPercent,
+      activateLoyalty:
+        typeof raw.activateLoyalty === "boolean"
+          ? (raw.activateLoyalty as boolean)
+          : DEFAULT_CHANNEL_CONFIG.activateLoyalty,
+      pointsPerReal:
+        typeof raw.pointsPerReal === "number"
+          ? (raw.pointsPerReal as number)
+          : DEFAULT_CHANNEL_CONFIG.pointsPerReal,
+      minOrderTotalForPoints:
+        typeof raw.minOrderTotalForPoints === "number"
+          ? (raw.minOrderTotalForPoints as number)
+          : DEFAULT_CHANNEL_CONFIG.minOrderTotalForPoints,
+      roundingMode:
+        raw.roundingMode === "FLOOR" || raw.roundingMode === "CEIL" || raw.roundingMode === "ROUND"
+          ? (raw.roundingMode as ChannelConfig["roundingMode"])
+          : DEFAULT_CHANNEL_CONFIG.roundingMode,
     }
   }
 }

@@ -8,12 +8,14 @@ import { CouponRepository } from "./repositories/CouponRepository"
 import { CampaignRepository } from "./repositories/CampaignRepository"
 import { ShippingRepository } from "./repositories/ShippingRepository"
 import { PricingRepository } from "./repositories/PricingRepository"
+import { LoyaltyRepository } from "./repositories/LoyaltyRepository"
 import { BasePriceRule } from "./rules/PricingRule"
 import { PriceTierRule } from "./rules/PriceTierRule"
 import { CouponRule } from "./rules/CouponRule"
 import { CampaignRule } from "./rules/CampaignRule"
 import { B2BRule } from "./rules/B2BRule"
 import { ShippingRule } from "./rules/ShippingRule"
+import { LoyaltyRule } from "./rules/LoyaltyRule"
 
 export interface BuildPricingEngineOptions {
   logger?: Logger
@@ -35,6 +37,7 @@ export function buildPricingEngine(prisma: PrismaClient, options: BuildPricingEn
   registry.registerRepository("campaign", new CampaignRepository(prisma))
   registry.registerRepository("shipping", new ShippingRepository(prisma))
   registry.registerRepository("pricing", new PricingRepository(prisma))
+  registry.registerRepository("loyalty", new LoyaltyRepository(prisma))
 
   if (options.register) {
     options.register(registry)
@@ -45,6 +48,7 @@ export function buildPricingEngine(prisma: PrismaClient, options: BuildPricingEn
   const campaignRepo = registry.getRepository<CampaignRepository>("campaign")!
   const shippingRepo = registry.getRepository<ShippingRepository>("shipping")!
   const pricingRepo = registry.getRepository<PricingRepository>("pricing")!
+  const loyaltyRepo = registry.getRepository<LoyaltyRepository>("loyalty")!
 
   const eventBus = new EventBus()
 
@@ -54,6 +58,7 @@ export function buildPricingEngine(prisma: PrismaClient, options: BuildPricingEn
   registry.register(new CampaignRule(campaignRepo, eventBus, logger))
   registry.register(new B2BRule(logger))
   registry.register(new ShippingRule(shippingRepo, eventBus, logger))
+  registry.register(new LoyaltyRule(loyaltyRepo, logger))
 
   return new PricingEngine(prisma, registry, logger, metrics)
 }

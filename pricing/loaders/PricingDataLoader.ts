@@ -5,6 +5,7 @@ import { CouponRepository } from "../repositories/CouponRepository"
 import { CampaignRepository } from "../repositories/CampaignRepository"
 import { ShippingRepository } from "../repositories/ShippingRepository"
 import { PricingRepository } from "../repositories/PricingRepository"
+import { LoyaltyRepository } from "../repositories/LoyaltyRepository"
 import { PricingCache } from "../cache/PricingCache"
 
 export class PricingDataLoader {
@@ -14,6 +15,7 @@ export class PricingDataLoader {
     private campaignRepository: CampaignRepository,
     private shippingRepository: ShippingRepository,
     private pricingRepository: PricingRepository,
+    private loyaltyRepository: LoyaltyRepository,
     private cache: PricingCache,
   ) {}
 
@@ -39,6 +41,12 @@ export class PricingDataLoader {
     // 7. Carregar configurações do canal
     const settings = await this.loadChannelConfig(context.channel)
 
+    // 8. Carregar saldo do programa de pontos (se houver cliente)
+    let loyaltyBalance = 0
+    if (context.customerId) {
+      loyaltyBalance = await this.loyaltyRepository.getBalance(context.customerId)
+    }
+
     return {
       products,
       customer,
@@ -47,6 +55,7 @@ export class PricingDataLoader {
       campaigns,
       shippingRates,
       settings,
+      loyaltyBalance,
     }
   }
 

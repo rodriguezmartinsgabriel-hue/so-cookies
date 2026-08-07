@@ -5,6 +5,8 @@ import type { Decimal } from "@prisma/client/runtime/client"
 import { pushOrderStatusToPlatform } from "./integrations/push"
 import { computeMargin, toNumber, type ListArgs, type Paginated } from "./utils"
 import { productRepository, orderRepository, saleRepository } from "./repositories"
+import { LoyaltyService } from "./loyalty/service"
+import { logger } from "./logger"
 
 export function isNotFoundError(e: unknown): boolean {
   return typeof e === "object" && e !== null && "code" in e && e.code === "P2025"
@@ -310,6 +312,14 @@ export async function applyOrderUpdate(
       pushStatus = "ok"
     } catch {
       pushStatus = "error"
+    }
+  }
+
+  if (data.status === "CANCELADO" && order.customerId) {
+    try {
+      await LoyaltyService.refundOnCancel(order.id)
+    } catch (err) {
+      logger.error("[orders.admin] Falha ao estornar pontos de fidelidade", { orderId: order.id }, err)
     }
   }
 

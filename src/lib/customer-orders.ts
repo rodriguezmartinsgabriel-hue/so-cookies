@@ -6,6 +6,7 @@ import { PricingContext } from "@so-cookies/pricing"
 import { createOrderPayment } from "./payments/service"
 import { PaymentError } from "./payments/errors"
 import { logger } from "./logger"
+import { LoyaltyService } from "./loyalty/service"
 import type { OrderStatus } from "@/generated/prisma/enums"
 
 const PICKUP_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
@@ -407,6 +408,14 @@ export async function updateCustomerOrder(
         where: { id: pendingPayment.id },
         data: { status: "CANCELLED" },
       })
+    }
+
+    // Estorna pontos do programa de fidelidade se o pedido já tinha sido pago.
+    try {
+      await LoyaltyService.refundOnCancel(orderId)
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err)
+      logger.error("[orders] Falha ao estornar pontos de fidelidade", { orderId }, new Error(message))
     }
   }
 

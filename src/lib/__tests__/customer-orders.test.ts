@@ -13,6 +13,7 @@ const mocks = vi.hoisted(() => ({
   assertSlotAvailable: vi.fn(),
   engineCalculatePrice: vi.fn(),
   paymentEventUpdate: vi.fn(),
+  loyaltyRefundOnCancel: vi.fn(),
 }))
 
 vi.mock("@/lib/prisma", () => ({
@@ -34,6 +35,12 @@ vi.mock("@/lib/prisma", () => ({
 
 vi.mock("@/lib/payments/service", () => ({
   createOrderPayment: mocks.createOrderPayment,
+}))
+
+vi.mock("@/lib/loyalty/service", () => ({
+  LoyaltyService: {
+    refundOnCancel: mocks.loyaltyRefundOnCancel,
+  },
 }))
 
 vi.mock("./delivery-scheduling", () => ({
@@ -160,6 +167,7 @@ describe("updateCustomerOrder — cancelamento", () => {
         data: expect.objectContaining({ status: "CANCELLED" }),
       }),
     )
+    expect(mocks.loyaltyRefundOnCancel).toHaveBeenCalledWith("ord-1")
     expect(result.status).toBe("CANCELADO")
   })
 

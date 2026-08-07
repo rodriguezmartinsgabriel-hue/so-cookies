@@ -47,9 +47,10 @@ model Customer {
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
 
-  orders   Order[]
-  accounts CustomerAccount[]
-  contact  Contact?
+  orders    Order[]
+  accounts  CustomerAccount[]
+  contact   Contact?
+  loyalty   LoyaltyAccount?
 
   @@index([email])
   @@index([phone])
@@ -248,6 +249,9 @@ model Order {
   paymentQrCodeBase64 String?   @db.Text
   paymentExpiresAt    DateTime?
   paidAt              DateTime?
+  loyaltyEarned       Boolean     @default(false)
+  loyaltyPoints       Int?
+  loyaltyRefunded     Boolean     @default(false)
 
   createdAt            DateTime    @default(now())
   updatedAt            DateTime    @updatedAt
@@ -256,6 +260,7 @@ model Order {
   sale           Sale?
   deliveryCosts  DeliveryCost[]
   paymentEvents  PaymentEvent[]
+  loyaltyTxs     LoyaltyTransaction[]
 
   customerId  String?
   customerRef Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
@@ -690,4 +695,73 @@ model SyncDelete {
 
   @@unique([entity, recordId])
   @@index([createdAt])
+}
+
+model LoyaltyAccount {
+  id             String    @id @default(cuid())
+  customerId     String    @unique
+  balance        Int       @default(0)
+  lifetimeEarned Int       @default(0)
+  lifetimeSpent  Int       @default(0)
+  expiresAt      DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  customer     Customer             @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  transactions LoyaltyTransaction[]
+
+  @@index([customerId])
+}
+
+enum LoyaltyTxType {
+  EARN
+  REDEEM
+  REFUND
+  ADJUSTMENT
+  EXPIRE
+}
+
+model LoyaltyTransaction {
+  id           String        @id @default(cuid())
+  accountId    String
+  type         LoyaltyTxType
+  points       Int
+  balanceAfter Int
+  reason       String
+  metadata     Json?
+  createdAt    DateTime      @default(now())
+
+  account LoyaltyAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  order   Order?         @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  orderId String?
+
+  @@index([accountId, createdAt])
+  @@index([orderId])
+  @@index([type])
+}
+
+enum LoyaltyRewardType {
+  DISCOUNT_FIXED
+  DISCOUNT_PERCENTAGE
+  FREE_PRODUCT
+  FREE_SHIPPING
+}
+
+model LoyaltyReward {
+  id          String            @id @default(cuid())
+  name        String
+  description String?
+  image       String?
+  pointsCost  Int
+  type        LoyaltyRewardType
+  enabled     Boolean           @default(false)
+  stock       Int?
+  validFrom   DateTime?
+  validUntil  DateTime?
+  metadata    Json?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  @@index([enabled])
+  @@index([pointsCost])
 }

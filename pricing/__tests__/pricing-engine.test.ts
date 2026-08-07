@@ -39,6 +39,7 @@ function createEngine(opts: Parameters<typeof buildPricingDataLoaderDeps>[0] = {
       registry.registerRepository("campaign", deps.campaignRepository)
       registry.registerRepository("shipping", deps.shippingRepository)
       registry.registerRepository("pricing", deps.pricingRepository)
+      registry.registerRepository("loyalty", deps.loyaltyRepository)
     },
   })
 }

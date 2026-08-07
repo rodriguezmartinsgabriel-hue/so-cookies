@@ -14,6 +14,7 @@ import type { CouponRepository } from "../repositories/CouponRepository"
 import type { CampaignRepository } from "../repositories/CampaignRepository"
 import type { ShippingRepository } from "../repositories/ShippingRepository"
 import type { PricingRepository } from "../repositories/PricingRepository"
+import type { LoyaltyRepository } from "../repositories/LoyaltyRepository"
 import { Decimal } from "@prisma/client/runtime/client"
 
 type ProductProps = Partial<Product>
@@ -161,6 +162,10 @@ export const channelConfigFactory = (overrides: Partial<ChannelConfig> = {}): Ch
   activateB2B: true,
   activateFreeShipping: true,
   b2bDiscountPercent: 10,
+  activateLoyalty: true,
+  pointsPerReal: 1,
+  minOrderTotalForPoints: 0,
+  roundingMode: "FLOOR",
   ...overrides,
 })
 
@@ -212,6 +217,13 @@ export const mockPricingRepository = (
     getActivePriceTiersForProducts: () => Promise.resolve(Object.values(opts.priceTiers ?? {}).flat()),
   }) as unknown as PricingRepository
 
+export const mockLoyaltyRepository = (opts: { balance?: number } = {}): LoyaltyRepository =>
+  ({
+    getBalance: () => Promise.resolve(opts.balance ?? 0),
+    getSettings: () => Promise.resolve({ activateLoyalty: true, pointsPerReal: 1, minOrderTotalForPoints: 0, roundingMode: "FLOOR" }),
+    getAccountMeta: () => Promise.resolve(null),
+  }) as unknown as LoyaltyRepository
+
 export const mockConsole = () => ({
   log: () => void 0,
   error: () => void 0,
@@ -246,6 +258,7 @@ export const buildPricingDataLoaderDeps = (
     campaignRepository: mockCampaignRepository(campaigns),
     shippingRepository: mockShippingRepository(shippingRates),
     pricingRepository: mockPricingRepository({ config, priceTiers: opts.priceTiers }),
+    loyaltyRepository: mockLoyaltyRepository(),
     priceTiers: opts.priceTiers ?? {},
   }
 }

@@ -31,6 +31,13 @@ export interface PricingResult {
     warnings?: Array<{ message: string; type?: string }>
     freeShipping?: boolean
     availableTiers?: Record<string, AvailablePriceTier[]>
+    loyaltyPreview?: {
+      active: boolean
+      currentBalance: number
+      pointsToEarn: number
+      projectedAfter: number
+      ruleName: string
+    }
   }
   total: number
   summary: {

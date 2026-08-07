@@ -22,6 +22,7 @@ import { Input } from "@/components/ui/Input"
 import { FormField } from "@/components/ui/FormField"
 import { PriceTag } from "@/components/customer/PriceTag"
 import { VolumeDiscountHint } from "@/components/customer/VolumeDiscountHint"
+import { LoyaltyPreview } from "@/components/customer/LoyaltyPreview"
 import { motion, AnimatePresence } from "framer-motion"
 
 import type { CatalogProduct } from "@/lib/utils"
@@ -606,6 +607,8 @@ export default function CarrinhoPage() {
                 )}
 
                 <OrderNotesField value={orderNotes} onChange={setOrderNotes} />
+
+                <LoyaltyPreview preview={result?.state.loyaltyPreview} />
 
                 <Card padded={false}>
                   <div className="p-4 space-y-2">

@@ -33,6 +33,10 @@ describe("PricingRepository.getChannelConfig", () => {
     expect(config.activateB2B).toBe(false)
     expect(config.activateFreeShipping).toBe(false)
     expect(config.b2bDiscountPercent).toBe(0)
+    expect(config.activateLoyalty).toBe(true)
+    expect(config.pointsPerReal).toBe(1)
+    expect(config.minOrderTotalForPoints).toBe(0)
+    expect(config.roundingMode).toBe("FLOOR")
   })
 
   it("cria a linha default (upsert) quando não existe", async () => {
@@ -80,6 +84,10 @@ describe("PricingRepository.getChannelConfig", () => {
       activateB2B: false,
       activateFreeShipping: false,
       b2bDiscountPercent: 0,
+      activateLoyalty: true,
+      pointsPerReal: 1,
+      minOrderTotalForPoints: 0,
+      roundingMode: "FLOOR",
     })
   })
 })

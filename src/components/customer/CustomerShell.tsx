@@ -9,6 +9,7 @@ import { ThemeToggle } from "@/components/ui/ThemeToggle"
 import { useHapticFeedback } from "@/hooks/useHapticFeedback"
 import { InstallPrompt } from "@/components/pwa/InstallPrompt"
 import { CartFloatingBar } from "./CartFloatingBar"
+import { LoyaltyBadge } from "./LoyaltyBadge"
 
 export function CustomerShell({
   children,
@@ -50,6 +51,7 @@ export function CustomerShell({
           </Link>
           <div className="flex items-center gap-1 shrink-0">
             <ThemeToggle />
+            <LoyaltyBadge />
             <Link
               href="/carrinho"
               className="relative min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg hover:bg-cream transition-colors"

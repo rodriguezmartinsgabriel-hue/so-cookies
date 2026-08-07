@@ -5,6 +5,7 @@ import { createPixPayment, getPixPayment } from "./mercadopago"
 import { PAYMENT_PROVIDER, PAYMENT_TTL_MS, isMercadoPagoConfigured, mpNotificationUrl } from "./config"
 import { PaymentError } from "./errors"
 import { toNumber } from "../utils"
+import { LoyaltyService } from "../loyalty/service"
 
 type PaymentEventInput = {
   orderId?: string | null
@@ -149,6 +150,22 @@ export async function handlePaymentWebhook(input: { paymentId: string }): Promis
       status: "VERIFIED",
       payload: { status: payment.status, status_detail: payment.status_detail },
     })
+
+    // Credita pontos do programa de fidelidade. Idempotente via
+    // Order.loyaltyEarned — uma falha aqui não reverte o pagamento,
+    // mas é logada para investigação.
+    try {
+      await LoyaltyService.creditOnPayment(order.id)
+    } catch (err) {
+      await logPaymentEvent({
+        orderId: order.id,
+        paymentId: input.paymentId,
+        action: "loyalty.credit.failed",
+        status: "IGNORED",
+        payload: { error: err instanceof Error ? err.message : String(err) },
+      })
+    }
+
     return { ok: true, action: "paid" }
   }
 

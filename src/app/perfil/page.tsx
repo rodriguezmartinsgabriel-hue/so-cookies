@@ -17,6 +17,7 @@ import { useHapticFeedback } from "@/hooks/useHapticFeedback"
 import { useCart } from "@/hooks/useCart"
 import { formatBRL } from "@/lib/utils"
 import { EMPTY_ADDRESS, type AddressState, type Profile, type PublicOrder, statusLabel } from "@/lib/customer-types"
+import { LoyaltySection } from "@/components/customer/LoyaltySection"
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -405,6 +406,10 @@ export default function PerfilPage() {
                     </div>
                   )}
                 </ProfileSection>
+              </motion.div>
+
+              <motion.div variants={itemVariants}>
+                <LoyaltySection />
               </motion.div>
 
               <motion.div variants={itemVariants} className="pt-2 pb-4">

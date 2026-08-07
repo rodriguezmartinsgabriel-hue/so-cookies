@@ -1,4 +1,4 @@
-import type { PricingContext, PricingState, PricingResult, PricingData, Logger, Metrics } from "../types"
+import type { PricingContext, PricingState, PricingResult, PricingData, Logger, Metrics, LoyaltyPreview } from "../types"
 import type { PricingAction } from "../actions/PricingAction"
 import type { PrismaClient } from "@/generated/prisma/client"
 import { PricingPhase } from "../pipeline/PricingPhase"
@@ -14,6 +14,7 @@ import { CouponRepository } from "../repositories/CouponRepository"
 import { CampaignRepository } from "../repositories/CampaignRepository"
 import { ShippingRepository } from "../repositories/ShippingRepository"
 import { PricingRepository } from "../repositories/PricingRepository"
+import { LoyaltyRepository } from "../repositories/LoyaltyRepository"
 
 const PHASE_TIMELINE: PricingPhase[] = [
   PricingPhase.BASE,
@@ -46,6 +47,7 @@ export class PricingEngine {
       registry.getRepository<CampaignRepository>("campaign") ?? new CampaignRepository(prisma),
       registry.getRepository<ShippingRepository>("shipping") ?? new ShippingRepository(prisma),
       registry.getRepository<PricingRepository>("pricing") ?? new PricingRepository(prisma),
+      registry.getRepository<LoyaltyRepository>("loyalty") ?? new LoyaltyRepository(prisma),
       new PricingCache(),
     )
     this.audit = new PricingAudit(registry)
@@ -80,7 +82,11 @@ export class PricingEngine {
 
     // 5.5 Expor tiers disponíveis no estado para a UI cliente poder mostrar
     //     progressão ("Faltam N para R$ X,XX/un"). Read-only, não muda regras.
-    const stateWithTiers = this.attachAvailableTiers(newState, data)
+    let stateWithTiers = this.attachAvailableTiers(newState, data)
+
+    // 5.6 Expor preview de pontos para a UI cliente ("Você ganhará X pontos").
+    //     Read-only, calculado a partir das settings + saldo real do cliente.
+    stateWithTiers = this.attachLoyaltyPreview(stateWithTiers, data, summary.total)
 
     // 6. Criar resultado
     const result: PricingResult = {
@@ -131,6 +137,26 @@ export class PricingEngine {
         }))
     }
     return { ...state, availableTiers }
+  }
+
+  private attachLoyaltyPreview(state: PricingState, data: PricingData, total: number): PricingState {
+    const settings = data.settings
+    const active = settings.activateLoyalty
+    const currentBalance = data.loyaltyBalance ?? 0
+    const pointsToEarn = LoyaltyRepository.computePoints(total, {
+      activateLoyalty: active,
+      pointsPerReal: settings.pointsPerReal,
+      minOrderTotalForPoints: settings.minOrderTotalForPoints,
+      roundingMode: settings.roundingMode,
+    })
+    const preview: LoyaltyPreview = {
+      active,
+      currentBalance,
+      pointsToEarn,
+      projectedAfter: currentBalance + pointsToEarn,
+      ruleName: "Programa de Pontos",
+    }
+    return { ...state, loyaltyPreview: preview }
   }
 
   private async executePhases(
