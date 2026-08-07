@@ -7,7 +7,7 @@ import { motion } from "framer-motion"
 import { GlassSurface } from "@/components/ui/GlassSurface"
 import { ThemeToggle } from "@/components/ui/ThemeToggle"
 import { useHapticFeedback } from "@/hooks/useHapticFeedback"
-import { InstallPrompt } from "@/components/pwa/InstallPrompt"
+import { MobileAppPrompt } from "@/components/pwa/MobileAppPrompt"
 import { CartFloatingBar } from "./CartFloatingBar"
 import { LoyaltyBadge } from "./LoyaltyBadge"
 
@@ -78,7 +78,7 @@ export function CustomerShell({
 
       {showCartBar && cartCount > 0 && <CartFloatingBar total={cartTotal} itemCount={cartCount} />}
 
-      <InstallPrompt />
+      <MobileAppPrompt />
 
       <nav className="fixed bottom-0 left-0 right-0 z-40 pointer-events-none">
         <GlassSurface
