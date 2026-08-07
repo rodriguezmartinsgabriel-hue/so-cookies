@@ -85,10 +85,11 @@ planilha_data.*
 
 # opencode tooling local
 /.opencode/
+!/.opencode/
+/.opencode/*
+!/.opencode/skills/
+/.opencode/skills/*
+!/.opencode/skills/premium-customer-ui/
 /.agents/
 /opencode.json
 /skills-lock.json
-
-# exceções versionadas: skill premium de UI do cliente + design system
-!/.opencode/skills/premium-customer-ui/
-!/.opencode/skills/premium-customer-ui/**
