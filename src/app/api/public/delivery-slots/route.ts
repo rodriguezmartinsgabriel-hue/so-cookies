@@ -17,7 +17,10 @@ export async function GET(request: Request) {
     const url = new URL(request.url)
     const zoneId = url.searchParams.get("zoneId") || undefined
     const slots = await getDeliverySlots({ zoneId })
-    return NextResponse.json({ slots })
+    return NextResponse.json(
+      { slots },
+      { headers: { "Cache-Control": "private, max-age=30, stale-while-revalidate=300" } },
+    )
   } catch {
     return NextResponse.json({ error: "Erro ao buscar opções de entrega" }, { status: 500 })
   }

@@ -61,6 +61,48 @@ export interface UsePricingOptions {
   channel?: "delivery" | "pickup" | "digital"
 }
 
+// Dedup de requests entre múltiplas instâncias do usePricing (layout, cardápio e
+// carrinho ficam montados simultaneamente). Requests com a mesma chave
+// (channel|coupon|itens) compartilham uma única Promise em voo.
+const pendingPricing = new Map<string, Promise<PricingResult>>()
+
+function fetchPricing(
+  cartKey: string,
+  channel: string,
+  couponCode: string | null,
+  cartItems: Array<{ productId: string; qty: number }>,
+): Promise<PricingResult> {
+  const existing = pendingPricing.get(cartKey)
+  if (existing) return existing
+
+  const promise = (async () => {
+    const res = await fetch("/api/public/pricing", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        items: cartItems.map((i) => ({
+          productId: i.productId,
+          qty: i.qty,
+        })),
+        channel,
+        couponCode: couponCode || undefined,
+      }),
+    })
+
+    if (!res.ok) {
+      const data = await res.json().catch(() => null)
+      throw new Error(data?.error || "Failed to calculate price")
+    }
+
+    return (await res.json()) as PricingResult
+  })().finally(() => {
+    pendingPricing.delete(cartKey)
+  })
+
+  pendingPricing.set(cartKey, promise)
+  return promise
+}
+
 export function usePricing(options?: UsePricingOptions) {
   const { items: cartItems } = useCart()
   const couponCode = options?.couponCode || null
@@ -78,10 +120,8 @@ export function usePricing(options?: UsePricingOptions) {
     if (cartKey === lastCartKeyRef.current) return
 
     let cancelled = false
-    let controller: AbortController | null = null
     const timeout = setTimeout(() => {
       lastCartKeyRef.current = cartKey
-      controller = new AbortController()
 
       // Optimistic preview: enquanto o fetch real não volta, aplicamos os tiers
       // conhecidos localmente (do resultado anterior) ao novo cartKey, para que a
@@ -98,32 +138,12 @@ export function usePricing(options?: UsePricingOptions) {
 
       async function run() {
         try {
-          const res = await fetch("/api/public/pricing", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              items: cartItems.map((i) => ({
-                productId: i.productId,
-                qty: i.qty,
-              })),
-              channel,
-              couponCode: couponCode || undefined,
-            }),
-            signal: controller!.signal,
-          })
-
-          if (!res.ok) {
-            const data = await res.json().catch(() => null)
-            throw new Error(data?.error || "Failed to calculate price")
-          }
-
-          const result = (await res.json()) as PricingResult
-          if (!cancelled) {
-            lastResultRef.current = result
-            setPricingResult(result)
-          }
+          const result = await fetchPricing(cartKey, channel, couponCode, cartItems)
+          if (cancelled) return
+          lastResultRef.current = result
+          setPricingResult(result)
         } catch (err) {
-          if (cancelled || controller?.signal.aborted) return
+          if (cancelled) return
           if (err instanceof Error) setError(err.message)
           else setError("Erro ao calcular preço")
         } finally {
@@ -137,7 +157,6 @@ export function usePricing(options?: UsePricingOptions) {
     return () => {
       cancelled = true
       clearTimeout(timeout)
-      controller?.abort()
     }
   }, [cartItems, couponCode, channel])
 

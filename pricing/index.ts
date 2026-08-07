@@ -71,7 +71,7 @@ export { B2BRule } from "./rules/B2BRule"
 export { ShippingRule } from "./rules/ShippingRule"
 
 // Factory
-export { buildPricingEngine } from "./factory"
+export { buildPricingEngine, getPricingEngine } from "./factory"
 export type { BuildPricingEngineOptions } from "./factory"
 
 // Error types

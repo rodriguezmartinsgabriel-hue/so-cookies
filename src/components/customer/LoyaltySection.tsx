@@ -1,18 +1,17 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState } from "react"
+import { useQuery } from "@tanstack/react-query"
 import { Sparkles, TrendingUp, TrendingDown, Gift, ChevronRight, Loader2 } from "lucide-react"
 import { motion } from "framer-motion"
 import { Button } from "@/components/ui/Button"
 import { useHapticFeedback } from "@/hooks/useHapticFeedback"
-
-interface BalanceResponse {
-  balance: number
-  lifetimeEarned: number
-  lifetimeSpent: number
-  active: boolean
-  pointsPerReal: number
-}
+import {
+  loyaltyBalanceQueryKey,
+  loyaltyTransactionsQueryKey,
+  loyaltyRewardsQueryKey,
+  type LoyaltySnapshot,
+} from "@/hooks/customer/queries"
 
 interface TransactionView {
   id: string
@@ -40,38 +39,50 @@ interface RewardView {
   stock: number | null
 }
 
+const DEFAULT_SNAPSHOT: LoyaltySnapshot = {
+  balance: 0,
+  lifetimeEarned: 0,
+  lifetimeSpent: 0,
+  pointsPerReal: 1,
+  active: true,
+}
+
 export function LoyaltySection() {
   const haptic = useHapticFeedback()
-  const [balance, setBalance] = useState<BalanceResponse | null>(null)
-  const [txs, setTxs] = useState<TransactionsResponse | null>(null)
-  const [rewards, setRewards] = useState<RewardView[] | null>(null)
-  const [loading, setLoading] = useState(true)
   const [redeemHint, setRedeemHint] = useState<string | null>(null)
 
-  useEffect(() => {
-    let cancelled = false
+  const balanceQuery = useQuery<LoyaltySnapshot>({
+    queryKey: loyaltyBalanceQueryKey,
+    queryFn: async () => {
+      const res = await fetch("/api/public/loyalty/balance", { cache: "no-store" })
+      if (!res.ok) return DEFAULT_SNAPSHOT
+      const data = (await res.json()) as Partial<LoyaltySnapshot>
+      return { ...DEFAULT_SNAPSHOT, ...data }
+    },
+    staleTime: 30_000,
+  })
 
-    async function load() {
-      try {
-        const [b, t, r] = await Promise.all([
-          fetch("/api/public/loyalty/balance").then((res) => (res.ok ? res.json() : null)),
-          fetch("/api/public/loyalty/transactions?limit=20").then((res) => (res.ok ? res.json() : null)),
-          fetch("/api/public/loyalty/rewards").then((res) => (res.ok ? res.json() : null)),
-        ])
-        if (cancelled) return
-        setBalance(b)
-        setTxs(t)
-        setRewards(r?.items ?? [])
-      } finally {
-        if (!cancelled) setLoading(false)
-      }
-    }
+  const txsQuery = useQuery<TransactionsResponse>({
+    queryKey: loyaltyTransactionsQueryKey,
+    queryFn: async () => {
+      const res = await fetch("/api/public/loyalty/transactions?limit=20", { cache: "no-store" })
+      if (!res.ok) return { items: [], nextCursor: null }
+      return (await res.json()) as TransactionsResponse
+    },
+    staleTime: 30_000,
+  })
 
-    load()
-    return () => {
-      cancelled = true
-    }
-  }, [])
+  const rewardsQuery = useQuery<{ items: RewardView[] }>({
+    queryKey: loyaltyRewardsQueryKey,
+    queryFn: async () => {
+      const res = await fetch("/api/public/loyalty/rewards", { cache: "no-store" })
+      if (!res.ok) return { items: [] }
+      return (await res.json()) as { items: RewardView[] }
+    },
+    staleTime: 60_000,
+  })
+
+  const loading = balanceQuery.isLoading || txsQuery.isLoading || rewardsQuery.isLoading
 
   function handleRedeemClick(reward: RewardView) {
     setRedeemHint(
@@ -89,12 +100,14 @@ export function LoyaltySection() {
     )
   }
 
+  const balance = balanceQuery.data
   if (!balance || !balance.active) {
     return null
   }
 
-  const txItems = txs?.items ?? []
-  const hasRewards = rewards && rewards.length > 0
+  const txItems = txsQuery.data?.items ?? []
+  const rewards = rewardsQuery.data?.items ?? []
+  const hasRewards = rewards.length > 0
 
   return (
     <motion.section

@@ -27,6 +27,21 @@ export interface BuildPricingEngineOptions {
 const noopLogger: Logger = { log: () => {}, error: () => {} }
 const noopMetrics: Metrics = { record: () => void 0 }
 
+// Singleton por processo: o PricingEngine é stateless entre chamadas de
+// calculatePrice, então reutilizá-lo evita reconstruir regras/repositórios a
+// cada request E faz o PricingCache interno persistir entre requests
+// (campaigns/shipping/coupons semi-estáticos não são re-consultados).
+const engineByPrisma = new WeakMap<object, PricingEngine>()
+
+export function getPricingEngine(prisma: PrismaClient): PricingEngine {
+  let engine = engineByPrisma.get(prisma)
+  if (!engine) {
+    engine = buildPricingEngine(prisma)
+    engineByPrisma.set(prisma, engine)
+  }
+  return engine
+}
+
 export function buildPricingEngine(prisma: PrismaClient, options: BuildPricingEngineOptions = {}): PricingEngine {
   const logger = options.logger ?? noopLogger
   const metrics = options.metrics ?? noopMetrics

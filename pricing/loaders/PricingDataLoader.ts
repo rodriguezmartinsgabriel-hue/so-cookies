@@ -20,36 +20,25 @@ export class PricingDataLoader {
   ) {}
 
   async loadData(context: PricingContext): Promise<PricingData> {
-    // 1. Carregar produtos
-    const products = await this.loadProducts(context.items)
+    // Carrega todos os dados em paralelo (queries independentes entre si).
+    // Antes eram 8 awaits em série; agora o tempo cai para o da query mais lenta.
+    const loyaltyPromise = context.customerId
+      ? this.loyaltyRepository.getBalance(context.customerId)
+      : Promise.resolve({ data: 0, degraded: false })
 
-    // 2. Carregar dados do cliente (se existir)
-    const customer = context.customerId ? await this.loadCustomer(context.customerId) : undefined
-
-    // 3. Carregar faixas de preço para todos os produtos
-    const priceTiers = await this.loadPriceTiers(context.items)
-
-    // 4. Carregar cupons
-    const coupons = await this.loadCoupons(context.couponCode)
-
-    // 5. Carregar campanhas ativas
-    const campaigns = await this.loadActiveCampaigns()
-
-    // 6. Carregar taxas de frete
-    const shippingRates = await this.loadShippingRates(context.channel)
-
-    // 7. Carregar configurações do canal
-    const settings = await this.loadChannelConfig(context.channel)
-
-    // 8. Carregar saldo do programa de pontos (se houver cliente).
-    //    Operação best-effort: falhas aqui nunca devem quebrar o cálculo de preço.
-    let loyaltyBalance = 0
-    let loyaltyDegraded = false
-    if (context.customerId) {
-      const balanceResult = await this.loyaltyRepository.getBalance(context.customerId)
-      loyaltyBalance = balanceResult.data
-      loyaltyDegraded = balanceResult.degraded
-    }
+    const [products, customer, priceTiers, coupons, campaigns, shippingRates, settings, loyaltyResult] =
+      await Promise.all([
+        this.loadProducts(context.items),
+        context.customerId ? this.loadCustomer(context.customerId) : Promise.resolve(undefined),
+        this.loadPriceTiers(context.items),
+        this.loadCoupons(context.couponCode),
+        this.loadActiveCampaigns(),
+        this.loadShippingRates(context.channel),
+        this.loadChannelConfig(context.channel),
+        // Saldo do programa de pontos (se houver cliente). Operação best-effort:
+        // falhas aqui nunca devem quebrar o cálculo de preço.
+        loyaltyPromise,
+      ])
 
     return {
       products,
@@ -59,8 +48,8 @@ export class PricingDataLoader {
       campaigns,
       shippingRates,
       settings,
-      loyaltyBalance,
-      loyaltyDegraded,
+      loyaltyBalance: loyaltyResult.data,
+      loyaltyDegraded: loyaltyResult.degraded,
     }
   }
 

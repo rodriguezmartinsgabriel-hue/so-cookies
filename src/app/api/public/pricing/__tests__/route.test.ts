@@ -19,6 +19,7 @@ vi.mock("@/lib/prisma", () => ({
 
 vi.mock("@so-cookies/pricing", () => ({
   buildPricingEngine: () => ({ calculatePrice: mocks.engineCalculatePrice }),
+  getPricingEngine: () => ({ calculatePrice: mocks.engineCalculatePrice }),
 }))
 
 vi.mock("@/lib/logger", () => ({
