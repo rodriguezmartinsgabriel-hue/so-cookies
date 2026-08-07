@@ -12,8 +12,16 @@ async function main() {
   console.log("🌱 Iniciando seed...\n");
 
   // ─── Users ─────────────────────────────────────────────────
-  const adminHash = await bcrypt.hash("admin123", 10);
-  const operacionalHash = await bcrypt.hash("operacional123", 10);
+  const isProd = process.env.NODE_ENV === "production";
+  const adminPassword = process.env.SEED_ADMIN_PASSWORD;
+  const operacionalPassword = process.env.SEED_OPERACIONAL_PASSWORD;
+
+  if (isProd && (!adminPassword || !operacionalPassword)) {
+    throw new Error("SEED_ADMIN_PASSWORD e SEED_OPERACIONAL_PASSWORD são obrigatórios em produção");
+  }
+
+  const adminHash = await bcrypt.hash(adminPassword || "admin123", 10);
+  const operacionalHash = await bcrypt.hash(operacionalPassword || "operacional123", 10);
 
   await prisma.user.upsert({
     where: { email: "admin@socookies.com" },
