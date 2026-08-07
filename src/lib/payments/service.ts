@@ -2,7 +2,7 @@ import { prisma } from "@/lib/prisma"
 import { Prisma } from "@/generated/prisma/client"
 import type { Decimal } from "@prisma/client/runtime/client"
 import { createPixPayment, getPixPayment } from "./mercadopago"
-import { PAYMENT_PROVIDER, PAYMENT_TTL_MS, isMercadoPagoConfigured, mpNotificationUrl } from "./config"
+import { PAYMENT_PROVIDER, PAYMENT_TTL_MS, MIN_TRANSACTION_AMOUNT, MAX_TRANSACTION_AMOUNT, isMercadoPagoConfigured, mpNotificationUrl, logPaymentConfigWarnings } from "./config"
 import { PaymentError } from "./errors"
 import { toNumber } from "../utils"
 import { LoyaltyService } from "../loyalty/service"
@@ -29,6 +29,7 @@ async function logPaymentEvent(input: PaymentEventInput): Promise<void> {
 }
 
 export async function createOrderPayment(orderId: string) {
+  logPaymentConfigWarnings()
   const order = await prisma.order.findUnique({
     where: { id: orderId },
     include: { customerRef: { select: { email: true } } },
@@ -42,11 +43,19 @@ export async function createOrderPayment(orderId: string) {
   const payerEmail = order.customerRef?.email
   if (!payerEmail) throw new PaymentError("NO_PAYER_EMAIL", "Cliente sem e-mail cadastrado para pagamento")
 
+  const amount = toNumber(order.total)
+  if (!Number.isFinite(amount) || amount < MIN_TRANSACTION_AMOUNT) {
+    throw new PaymentError("INVALID_AMOUNT", `Valor do pedido inválido para pagamento: ${amount}`)
+  }
+  if (amount > MAX_TRANSACTION_AMOUNT) {
+    throw new PaymentError("INVALID_AMOUNT", `Valor do pedido excede o limite permitido: ${amount}`)
+  }
+
   const expiresAt = new Date(Date.now() + PAYMENT_TTL_MS)
   const externalRef = `order:${order.id}`
 
   const payment = await createPixPayment({
-    transactionAmount: toNumber(order.total),
+    transactionAmount: amount,
     description: `Pedido Só Cookies & Café ${order.pickupCode ?? ""}`.trim(),
     payerEmail,
     externalReference: externalRef,
@@ -131,11 +140,8 @@ export async function handlePaymentWebhook(input: { paymentId: string }): Promis
   }
 
   if (payment.status === "approved") {
-    if (order.paymentStatus === "PAGO") {
-      return { ok: true, action: "already_paid" }
-    }
-    await prisma.order.update({
-      where: { id: order.id },
+    const result = await prisma.order.updateMany({
+      where: { id: order.id, paymentStatus: { not: "PAGO" } },
       data: {
         status: "CONFIRMADO",
         paymentStatus: "PAGO",
@@ -143,6 +149,9 @@ export async function handlePaymentWebhook(input: { paymentId: string }): Promis
         updatedAt: new Date(),
       },
     })
+    if (result.count === 0) {
+      return { ok: true, action: "already_paid" }
+    }
     await logPaymentEvent({
       orderId: order.id,
       paymentId: input.paymentId,
@@ -151,9 +160,6 @@ export async function handlePaymentWebhook(input: { paymentId: string }): Promis
       payload: { status: payment.status, status_detail: payment.status_detail },
     })
 
-    // Credita pontos do programa de fidelidade. Idempotente via
-    // Order.loyaltyEarned — uma falha aqui não reverte o pagamento,
-    // mas é logada para investigação.
     try {
       await LoyaltyService.creditOnPayment(order.id)
     } catch (err) {

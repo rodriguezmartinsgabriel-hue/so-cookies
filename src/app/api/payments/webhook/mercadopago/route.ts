@@ -18,6 +18,7 @@ export async function POST(request: Request) {
     dataId,
   })
   if (!valid) {
+    logger.warn("[webhook] assinatura inválida rejeitada", { dataId, hasSignature: Boolean(xSignature) })
     return NextResponse.json({ error: "Assinatura inválida" }, { status: 401 })
   }
 
@@ -29,7 +30,7 @@ export async function POST(request: Request) {
     await handlePaymentWebhook({ paymentId: dataId })
   } catch (error) {
     logger.error("[webhook] erro ao processar", { paymentId: dataId }, error)
-    return NextResponse.json({ error: "Erro ao processar webhook" }, { status: 500 })
+    return NextResponse.json({ ok: true })
   }
 
   return NextResponse.json({ ok: true })

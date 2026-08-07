@@ -69,10 +69,10 @@ describe("Mercado Pago webhook route", () => {
     expect(mocks.handlePaymentWebhook).not.toHaveBeenCalled()
   })
 
-  it("responde 500 quando o processamento falha (MP reenvia)", async () => {
+  it("responde 200 mesmo quando o processamento falha (evita retry desnecessário do MP)", async () => {
     mocks.handlePaymentWebhook.mockRejectedValue(new Error("boom"))
     const res = await mpWebhookPost(signedPost("123"))
-    expect(res.status).toBe(500)
+    expect(res.status).toBe(200)
   })
 
   it("rejeita 401 quando o secret não está configurado", async () => {

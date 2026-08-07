@@ -247,10 +247,10 @@ export async function createCustomerOrder(
       await createOrderPayment(order.id)
     } catch (e) {
       const message = e instanceof Error ? e.message : String(e)
-      logger.error("[orders] Falha ao criar pagamento PIX para pedido", { orderId: order.id }, new Error(message))
+      logger.error("[orders] Falha ao criar pagamento PIX para pedido", { orderId: order.id, errorCode: e instanceof PaymentError ? e.code : undefined }, new Error(message))
       if (e instanceof PaymentError) {
-        await prisma.order
-          .update({
+        try {
+          await prisma.order.update({
             where: { id: order.id },
             data: {
               paymentStatus: "EXPIRADO",
@@ -260,7 +260,9 @@ export async function createCustomerOrder(
               updatedAt: new Date(),
             },
           })
-          .catch(() => {})
+        } catch (updateErr) {
+          logger.error("[orders] CRÍTICO: falha ao marcar pedido como EXPIRADO após erro de pagamento", { orderId: order.id }, updateErr instanceof Error ? updateErr : new Error(String(updateErr)))
+        }
         const failed = await prisma.order.findUnique({
           where: { id: order.id },
           include: { items: { include: { product: true } }, deliveryRoute: true, deliveryZone: true },

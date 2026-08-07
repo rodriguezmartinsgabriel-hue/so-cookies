@@ -1,11 +1,15 @@
 "use client"
 
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import { Store, Truck, Clock, QrCode } from "lucide-react"
 import { CustomerShell } from "@/components/customer/CustomerShell"
 import { PixPaymentPanel } from "@/components/customer/PixPaymentPanel"
 import { Card } from "@/components/ui/Card"
+
+const POLL_INTERVAL_MS = 5_000
+const POLL_MAX_INTERVAL_MS = 30_000
+const POLL_MAX_DURATION_MS = 30 * 60 * 1000
 
 type PublicOrderItem = {
   id: string
@@ -63,21 +67,66 @@ export default function PagamentoPage({ params }: { params: Promise<{ id: string
     }
   }, [])
 
+  const consecutiveErrors = useRef(0)
+  const pollStartTime = useRef<number | null>(null)
+
   useEffect(() => {
     let interval: ReturnType<typeof setInterval> | null = null
     let cancelled = false
+    pollStartTime.current = Date.now()
+
+    function getInterval(): number {
+      if (!pollStartTime.current) return POLL_INTERVAL_MS
+      const elapsed = Date.now() - pollStartTime.current
+      if (elapsed > POLL_MAX_DURATION_MS) return -1
+      const backoff = Math.min(
+        POLL_INTERVAL_MS * 2 ** consecutiveErrors.current,
+        POLL_MAX_INTERVAL_MS,
+      )
+      return backoff
+    }
+
+    async function tick(id: string) {
+      if (document.hidden) return
+      await load(id)
+    }
 
     params.then(({ id }) => {
       if (cancelled) return
       load(id)
-      interval = setInterval(() => load(id), 5_000)
+      interval = setInterval(() => {
+        const nextInterval = getInterval()
+        if (nextInterval === -1) {
+          if (interval) clearInterval(interval)
+          return
+        }
+        tick(id)
+      }, POLL_INTERVAL_MS)
     })
+
+    function handleVisibility() {
+      if (!document.hidden && interval) {
+        consecutiveErrors.current = 0
+        params.then(({ id }) => { if (!cancelled) load(id) })
+      }
+    }
+    document.addEventListener("visibilitychange", handleVisibility)
 
     return () => {
       cancelled = true
       if (interval) clearInterval(interval)
+      document.removeEventListener("visibilitychange", handleVisibility)
     }
   }, [params, load])
+
+  useEffect(() => {
+    if (!order) return
+    if (order.paymentStatus === "PAGO") {
+      consecutiveErrors.current = 0
+      return
+    }
+    consecutiveErrors.current = order.paymentStatus === "EXPIRADO" ? 0 : consecutiveErrors.current
+  }, [order])
 
   useEffect(() => {
     if (order?.paymentStatus === "PAGO") {
@@ -96,13 +145,21 @@ export default function PagamentoPage({ params }: { params: Promise<{ id: string
       })
       if (!res.ok) {
         const data = await res.json().catch(() => null)
-        setRetryError(data?.error || "Não foi possível gerar um novo PIX")
+        const code = data?.code as string | undefined
+        const message = data?.error || "Não foi possível gerar um novo PIX"
+        if (code === "PAYMENTS_DISABLED") {
+          setRetryError("Pagamento temporariamente indisponível. Tente novamente em alguns minutos.")
+        } else if (code === "INVALID_AMOUNT") {
+          setRetryError("Valor do pedido inválido. Entre em contato com o suporte.")
+        } else {
+          setRetryError(message)
+        }
         return
       }
       const updated = await res.json()
       setOrder((prev) => (prev && updated.id === prev.id ? { ...prev, ...updated } : prev))
     } catch {
-      setRetryError("Não foi possível gerar um novo PIX. Tente novamente em instantes.")
+      setRetryError("Erro de conexão. Verifique sua internet e tente novamente.")
     } finally {
       setRetrying(false)
     }

@@ -129,6 +129,7 @@ describe("handlePaymentWebhook", () => {
   beforeEach(() => {
     vi.clearAllMocks()
     process.env.MERCADO_PAGO_ACCESS_TOKEN = "APP_USR-teste"
+    mocks.orderUpdateMany.mockResolvedValue({ count: 1 })
   })
 
   afterEach(() => {
@@ -150,12 +151,13 @@ describe("handlePaymentWebhook", () => {
       status: "PENDENTE",
       paymentStatus: "AGUARDANDO_PAGAMENTO",
     })
+    mocks.orderUpdateMany.mockResolvedValue({ count: 1 })
 
     const result = await handlePaymentWebhook({ paymentId: "123" })
 
     expect(result).toEqual({ ok: true, action: "paid" })
-    expect(mocks.orderUpdate).toHaveBeenCalledWith({
-      where: { id: "ord-1" },
+    expect(mocks.orderUpdateMany).toHaveBeenCalledWith({
+      where: { id: "ord-1", paymentStatus: { not: "PAGO" } },
       data: expect.objectContaining({ status: "CONFIRMADO", paymentStatus: "PAGO" }),
     })
   })
@@ -170,10 +172,14 @@ describe("handlePaymentWebhook", () => {
       payer: { email: "a@b.com" },
     })
     mocks.orderFindUnique.mockResolvedValue({ id: "ord-1", total: 42.5, status: "CONFIRMADO", paymentStatus: "PAGO" })
+    mocks.orderUpdateMany.mockResolvedValue({ count: 0 })
 
     const result = await handlePaymentWebhook({ paymentId: "123" })
     expect(result.action).toBe("already_paid")
-    expect(mocks.orderUpdate).not.toHaveBeenCalled()
+    expect(mocks.orderUpdateMany).toHaveBeenCalledWith({
+      where: { id: "ord-1", paymentStatus: { not: "PAGO" } },
+      data: expect.any(Object),
+    })
   })
 
   it("valor divergente é ignorado", async () => {

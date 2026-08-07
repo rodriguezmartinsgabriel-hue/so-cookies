@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { isMercadoPagoConfigured } from "@/lib/payments/config"
 import { logger } from "@/lib/logger"
+import { PaymentStatus } from "@/generated/prisma/enums"
 
 type CheckResult = {
   status: "ok" | "error" | "not_configured"
@@ -105,8 +106,40 @@ function checkStorage(): void {
   results.storage = { status: "ok", detail: "configurado" }
 }
 
+async function checkPaymentMetrics(): Promise<void> {
+  if (!isMercadoPagoConfigured()) {
+    results.paymentMetrics = { status: "not_configured", detail: "Mercado Pago não configurado" }
+    return
+  }
+  const start = Date.now()
+  try {
+    const last24h = new Date(Date.now() - 24 * 60 * 60 * 1000)
+    const [totalPending, totalPaid, totalExpired, lastPayment] = await Promise.all([
+      prisma.order.count({ where: { paymentStatus: PaymentStatus.AGUARDANDO_PAGAMENTO } }),
+      prisma.order.count({ where: { paymentStatus: PaymentStatus.PAGO, paidAt: { gte: last24h } } }),
+      prisma.order.count({ where: { paymentStatus: PaymentStatus.EXPIRADO, updatedAt: { gte: last24h } } }),
+      prisma.order.findFirst({
+        where: { paymentStatus: PaymentStatus.PAGO },
+        orderBy: { paidAt: "desc" },
+        select: { paidAt: true },
+      }),
+    ])
+    results.paymentMetrics = {
+      status: "ok",
+      latency_ms: Date.now() - start,
+      detail: `pendentes: ${totalPending}; pagos (24h): ${totalPaid}; expirados (24h): ${totalExpired}; último pagamento: ${lastPayment?.paidAt?.toISOString() ?? "n/a"}`,
+    }
+  } catch (e) {
+    results.paymentMetrics = {
+      status: "error",
+      detail: e instanceof Error ? e.message : String(e),
+      latency_ms: Date.now() - start,
+    }
+  }
+}
+
 export async function GET() {
-  await Promise.all([checkDatabase(), checkMigrations(), checkMercadoPago(), checkIntegrations()])
+  await Promise.all([checkDatabase(), checkMigrations(), checkMercadoPago(), checkIntegrations(), checkPaymentMetrics()])
   checkStorage()
 
   const requiredOk = results.database?.status === "ok"

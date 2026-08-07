@@ -36,7 +36,8 @@ export function PixPaymentPanel({
 
   const expiredByTimer = countdown === "Prazo encerrado"
   const paid = order.paymentStatus === "PAGO"
-  const active = order.paymentStatus === "AGUARDANDO_PAGAMENTO" && Boolean(order.paymentQrCode) && !expiredByTimer
+  const hasQrData = Boolean(order.paymentQrCode || order.paymentQrCodeBase64)
+  const active = order.paymentStatus === "AGUARDANDO_PAGAMENTO" && hasQrData && !expiredByTimer
 
   async function handleCopy() {
     const value = order.paymentQrCode
@@ -116,9 +117,16 @@ export function PixPaymentPanel({
                 className="w-52 h-52 rounded-lg"
               />
             </div>
+          ) : order.paymentQrCode ? (
+            <div className="mx-auto w-fit p-4 rounded-xl border border-line bg-cream/40 text-muted text-center space-y-2">
+              <QrCode className="w-8 h-8 mx-auto" />
+              <p className="text-xs">QR Code indisponível no momento.</p>
+              <p className="text-xs">Use o código PIX copia e cola abaixo.</p>
+            </div>
           ) : (
-            <div className="mx-auto w-fit p-3 rounded-xl border border-line bg-cream/40 text-muted flex items-center gap-2">
-              <QrCode className="w-6 h-6" /> QR indisponível
+            <div className="mx-auto w-fit p-4 rounded-xl border border-line bg-cream/40 text-muted text-center space-y-2">
+              <QrCode className="w-8 h-8 mx-auto" />
+              <p className="text-xs">Carregando QR Code...</p>
             </div>
           )}
 

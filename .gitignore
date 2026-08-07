@@ -76,7 +76,7 @@ planilha_data.*
 /cookies.txt
 
 # arquivos de trabalho não-versionados
-/DESIGN.md
+# /DESIGN.md (versionado — fonte da verdade do design system)
 /PLANO_APP_PEQUENAS_EMPRESAS.md
 /*.xlsx
 /xlsx_extracted/
@@ -88,3 +88,7 @@ planilha_data.*
 /.agents/
 /opencode.json
 /skills-lock.json
+
+# exceções versionadas: skill premium de UI do cliente + design system
+!/.opencode/skills/premium-customer-ui/
+!/.opencode/skills/premium-customer-ui/**
