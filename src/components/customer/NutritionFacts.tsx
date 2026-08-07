@@ -37,7 +37,7 @@ export function NutritionFacts({ nutrition, className = "" }: NutritionFactsProp
   return (
     <div className={className}>
       <p className="text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Informação nutricional</p>
-      <dl className="grid grid-cols-4 gap-2 bg-cream rounded-md p-3">
+      <dl className="grid grid-cols-4 gap-2 bg-paper/60 border border-line/30 rounded-xl p-3">
         {macros.map((m) => (
           <div key={m.label} className="min-w-0">
             <dd className="text-sm font-semibold text-ink truncate">{fmt(m.value, m.unit)}</dd>

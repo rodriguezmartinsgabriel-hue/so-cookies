@@ -184,13 +184,22 @@ export function CarrinhoTab() {
       <PageHeader eyebrow="Carrinho" title="Finalize seu pedido" subtitle="Revise os itens e escolha como receber" />
 
       {loading && (
-        <div className="space-y-2">
-          {[1, 2, 3].map((i) => (
-            <Skeleton key={i} variant="card" />
-          ))}
+        <div className="space-y-4">
+          <div className="space-y-2">
+            {[1, 2, 3].map((i) => (
+              <Skeleton key={`item-${i}`} className="h-24 w-full rounded-2xl" />
+            ))}
+          </div>
+          {pricingLoading && (
+            <div className="space-y-2">
+              {[1, 2].map((i) => (
+                <Skeleton key={`price-${i}`} className="h-4 w-48 rounded-lg" variant="text" />
+              ))}
+            </div>
+          )}
         </div>
       )}
-      {pricingLoading && (
+      {!loading && pricingLoading && (
         <div className="space-y-2">
           {[1, 2].map((i) => (
             <Skeleton key={i} variant="text" />

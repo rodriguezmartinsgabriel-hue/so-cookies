@@ -18,6 +18,7 @@ import {
   QrCode,
 } from "lucide-react"
 import { CustomerShell } from "@/components/customer/CustomerShell"
+import { PageHeader } from "@/components/customer/PageHeader"
 import { OrderStatusTimeline, statusLabel, statusOrder } from "@/components/customer/OrderStatusTimeline"
 import { Card } from "@/components/ui/Card"
 import { Button } from "@/components/ui/Button"
@@ -25,6 +26,8 @@ import { Input } from "@/components/ui/Input"
 import { FormField } from "@/components/ui/FormField"
 import { GlassSurface } from "@/components/ui/GlassSurface"
 import { Badge } from "@/components/ui/Badge"
+import { Skeleton } from "@/components/ui/Skeleton"
+import { EmptyState } from "@/components/ui/EmptyState"
 import { useFocusTrap } from "@/hooks/useFocusTrap"
 import { useCart } from "@/hooks/useCart"
 import { useHapticFeedback } from "@/hooks/useHapticFeedback"
@@ -328,40 +331,57 @@ export default function PedidoPage({ params }: { params: Promise<{ id: string }>
     <CustomerShell cartCount={count}>
       <div className="space-y-4">
         <div>
-          <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold text-ink">Pedido</h1>
+          <div className="flex items-start justify-between gap-3">
+            {order ? (
+              <PageHeader
+                eyebrow="Acompanhamento"
+                title="Pedido"
+                subtitle={`#${order.id.slice(0, 6)} · ${new Date(order.createdAt).toLocaleString("pt-BR")}`}
+              />
+            ) : (
+              <PageHeader eyebrow="Acompanhamento" title="Pedido" />
+            )}
             {order && (
               <button
                 type="button"
                 onClick={() => handleShareOrder(order.id)}
-                className="p-2 rounded-lg hover:bg-cream transition-colors text-muted"
+                className="p-2 -m-1 rounded-full hover:bg-cream transition-colors text-muted shrink-0"
                 aria-label="Compartilhar pedido"
               >
                 <Share2 className="w-5 h-5" />
               </button>
             )}
           </div>
-          {order && (
-            <p className="text-sm text-muted">
-              #{order.id.slice(0, 6)} · {new Date(order.createdAt).toLocaleString("pt-BR")}
-            </p>
-          )}
         </div>
 
-        {loading && <div className="text-center py-12 text-muted">Carregando pedido...</div>}
+        {loading && (
+          <div className="space-y-4">
+            <GlassSurface tone="strong" className="rounded-2xl p-6 space-y-3">
+              <Skeleton className="h-6 w-32 rounded-lg" variant="text" />
+              <Skeleton className="h-10 w-56 rounded-xl" />
+            </GlassSurface>
+            <GlassSurface tone="strong" className="rounded-2xl p-4 space-y-2">
+              <Skeleton className="h-14 w-full rounded-xl" />
+              <Skeleton className="h-14 w-full rounded-xl" />
+              <Skeleton className="h-14 w-full rounded-xl" />
+            </GlassSurface>
+          </div>
+        )}
 
-        {!loading && notFound && <div className="text-center py-12 text-muted">Pedido não encontrado</div>}
+        {!loading && notFound && (
+          <EmptyState title="Pedido não encontrado" description="Não encontramos este pedido. Verifique o link e tente novamente." />
+        )}
 
         {!loading && order && (
           <>
             {cancelled ? (
-              <div className="border border-danger/30 bg-danger/5 rounded-lg p-4">
+              <div className="border border-danger/30 bg-danger/5 rounded-xl p-4">
                 <p className="font-semibold text-danger">Pedido cancelado</p>
                 <p className="text-sm text-muted mt-1">Entre em contato com a loja para mais informações.</p>
               </div>
             ) : (
               <>
-                <Card className="text-center">
+                <Card className="text-center rounded-2xl">
                   {isDelivery ? (
                     <>
                       <p className="text-xs text-muted uppercase tracking-wide mb-1">Entrega agendada</p>
@@ -401,7 +421,7 @@ export default function PedidoPage({ params }: { params: Promise<{ id: string }>
                   )}
                 </Card>
 
-                <Card>
+                <Card className="rounded-2xl">
                   <div className="flex items-center justify-between mb-3">
                     <p className="text-sm font-semibold text-ink flex items-center gap-1.5">
                       <Package className="w-4 h-4" /> Status
@@ -474,7 +494,7 @@ export default function PedidoPage({ params }: { params: Promise<{ id: string }>
                 )}
 
                 {showCancelConfirm && (
-                  <div className="flex items-center gap-2 p-3 rounded-lg border border-danger/30 bg-danger/5">
+                  <div className="flex items-center gap-2 p-3 rounded-xl border border-danger/30 bg-danger/5">
                     <AlertTriangle className="w-4 h-4 text-danger shrink-0" />
                     <p className="text-sm text-ink flex-1">Tem certeza? Esta ação não pode ser desfeita.</p>
                     <Button variant="secondary" size="sm" onClick={() => setShowCancelConfirm(false)}>
@@ -491,7 +511,7 @@ export default function PedidoPage({ params }: { params: Promise<{ id: string }>
                   </div>
                 )}
 
-                <Card>
+                <Card className="rounded-2xl">
                   <p className="text-sm font-semibold text-ink mb-2">Itens</p>
                   <div className="space-y-2">
                     {order.items.map((item) => (
@@ -531,10 +551,14 @@ export default function PedidoPage({ params }: { params: Promise<{ id: string }>
           aria-labelledby="delivery-modal-title"
         >
           <div ref={deliveryModalRef} className="w-full max-w-md max-h-[80vh]">
-            <GlassSurface tone="strong" className="rounded-xl w-full max-h-[80vh] overflow-y-auto">
+            <GlassSurface tone="strong" className="rounded-2xl w-full max-h-[80vh] overflow-y-auto">
               <div className="flex items-center justify-between p-4 border-b border-line">
                 <div>
-                  <h3 id="delivery-modal-title" className="text-lg font-bold text-ink">
+                  <h3
+                    id="delivery-modal-title"
+                    className="text-lg font-bold text-ink"
+                    style={{ fontFamily: "var(--font-ui)" }}
+                  >
                     Entrega agendada
                   </h3>
                   <p className="text-xs text-muted">Escolha uma rota disponível</p>
@@ -547,7 +571,7 @@ export default function PedidoPage({ params }: { params: Promise<{ id: string }>
                     setShowDeliveryModal(false)
                   }}
                   aria-label="Fechar"
-                  className="p-1.5 rounded-md hover:bg-cream text-muted"
+                  className="p-1.5 rounded-full hover:bg-cream text-muted"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -571,7 +595,7 @@ export default function PedidoPage({ params }: { params: Promise<{ id: string }>
                           type="button"
                           disabled={full}
                           onClick={() => setSelectedSlot(slot)}
-                          className={`w-full text-left p-3 rounded-lg border transition-colors ${full ? "opacity-50 cursor-not-allowed border-line bg-cream/30" : active ? "border-ink bg-ink text-paper" : "border-line bg-paper hover:bg-cream/50"}`}
+                          className={`w-full text-left p-3 rounded-2xl border transition-colors ${full ? "opacity-50 cursor-not-allowed border-line bg-cream/30" : active ? "border-ink bg-ink text-paper" : "border-line bg-paper hover:bg-cream/50"}`}
                         >
                           <div className="flex items-center justify-between gap-2">
                             <span className={`text-sm font-semibold ${active ? "text-paper" : "text-ink"}`}>

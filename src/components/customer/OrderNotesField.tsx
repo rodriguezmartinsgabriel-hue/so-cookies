@@ -29,7 +29,7 @@ export function OrderNotesField({ value, onChange }: { value: string; onChange: 
             placeholder="Ex: deixar na porta, ligar ao chegar..."
             value={value}
             onChange={(e) => onChange(e.target.value.slice(0, MAX_NOTE_LENGTH))}
-            className="w-full resize-none rounded-lg border border-line bg-paper/70 px-3 py-2 text-base text-ink placeholder:text-kraft focus:outline-none focus:border-ink focus:ring-2 focus:ring-ink/10 transition-colors backdrop-blur-sm"
+            className="w-full resize-none rounded-xl border border-line/40 bg-paper/70 px-3 py-2 text-base text-ink placeholder:text-kraft focus:outline-none focus:border-ink focus:ring-2 focus:ring-ink/10 transition-colors backdrop-blur-sm"
             maxLength={MAX_NOTE_LENGTH}
           />
           {remaining < 50 && (

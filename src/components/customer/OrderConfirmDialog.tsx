@@ -49,11 +49,13 @@ export function OrderConfirmDialog({
           onClick={(e) => e.stopPropagation()}
         >
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-bold text-ink">Confirmar pedido</h2>
+            <h2 className="text-lg font-bold text-ink" style={{ fontFamily: "var(--font-ui)" }}>
+              Confirmar pedido
+            </h2>
             <button
               type="button"
               onClick={onCancel}
-              className="p-1 -m-1 rounded-md hover:bg-cream text-muted"
+              className="p-1 -m-1 rounded-full hover:bg-cream text-muted"
               aria-label="Fechar"
             >
               <X className="w-5 h-5" />

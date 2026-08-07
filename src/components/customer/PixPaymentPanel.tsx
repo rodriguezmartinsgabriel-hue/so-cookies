@@ -66,7 +66,7 @@ export function PixPaymentPanel({
 
   if (paid) {
     return (
-      <Card className="text-center py-6 space-y-2">
+      <Card className="text-center py-6 space-y-2 rounded-2xl">
         <div className="mx-auto w-14 h-14 rounded-full bg-success/10 flex items-center justify-center">
           <CheckCircle2 className="w-7 h-7 text-success" />
         </div>
@@ -78,7 +78,7 @@ export function PixPaymentPanel({
 
   if (!active) {
     return (
-      <Card className="text-center py-6 space-y-3">
+      <Card className="text-center py-6 space-y-3 rounded-2xl">
         <div className="mx-auto w-14 h-14 rounded-full bg-warning/10 flex items-center justify-center">
           <AlertTriangle className="w-7 h-7 text-warning" />
         </div>
@@ -97,7 +97,7 @@ export function PixPaymentPanel({
 
   return (
     <div className="space-y-4" aria-live="polite">
-      <Card padded={false}>
+      <Card padded={false} className="rounded-2xl">
         <div className="p-4">
           <div className="flex items-center justify-between mb-3">
             <p className="text-sm font-semibold text-ink flex items-center gap-1.5">
@@ -118,13 +118,13 @@ export function PixPaymentPanel({
               />
             </div>
           ) : order.paymentQrCode ? (
-            <div className="mx-auto w-fit p-4 rounded-xl border border-line bg-cream/40 text-muted text-center space-y-2">
+            <div className="mx-auto w-fit p-4 rounded-xl border border-line/30 bg-paper/60 text-muted text-center space-y-2">
               <QrCode className="w-8 h-8 mx-auto" />
               <p className="text-xs">QR Code indisponível no momento.</p>
               <p className="text-xs">Use o código PIX copia e cola abaixo.</p>
             </div>
           ) : (
-            <div className="mx-auto w-fit p-4 rounded-xl border border-line bg-cream/40 text-muted text-center space-y-2">
+            <div className="mx-auto w-fit p-4 rounded-xl border border-line/30 bg-paper/60 text-muted text-center space-y-2">
               <QrCode className="w-8 h-8 mx-auto" />
               <p className="text-xs">Carregando QR Code...</p>
             </div>
@@ -136,10 +136,10 @@ export function PixPaymentPanel({
         </div>
       </Card>
 
-      <Card padded={false}>
+      <Card padded={false} className="rounded-2xl">
         <div className="p-4 space-y-3">
           <p className="text-xs font-semibold text-muted uppercase tracking-wide">PIX copia e cola</p>
-          <div className="rounded-lg border border-line bg-cream/40 p-3">
+          <div className="rounded-xl border border-line/30 bg-paper/60 p-3">
             <code className="block text-xs text-ink break-all select-all whitespace-pre-wrap">
               {order.paymentQrCode}
             </code>

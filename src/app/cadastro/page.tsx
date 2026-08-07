@@ -4,6 +4,7 @@ import { Suspense, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { CustomerShell } from "@/components/customer/CustomerShell"
+import { PageHeader } from "@/components/customer/PageHeader"
 import { GoogleLoginButton } from "@/components/customer/GoogleLoginButton"
 import { Button } from "@/components/ui/Button"
 import { Input } from "@/components/ui/Input"
@@ -75,22 +76,20 @@ function CadastroForm() {
 
   return (
     <CustomerShell>
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold text-ink">Criar conta</h1>
-          <p className="text-sm text-muted">Para pedir e acompanhar suas retiradas</p>
-        </div>
+      <div className="space-y-4">
+        <PageHeader eyebrow="Conta" title="Criar conta" subtitle="Para pedir e acompanhar suas retiradas" />
 
-        <div className="space-y-3">
-          <GoogleLoginButton next={searchParams.get("next")} />
-          <div className="flex items-center gap-3">
-            <div className="flex-1 h-px bg-line" />
-            <span className="text-xs text-muted">ou</span>
-            <div className="flex-1 h-px bg-line" />
+        <GlassSurface tone="strong" className="rounded-2xl p-5 space-y-4">
+          <div className="space-y-3">
+            <GoogleLoginButton next={searchParams.get("next")} />
+            <div className="flex items-center gap-3">
+              <div className="flex-1 h-px bg-line" />
+              <span className="text-xs text-muted">ou</span>
+              <div className="flex-1 h-px bg-line" />
+            </div>
           </div>
-        </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4">
           <FormField label="Nome" htmlFor="name" required>
             <Input id="name" name="name" type="text" autoComplete="name" placeholder="Seu nome" required />
           </FormField>
@@ -133,6 +132,7 @@ function CadastroForm() {
             {loading ? "Criando..." : "Criar conta"}
           </Button>
         </form>
+        </GlassSurface>
 
         <p className="text-sm text-muted text-center">
           Já tem conta?{" "}

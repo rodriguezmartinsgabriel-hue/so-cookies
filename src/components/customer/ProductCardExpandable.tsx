@@ -133,7 +133,9 @@ export function ProductCardExpandable({
           {/* CONTEÚDO à direita */}
           <div className="min-w-0 flex flex-col gap-3 animate-fade-in-up">
             <div>
-              <h2 className="text-xl font-bold text-ink">{product.name}</h2>
+              <h2 className="text-xl font-bold text-ink" style={{ fontFamily: "var(--font-ui)" }}>
+                {product.name}
+              </h2>
               <div className="mt-0.5">
                 <PriceTag
                   basePrice={product.price}

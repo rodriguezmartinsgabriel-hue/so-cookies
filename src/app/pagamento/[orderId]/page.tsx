@@ -4,8 +4,12 @@ import { useCallback, useEffect, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import { Store, Truck, Clock, QrCode } from "lucide-react"
 import { CustomerShell } from "@/components/customer/CustomerShell"
+import { PageHeader } from "@/components/customer/PageHeader"
 import { PixPaymentPanel } from "@/components/customer/PixPaymentPanel"
 import { Card } from "@/components/ui/Card"
+import { GlassSurface } from "@/components/ui/GlassSurface"
+import { Skeleton } from "@/components/ui/Skeleton"
+import { EmptyState } from "@/components/ui/EmptyState"
 
 const POLL_INTERVAL_MS = 5_000
 const POLL_MAX_INTERVAL_MS = 30_000
@@ -183,22 +187,32 @@ export default function PagamentoPage({ params }: { params: Promise<{ id: string
   return (
     <CustomerShell cartCount={0} showCartBar={false}>
       <div className="space-y-4">
-        <div>
-          <h1 className="text-2xl font-bold text-ink">Pagamento</h1>
-          <p className="text-sm text-muted">Conclua o pagamento para confirmar seu pedido</p>
-        </div>
+        <PageHeader eyebrow="Pagamento" title="Concluir pagamento" subtitle="Conclua o pagamento para confirmar seu pedido" />
 
-        {loading && <div className="text-center py-12 text-muted">Carregando pagamento...</div>}
+        {loading && (
+          <div className="space-y-4">
+            <GlassSurface tone="strong" className="rounded-2xl p-6 space-y-3">
+              <Skeleton className="h-6 w-40 rounded-lg" variant="text" />
+              <Skeleton className="h-10 w-64 rounded-xl" />
+            </GlassSurface>
+            <GlassSurface tone="strong" className="rounded-2xl p-4 space-y-2">
+              <Skeleton className="h-14 w-full rounded-xl" />
+              <Skeleton className="h-14 w-full rounded-xl" />
+            </GlassSurface>
+          </div>
+        )}
 
-        {!loading && notFound && <div className="text-center py-12 text-muted">Pedido não encontrado</div>}
+        {!loading && notFound && (
+          <EmptyState title="Pedido não encontrado" description="Não encontramos este pedido. Verifique o link e tente novamente." />
+        )}
 
         {!loading && order && order.paymentStatus === null && (
-          <div className="text-center py-12 text-muted">Pedido sem pagamento pendente</div>
+          <EmptyState title="Sem pagamento pendente" description="Este pedido não possui um pagamento pendente." />
         )}
 
         {!loading && order && order.paymentStatus !== null && (
           <>
-            <Card padded={false}>
+            <Card padded={false} className="rounded-2xl">
               <div className="p-4 space-y-1">
                 <p className="text-sm font-semibold text-ink flex items-center gap-1.5">
                   <QrCode className="w-4 h-4" /> Pedido #{order.id.slice(0, 6)}
@@ -227,7 +241,7 @@ export default function PagamentoPage({ params }: { params: Promise<{ id: string
               </div>
             </Card>
 
-            <Card padded={false}>
+            <Card padded={false} className="rounded-2xl">
               <div className="p-4">
                 <p className="text-sm font-semibold text-ink mb-2">Itens</p>
                 <div className="space-y-2">
@@ -247,7 +261,7 @@ export default function PagamentoPage({ params }: { params: Promise<{ id: string
               </div>
             </Card>
 
-            <Card padded={false}>
+            <Card padded={false} className="rounded-2xl">
               <div className="p-4 flex items-center gap-2 text-xs text-muted">
                 <Clock className="w-3 h-3 shrink-0" />
                 <span>Após o pagamento, o pedido é confirmado automaticamente e você será redirecionado.</span>
