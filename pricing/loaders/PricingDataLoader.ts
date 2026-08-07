@@ -41,10 +41,14 @@ export class PricingDataLoader {
     // 7. Carregar configurações do canal
     const settings = await this.loadChannelConfig(context.channel)
 
-    // 8. Carregar saldo do programa de pontos (se houver cliente)
+    // 8. Carregar saldo do programa de pontos (se houver cliente).
+    //    Operação best-effort: falhas aqui nunca devem quebrar o cálculo de preço.
     let loyaltyBalance = 0
+    let loyaltyDegraded = false
     if (context.customerId) {
-      loyaltyBalance = await this.loyaltyRepository.getBalance(context.customerId)
+      const balanceResult = await this.loyaltyRepository.getBalance(context.customerId)
+      loyaltyBalance = balanceResult.data
+      loyaltyDegraded = balanceResult.degraded
     }
 
     return {
@@ -56,6 +60,7 @@ export class PricingDataLoader {
       shippingRates,
       settings,
       loyaltyBalance,
+      loyaltyDegraded,
     }
   }
 

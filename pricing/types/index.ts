@@ -22,6 +22,8 @@ export interface LoyaltyPreview {
   projectedAfter: number
   active: boolean
   ruleName: string
+  /** True quando loyalty está best-effort (ex.: migration ainda não aplicada). */
+  degraded?: boolean
 }
 
 // Estado transitório do cálculo de preços
@@ -216,4 +218,6 @@ export interface PricingData {
   settings: ChannelConfig
   /** Saldo atual de pontos do cliente (somente leitura; sem efeitos colaterais no engine). */
   loyaltyBalance: number
+  /** True quando a leitura do loyalty falhou (ex.: tabela inexistente antes da migration). */
+  loyaltyDegraded: boolean
 }

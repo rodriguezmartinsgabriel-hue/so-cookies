@@ -37,6 +37,7 @@ function createEngineWith(opts: {
   priceTiers?: Record<string, PriceTier[]>
   config?: ReturnType<typeof channelConfigFactory>
   loyaltyBalance?: number
+  loyaltyDegraded?: boolean
   context?: ReturnType<typeof pricingContextFactory>
   customerId?: string
 }) {
@@ -48,11 +49,25 @@ function createEngineWith(opts: {
   const priceTiers = opts.priceTiers ?? {}
 
   const pricingRepo = mockPricingRepository({ config, priceTiers })
-  const loyaltyRepo = mockLoyaltyRepository({ balance: opts.loyaltyBalance ?? 0 })
+  const loyaltyRepo =
+    opts.loyaltyDegraded !== undefined
+      ? ({
+          getBalance: () =>
+            Promise.resolve({ data: opts.loyaltyBalance ?? 0, degraded: opts.loyaltyDegraded === true }),
+          getSettings: () =>
+            Promise.resolve({
+              activateLoyalty: true,
+              pointsPerReal: 1,
+              minOrderTotalForPoints: 0,
+              roundingMode: "FLOOR",
+            }),
+          getAccountMeta: () => Promise.resolve({ data: null, degraded: opts.loyaltyDegraded === true }),
+        } as unknown as ReturnType<typeof mockLoyaltyRepository>)
+      : mockLoyaltyRepository({ balance: opts.loyaltyBalance ?? 0 })
 
   const prisma = {} as unknown as Parameters<typeof buildPricingEngine>[0]
   return buildPricingEngine(prisma, {
-    logger: { log: () => void 0, error: () => void 0 },
+    logger: { log: () => void 0, error: () => void 0, warn: () => void 0 },
     metrics: { record: () => void 0 },
     register: (registry) => {
       registry.registerRepository("product", mockProductRepository(products))
@@ -163,6 +178,29 @@ describe("LoyaltyRule (no engine)", () => {
 
     expect(result.state.loyaltyPreview?.pointsToEarn).toBe(150)
     expect(result.state.loyaltyPreview?.projectedAfter).toBe(160)
+  })
+
+  it("marcando loyaltyPreview como degraded quando loyalty está indisponível (ex.: migration pendente)", async () => {
+    const engine = createEngineWith({
+      products: [productFactory({ price: new Decimal(15) })],
+      config: channelConfigFactory({ activateLoyalty: true, pointsPerReal: 1 }),
+      loyaltyBalance: 0,
+      loyaltyDegraded: true,
+      context: pricingContextFactory({
+        items: [{ productId: "prod-1", qty: 5, basePrice: 15, name: "Cookie" }],
+        customerId: "cust-1",
+      }),
+    })
+
+    const result = await engine.calculatePrice(pricingContextFactory({
+      items: [{ productId: "prod-1", qty: 5, basePrice: 15, name: "Cookie" }],
+      customerId: "cust-1",
+    }))
+
+    expect(result.state.loyaltyPreview?.active).toBe(false)
+    expect(result.state.loyaltyPreview?.degraded).toBe(true)
+    expect(result.state.loyaltyPreview?.pointsToEarn).toBe(0)
+    expect(result.total).toBeCloseTo(75, 2)
   })
 })
 

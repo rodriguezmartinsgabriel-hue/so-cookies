@@ -37,6 +37,7 @@ export interface PricingResult {
       pointsToEarn: number
       projectedAfter: number
       ruleName: string
+      degraded?: boolean
     }
   }
   total: number

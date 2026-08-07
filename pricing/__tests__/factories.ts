@@ -219,9 +219,9 @@ export const mockPricingRepository = (
 
 export const mockLoyaltyRepository = (opts: { balance?: number } = {}): LoyaltyRepository =>
   ({
-    getBalance: () => Promise.resolve(opts.balance ?? 0),
+    getBalance: () => Promise.resolve({ data: opts.balance ?? 0, degraded: false }),
     getSettings: () => Promise.resolve({ activateLoyalty: true, pointsPerReal: 1, minOrderTotalForPoints: 0, roundingMode: "FLOOR" }),
-    getAccountMeta: () => Promise.resolve(null),
+    getAccountMeta: () => Promise.resolve({ data: null, degraded: false }),
   }) as unknown as LoyaltyRepository
 
 export const mockConsole = () => ({

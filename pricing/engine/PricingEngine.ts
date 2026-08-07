@@ -141,20 +141,23 @@ export class PricingEngine {
 
   private attachLoyaltyPreview(state: PricingState, data: PricingData, total: number): PricingState {
     const settings = data.settings
-    const active = settings.activateLoyalty
+    const active = settings.activateLoyalty && !data.loyaltyDegraded
     const currentBalance = data.loyaltyBalance ?? 0
-    const pointsToEarn = LoyaltyRepository.computePoints(total, {
-      activateLoyalty: active,
-      pointsPerReal: settings.pointsPerReal,
-      minOrderTotalForPoints: settings.minOrderTotalForPoints,
-      roundingMode: settings.roundingMode,
-    })
+    const pointsToEarn = active
+      ? LoyaltyRepository.computePoints(total, {
+          activateLoyalty: true,
+          pointsPerReal: settings.pointsPerReal,
+          minOrderTotalForPoints: settings.minOrderTotalForPoints,
+          roundingMode: settings.roundingMode,
+        })
+      : 0
     const preview: LoyaltyPreview = {
       active,
       currentBalance,
       pointsToEarn,
       projectedAfter: currentBalance + pointsToEarn,
       ruleName: "Programa de Pontos",
+      degraded: data.loyaltyDegraded === true,
     }
     return { ...state, loyaltyPreview: preview }
   }

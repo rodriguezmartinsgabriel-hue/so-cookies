@@ -39,17 +39,22 @@ export class LoyaltyService {
   }
 
   static async getSettings() {
-    const settings = await prisma.pricingSettings.findUnique({ where: { id: "default" } })
-    const raw =
-      settings?.value && typeof settings.value === "object" && !Array.isArray(settings.value)
-        ? (settings.value as Record<string, unknown>)
-        : {}
-    const pointsPerReal =
-      typeof raw.pointsPerReal === "number" ? raw.pointsPerReal : DEFAULT_POINTS_PER_REAL
-    const activateLoyalty = typeof raw.activateLoyalty === "boolean" ? raw.activateLoyalty : true
-    const minOrderTotalForPoints =
-      typeof raw.minOrderTotalForPoints === "number" ? raw.minOrderTotalForPoints : 0
-    return { activateLoyalty, pointsPerReal, minOrderTotalForPoints }
+    try {
+      const settings = await prisma.pricingSettings.findUnique({ where: { id: "default" } })
+      const raw =
+        settings?.value && typeof settings.value === "object" && !Array.isArray(settings.value)
+          ? (settings.value as Record<string, unknown>)
+          : {}
+      const pointsPerReal =
+        typeof raw.pointsPerReal === "number" ? raw.pointsPerReal : DEFAULT_POINTS_PER_REAL
+      const activateLoyalty = typeof raw.activateLoyalty === "boolean" ? raw.activateLoyalty : true
+      const minOrderTotalForPoints =
+        typeof raw.minOrderTotalForPoints === "number" ? raw.minOrderTotalForPoints : 0
+      return { activateLoyalty, pointsPerReal, minOrderTotalForPoints }
+    } catch (err) {
+      logger.warn("[loyalty] getSettings falhou, usando defaults", { error: (err as Error).message })
+      return { activateLoyalty: true, pointsPerReal: DEFAULT_POINTS_PER_REAL, minOrderTotalForPoints: 0 }
+    }
   }
 
   static async creditOnPayment(orderId: string): Promise<{ credited: number; balanceAfter: number } | null> {
@@ -324,15 +329,21 @@ export class LoyaltyService {
   private static async getSettingsInTx(
     tx: Parameters<Parameters<typeof prisma.$transaction>[0]>[0],
   ): Promise<{ activateLoyalty: boolean; pointsPerReal: number; minOrderTotalForPoints: number }> {
-    const settings = await tx.pricingSettings.findUnique({ where: { id: "default" } })
-    const raw =
-      settings?.value && typeof settings.value === "object" && !Array.isArray(settings.value)
-        ? (settings.value as Record<string, unknown>)
-        : {}
-    return {
-      activateLoyalty: typeof raw.activateLoyalty === "boolean" ? raw.activateLoyalty : true,
-      pointsPerReal: typeof raw.pointsPerReal === "number" ? raw.pointsPerReal : DEFAULT_POINTS_PER_REAL,
-      minOrderTotalForPoints: typeof raw.minOrderTotalForPoints === "number" ? raw.minOrderTotalForPoints : 0,
+    try {
+      const settings = await tx.pricingSettings.findUnique({ where: { id: "default" } })
+      const raw =
+        settings?.value && typeof settings.value === "object" && !Array.isArray(settings.value)
+          ? (settings.value as Record<string, unknown>)
+          : {}
+      return {
+        activateLoyalty: typeof raw.activateLoyalty === "boolean" ? raw.activateLoyalty : true,
+        pointsPerReal: typeof raw.pointsPerReal === "number" ? raw.pointsPerReal : DEFAULT_POINTS_PER_REAL,
+        minOrderTotalForPoints:
+          typeof raw.minOrderTotalForPoints === "number" ? raw.minOrderTotalForPoints : 0,
+      }
+    } catch (err) {
+      logger.warn("[loyalty] getSettingsInTx falhou, usando defaults", { error: (err as Error).message })
+      return { activateLoyalty: true, pointsPerReal: DEFAULT_POINTS_PER_REAL, minOrderTotalForPoints: 0 }
     }
   }
 

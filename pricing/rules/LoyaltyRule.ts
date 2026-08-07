@@ -33,9 +33,10 @@ export class LoyaltyRule implements PricingRule {
 
     let currentBalance = 0
     try {
-      currentBalance = await this.loyaltyRepository.getBalance(context.customerId)
+      const result = await this.loyaltyRepository.getBalance(context.customerId)
+      currentBalance = result.data
     } catch (err) {
-      this.logger.error?.(`[LoyaltyRule] failed to read balance: ${(err as Error).message}`)
+      this.logger.warn?.(`[LoyaltyRule] leitura de saldo falhou: ${(err as Error).message}`)
     }
 
     const subtotal = state.items.reduce((s, it) => s + it.priceAfterDiscount * it.qty, 0)
@@ -60,6 +61,7 @@ export class LoyaltyRule implements PricingRule {
         pointsToEarn,
         projectedAfter,
         total,
+        degraded: data.loyaltyDegraded === true,
       },
       sourceRule: this.id,
       timestamp: new Date(),

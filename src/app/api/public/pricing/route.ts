@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
   try {
     const session = await getCustomerSession()
     if (!session?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+      return NextResponse.json({ error: "Não autenticado" }, { status: 401 })
     }
 
     const body = await req.json()
@@ -61,10 +61,13 @@ export async function POST(req: NextRequest) {
     const result = await engine.calculatePrice(context)
     return NextResponse.json(result)
   } catch (err) {
-    logger.error("[pricing] error:", undefined, err)
+    if (err instanceof z.ZodError) {
+      return NextResponse.json({ error: "Dados inválidos", details: err.issues }, { status: 400 })
+    }
+    logger.error("[pricing] erro ao calcular preço", undefined, err)
     return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Failed to calculate price" },
-      { status: 400 },
+      { error: "Não foi possível calcular o preço. Tente novamente em instantes." },
+      { status: 500 },
     )
   }
 }
