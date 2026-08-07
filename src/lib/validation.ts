@@ -453,6 +453,89 @@ export const deliveryBlockSchema = z.object({
   reason: z.string().trim().max(200).optional().nullable(),
 })
 
+export const COUPON_TYPES = ["PERCENTAGE", "FIXED_AMOUNT", "FREE_SHIPPING", "BUY_X_GET_Y"] as const
+export const CAMPAIGN_TYPES = ["PROMOTIONAL", "SEASONAL", "FLASH_SALE", "LOYALTY", "CUSTOM"] as const
+export const CUSTOMER_TYPES = ["CLIENTE", "B2B", "EMPRESA", "SUBSCRIBER"] as const
+
+export const createCouponSchema = z.object({
+  code: z.string().trim().min(1, "Código é obrigatório").max(50, "Código muito longo").toUpperCase(),
+  name: z.string().min(1, "Nome é obrigatório"),
+  description: z.string().nullable().optional(),
+  type: z.enum(COUPON_TYPES).default("PERCENTAGE"),
+  value: z.number().min(0, "Valor deve ser positivo"),
+  minOrderValue: z.number().min(0).optional().default(0),
+  maxDiscount: z.number().min(0).nullable().optional(),
+  usageLimit: z.number().int().min(1, "Limite de uso deve ser no mínimo 1").optional().default(1),
+  validFrom: z.string().optional(),
+  validUntil: z.string().nullable().optional(),
+  active: z.boolean().optional().default(true),
+  applicableProducts: z.array(z.string()).optional().default([]),
+  applicableTypes: z.array(z.string()).optional().default(["all"]),
+})
+
+export const updateCouponSchema = z.object({
+  code: z.string().trim().min(1, "Código é obrigatório").max(50, "Código muito longo").toUpperCase().optional(),
+  name: z.string().min(1, "Nome é obrigatório").optional(),
+  description: z.string().nullable().optional(),
+  type: z.enum(COUPON_TYPES).optional(),
+  value: z.number().min(0, "Valor deve ser positivo").optional(),
+  minOrderValue: z.number().min(0).optional(),
+  maxDiscount: z.number().min(0).nullable().optional(),
+  usageLimit: z.number().int().min(1, "Limite de uso deve ser no mínimo 1").optional(),
+  validFrom: z.string().optional(),
+  validUntil: z.string().nullable().optional(),
+  active: z.boolean().optional(),
+  applicableProducts: z.array(z.string()).optional(),
+  applicableTypes: z.array(z.string()).optional(),
+})
+
+export const campaignConditionsSchema = z.object({
+  discountPercent: z.number().min(0, "Desconto deve ser positivo").max(100, "Desconto máximo é 100%").optional(),
+  discountFixed: z.number().min(0, "Desconto deve ser positivo").optional(),
+  minQty: z.number().int().min(0).optional(),
+  minOrderValue: z.number().min(0).optional(),
+  products: z.array(z.string()).optional(),
+  categories: z.array(z.string()).optional(),
+  customerTypes: z.array(z.enum(CUSTOMER_TYPES)).optional(),
+})
+
+export const createCampaignSchema = z.object({
+  name: z.string().min(1, "Nome é obrigatório"),
+  description: z.string().nullable().optional(),
+  type: z.enum(CAMPAIGN_TYPES).default("PROMOTIONAL"),
+  priority: z.number().int().min(0).optional().default(0),
+  startDate: z.string().optional(),
+  endDate: z.string().nullable().optional(),
+  active: z.boolean().optional().default(true),
+  applicableProducts: z.array(z.string()).optional().default([]),
+  conditions: campaignConditionsSchema.default({}),
+})
+
+export const updateCampaignSchema = z.object({
+  name: z.string().min(1, "Nome é obrigatório").optional(),
+  description: z.string().nullable().optional(),
+  type: z.enum(CAMPAIGN_TYPES).optional(),
+  priority: z.number().int().min(0).optional(),
+  startDate: z.string().optional(),
+  endDate: z.string().nullable().optional(),
+  active: z.boolean().optional(),
+  applicableProducts: z.array(z.string()).optional(),
+  conditions: campaignConditionsSchema.optional(),
+})
+
+export const pricingSettingsSchema = z.object({
+  activatePriceTier: z.boolean().optional(),
+  activateCoupon: z.boolean().optional(),
+  activateCampaign: z.boolean().optional(),
+  activateB2B: z.boolean().optional(),
+  activateFreeShipping: z.boolean().optional(),
+  b2bDiscountPercent: z.number().min(0, "Desconto deve ser positivo").max(100, "Desconto máximo é 100%").optional(),
+  activateLoyalty: z.boolean().optional(),
+  pointsPerReal: z.number().min(0).optional(),
+  minOrderTotalForPoints: z.number().min(0).optional(),
+  roundingMode: z.enum(["FLOOR", "CEIL", "ROUND"]).optional(),
+})
+
 export const updateCustomerProfileSchema = z
   .object({
     name: z.string().trim().min(1, "Nome é obrigatório").optional(),

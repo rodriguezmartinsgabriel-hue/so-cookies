@@ -15,6 +15,11 @@ import {
   updatePriceTierSchema,
   updateCustomerProfileSchema,
   createCustomerOrderSchema,
+  createCouponSchema,
+  updateCouponSchema,
+  createCampaignSchema,
+  updateCampaignSchema,
+  pricingSettingsSchema,
 } from "@/lib/validation"
 
 describe("createOrderSchema", () => {
@@ -428,5 +433,117 @@ describe("createCustomerOrderSchema", () => {
 
   it("rejeita paymentMethod desconhecido", () => {
     expect(createCustomerOrderSchema.safeParse({ ...base, paymentMethod: "CARTÃO" }).success).toBe(false)
+  })
+})
+
+describe("createCouponSchema", () => {
+  const base = { code: "bemvindo10", name: "Boas-vindas", type: "PERCENTAGE", value: 10 }
+
+  it("aceita cupom válido e normaliza o código em maiúsculas", () => {
+    const result = createCouponSchema.parse(base)
+    expect(result.code).toBe("BEMVINDO10")
+    expect(result.usageLimit).toBe(1)
+    expect(result.active).toBe(true)
+  })
+
+  it("aceita FIXED_AMOUNT e FREe_SHIPPING", () => {
+    expect(createCouponSchema.safeParse({ ...base, type: "FIXED_AMOUNT", value: 15 }).success).toBe(true)
+    expect(createCouponSchema.safeParse({ ...base, type: "FREE_SHIPPING", value: 0 }).success).toBe(true)
+  })
+
+  it("rejeita código vazio", () => {
+    expect(createCouponSchema.safeParse({ ...base, code: "  " }).success).toBe(false)
+  })
+
+  it("rejeita valor negativo", () => {
+    expect(createCouponSchema.safeParse({ ...base, value: -1 }).success).toBe(false)
+  })
+
+  it("rejeita usageLimit menor que 1", () => {
+    expect(createCouponSchema.safeParse({ ...base, usageLimit: 0 }).success).toBe(false)
+  })
+})
+
+describe("updateCouponSchema", () => {
+  it("aceita atualização parcial apenas de active", () => {
+    expect(updateCouponSchema.safeParse({ active: false }).success).toBe(true)
+  })
+
+  it("rejeita type desconhecido", () => {
+    expect(updateCouponSchema.safeParse({ type: "DINHEIRO" }).success).toBe(false)
+  })
+
+  it("aceita maxDiscount null", () => {
+    expect(updateCouponSchema.safeParse({ maxDiscount: null }).success).toBe(true)
+  })
+})
+
+describe("createCampaignSchema", () => {
+  const base = { name: "Black Friday" }
+
+  it("aceita campanha válida com condições", () => {
+    const result = createCampaignSchema.parse({
+      ...base,
+      conditions: {
+        discountPercent: 20,
+        minQty: 3,
+        minOrderValue: 50,
+        categories: ["Assados"],
+        customerTypes: ["CLIENTE", "B2B"],
+      },
+    })
+    expect(result.conditions.discountPercent).toBe(20)
+    expect(result.conditions.customerTypes).toContain("B2B")
+    expect(result.type).toBe("PROMOTIONAL")
+  })
+
+  it("rejeita discountPercent acima de 100", () => {
+    expect(createCampaignSchema.safeParse({ ...base, conditions: { discountPercent: 150 } }).success).toBe(false)
+  })
+
+  it("rejeita customerType desconhecido", () => {
+    expect(createCampaignSchema.safeParse({ ...base, conditions: { customerTypes: ["VIP"] } }).success).toBe(false)
+  })
+
+  it("rejeita nome vazio", () => {
+    expect(createCampaignSchema.safeParse({ name: "" }).success).toBe(false)
+  })
+})
+
+describe("updateCampaignSchema", () => {
+  it("aceita atualização parcial", () => {
+    expect(updateCampaignSchema.safeParse({ active: false }).success).toBe(true)
+  })
+
+  it("aceita endDate null", () => {
+    expect(updateCampaignSchema.safeParse({ endDate: null }).success).toBe(true)
+  })
+})
+
+describe("pricingSettingsSchema", () => {
+  it("aceita flags e desconto B2B", () => {
+    const result = pricingSettingsSchema.parse({
+      activatePriceTier: true,
+      activateCoupon: true,
+      activateCampaign: true,
+      activateB2B: true,
+      activateFreeShipping: false,
+      b2bDiscountPercent: 10,
+      roundingMode: "ROUND",
+    })
+    expect(result.b2bDiscountPercent).toBe(10)
+    expect(result.roundingMode).toBe("ROUND")
+  })
+
+  it("rejeita b2bDiscountPercent acima de 100", () => {
+    expect(pricingSettingsSchema.safeParse({ b2bDiscountPercent: 150 }).success).toBe(false)
+  })
+
+  it("rejeita roundingMode desconhecido", () => {
+    expect(pricingSettingsSchema.safeParse({ roundingMode: "UP" }).success).toBe(false)
+  })
+
+  it("aceita objeto vazio", () => {
+    expect(pricingSettingsSchema.safeParse({}).success).toBe(true)
   })
 })

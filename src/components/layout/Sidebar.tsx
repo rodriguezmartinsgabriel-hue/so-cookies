@@ -21,6 +21,8 @@ import {
   Users,
   BookUser,
   Cookie,
+  Ticket,
+  Percent,
   ChevronLeft,
   ChevronRight,
 } from "lucide-react"
@@ -42,6 +44,8 @@ const navItems = [
   { href: "/producao", label: "Produção", icon: Factory },
   { href: "/documentos", label: "Documentos", icon: BookOpen },
   { href: "/relatorios", label: "Relatórios", icon: BarChart3 },
+  { href: "/precificacao", label: "Precificação", icon: Percent, adminOnly: true },
+  { href: "/cupons", label: "Cupons", icon: Ticket, adminOnly: true },
   { href: "/usuarios", label: "Usuários", icon: Users, adminOnly: true },
 ]
 

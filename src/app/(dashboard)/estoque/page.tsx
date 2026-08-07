@@ -1,6 +1,6 @@
-"use client"
+﻿"use client"
 
-import { useState, useRef, useMemo } from "react"
+import { useState, useRef } from "react"
 import { useConfirm } from "@/hooks/useConfirm"
 import { useRole } from "@/hooks/useRole"
 import { useQueryData } from "@/hooks/useQueryData"
@@ -10,12 +10,10 @@ import { ErrorState } from "@/components/ui/ErrorState"
 import { Card } from "@/components/ui/Card"
 import { Button } from "@/components/ui/Button"
 import { Input } from "@/components/ui/Input"
-import { Badge } from "@/components/ui/Badge"
 import { Modal } from "@/components/ui/Modal"
 import { Table, THead, TBody, Tr, Th, Td } from "@/components/ui/Table"
 import { repository } from "@/lib/repository"
-import { formatBRL } from "@/lib/utils"
-import type { Ingredient, PriceTier, Product, Recipe, RecipeItem } from "@/lib/entity-types"
+import type { Ingredient, Recipe, RecipeItem } from "@/lib/entity-types"
 import { Plus, Search, Edit, Trash2, AlertTriangle } from "lucide-react"
 
 export default function EstoquePage() {
@@ -33,7 +31,7 @@ export default function EstoquePage() {
   const { data: recipes, error: recipesError } = useQueryData("recipes")
   const loading = ingredientsLoading
   const error = ingredientsError || recipesError ? "Erro ao carregar insumos" : null
-  const [tab, setTab] = useState<"insumos" | "precos" | "geral">("insumos")
+  const [tab, setTab] = useState<"insumos" | "geral">("insumos")
 
   const [form, setForm] = useState({
     name: "",
@@ -89,7 +87,7 @@ export default function EstoquePage() {
       stockKg: parseFloat(form.stockKg) || 0,
       minStockKg: parseFloat(form.minStockKg) || 0,
       costPerKg: parseFloat(form.costPerKg) || 0,
-      supplier: form.supplier || "Não informado",
+      supplier: form.supplier || "NÃ£o informado",
     }
     if (form.caloriesPer100g !== "") payload.caloriesPer100g = parseFloat(form.caloriesPer100g) || 0
     if (form.proteinPer100g !== "") payload.proteinPer100g = parseFloat(form.proteinPer100g) || 0
@@ -129,7 +127,7 @@ export default function EstoquePage() {
           <div>
             <h1 className="text-2xl font-bold text-ink">Insumos</h1>
             <p className="text-sm text-muted">
-              {ingredients.length} insumos · Estoque total: R$ {totalValue.toFixed(2)}
+              {ingredients.length} insumos Â· Estoque total: R$ {totalValue.toFixed(2)}
             </p>
           </div>
           {isAdmin && (
@@ -160,13 +158,6 @@ export default function EstoquePage() {
           >
             Geral
           </button>
-          <button
-            type="button"
-            onClick={() => setTab("precos")}
-            className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${tab === "precos" ? "bg-ink text-paper" : "text-muted hover:bg-cream"}`}
-          >
-            Tabela de Preços
-          </button>
         </div>
 
         <div className="relative">
@@ -184,7 +175,7 @@ export default function EstoquePage() {
           <div className="border border-warning/30 rounded-lg bg-warning/5 p-3 flex items-center gap-2">
             <AlertTriangle className="w-4 h-4 text-warning shrink-0" />
             <p className="text-sm text-ink">
-              <span className="font-semibold">{lowStockItems.length}</span> insumo(s) abaixo do estoque mínimo
+              <span className="font-semibold">{lowStockItems.length}</span> insumo(s) abaixo do estoque mÃ­nimo
             </p>
           </div>
         )}
@@ -278,10 +269,10 @@ export default function EstoquePage() {
                         <Th>Marca</Th>
                         <Th>Fornecedor</Th>
                         <Th className="text-right">Estoque</Th>
-                        <Th className="text-right">Mínimo</Th>
+                        <Th className="text-right">MÃ­nimo</Th>
                         <Th className="text-right">Custo/kg</Th>
                         <Th className="text-right">Valor Estoque</Th>
-                        <Th className="text-center">Ações</Th>
+                        <Th className="text-center">AÃ§Ãµes</Th>
                       </Tr>
                     </THead>
                     <TBody>
@@ -290,7 +281,7 @@ export default function EstoquePage() {
                           <Td>
                             <p className="text-sm font-medium text-ink">{item.name}</p>
                           </Td>
-                          <Td className="text-sm text-muted">{item.brand || "—"}</Td>
+                          <Td className="text-sm text-muted">{item.brand || "â€”"}</Td>
                           <Td className="text-sm text-muted">{item.supplier}</Td>
                           <Td className="text-sm text-right">
                             <span
@@ -336,10 +327,8 @@ export default function EstoquePage() {
               </div>
             </>
           )
-        ) : tab === "geral" ? (
-          <GeralTab ingredients={ingredients} recipes={recipes} onUpdate={invalidate} />
         ) : (
-          <PriceTiersTab />
+          <GeralTab ingredients={ingredients} recipes={recipes} onUpdate={invalidate} />
         )}
 
         {showModal && (
@@ -410,7 +399,7 @@ export default function EstoquePage() {
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">
-                    Estoque Mínimo (kg)
+                    Estoque MÃ­nimo (kg)
                   </label>
                   <Input
                     type="number"
@@ -461,7 +450,7 @@ export default function EstoquePage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] text-muted mb-1">Proteína (g)</label>
+                    <label className="block text-[10px] text-muted mb-1">ProteÃ­na (g)</label>
                     <input
                       type="number"
                       step="0.1"
@@ -501,299 +490,6 @@ export default function EstoquePage() {
       </div>
       {dialog}
     </AppShell>
-  )
-}
-
-function PriceTiersTab() {
-  const { isAdmin } = useRole()
-  const { confirm, dialog } = useConfirm()
-  const { data: tiers, isLoading: loading, error: tiersError, invalidate } = useQueryData("priceTiers")
-  const { data: products, error: productsError } = useQueryData("products")
-  const error = tiersError || productsError ? "Erro ao carregar faixas de preço" : null
-  const [showModal, setShowModal] = useState(false)
-  const [editingTier, setEditingTier] = useState<PriceTier | null>(null)
-  const [form, setForm] = useState({ name: "", minQty: "", maxQty: "", price: "", productId: "" })
-
-  const resetForm = () => setForm({ name: "", minQty: "", maxQty: "", price: "", productId: "" })
-
-  async function handleSave() {
-    if (!form.name || !form.price) return
-    if (!form.productId) {
-      alert("Selecione um produto")
-      return
-    }
-    const payload = {
-      name: form.name,
-      minQty: parseInt(form.minQty) || 1,
-      maxQty: form.maxQty ? parseInt(form.maxQty) : undefined,
-      price: parseFloat(form.price) || 0,
-      productId: form.productId,
-    }
-    if (editingTier) {
-      await repository.priceTiers.update(editingTier.id, payload)
-    } else {
-      await repository.priceTiers.create(payload)
-    }
-    setShowModal(false)
-    setEditingTier(null)
-    resetForm()
-    await invalidate()
-  }
-
-  async function handleDelete(id: string) {
-    if (!(await confirm("Excluir esta faixa de preço?"))) return
-    await repository.priceTiers.delete(id)
-    await invalidate()
-  }
-
-  async function handleToggleEnabled(tier: PriceTier) {
-    await repository.priceTiers.update(tier.id, { enabled: tier.enabled !== false ? false : true })
-    await invalidate()
-  }
-
-  const groups = useMemo(() => {
-    const list: { productId: string; name: string; tiers: PriceTier[] }[] = []
-    const index = new Map<string, number>()
-    for (const t of tiers) {
-      const pid = t.productId || "sem-produto"
-      const existing = index.has(pid) ? list[index.get(pid)!] : undefined
-      if (existing) {
-        existing.tiers.push(t)
-        continue
-      }
-      const display = products.find((p: Product) => p.id === t.productId)?.name
-      const group = { productId: pid, name: display || "Outros", tiers: [t] }
-      index.set(pid, list.length)
-      list.push(group)
-    }
-    return list.sort((a, b) => a.name.localeCompare(b.name))
-  }, [tiers, products])
-
-  return (
-    <div className="space-y-4">
-      {dialog}
-      <div className="flex justify-end">
-        {isAdmin && (
-          <Button
-            onClick={() => {
-              setEditingTier(null)
-              resetForm()
-              setShowModal(true)
-            }}
-          >
-            <Plus className="w-4 h-4" /> Nova Faixa
-          </Button>
-        )}
-      </div>
-
-      {error && <ErrorState message={error} onRetry={invalidate} />}
-
-      {loading ? (
-        <div className="space-y-4">
-          {Array.from({ length: 2 }).map((_, i) => (
-            <Card key={i} padded={false} className="overflow-hidden">
-              <div className="px-4 py-3 border-b border-line">
-                <Skeleton className="h-4 w-32" />
-              </div>
-              <div className="p-2 space-y-2">
-                {Array.from({ length: 3 }).map((_, j) => (
-                  <div key={j} className="flex items-center gap-2 p-2">
-                    <Skeleton className="h-4 flex-1" />
-                    <Skeleton className="h-4 w-16" />
-                  </div>
-                ))}
-              </div>
-            </Card>
-          ))}
-        </div>
-      ) : groups.length === 0 ? (
-        <div className="text-center py-8 text-muted border border-dashed border-line rounded-lg">
-          Nenhuma faixa de preço cadastrada.
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {groups.map((group) => (
-            <Card key={group.productId} padded={false} className="overflow-hidden">
-              <div className="px-4 py-3 bg-cream border-b border-line">
-                <p className="text-sm font-semibold text-ink">{group.name}</p>
-              </div>
-              <Table>
-                <THead>
-                  <Tr>
-                    <Th>Faixa</Th>
-                    <Th className="text-right">Qtd Mín</Th>
-                    <Th className="text-right">Qtd Máx</Th>
-                    <Th className="text-right">Preço/Un</Th>
-                    <Th className="text-right">Total (Qtd mín)</Th>
-                    <Th className="text-center">Ativa</Th>
-                    <Th className="text-center">Ações</Th>
-                  </Tr>
-                </THead>
-                <TBody>
-                  {group.tiers.map((tier: PriceTier) => (
-                    <Tr key={tier.id}>
-                      <Td className="text-sm font-medium text-ink">{tier.name}</Td>
-                      <Td className="text-sm text-right text-muted">{tier.minQty}</Td>
-                      <Td className="text-sm text-right text-muted">{tier.maxQty || "∞"}</Td>
-                      <Td className="text-sm text-right text-muted">{formatBRL(Number(tier.price) || 0)}</Td>
-                      <Td className="text-sm font-semibold text-ink text-right">
-                        {formatBRL((Number(tier.price) || 0) * (tier.minQty || 0))}
-                      </Td>
-                      <Td className="text-center">
-                        {isAdmin ? (
-                          <button
-                            type="button"
-                            onClick={() => handleToggleEnabled(tier)}
-                            className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${tier.enabled !== false ? "bg-green-100 text-green-700 hover:bg-green-200" : "bg-kraft/20 text-muted hover:bg-kraft/40"}`}
-                          >
-                            {tier.enabled !== false ? "Ativa" : "Inativa"}
-                          </button>
-                        ) : (
-                          <Badge variant={tier.enabled !== false ? "success" : "neutral"}>
-                            {tier.enabled !== false ? "Ativa" : "Inativa"}
-                          </Badge>
-                        )}
-                      </Td>
-                      <Td className="text-center">
-                        <div className="flex items-center justify-center gap-1">
-                          {isAdmin && (
-                            <>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setEditingTier(tier)
-                                  setForm({
-                                    name: tier.name,
-                                    minQty: String(tier.minQty),
-                                    maxQty: tier.maxQty ? String(tier.maxQty) : "",
-                                    price: String(tier.price),
-                                    productId: tier.productId || "",
-                                  })
-                                  setShowModal(true)
-                                }}
-                                aria-label="Editar"
-                                className="p-1.5 rounded-md hover:bg-cream text-muted"
-                              >
-                                <Edit className="w-4 h-4" />
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => handleDelete(tier.id)}
-                                aria-label="Excluir"
-                                className="p-1.5 rounded-md hover:bg-cream text-danger"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            </>
-                          )}
-                        </div>
-                      </Td>
-                    </Tr>
-                  ))}
-                </TBody>
-              </Table>
-            </Card>
-          ))}
-        </div>
-      )}
-
-      {showModal && (
-        <Modal
-          open
-          onClose={() => {
-            setShowModal(false)
-            setEditingTier(null)
-          }}
-          title={editingTier ? "Editar Faixa" : "Nova Faixa de Preço"}
-          size="sm"
-          footer={
-            <div className="flex gap-2">
-              <Button
-                variant="secondary"
-                className="flex-1"
-                onClick={() => {
-                  setShowModal(false)
-                  setEditingTier(null)
-                }}
-              >
-                Cancelar
-              </Button>
-              <Button className="flex-1" onClick={handleSave}>
-                Salvar
-              </Button>
-            </div>
-          }
-        >
-          <div className="p-4 space-y-4">
-            <div>
-              <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">Produto *</label>
-              <select
-                id="sel-nome-label-input-type-text-placeholder-e"
-                value={form.productId}
-                onChange={(e) => setForm({ ...form, productId: e.target.value })}
-                className="w-full h-10 px-3 border border-line rounded-lg text-sm text-ink bg-paper focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus:border-ink transition-colors"
-              >
-                <option value="">Selecione um produto</option>
-                {products
-                  .filter((p: Product) => p.active)
-                  .map((p: Product) => (
-                    <option key={p.id} value={p.id}>
-                      {p.name}
-                    </option>
-                  ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">
-                Nome da Faixa
-              </label>
-              <Input
-                type="text"
-                placeholder="Ex: Assado 3un"
-                value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">
-                  Qtd Mínima
-                </label>
-                <Input
-                  type="number"
-                  placeholder="1"
-                  value={form.minQty}
-                  onChange={(e) => setForm({ ...form, minQty: e.target.value })}
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">
-                  Qtd Máxima
-                </label>
-                <Input
-                  type="number"
-                  placeholder="Opcional"
-                  value={form.maxQty}
-                  onChange={(e) => setForm({ ...form, maxQty: e.target.value })}
-                />
-              </div>
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-muted uppercase tracking-wide mb-1.5">
-                Preço por Unidade (R$)
-              </label>
-              <Input
-                type="number"
-                step="0.01"
-                placeholder="0.00"
-                value={form.price}
-                onChange={(e) => setForm({ ...form, price: e.target.value })}
-              />
-            </div>
-          </div>
-        </Modal>
-      )}
-    </div>
   )
 }
 
@@ -846,7 +542,7 @@ function GeralTab({
       name: newName.trim(),
       brand: newBrand.trim() || undefined,
       costPerKg: 0,
-      supplier: "Não informado",
+      supplier: "NÃ£o informado",
     })
     setNewName("")
     setNewBrand("")
@@ -857,9 +553,9 @@ function GeralTab({
     <div className="space-y-4">
       <Card padded={false} className="overflow-hidden">
         <div className="px-4 py-3 bg-cream border-b border-line">
-          <p className="text-sm font-semibold text-ink">Visão Geral dos Insumos</p>
+          <p className="text-sm font-semibold text-ink">VisÃ£o Geral dos Insumos</p>
           <p className="text-xs text-muted">
-            Edite nomes e marcas diretamente · Veja em quais receitas cada insumo é usado
+            Edite nomes e marcas diretamente Â· Veja em quais receitas cada insumo Ã© usado
           </p>
         </div>
         <Table>
