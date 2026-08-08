@@ -15,6 +15,7 @@ import { EditProfileModal, type EditProfileInput } from "@/components/customer/E
 import { EditPasswordModal } from "@/components/customer/EditPasswordModal"
 import { LoyaltySection } from "@/components/customer/LoyaltySection"
 import { Button } from "@/components/ui/Button"
+import { ErrorState } from "@/components/ui/ErrorState"
 import { useHapticFeedback } from "@/hooks/useHapticFeedback"
 import { useReducedMotion } from "@/hooks/useReducedMotion"
 import { useToast } from "@/components/ui/Toast"
@@ -41,7 +42,12 @@ export function PerfilTab() {
   const queryClient = useQueryClient()
   const reducedMotion = useReducedMotion()
 
-  const { data: profile, isLoading } = useMe()
+  const {
+    data: profile,
+    isLoading,
+    isError,
+    refetch,
+  } = useMe()
   const { data: orders = [] } = useOrders()
   const { data: loyalty } = useLoyaltyBalance()
 
@@ -161,6 +167,19 @@ export function PerfilTab() {
           transition={{ duration: 0.18 }}
         >
           <ProfileSkeleton />
+        </motion.div>
+      ) : isError ? (
+        <motion.div
+          key="error"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.18 }}
+        >
+          <ErrorState
+            message="Não foi possível carregar seus dados"
+            onRetry={() => refetch()}
+          />
         </motion.div>
       ) : !profile ? (
         <motion.div

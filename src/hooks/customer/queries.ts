@@ -28,19 +28,25 @@ export const loyaltyTransactionsQueryKey = ["loyalty", "transactions"] as const
 export const loyaltyRewardsQueryKey = ["loyalty", "rewards"] as const
 export const deliverySlotsQueryKey = ["delivery-slots"] as const
 
+function redirectToLogin(): never {
+  if (typeof window !== "undefined") {
+    const path = window.location.pathname + window.location.search
+    window.location.href = `/entrar?next=${encodeURIComponent(path)}`
+  }
+  throw new Error("unauthorized")
+}
+
+function throwFailure(label: string): never {
+  throw new Error(`Falha ao carregar ${label}`)
+}
+
 export function useCatalog() {
   return useQuery<CatalogProduct[]>({
     queryKey: catalogQueryKey,
     queryFn: async () => {
       const res = await fetch("/api/public/catalog", { cache: "no-store" })
-      if (res.status === 401) {
-        if (typeof window !== "undefined") {
-          const path = window.location.pathname + window.location.search
-          window.location.href = `/entrar?next=${encodeURIComponent(path)}`
-        }
-        throw new Error("unauthorized")
-      }
-      if (!res.ok) throw new Error("Falha ao carregar catálogo")
+      if (res.status === 401) redirectToLogin()
+      if (!res.ok) throwFailure("catálogo")
       return (await res.json()) as CatalogProduct[]
     },
     staleTime: 60_000,
@@ -52,7 +58,9 @@ export function useMe() {
     queryKey: meQueryKey,
     queryFn: async () => {
       const res = await fetch("/api/public/auth/me", { cache: "no-store" })
-      if (!res.ok) return null
+      if (res.status === 401) redirectToLogin()
+      if (res.status === 404) return null
+      if (!res.ok) throwFailure("perfil")
       return (await res.json()) as Profile
     },
     staleTime: 60_000,
@@ -64,7 +72,8 @@ export function useOrders() {
     queryKey: ordersQueryKey,
     queryFn: async () => {
       const res = await fetch("/api/public/orders", { cache: "no-store" })
-      if (!res.ok) return []
+      if (res.status === 401) redirectToLogin()
+      if (!res.ok) throwFailure("pedidos")
       return (await res.json()) as PublicOrder[]
     },
     staleTime: 30_000,
@@ -76,7 +85,8 @@ export function useLoyaltyBalance() {
     queryKey: loyaltyBalanceQueryKey,
     queryFn: async () => {
       const res = await fetch("/api/public/loyalty/balance", { cache: "no-store" })
-      if (!res.ok) return DEFAULT_LOYALTY_SNAPSHOT
+      if (res.status === 401) redirectToLogin()
+      if (!res.ok) throwFailure("saldo de pontos")
       const data = (await res.json()) as Partial<LoyaltySnapshot>
       return { ...DEFAULT_LOYALTY_SNAPSHOT, ...data }
     },
@@ -90,14 +100,8 @@ export function useDeliverySlots(enabled: boolean) {
     enabled,
     queryFn: async () => {
       const res = await fetch("/api/public/delivery-slots", { cache: "no-store" })
-      if (res.status === 401) {
-        if (typeof window !== "undefined") {
-          const path = window.location.pathname + window.location.search
-          window.location.href = `/entrar?next=${encodeURIComponent(path)}`
-        }
-        throw new Error("unauthorized")
-      }
-      if (!res.ok) throw new Error("Falha ao carregar datas de entrega")
+      if (res.status === 401) redirectToLogin()
+      if (!res.ok) throwFailure("datas de entrega")
       return (await res.json()) as { slots: DeliverySlot[] }
     },
     staleTime: 60_000,
