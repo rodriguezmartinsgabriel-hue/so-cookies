@@ -18,7 +18,7 @@ import {
   QrCode,
 } from "lucide-react"
 import { CustomerShell } from "@/components/customer/CustomerShell"
-import { PageHeader } from "@/components/customer/PageHeader"
+import { PageHeader } from "@/components/ui/PageHeader"
 import { OrderStatusTimeline, statusLabel, statusOrder } from "@/components/customer/OrderStatusTimeline"
 import { Card } from "@/components/ui/Card"
 import { Button } from "@/components/ui/Button"

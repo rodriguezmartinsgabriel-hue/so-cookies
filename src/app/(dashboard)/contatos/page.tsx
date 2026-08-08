@@ -8,12 +8,13 @@ import { useFocusTrap } from "@/hooks/useFocusTrap"
 import { AppShell } from "@/components/layout/AppShell"
 import { Skeleton } from "@/components/ui/Skeleton"
 import { ErrorState } from "@/components/ui/ErrorState"
-import { Card } from "@/components/ui/Card"
 import { Button } from "@/components/ui/Button"
 import { Input } from "@/components/ui/Input"
 import { Badge } from "@/components/ui/Badge"
 import { Modal } from "@/components/ui/Modal"
 import { GlassSurface } from "@/components/ui/GlassSurface"
+import { PageHeader } from "@/components/ui/PageHeader"
+import { SectionCard } from "@/components/ui/SectionCard"
 import { repository } from "@/lib/repository"
 import { downloadCsv, csvFromSections, fileStamp } from "@/lib/csv"
 import type { Contact } from "@/lib/entity-types"
@@ -308,29 +309,29 @@ export default function ContatosPage() {
   return (
     <AppShell>
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-ink">Contatos</h1>
-            <p className="text-sm text-muted">
-              {contacts.length} contatos · {typeCounts.CLIENTE || 0} clientes · {typeCounts.FORNECEDOR || 0}{" "}
-              fornecedores
-            </p>
-          </div>
-          {canEdit && (
-            <Button
-              onClick={() => {
-                resetForm()
-                setShowModal(true)
-              }}
-            >
-              <Plus className="w-4 h-4" />
-              Novo Contato
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <PageHeader
+            eyebrow="CRM"
+            title="Contatos"
+            subtitle={`${contacts.length} contatos · ${typeCounts.CLIENTE || 0} clientes · ${typeCounts.FORNECEDOR || 0} fornecedores`}
+          />
+          <div className="flex items-center gap-2">
+            {canEdit && (
+              <Button
+                onClick={() => {
+                  resetForm()
+                  setShowModal(true)
+                }}
+              >
+                <Plus className="w-4 h-4" />
+                Novo Contato
+              </Button>
+            )}
+            <Button variant="secondary" onClick={handleExportCsv}>
+              <Download className="w-4 h-4" />
+              Exportar CSV
             </Button>
-          )}
-          <Button variant="secondary" onClick={handleExportCsv}>
-            <Download className="w-4 h-4" />
-            Exportar CSV
-          </Button>
+          </div>
         </div>
 
         <div className="flex gap-2 overflow-x-auto pb-1">
@@ -362,38 +363,46 @@ export default function ContatosPage() {
         {error && <ErrorState message={error} onRetry={invalidate} />}
 
         {loading ? (
-          <div className="space-y-2">
+          <SectionCard eyebrow="Carregando" title="Contatos">
             {Array.from({ length: 4 }).map((_, i) => (
-              <Card key={i}>
-                <div className="flex items-center gap-3">
-                  <Skeleton className="h-10 w-10 rounded-lg" />
-                  <div className="flex-1">
-                    <Skeleton className="h-4 w-32 mb-1" />
-                    <Skeleton className="h-3 w-24" />
-                  </div>
-                  <Skeleton className="h-5 w-16 rounded-full" />
+              <div key={i} className="flex items-center gap-3 p-3">
+                <Skeleton className="h-10 w-10 rounded-xl shrink-0" />
+                <div className="flex-1">
+                  <Skeleton className="h-4 w-32 mb-1" />
+                  <Skeleton className="h-3 w-24" />
                 </div>
-              </Card>
+                <Skeleton className="h-5 w-16 rounded-full" />
+              </div>
             ))}
-          </div>
+          </SectionCard>
         ) : filtered.length === 0 ? (
-          <div className="text-center py-8 text-muted border border-dashed border-line rounded-lg">
-            {search || filter !== "ALL"
-              ? "Nenhum contato encontrado para esta busca."
-              : 'Nenhum contato cadastrado. Clique em "Novo Contato" para começar.'}
-          </div>
+          <SectionCard
+            eyebrow="Lista"
+            title={search || filter !== "ALL" ? "Nenhum contato encontrado" : "Sem contatos"}
+            icon={<BookUser className="w-4 h-4" />}
+          >
+            <div className="p-6 text-center text-sm text-muted">
+              {search || filter !== "ALL"
+                ? "Nenhum contato encontrado para esta busca."
+                : 'Nenhum contato cadastrado. Clique em "Novo Contato" para começar.'}
+            </div>
+          </SectionCard>
         ) : (
-          <div className="space-y-2">
+          <SectionCard
+            eyebrow={`${filtered.length} contato${filtered.length === 1 ? "" : "s"}`}
+            title="Lista"
+            icon={<BookUser className="w-4 h-4" />}
+          >
             {filtered.map((c) => {
               const cfg = TYPE_CONFIG[c.type] || TYPE_CONFIG.OUTRO
               return (
-                <Card key={c.id}>
+                <div key={c.id} className="p-3">
                   <div className="flex items-center gap-3">
                     <button
                       type="button"
                       onClick={() => setSelectedContact(c)}
                       aria-label="Ver detalhes"
-                      className="w-10 h-10 rounded-lg bg-cream flex items-center justify-center shrink-0 hover:bg-kraft/50 transition-colors"
+                      className="w-10 h-10 rounded-xl bg-cream flex items-center justify-center shrink-0 hover:bg-kraft/50 transition-colors"
                     >
                       <BookUser className="w-5 h-5 text-muted" strokeWidth={1.5} />
                     </button>
@@ -540,10 +549,10 @@ export default function ContatosPage() {
                       <span className="truncate">{formatAddress(c)}</span>
                     </div>
                   )}
-                </Card>
+                </div>
               )
             })}
-          </div>
+          </SectionCard>
         )}
 
         {showModal && (

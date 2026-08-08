@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from "vitest"
 import { render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
-import { SectionCard } from "@/components/customer/SectionCard"
+import { SectionCard } from "@/components/ui/SectionCard"
 import { User } from "lucide-react"
 
 describe("SectionCard", () => {

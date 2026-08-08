@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest"
 import { render, screen } from "@testing-library/react"
-import { PageHeader } from "@/components/customer/PageHeader"
+import { PageHeader } from "@/components/ui/PageHeader"
 
 describe("PageHeader", () => {
   it("renderiza eyebrow, título display e subtítulo", () => {

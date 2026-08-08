@@ -11,6 +11,8 @@ import { useQueryData } from "@/hooks/useQueryData"
 import { AppShell } from "@/components/layout/AppShell"
 import { Skeleton } from "@/components/ui/Skeleton"
 import { Card } from "@/components/ui/Card"
+import { PageHeader } from "@/components/ui/PageHeader"
+import { SectionCard } from "@/components/ui/SectionCard"
 import {
   ShoppingBag,
   Package,
@@ -164,18 +166,17 @@ export default function HomePage() {
   return (
     <AppShell>
       <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold text-ink">
-            Olá, {session?.user?.name || "Usuário"} <span aria-hidden="true">👋</span>
-          </h1>
-          <p className="text-sm text-muted mt-1">Painel de gestão — Só Cookies & Café</p>
-        </div>
+        <PageHeader
+          eyebrow="Painel operacional"
+          title={`Olá, ${session?.user?.name || "Usuário"}`}
+          subtitle="Visão geral — Só Cookies & Café"
+        />
 
         {loading ? (
           <div className="space-y-6">
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
               {Array.from({ length: 4 }).map((_, i) => (
-                <Card key={i} className="p-4">
+                <Card key={i} className="p-4 rounded-2xl">
                   <Skeleton className="h-3 w-20 mb-2" />
                   <Skeleton className="h-7 w-24 mb-1" />
                   <Skeleton className="h-3 w-16" />
@@ -186,7 +187,7 @@ export default function HomePage() {
               <Skeleton className="h-4 w-20 mb-3" />
               <div className="grid grid-cols-3 gap-3">
                 {Array.from({ length: 9 }).map((_, i) => (
-                  <Card key={i} className="p-5">
+                  <Card key={i} className="p-5 rounded-2xl">
                     <Skeleton className="h-12 w-12 rounded-xl mb-3" />
                     <Skeleton className="h-4 w-16 mx-auto mb-1" />
                     <Skeleton className="h-3 w-20 mx-auto" />
@@ -198,7 +199,7 @@ export default function HomePage() {
         ) : (
           <>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-              <Card className="p-4">
+              <Card className="p-4 rounded-2xl">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-xs font-medium text-muted uppercase tracking-wide">Faturamento</span>
                   <TrendingUp className="w-4 h-4 text-success" strokeWidth={1.5} />
@@ -206,7 +207,7 @@ export default function HomePage() {
                 <p className="text-2xl font-bold text-ink">R$ {kpis?.revenue?.toFixed(0) || "0"}</p>
                 <p className="text-xs text-muted mt-1">mês atual</p>
               </Card>
-              <Card className="p-4">
+              <Card className="p-4 rounded-2xl">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-xs font-medium text-muted uppercase tracking-wide">Lucro</span>
                   <TrendingUp className="w-4 h-4 text-success" strokeWidth={1.5} />
@@ -214,7 +215,7 @@ export default function HomePage() {
                 <p className="text-2xl font-bold text-success">R$ {kpis?.profit?.toFixed(0) || "0"}</p>
                 <p className="text-xs text-muted mt-1">margem {kpis?.margin?.toFixed(1) || 0}%</p>
               </Card>
-              <Card className="p-4">
+              <Card className="p-4 rounded-2xl">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-xs font-medium text-muted uppercase tracking-wide">Pedidos Hoje</span>
                   <ShoppingBag className="w-4 h-4 text-info" strokeWidth={1.5} />
@@ -222,7 +223,7 @@ export default function HomePage() {
                 <p className="text-2xl font-bold text-ink">{kpis?.ordersToday || 0}</p>
                 <p className="text-xs text-warning mt-1">{kpis?.pendingOrders || 0} pendentes</p>
               </Card>
-              <Card className="p-4">
+              <Card className="p-4 rounded-2xl">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-xs font-medium text-muted uppercase tracking-wide">Saldo Hoje</span>
                   <DollarSign className="w-4 h-4 text-muted" strokeWidth={1.5} />
@@ -243,7 +244,7 @@ export default function HomePage() {
               </Card>
             </div>
 
-            <Card className="p-4">
+            <Card className="p-4 rounded-2xl">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
                   <Truck className="w-4 h-4 text-info" strokeWidth={1.5} />
@@ -264,99 +265,93 @@ export default function HomePage() {
               </div>
             </Card>
 
-            <div>
-              <h2 className="text-sm font-semibold text-ink uppercase tracking-wide mb-3">Módulos</h2>
-              <div className="grid grid-cols-3 lg:grid-cols-3 gap-3 stagger">
-                {modules
-                  .filter((mod) => !mod.adminOnly || isAdmin)
-                  .map((mod, index) => (
-                    <Link key={mod.label} href={mod.href} className="block" style={{ ["--stagger" as string]: index }}>
-                      <Card interactive padded={false} className="group flex flex-col items-center gap-3 p-5 h-full">
-                        <div
-                          className={`w-12 h-12 rounded-xl flex items-center justify-center ${mod.color} group-hover:scale-110 transition-transform`}
-                        >
-                          <mod.icon className="w-6 h-6" strokeWidth={1.5} />
-                        </div>
-                        <div className="text-center">
-                          <span className="text-sm font-semibold text-ink block">{mod.label}</span>
-                          <span className="text-[10px] text-muted">{mod.desc}</span>
-                        </div>
-                      </Card>
-                    </Link>
-                  ))}
+            <SectionCard eyebrow="Atalhos" title="Módulos">
+              <div className="p-4">
+                <div className="grid grid-cols-3 lg:grid-cols-3 gap-3 stagger">
+                  {modules
+                    .filter((mod) => !mod.adminOnly || isAdmin)
+                    .map((mod, index) => (
+                      <Link key={mod.label} href={mod.href} className="block" style={{ ["--stagger" as string]: index }}>
+                        <Card interactive padded={false} className="group flex flex-col items-center gap-3 p-5 h-full rounded-2xl">
+                          <div
+                            className={`w-12 h-12 rounded-xl flex items-center justify-center ${mod.color} group-hover:scale-110 transition-transform`}
+                          >
+                            <mod.icon className="w-6 h-6" strokeWidth={1.5} />
+                          </div>
+                          <div className="text-center">
+                            <span className="text-sm font-semibold text-ink block">{mod.label}</span>
+                            <span className="text-[10px] text-muted">{mod.desc}</span>
+                          </div>
+                        </Card>
+                      </Link>
+                    ))}
+                </div>
               </div>
-            </div>
+            </SectionCard>
 
             {lowStock.length > 0 && (
-              <div>
-                <h2 className="text-sm font-semibold text-ink uppercase tracking-wide mb-3 flex items-center gap-2">
-                  <AlertTriangle className="w-4 h-4 text-warning" />
-                  Estoque Baixo
-                </h2>
-                <Card padded={false} className="divide-y divide-line overflow-hidden">
-                  {lowStock.slice(0, 5).map((item: Ingredient) => (
-                    <div key={item.id} className="flex items-center gap-3 p-3">
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-ink">{item.name}</p>
-                        <p className="text-xs text-muted">{item.supplier}</p>
-                      </div>
-                      <div className="text-right shrink-0">
-                        <p className="text-sm font-semibold text-danger">{item.stockKg} kg</p>
-                        <p className="text-xs text-muted">mín: {item.minStockKg} kg</p>
-                      </div>
+              <SectionCard
+                eyebrow="Alertas"
+                title="Estoque baixo"
+                icon={<AlertTriangle className="w-4 h-4" />}
+              >
+                {lowStock.slice(0, 5).map((item: Ingredient) => (
+                  <div key={item.id} className="flex items-center gap-3 p-3">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-ink">{item.name}</p>
+                      <p className="text-xs text-muted">{item.supplier}</p>
                     </div>
-                  ))}
-                </Card>
-              </div>
+                    <div className="text-right shrink-0">
+                      <p className="text-sm font-semibold text-danger">{item.stockKg} kg</p>
+                      <p className="text-xs text-muted">mín: {item.minStockKg} kg</p>
+                    </div>
+                  </div>
+                ))}
+              </SectionCard>
             )}
 
             {tomorrowDeliveries.length > 0 && (
-              <div>
-                <h2 className="text-sm font-semibold text-ink uppercase tracking-wide mb-3 flex items-center gap-2">
-                  <Truck className="w-4 h-4 text-info" />
-                  Entregas de amanhã ({tomorrowDeliveries.length})
-                </h2>
-                <Card padded={false} className="divide-y divide-line overflow-hidden">
-                  {tomorrowDeliveries.map((order) => (
-                    <div key={order.id} className="flex items-center gap-3 p-3">
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-ink truncate">
-                          {order.customer} — {order.channel}
-                        </p>
-                        <p className="text-xs text-muted">
-                          {(order.items || []).length} itens · R$ {order.total}
-                        </p>
-                      </div>
-                      <div className="text-right shrink-0">
-                        <p className="text-sm font-bold text-ink">R$ {order.total}</p>
-                        <p className="text-xs text-muted">{order.status?.toLowerCase()}</p>
-                      </div>
+              <SectionCard
+                eyebrow="Logística"
+                title={`Entregas de amanhã (${tomorrowDeliveries.length})`}
+                icon={<Truck className="w-4 h-4" />}
+              >
+                {tomorrowDeliveries.map((order) => (
+                  <div key={order.id} className="flex items-center gap-3 p-3">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-ink truncate">
+                        {order.customer} — {order.channel}
+                      </p>
+                      <p className="text-xs text-muted">
+                        {(order.items || []).length} itens · R$ {order.total}
+                      </p>
                     </div>
-                  ))}
-                </Card>
-              </div>
+                    <div className="text-right shrink-0">
+                      <p className="text-sm font-bold text-ink">R$ {order.total}</p>
+                      <p className="text-xs text-muted">{order.status?.toLowerCase()}</p>
+                    </div>
+                  </div>
+                ))}
+              </SectionCard>
             )}
 
             {recentOrders.length > 0 && (
-              <div>
-                <h2 className="text-sm font-semibold text-ink uppercase tracking-wide mb-3">Pedidos Recentes</h2>
-                <Card padded={false} className="divide-y divide-line overflow-hidden">
-                  {recentOrders.map((order) => (
-                    <div key={order.id} className="flex items-center gap-3 p-3">
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-ink truncate">
-                          {order.customer} — {order.channel}
-                        </p>
-                        <p className="text-xs text-muted">{(order.items || []).length} itens</p>
-                      </div>
-                      <div className="text-right shrink-0">
-                        <p className="text-sm font-bold text-ink">R$ {order.total}</p>
-                        <p className="text-xs text-muted">{order.status?.toLowerCase()}</p>
-                      </div>
+              <SectionCard eyebrow="Histórico" title="Pedidos recentes">
+                {recentOrders.map((order) => (
+                  <div key={order.id} className="flex items-center gap-3 p-3">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-ink truncate">
+                        {order.customer} — {order.channel}
+                      </p>
+                      <p className="text-xs text-muted">{(order.items || []).length} itens</p>
                     </div>
-                  ))}
-                </Card>
-              </div>
+                    <div className="text-right shrink-0">
+                      <p className="text-sm font-bold text-ink">R$ {order.total}</p>
+                      <p className="text-xs text-muted">{order.status?.toLowerCase()}</p>
+                    </div>
+                  </div>
+                ))}
+              </SectionCard>
             )}
           </>
         )}

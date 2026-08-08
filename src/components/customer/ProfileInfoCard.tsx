@@ -1,7 +1,7 @@
 "use client"
 
 import type { ReactNode } from "react"
-import { SectionCard } from "./SectionCard"
+import { SectionCard } from "@/components/ui/SectionCard"
 
 type ProfileInfoCardProps = {
   icon: ReactNode
