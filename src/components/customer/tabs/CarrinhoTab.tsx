@@ -39,14 +39,6 @@ export function CarrinhoTab() {
   const [mode, setMode] = useState<"retirada" | "entrega">("retirada")
   const [couponDraft, setCouponDraft] = useState("")
   const [couponCode, setCouponCode] = useState("")
-  const {
-    result,
-    loading: pricingLoading,
-    error: pricingError,
-  } = usePricing({
-    couponCode: couponCode.trim() || null,
-    channel: mode === "entrega" ? "delivery" : "pickup",
-  })
 
   const {
     data: catalogData = [],
@@ -58,6 +50,16 @@ export function CarrinhoTab() {
     for (const p of catalogData) map[p.id] = p
     return map
   }, [catalogData])
+
+  const {
+    result,
+    loading: pricingLoading,
+    error: pricingError,
+  } = usePricing({
+    couponCode: couponCode.trim() || null,
+    channel: mode === "entrega" ? "delivery" : "pickup",
+    products,
+  })
 
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState("")
@@ -89,6 +91,25 @@ export function CarrinhoTab() {
   }
 
   const lines = items.map((i) => ({ ...i, product: products[i.productId] })).filter((l) => l.product)
+
+  // Total de cookies assados no carrinho, somando qtys de todos os sabores.
+  // Usado para a barra de progresso global de desconto por volume — o motor
+  // seleciona a faixa pela soma, não por SKU individual.
+  const totalCookieQty = useMemo(
+    () =>
+      lines
+        .filter((l) => l.product.category === "Cookie" || l.product.category === "Assados")
+        .reduce((s, l) => s + l.qty, 0),
+    [lines],
+  )
+
+  // Preço base de referência dos cookies assados (todos iguais a R$15 hoje).
+  // Usado como denominador no hint global para o cálculo do %-off.
+  const cookieBasePrice = useMemo(() => {
+    const cookieLines = lines.filter((l) => l.product.category === "Cookie" || l.product.category === "Assados")
+    if (cookieLines.length === 0) return 0
+    return Math.max(...cookieLines.map((l) => l.product.price))
+  }, [lines])
 
   // Usar Pricing Engine v2 quando disponível, caso contrário usar cálculo simples
   const total = result?.total ?? lines.reduce((s, l) => s + l.product.price * l.qty, 0)
@@ -274,7 +295,9 @@ export function CarrinhoTab() {
                             />
                             <CalorieBadge calories={l.product.nutrition?.caloriesPerUnit ?? null} variant="compact" />
                           </div>
-                          {l.qty > 0 && result?.state.availableTiers?.[l.productId]?.length ? (
+                          {l.qty > 0 &&
+                          result?.state.availableTiers?.[l.productId]?.length &&
+                          !(l.product.category === "Cookie" || l.product.category === "Assados") ? (
                             <div className="mt-1 max-w-[18rem]">
                               <VolumeDiscountHint
                                 tiers={result.state.availableTiers[l.productId]}
@@ -327,6 +350,17 @@ export function CarrinhoTab() {
                   ))}
                 </div>
               </AnimatePresence>
+
+              {totalCookieQty > 0 && result?.state.cookieTiers?.length ? (
+                <div className="pt-1">
+                  <VolumeDiscountHint
+                    tiers={result.state.cookieTiers}
+                    qty={totalCookieQty}
+                    basePrice={cookieBasePrice}
+                    className="rounded-2xl"
+                  />
+                </div>
+              ) : null}
 
               <StickyBottomCTA
                 total={total}

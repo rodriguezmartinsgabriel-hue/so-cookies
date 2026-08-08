@@ -136,7 +136,35 @@ export class PricingEngine {
           price: t.price.toNumber(),
         }))
     }
-    return { ...state, availableTiers }
+
+    // Tiers compartilhados dos cookies assados: pega os tiers do primeiro
+    // produto de cookie assado que aparece no carrinho (todos têm o mesmo
+    // conjunto, garantido por seed-price-tiers.ts). Só populado quando há
+    // pelo menos um item de cookie assado no estado.
+    let cookieTiers: Array<{ id: string; productId: string; name: string; minQty: number; maxQty: number | null; price: number }> | undefined
+    for (const item of state.items) {
+      const product = data.products[item.productId]
+      if (!product) continue
+      const sku = product.sku ?? ""
+      const isCookie = (sku.startsWith("CK-") && !sku.endsWith("-FZ")) || product.category === "Cookie" || product.category === "Assados"
+      if (!isCookie) continue
+      const list = data.priceTiers[item.productId]
+      if (list && list.length > 0) {
+        cookieTiers = list
+          .filter((t) => t.enabled)
+          .map((t) => ({
+            id: t.id,
+            productId: t.productId,
+            name: t.name,
+            minQty: t.minQty,
+            maxQty: t.maxQty ?? null,
+            price: t.price.toNumber(),
+          }))
+        break
+      }
+    }
+
+    return cookieTiers ? { ...state, availableTiers, cookieTiers } : { ...state, availableTiers }
   }
 
   private attachLoyaltyPreview(state: PricingState, data: PricingData, total: number): PricingState {

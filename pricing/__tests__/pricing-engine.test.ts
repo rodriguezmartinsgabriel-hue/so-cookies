@@ -176,6 +176,79 @@ describe("PricingEngine v2", () => {
     expect(result.summary.total).toBeCloseTo(60, 2)
   })
 
+  it("agrega qty de cookies assados entre sabores para o tier de desconto por volume", async () => {
+    // 2 Clássico + 1 Niño = 3 cookies → faixa "Assado 3un" R$13/un.
+    // Individualmente, cada sabor (qty 2 ou 1) cairia na faixa 1-2 (R$15),
+    // mas o motor deve somar qtys de todos os assados e aplicar R$13 em ambos.
+    const classico = productFactory({ id: "ck-classico", sku: "CK-CLASSICO", category: "Assados" })
+    const nino = productFactory({ id: "ck-nino", sku: "CK-NINO", category: "Assados" })
+    const tiers13 = [
+      priceTierFactory({ id: "t1-classico", productId: "ck-classico", name: "Assado 1un", minQty: 1, maxQty: 2, price: new Decimal(15) }),
+      priceTierFactory({ id: "t2-classico", productId: "ck-classico", name: "Assado 3un", minQty: 3, maxQty: 9, price: new Decimal(13) }),
+      priceTierFactory({ id: "t3-classico", productId: "ck-classico", name: "Assado 10un", minQty: 10, maxQty: null, price: new Decimal(10) }),
+    ]
+    const tiersNino = [
+      priceTierFactory({ id: "t1-nino", productId: "ck-nino", name: "Assado 1un", minQty: 1, maxQty: 2, price: new Decimal(15) }),
+      priceTierFactory({ id: "t2-nino", productId: "ck-nino", name: "Assado 3un", minQty: 3, maxQty: 9, price: new Decimal(13) }),
+      priceTierFactory({ id: "t3-nino", productId: "ck-nino", name: "Assado 10un", minQty: 10, maxQty: null, price: new Decimal(10) }),
+    ]
+    const engine = createEngine({
+      products: [classico, nino],
+      priceTiers: { "ck-classico": tiers13, "ck-nino": tiersNino },
+    })
+    const result = await engine.calculatePrice(
+      pricingContextFactory({
+        items: [
+          { productId: "ck-classico", qty: 2, basePrice: 15, name: "Cookie Clássico" },
+          { productId: "ck-nino", qty: 1, basePrice: 15, name: "Cookie Niño" },
+        ],
+      }),
+    )
+
+    // Ambos itens recebem R$13/unit (faixa 3un obtida pela soma 2+1=3).
+    expect(result.state.items[0].priceAfterDiscount).toBeCloseTo(13, 2)
+    expect(result.state.items[1].priceAfterDiscount).toBeCloseTo(13, 2)
+    // Total: 3 * 13 = 39. Original: 3 * 15 = 45. Desconto: 6.
+    expect(result.summary.subtotal).toBeCloseTo(39, 2)
+    expect(result.summary.discountTotal).toBeCloseTo(6, 2)
+    expect(result.summary.total).toBeCloseTo(39, 2)
+    // cookieTiers exposto no estado (lista compartilhada)
+    expect(result.state.cookieTiers).toBeDefined()
+    expect(result.state.cookieTiers?.length).toBe(3)
+  })
+
+  it("não aplica desconto de cookie assado quando a soma das qtys não atinge a próxima faixa", async () => {
+    // 1 Clássico + 1 Niño = 2 cookies → faixa 1-2 (R$15, sem desconto).
+    const classico = productFactory({ id: "ck-classico", sku: "CK-CLASSICO", category: "Assados" })
+    const nino = productFactory({ id: "ck-nino", sku: "CK-NINO", category: "Assados" })
+    const engine = createEngine({
+      products: [classico, nino],
+      priceTiers: {
+        "ck-classico": [
+          priceTierFactory({ id: "t1c", productId: "ck-classico", name: "Assado 1un", minQty: 1, maxQty: 2, price: new Decimal(15) }),
+          priceTierFactory({ id: "t2c", productId: "ck-classico", name: "Assado 3un", minQty: 3, maxQty: 9, price: new Decimal(13) }),
+        ],
+        "ck-nino": [
+          priceTierFactory({ id: "t1n", productId: "ck-nino", name: "Assado 1un", minQty: 1, maxQty: 2, price: new Decimal(15) }),
+          priceTierFactory({ id: "t2n", productId: "ck-nino", name: "Assado 3un", minQty: 3, maxQty: 9, price: new Decimal(13) }),
+        ],
+      },
+    })
+    const result = await engine.calculatePrice(
+      pricingContextFactory({
+        items: [
+          { productId: "ck-classico", qty: 1, basePrice: 15, name: "Cookie Clássico" },
+          { productId: "ck-nino", qty: 1, basePrice: 15, name: "Cookie Niño" },
+        ],
+      }),
+    )
+
+    expect(result.state.items[0].priceAfterDiscount).toBeCloseTo(15, 2)
+    expect(result.state.items[1].priceAfterDiscount).toBeCloseTo(15, 2)
+    expect(result.summary.discountTotal).toBeCloseTo(0, 2)
+    expect(result.summary.total).toBeCloseTo(30, 2)
+  })
+
   it("não aplica faixa de preço quando a flag activatePriceTier está desativada", async () => {
     const engine = createEngine({
       products: [productFactory()],

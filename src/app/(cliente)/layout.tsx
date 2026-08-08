@@ -15,7 +15,12 @@ export default function ClienteLayout() {
   const pathname = usePathname()
   const { items, count } = useCart()
   const { data: catalog = [] } = useCatalog()
-  const { result: pricingResult } = usePricing({ channel: "pickup" })
+  const productsById = useMemo(() => {
+    const map: Record<string, { category: string }> = {}
+    for (const p of catalog) map[p.id] = { category: p.category }
+    return map
+  }, [catalog])
+  const { result: pricingResult } = usePricing({ channel: "pickup", products: productsById })
 
   const showCartBar = pathname !== "/carrinho"
 

@@ -15,7 +15,12 @@ export function CardapioTab() {
   const { data: products = [], isLoading, isError } = useCatalog()
   const [query, setQuery] = useState("")
   const { items, addItem, setQty } = useCart()
-  const { result: pricingResult } = usePricing({ channel: "pickup" })
+  const productsById = useMemo(() => {
+    const map: Record<string, CatalogProduct> = {}
+    for (const p of products) map[p.id] = p
+    return map
+  }, [products])
+  const { result: pricingResult } = usePricing({ channel: "pickup", products: productsById })
   const [showBackToTop, setShowBackToTop] = useState(false)
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -104,24 +109,27 @@ export function CardapioTab() {
               </span>
             </h2>
             <div className="space-y-2 stagger">
-              {categoryItems.map((p, itemIndex) => {
-                const staggerIndex = Math.min((categoryStart.get(category) ?? 0) + itemIndex, 10)
-                return (
-                  <div key={p.id} style={{ ["--stagger" as string]: staggerIndex }}>
-                    <ProductCard
-                      product={p}
-                      qty={qtyMap.get(p.id) ?? 0}
-                      isExpanded={expandedId === p.id}
-                      onExpand={() => setExpandedId(p.id)}
-                      onCollapse={() => setExpandedId(null)}
-                      onAdd={() => addItem(p.id)}
-                      onSetQty={(q) => setQty(p.id, q)}
-                      availableTiers={pricingResult?.state.availableTiers?.[p.id]}
-                      resolvedUnitPrice={resolvedPriceByProduct.get(p.id)}
-                    />
-                  </div>
-                )
-              })}
+                {categoryItems.map((p, itemIndex) => {
+                  const staggerIndex = Math.min((categoryStart.get(category) ?? 0) + itemIndex, 10)
+                  // Cookies assados mostram sempre o preço base (R$15) no cardápio.
+                  // O desconto por volume só aparece no carrinho, somando sabores.
+                  const isCookieAssado = p.category === "Cookie" || p.category === "Assados"
+                  return (
+                    <div key={p.id} style={{ ["--stagger" as string]: staggerIndex }}>
+                      <ProductCard
+                        product={p}
+                        qty={qtyMap.get(p.id) ?? 0}
+                        isExpanded={expandedId === p.id}
+                        onExpand={() => setExpandedId(p.id)}
+                        onCollapse={() => setExpandedId(null)}
+                        onAdd={() => addItem(p.id)}
+                        onSetQty={(q) => setQty(p.id, q)}
+                        availableTiers={isCookieAssado ? undefined : pricingResult?.state.availableTiers?.[p.id]}
+                        resolvedUnitPrice={isCookieAssado ? undefined : resolvedPriceByProduct.get(p.id)}
+                      />
+                    </div>
+                  )
+                })}
             </div>
           </section>
         ))}

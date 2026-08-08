@@ -31,6 +31,7 @@ export interface PricingResult {
     warnings?: Array<{ message: string; type?: string }>
     freeShipping?: boolean
     availableTiers?: Record<string, AvailablePriceTier[]>
+    cookieTiers?: AvailablePriceTier[]
     loyaltyPreview?: {
       active: boolean
       currentBalance: number
@@ -59,6 +60,14 @@ export interface PricingResult {
 export interface UsePricingOptions {
   couponCode?: string | null
   channel?: "delivery" | "pickup" | "digital"
+  /**
+   * Mapa de produtos do catálogo (id -> CatalogProduct). Quando fornecido,
+   * permite que o preview otimista identifique cookies assados via
+   * `category` ("Cookie" ou "Assados") e agregue a qty entre sabores para
+   * selecionar a faixa de desconto por volume — espelhando o motor no
+   * servidor. Sem esse mapa, o preview aplica tiers por SKU como antes.
+   */
+  products?: Record<string, { category: string }>
 }
 
 // Dedup de requests entre múltiplas instâncias do usePricing (layout, cardápio e
@@ -107,6 +116,7 @@ export function usePricing(options?: UsePricingOptions) {
   const { items: cartItems } = useCart()
   const couponCode = options?.couponCode || null
   const channel = options?.channel ?? "pickup"
+  const products = options?.products
   const [pricingResult, setPricingResult] = useState<PricingResult | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -126,7 +136,7 @@ export function usePricing(options?: UsePricingOptions) {
       // Optimistic preview: enquanto o fetch real não volta, aplicamos os tiers
       // conhecidos localmente (do resultado anterior) ao novo cartKey, para que a
       // UI reaja de forma instantânea à mudança de quantidade.
-      const optimistic = buildOptimisticResult(lastResultRef.current, cartItems, channel, couponCode)
+      const optimistic = buildOptimisticResult(lastResultRef.current, cartItems, channel, couponCode, products)
       if (optimistic) {
         lastResultRef.current = optimistic
         setPricingResult(optimistic)
@@ -158,7 +168,7 @@ export function usePricing(options?: UsePricingOptions) {
       cancelled = true
       clearTimeout(timeout)
     }
-  }, [cartItems, couponCode, channel])
+  }, [cartItems, couponCode, channel, products])
 
   const isEmpty = cartItems.length === 0
   return {
@@ -176,23 +186,60 @@ export function usePricing(options?: UsePricingOptions) {
  *
  * Se não houver `availableTiers` ainda (primeira chamada), retorna null e a UI
  * mantém o último estado conhecido sem desconto.
+ *
+ * Cookies assados (categoria "Cookie" ou "Assados", quando `products` é
+ * fornecido) agregam a qty entre sabores: a faixa é escolhida pela soma das
+ * qtys de todos os cookies assados no carrinho, e o mesmo preço unitário é
+ * aplicado a cada item de cookie (espelhando o motor no servidor).
  */
 function buildOptimisticResult(
   last: PricingResult | null,
   cartItems: Array<{ productId: string; qty: number }>,
   _channel: string,
   _couponCode: string | null,
+  products?: Record<string, { category: string }>,
 ): PricingResult | null {
   if (!last) return null
   const tiersByProduct = last.state.availableTiers
   if (!tiersByProduct) return null
 
+  // Detectar cookies assados no carrinho (quando temos catálogo). Sem
+  // catálogo, nenhum item é tratado como cookie agregado — manter behaviour
+  // legado (tier por SKU).
+  const cookieIds = new Set<string>()
+  if (products) {
+    for (const i of cartItems) {
+      const cat = products[i.productId]?.category
+      if (cat === "Cookie" || cat === "Assados") cookieIds.add(i.productId)
+    }
+  }
+  const totalCookieQty = cartItems
+    .filter((i) => cookieIds.has(i.productId))
+    .reduce((s, i) => s + i.qty, 0)
+
+  // Tiers compartilhados dos cookies: preferimos o `cookieTiers` exposto pelo
+  // motor; fallback para os tiers do primeiro cookie participante (idênticos).
+  const cookieTiers = last.state.cookieTiers ?? (cookieIds.size > 0 ? tiersByProduct[[...cookieIds][0]] ?? [] : [])
+  const cookieTier =
+    totalCookieQty > 0
+      ? cookieTiers.find((t) => t.minQty <= totalCookieQty && (t.maxQty === null || t.maxQty >= totalCookieQty))
+      : undefined
+
   const optimisticItems = cartItems.map((i) => {
     const prev = last.state.items.find((it) => it.productId === i.productId)
     const basePrice = prev?.basePrice ?? 0
-    const tiers = tiersByProduct[i.productId] ?? []
-    const tier = tiers.find((t) => t.minQty <= i.qty && (t.maxQty === null || t.maxQty >= i.qty))
-    const finalUnitPrice = tier ? tier.price : basePrice
+
+    let finalUnitPrice: number
+    if (cookieIds.has(i.productId) && cookieTier) {
+      // Cookie assado com tier agregado: usa o preço da faixa escolhida pela
+      // soma dos cookies.
+      finalUnitPrice = cookieTier.price
+    } else {
+      const tiers = tiersByProduct[i.productId] ?? []
+      const tier = tiers.find((t) => t.minQty <= i.qty && (t.maxQty === null || t.maxQty >= i.qty))
+      finalUnitPrice = tier ? tier.price : basePrice
+    }
+
     return {
       productId: i.productId,
       name: prev?.name ?? "",
@@ -214,6 +261,7 @@ function buildOptimisticResult(
       ...last.state,
       items: optimisticItems,
       subtotal,
+      cookieTiers: cookieTiers.length > 0 ? cookieTiers : last.state.cookieTiers,
     },
     total: subtotal + (last.state.shipping?.cost ?? 0),
     summary: {

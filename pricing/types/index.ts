@@ -43,6 +43,15 @@ export interface PricingState {
   subtotal?: number
   /** Tiers de preço disponíveis por produto (somente leitura, exposto no payload público para a UI). */
   availableTiers?: Record<string, PriceTierView[]>
+  /**
+   * Tiers compartilhados dos cookies assados (omitidos quando não há nenhum
+   * item de cookie assado no carrinho). Como todos os assados compartilham o
+   * mesmo conjunto de tiers (ver seed-price-tiers.ts), expomos aqui uma única
+   * lista para a UI renderizar uma barra de progresso global somando qtys de
+   * todos os sabores. A qty de referência para seleção de faixa é a soma das
+   * qtys dos itens de cookie assado, não a qty individual de cada SKU.
+   */
+  cookieTiers?: PriceTierView[]
   /** Preview do programa de pontos (informational; não altera total). */
   loyaltyPreview?: LoyaltyPreview
 }

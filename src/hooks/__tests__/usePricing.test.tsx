@@ -325,4 +325,107 @@ describe("usePricing", () => {
       await Promise.resolve()
     })
   })
+
+  it("agrega qty de cookies assados (via products) para o preview otimista", async () => {
+    // Dois cookies assados diferentes (categorias "Assados") com cookieTiers
+    // expostos pelo motor. Mudando qty individualmente, ambos devem pegar a
+    // faixa agregada (3+ → R$13) mesmo se cada um tiver qty < 3 separadamente.
+    const cookieTiersResult = {
+      ...samplePricingResult,
+      state: {
+        ...samplePricingResult.state,
+        items: [
+          { productId: "ck-classico", name: "Cookie Clássico", qty: 2, basePrice: 15, calculatedPrice: 15, priceAfterDiscount: 15 },
+          { productId: "ck-nino", name: "Cookie Niño", qty: 1, basePrice: 15, calculatedPrice: 15, priceAfterDiscount: 15 },
+        ],
+        // availableTiers é o que buildOptimisticResult checa primeiro; sem
+        // ele, o fallback retorna null e o preview não acontece. Empilhamos
+        // aqui os mesmos tiers dos dois cookies (idênticos, por construção).
+        availableTiers: {
+          "ck-classico": [
+            { id: "t1c", productId: "ck-classico", name: "Assado 1un", minQty: 1, maxQty: 2, price: 15 },
+            { id: "t2c", productId: "ck-classico", name: "Assado 3un", minQty: 3, maxQty: 9, price: 13 },
+            { id: "t3c", productId: "ck-classico", name: "Assado 10un", minQty: 10, maxQty: null, price: 10 },
+          ],
+          "ck-nino": [
+            { id: "t1n", productId: "ck-nino", name: "Assado 1un", minQty: 1, maxQty: 2, price: 15 },
+            { id: "t2n", productId: "ck-nino", name: "Assado 3un", minQty: 3, maxQty: 9, price: 13 },
+            { id: "t3n", productId: "ck-nino", name: "Assado 10un", minQty: 10, maxQty: null, price: 10 },
+          ],
+        },
+        cookieTiers: [
+          { id: "t1", productId: "ck-classico", name: "Assado 1un", minQty: 1, maxQty: 2, price: 15 },
+          { id: "t2", productId: "ck-classico", name: "Assado 3un", minQty: 3, maxQty: 9, price: 13 },
+          { id: "t3", productId: "ck-classico", name: "Assado 10un", minQty: 10, maxQty: null, price: 10 },
+        ],
+      },
+    }
+
+    // products precisa ter identidade estável para não disparar re-fetch
+    // infinito (está nas deps do useEffect do hook).
+    const products = {
+      "ck-classico": { category: "Assados" },
+      "ck-nino": { category: "Assados" },
+    }
+
+    // Estado inicial: qty 2 + 1 = 3 já no async primeiro fetch.
+    ;(useCart as ReturnType<typeof vi.fn>).mockReturnValue({
+      items: [
+        { productId: "ck-classico", qty: 2 },
+        { productId: "ck-nino", qty: 1 },
+      ],
+    })
+    const fetchSpy = mockFetchSuccess(cookieTiersResult)
+
+    const { result, rerender } = renderHook(
+      ({ qtyA, qtyB }: { qtyA: number; qtyB: number }) => {
+        ;(useCart as ReturnType<typeof vi.fn>).mockReturnValue({
+          items: [
+            { productId: "ck-classico", qty: qtyA },
+            { productId: "ck-nino", qty: qtyB },
+          ],
+        })
+        return usePricing({ products })
+      },
+      { initialProps: { qtyA: 2, qtyB: 1 } },
+    )
+
+    // Aguarda o primeiro fetch trazer os cookieTiers.
+    await waitFor(() => {
+      expect(result.current.result?.state.cookieTiers).toBeDefined()
+    })
+
+    // Bloqueia fetches subsequentes.
+    let resolvePending: ((v: unknown) => void) | null = null
+    global.fetch = vi.fn().mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolvePending = resolve
+        }),
+    ) as unknown as typeof fetch
+
+    // Aumenta qty do clássico para 3 (1 a mais). Soma = 4 → ainda R$13.
+    // O preview otimista deve pegar cookieTiers e aplicar R$13 a ambos.
+    rerender({ qtyA: 3, qtyB: 1 })
+
+    await waitFor(() => {
+      const items = result.current.result?.state.items ?? []
+      const classico = items.find((it) => it.productId === "ck-classico")
+      const nino = items.find((it) => it.productId === "ck-nino")
+      // Soma = 4 → faixa "3-9" R$13. Ambos unitários a R$13.
+      expect(classico?.priceAfterDiscount).toBe(13)
+      expect(nino?.priceAfterDiscount).toBe(13)
+    })
+
+    // Sanity: o fetchSpy foi chamado uma vez no setup (não contamos os pendurados).
+    expect(fetchSpy).toHaveBeenCalledTimes(1)
+
+    // Cleanup
+    await act(async () => {
+      if (resolvePending) {
+        resolvePending({ ok: true, json: async () => cookieTiersResult })
+      }
+      await Promise.resolve()
+    })
+  })
 })
