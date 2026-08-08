@@ -10,7 +10,12 @@ type CheckResult = {
   detail?: string
 }
 
-const results: Record<string, CheckResult> = {}
+type MercadoPagoCheckResult = CheckResult & {
+  webhook_secret_configured?: boolean
+  notification_url_configured?: boolean
+}
+
+const results: Record<string, MercadoPagoCheckResult> = {}
 
 async function checkDatabase(): Promise<void> {
   const start = Date.now()
@@ -52,8 +57,33 @@ async function checkMigrations(): Promise<void> {
 }
 
 async function checkMercadoPago(): Promise<void> {
-  if (!isMercadoPagoConfigured()) {
-    results.mercadopago = { status: "not_configured", detail: "MERCADO_PAGO_ACCESS_TOKEN não definido" }
+  const tokenConfigured = Boolean(process.env.MERCADO_PAGO_ACCESS_TOKEN)
+  const webhookSecretConfigured = Boolean(process.env.MERCADO_PAGO_WEBHOOK_SECRET)
+  const notificationUrlConfigured = Boolean(process.env.MERCADO_PAGO_NOTIFICATION_URL)
+
+  const base = {
+    webhook_secret_configured: webhookSecretConfigured,
+    notification_url_configured: notificationUrlConfigured,
+  }
+
+  if (!tokenConfigured) {
+    results.mercadopago = {
+      ...base,
+      status: "not_configured",
+      detail: "MERCADO_PAGO_ACCESS_TOKEN não definido",
+    }
+    return
+  }
+  if (process.env.NODE_ENV === "production" && (!webhookSecretConfigured || !notificationUrlConfigured)) {
+    const missing = [
+      !webhookSecretConfigured ? "MERCADO_PAGO_WEBHOOK_SECRET" : null,
+      !notificationUrlConfigured ? "MERCADO_PAGO_NOTIFICATION_URL" : null,
+    ].filter(Boolean)
+    results.mercadopago = {
+      ...base,
+      status: "not_configured",
+      detail: `em produção faltam: ${missing.join(", ")}`,
+    }
     return
   }
   const start = Date.now()
@@ -63,13 +93,28 @@ async function checkMercadoPago(): Promise<void> {
       signal: AbortSignal.timeout(4000),
       cache: "no-store",
     })
-    if (!res.ok) {
-      results.mercadopago = { status: "error", detail: `HTTP ${res.status}`, latency_ms: Date.now() - start }
+    if (res.status === 401 || res.status === 403) {
+      results.mercadopago = {
+        ...base,
+        status: "error",
+        detail: `token inválido ou expirado (HTTP ${res.status})`,
+        latency_ms: Date.now() - start,
+      }
       return
     }
-    results.mercadopago = { status: "ok", latency_ms: Date.now() - start }
+    if (!res.ok) {
+      results.mercadopago = {
+        ...base,
+        status: "error",
+        detail: `HTTP ${res.status}`,
+        latency_ms: Date.now() - start,
+      }
+      return
+    }
+    results.mercadopago = { ...base, status: "ok", latency_ms: Date.now() - start }
   } catch (e) {
     results.mercadopago = {
+      ...base,
       status: "error",
       detail: e instanceof Error ? e.message : String(e),
       latency_ms: Date.now() - start,

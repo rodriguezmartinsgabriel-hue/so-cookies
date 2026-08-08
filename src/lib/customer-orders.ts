@@ -522,6 +522,7 @@ export async function retryCustomerOrderPayment(customerId: string, orderId: str
 
   const expired =
     existing.paymentStatus === "EXPIRADO" ||
+    existing.paymentStatus === null ||
     (existing.paymentStatus === "AGUARDANDO_PAGAMENTO" &&
       existing.paymentExpiresAt != null &&
       existing.paymentExpiresAt.getTime() < Date.now())

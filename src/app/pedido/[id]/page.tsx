@@ -451,12 +451,13 @@ export default function PedidoPage({ params }: { params: Promise<{ id: string }>
                   )}
                 </Card>
 
-                {order.paymentStatus === "AGUARDANDO_PAGAMENTO" && order.status === "PENDENTE" && (
-                  <Button size="md" className="w-full" onClick={() => router.push(`/pagamento/${order.id}`)}>
-                    <QrCode className="w-4 h-4" />
-                    Completar pagamento via PIX
-                  </Button>
-                )}
+                {(order.paymentStatus === "AGUARDANDO_PAGAMENTO" || order.paymentStatus === null) &&
+                  order.status === "PENDENTE" && (
+                    <Button size="md" className="w-full" onClick={() => router.push(`/pagamento/${order.id}`)}>
+                      <QrCode className="w-4 h-4" />
+                      {order.paymentStatus === null ? "Gerar pagamento via PIX" : "Completar pagamento via PIX"}
+                    </Button>
+                  )}
 
                 {canChange && !cancelled && (
                   <Button

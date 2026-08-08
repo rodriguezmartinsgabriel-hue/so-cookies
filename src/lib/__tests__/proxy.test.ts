@@ -90,6 +90,11 @@ describe("proxy host isolation (loja vs manager)", () => {
     expect(proxy(req(`http://app.example.com${path}`)).status).toBe(200)
   })
 
+  it("exposes /api/health on the store host for diagnostics", () => {
+    expect(proxy(req("http://store.example.com/api/health")).status).toBe(200)
+    expect(proxy(req("http://store.example.com/api/health/")).status).toBe(200)
+  })
+
   it("protects staff pages on the staff host without a session", () => {
     const res = proxy(req("http://app.example.com/pedidos"))
     expect(res.status).toBe(307)

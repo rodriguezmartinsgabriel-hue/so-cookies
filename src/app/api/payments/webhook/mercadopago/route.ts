@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { verifyWebhookSignature } from "@/lib/payments/webhook"
-import { handlePaymentWebhook } from "@/lib/payments/service"
+import { handlePaymentWebhook, logPaymentEvent } from "@/lib/payments/service"
 import { mpWebhookSecret } from "@/lib/payments/config"
 import { logger } from "@/lib/logger"
 
@@ -19,6 +19,13 @@ export async function POST(request: Request) {
   })
   if (!valid) {
     logger.warn("[webhook] assinatura inválida rejeitada", { dataId, hasSignature: Boolean(xSignature) })
+    await logPaymentEvent({
+      orderId: null,
+      paymentId: dataId,
+      action: "webhook.signature.invalid",
+      status: "REJECTED",
+      payload: { hasSignature: Boolean(xSignature), hasRequestId: Boolean(xRequestId) },
+    }).catch((e) => logger.error("[webhook] falha ao gravar PaymentEvent de assinatura inválida", undefined, e))
     return NextResponse.json({ error: "Assinatura inválida" }, { status: 401 })
   }
 
@@ -33,5 +40,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true })
   }
 
+  return NextResponse.json({ ok: true })
+}
+
+export async function GET(request: Request) {
+  const searchParams = new URL(request.url).searchParams
+  const challenge = searchParams.get("challenge")
+  if (challenge) {
+    return NextResponse.json({ challenge })
+  }
   return NextResponse.json({ ok: true })
 }

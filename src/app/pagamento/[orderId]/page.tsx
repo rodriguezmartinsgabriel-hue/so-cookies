@@ -10,6 +10,7 @@ import { Card } from "@/components/ui/Card"
 import { GlassSurface } from "@/components/ui/GlassSurface"
 import { Skeleton } from "@/components/ui/Skeleton"
 import { EmptyState } from "@/components/ui/EmptyState"
+import { Button } from "@/components/ui/Button"
 
 const POLL_INTERVAL_MS = 5_000
 const POLL_MAX_INTERVAL_MS = 30_000
@@ -207,7 +208,18 @@ export default function PagamentoPage({ params }: { params: Promise<{ id: string
         )}
 
         {!loading && order && order.paymentStatus === null && (
-          <EmptyState title="Sem pagamento pendente" description="Este pedido não possui um pagamento pendente." />
+          <Card padded={false} className="rounded-2xl">
+            <div className="p-6 space-y-3 text-center">
+              <p className="text-lg font-bold text-ink">Pagamento ainda não gerado</p>
+              <p className="text-sm text-muted">
+                O pedido foi criado, mas o PIX não pôde ser gerado. Tente novamente agora para receber o QR Code ou o código copia e cola.
+              </p>
+              {retryError && <p className="text-sm text-danger">{retryError}</p>}
+              <Button size="lg" className="w-full min-h-12" onClick={handleRetry} disabled={retrying}>
+                {retrying ? "Gerando novo PIX..." : "Gerar PIX agora"}
+              </Button>
+            </div>
+          </Card>
         )}
 
         {!loading && order && order.paymentStatus !== null && (

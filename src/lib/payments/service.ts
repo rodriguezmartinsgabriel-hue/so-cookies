@@ -15,7 +15,7 @@ type PaymentEventInput = {
   payload?: unknown
 }
 
-async function logPaymentEvent(input: PaymentEventInput): Promise<void> {
+export async function logPaymentEvent(input: PaymentEventInput): Promise<void> {
   await prisma.paymentEvent.create({
     data: {
       orderId: input.orderId ?? null,
@@ -264,6 +264,54 @@ export async function handlePaymentWebhook(input: { paymentId: string }): Promis
     payload: { status: payment.status, status_detail: payment.status_detail },
   })
   return { ok: true, action: "not_approved" }
+}
+
+/**
+ * Reconciliação ativa de todos os pedidos pendentes com o Mercado Pago.
+ * Usada por cron/agendamento para confirmar pagamentos mesmo quando o
+ * webhook falhou e o cliente não reabriu a página (que dispara o polling).
+ */
+export async function reconcileAllPendingOrderPayments(): Promise<{ checked: number; reconciled: number; failed: number }> {
+  if (!isMercadoPagoConfigured()) return { checked: 0, reconciled: 0, failed: 0 }
+
+  const pending = await prisma.order.findMany({
+    where: {
+      paymentStatus: "AGUARDANDO_PAGAMENTO",
+      paymentProviderId: { not: null },
+      paymentExpiresAt: { gt: new Date() },
+    },
+    take: 200,
+    select: { id: true, total: true, paymentStatus: true, paymentProviderId: true },
+  })
+
+  let reconciled = 0
+  let failed = 0
+  for (const order of pending) {
+    try {
+      const ok = await reconcileOrderPayment(order)
+      if (ok) reconciled += 1
+    } catch (err) {
+      failed += 1
+      await logPaymentEvent({
+        orderId: order.id,
+        paymentId: order.paymentProviderId,
+        action: "payment.reconcile.failed",
+        status: "ERROR",
+        payload: { error: err instanceof Error ? err.message : String(err) },
+      })
+    }
+  }
+
+  if (pending.length > 0) {
+    await logPaymentEvent({
+      orderId: null,
+      action: "payment.reconcile.batch",
+      status: "VERIFIED",
+      payload: { checked: pending.length, reconciled, failed },
+    })
+  }
+
+  return { checked: pending.length, reconciled, failed }
 }
 
 export async function expireUnpaidOrders(): Promise<number> {

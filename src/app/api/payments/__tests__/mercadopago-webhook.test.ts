@@ -1,13 +1,15 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest"
 import { createHmac } from "crypto"
-import { POST as mpWebhookPost } from "@/app/api/payments/webhook/mercadopago/route"
+import { POST as mpWebhookPost, GET as mpWebhookGet } from "@/app/api/payments/webhook/mercadopago/route"
 
 const mocks = vi.hoisted(() => ({
   handlePaymentWebhook: vi.fn(),
+  logPaymentEvent: vi.fn(),
 }))
 
 vi.mock("@/lib/payments/service", () => ({
   handlePaymentWebhook: mocks.handlePaymentWebhook,
+  logPaymentEvent: mocks.logPaymentEvent,
 }))
 
 const SECRET = "chave-secreta-de-webhook"
@@ -30,13 +32,14 @@ describe("Mercado Pago webhook route", () => {
     vi.clearAllMocks()
     process.env.MERCADO_PAGO_WEBHOOK_SECRET = SECRET
     mocks.handlePaymentWebhook.mockResolvedValue({ ok: true, action: "paid" })
+    mocks.logPaymentEvent.mockResolvedValue(undefined)
   })
 
   afterEach(() => {
     delete process.env.MERCADO_PAGO_WEBHOOK_SECRET
   })
 
-  it("rejeita assinatura inválida com 401", async () => {
+  it("rejeita assinatura inválida com 401 e grava PaymentEvent de rejeição", async () => {
     const res = await mpWebhookPost(
       new Request("https://store.example.com/api/payments/webhook/mercadopago?type=payment&data.id=123", {
         method: "POST",
@@ -44,6 +47,13 @@ describe("Mercado Pago webhook route", () => {
     )
     expect(res.status).toBe(401)
     expect(mocks.handlePaymentWebhook).not.toHaveBeenCalled()
+    expect(mocks.logPaymentEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        paymentId: "123",
+        action: "webhook.signature.invalid",
+        status: "REJECTED",
+      }),
+    )
   })
 
   it("processa notificação de pagamento assinada", async () => {
@@ -79,5 +89,28 @@ describe("Mercado Pago webhook route", () => {
     delete process.env.MERCADO_PAGO_WEBHOOK_SECRET
     const res = await mpWebhookPost(signedPost("123"))
     expect(res.status).toBe(401)
+  })
+})
+
+describe("Mercado Pago webhook route — GET challenge", () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it("retorna o challenge quando presente (validação de posse da URL)", async () => {
+    const res = await mpWebhookGet(
+      new Request("https://store.example.com/api/payments/webhook/mercadopago?challenge=abc123"),
+    )
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(body).toEqual({ challenge: "abc123" })
+  })
+
+  it("retorna ok sem challenge", async () => {
+    const res = await mpWebhookGet(
+      new Request("https://store.example.com/api/payments/webhook/mercadopago"),
+    )
+    expect(res.status).toBe(200)
+    expect(await res.json()).toEqual({ ok: true })
   })
 })

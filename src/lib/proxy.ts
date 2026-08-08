@@ -111,7 +111,13 @@ function routeRequest(request: NextRequest): NextResponse {
     if (pathname === "/") {
       return NextResponse.redirect(new URL("/cardapio", request.url))
     }
-    if (isCustomerRoute(pathname) || isCustomerApi(pathname) || isInfraRoute(pathname) || isWebhookRoute(pathname)) {
+    if (
+      isCustomerRoute(pathname) ||
+      isCustomerApi(pathname) ||
+      isInfraRoute(pathname) ||
+      isWebhookRoute(pathname) ||
+      isHealthRoute(pathname)
+    ) {
       if (isProtectedCustomerRoute(pathname) && !request.cookies.has("socookie_customer")) {
         const loginUrl = new URL("/entrar", request.url)
         loginUrl.searchParams.set("next", pathname)

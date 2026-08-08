@@ -29,7 +29,7 @@ vi.mock("@/lib/payments/mercadopago", () => ({
   getPixPayment: mocks.getPixPayment,
 }))
 
-import { createOrderPayment, handlePaymentWebhook, expireUnpaidOrders, reconcileOrderPayment } from "@/lib/payments/service"
+import { createOrderPayment, handlePaymentWebhook, expireUnpaidOrders, reconcileOrderPayment, reconcileAllPendingOrderPayments } from "@/lib/payments/service"
 import { PaymentError } from "@/lib/payments/errors"
 import { isMercadoPagoConfigured } from "@/lib/payments/config"
 
@@ -449,5 +449,90 @@ describe("expireUnpaidOrders", () => {
     mocks.orderFindMany.mockResolvedValue([])
     expect(await expireUnpaidOrders()).toBe(0)
     expect(mocks.orderUpdateMany).not.toHaveBeenCalled()
+  })
+})
+
+describe("reconcileAllPendingOrderPayments", () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    process.env.MERCADO_PAGO_ACCESS_TOKEN = "APP_USR-teste"
+    process.env.MERCADO_PAGO_WEBHOOK_SECRET = "secret"
+    process.env.MERCADO_PAGO_NOTIFICATION_URL = "https://loja.com/api/payments/webhook/mercadopago"
+    mocks.orderUpdateMany.mockResolvedValue({ count: 1 })
+  })
+
+  afterEach(() => {
+    delete process.env.MERCADO_PAGO_ACCESS_TOKEN
+    delete process.env.MERCADO_PAGO_WEBHOOK_SECRET
+    delete process.env.MERCADO_PAGO_NOTIFICATION_URL
+    vi.unstubAllEnvs()
+  })
+
+  it("reconcilia pedidos pendentes e confirma os aprovados", async () => {
+    mocks.orderFindMany.mockResolvedValue([
+      { id: "ord-1", total: 42.5, paymentStatus: "AGUARDANDO_PAGAMENTO", paymentProviderId: "123" },
+      { id: "ord-2", total: 10, paymentStatus: "AGUARDANDO_PAGAMENTO", paymentProviderId: "456" },
+    ])
+    mocks.getPixPayment.mockImplementation((paymentId: string) =>
+      paymentId === "123"
+        ? Promise.resolve({
+            id: 123,
+            status: "approved",
+            status_detail: "accredited",
+            transaction_amount: 42.5,
+            external_reference: "order:ord-1",
+            payer: { email: "a@b.com" },
+          })
+        : Promise.resolve({
+            id: 456,
+            status: "approved",
+            status_detail: "accredited",
+            transaction_amount: 10,
+            external_reference: "order:ord-2",
+            payer: { email: "a@b.com" },
+          }),
+    )
+
+    const result = await reconcileAllPendingOrderPayments()
+
+    expect(result).toEqual({ checked: 2, reconciled: 2, failed: 0 })
+    expect(mocks.orderUpdateMany).toHaveBeenCalledTimes(2)
+    expect(mocks.paymentEventCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ action: "payment.reconcile.batch", status: "VERIFIED" }),
+      }),
+    )
+  })
+
+  it("contabiliza falhas sem abortar o lote", async () => {
+    mocks.orderFindMany.mockResolvedValue([
+      { id: "ord-1", total: 42.5, paymentStatus: "AGUARDANDO_PAGAMENTO", paymentProviderId: "123" },
+      { id: "ord-2", total: 10, paymentStatus: "AGUARDANDO_PAGAMENTO", paymentProviderId: "456" },
+    ])
+    mocks.getPixPayment
+      .mockResolvedValueOnce({
+        id: 123,
+        status: "approved",
+        status_detail: "accredited",
+        transaction_amount: 42.5,
+        external_reference: "order:ord-1",
+        payer: { email: "a@b.com" },
+      })
+      .mockRejectedValueOnce(new PaymentError("PROVIDER_ERROR", "falha"))
+
+    const result = await reconcileAllPendingOrderPayments()
+
+    expect(result).toEqual({ checked: 2, reconciled: 1, failed: 1 })
+    expect(mocks.paymentEventCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ action: "payment.reconcile.failed", status: "ERROR" }),
+      }),
+    )
+  })
+
+  it("retorna zerado sem pedidos pendentes", async () => {
+    mocks.orderFindMany.mockResolvedValue([])
+    expect(await reconcileAllPendingOrderPayments()).toEqual({ checked: 0, reconciled: 0, failed: 0 })
+    expect(mocks.paymentEventCreate).not.toHaveBeenCalled()
   })
 })

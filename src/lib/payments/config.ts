@@ -29,11 +29,13 @@ export function isMercadoPagoConfigured(): boolean {
   return true
 }
 
-let configWarningsLogged = false
+let lastConfigWarningsAt = 0
+const CONFIG_WARNINGS_INTERVAL_MS = 5 * 60 * 1000
 
 export function logPaymentConfigWarnings(): void {
-  if (configWarningsLogged) return
-  configWarningsLogged = true
+  const now = Date.now()
+  if (now - lastConfigWarningsAt < CONFIG_WARNINGS_INTERVAL_MS) return
+  lastConfigWarningsAt = now
 
   if (!process.env.MERCADO_PAGO_WEBHOOK_SECRET) {
     logger.warn("[payments] MERCADO_PAGO_WEBHOOK_SECRET não configurada — webhooks serão rejeitados")

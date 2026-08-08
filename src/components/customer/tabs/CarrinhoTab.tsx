@@ -31,6 +31,7 @@ import type { CatalogProduct } from "@/lib/utils"
 import { cn, formatBRL } from "@/lib/utils"
 import type { DeliverySlot } from "@/lib/customer-types"
 import { EMPTY_ADDRESS, type AddressState } from "@/lib/customer-types"
+import { checkoutErrorMessage } from "@/lib/checkout-errors"
 
 export function CarrinhoTab() {
   const router = useRouter()
@@ -184,7 +185,7 @@ export function CarrinhoTab() {
       }
       if (!res.ok) {
         const data = await res.json().catch(() => null)
-        setError(data?.error || "Não foi possível finalizar o pedido")
+        setError(checkoutErrorMessage(data?.code, data?.error || "Não foi possível finalizar o pedido"))
         return
       }
       const order = await res.json()
